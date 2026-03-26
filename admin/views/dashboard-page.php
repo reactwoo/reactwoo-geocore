@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="wrap rwgc-wrap">
 	<h1><?php esc_html_e( 'ReactWoo Geo Core', 'reactwoo-geocore' ); ?></h1>
 	<p class="description"><?php esc_html_e( 'Central geolocation dashboard for setup, status, and integrations.', 'reactwoo-geocore' ); ?></p>
+	<?php RWGC_Admin::render_inner_nav( 'rwgc-dashboard' ); ?>
 
 	<div class="rwui-hero">
 		<h2><?php esc_html_e( 'Free Baseline Routing + Shared Geo Engine', 'reactwoo-geocore' ); ?></h2>

@@ -25,6 +25,7 @@ settings_errors( 'rwgc_tools' );
 ?>
 <div class="wrap rwgc-wrap">
 	<h1><?php esc_html_e( 'Geo Core Tools', 'reactwoo-geocore' ); ?></h1>
+	<?php RWGC_Admin::render_inner_nav( 'rwgc-tools' ); ?>
 
 	<h2><?php esc_html_e( 'Database & Cache', 'reactwoo-geocore' ); ?></h2>
 	<p>

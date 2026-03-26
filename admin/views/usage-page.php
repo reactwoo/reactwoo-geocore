@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="wrap rwgc-wrap">
 	<h1><?php esc_html_e( 'Geo Core Usage Guide', 'reactwoo-geocore' ); ?></h1>
 	<p class="description"><?php esc_html_e( 'Use this page as a quick reference to set up and integrate geolocation in themes, plugins, and content.', 'reactwoo-geocore' ); ?></p>
+	<?php RWGC_Admin::render_inner_nav( 'rwgc-usage' ); ?>
 
 	<div class="rwgc-grid">
 		<div class="rwgc-card rwgc-card--highlight">

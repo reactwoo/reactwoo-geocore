@@ -6,6 +6,7 @@ $option_key = RWGC_Settings::OPTION_KEY;
 ?>
 <div class="wrap rwgc-wrap">
 	<h1><?php esc_html_e( 'Geo Core Settings', 'reactwoo-geocore' ); ?></h1>
+	<?php RWGC_Admin::render_inner_nav( 'rwgc-settings' ); ?>
 
 	<form method="post" action="options.php">
 		<?php settings_fields( 'rwgc_settings_group' ); ?>

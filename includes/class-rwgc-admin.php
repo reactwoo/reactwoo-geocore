@@ -231,6 +231,28 @@ class RWGC_Admin {
 	}
 
 	/**
+	 * Render an inner navigation row for Geo Core pages.
+	 *
+	 * @param string $current Current page slug.
+	 * @return void
+	 */
+	public static function render_inner_nav( $current ) {
+		$items = array(
+			'rwgc-dashboard' => __( 'Dashboard', 'reactwoo-geocore' ),
+			'rwgc-settings'  => __( 'Settings', 'reactwoo-geocore' ),
+			'rwgc-tools'     => __( 'Tools', 'reactwoo-geocore' ),
+			'rwgc-usage'     => __( 'Usage', 'reactwoo-geocore' ),
+			'rwgc-addons'    => __( 'Add-ons', 'reactwoo-geocore' ),
+		);
+		echo '<nav class="rwgc-inner-nav" aria-label="' . esc_attr__( 'Geo Core section navigation', 'reactwoo-geocore' ) . '">';
+		foreach ( $items as $slug => $label ) {
+			$class = 'rwgc-inner-nav__link' . ( $slug === $current ? ' is-active' : '' );
+			echo '<a class="' . esc_attr( $class ) . '" href="' . esc_url( admin_url( 'admin.php?page=' . $slug ) ) . '">' . esc_html( $label ) . '</a>';
+		}
+		echo '</nav>';
+	}
+
+	/**
 	 * Show admin notices for missing license/DB/etc.
 	 *
 	 * @return void

@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="wrap rwgc-wrap">
 	<h1><?php esc_html_e( 'Geo Core Add-ons', 'reactwoo-geocore' ); ?></h1>
 	<p><?php esc_html_e( 'These add-ons extend ReactWoo Geo Core with builder-specific targeting and WHMCS-aware pricing.', 'reactwoo-geocore' ); ?></p>
+	<?php RWGC_Admin::render_inner_nav( 'rwgc-addons' ); ?>
 
 	<div class="rwgc-card rwgc-card--full">
 		<h2><?php esc_html_e( 'Baseline vs Extension', 'reactwoo-geocore' ); ?></h2>
