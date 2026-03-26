@@ -159,10 +159,30 @@
 }
 
 .rwgc-addon-image {
-  max-width: 100%;
-  height: auto;
+  width: 100%;
+  height: 64px;
+  object-fit: contain;
   display: block;
   margin-bottom: 8px;
+}
+
+.rwgc-addon-image-wrap {
+  margin-bottom: 8px;
+}
+
+.rwgc-addon-image-placeholder {
+  height: 64px;
+  border-radius: 10px;
+  border: 1px solid #dbe5f0;
+  background: linear-gradient(135deg, #f8fafc 0%, #edf4ff 100%);
+  color: #1f4b7a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-size: 15px;
+  text-transform: uppercase;
 }
 
 .rwgc-wrap .form-table {
@@ -384,6 +404,12 @@
   .rwgc-card a,
   .rwgc-addon-card a {
     color: #93c5fd;
+  }
+
+  .rwgc-addon-image-placeholder {
+    background: linear-gradient(135deg, #1f2937 0%, #1e3a5f 100%);
+    border-color: #374151;
+    color: #dbeafe;
   }
 
   .rwui-matrix th {

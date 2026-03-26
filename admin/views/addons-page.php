@@ -24,10 +24,32 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<div class="rwgc-addons-grid">
 		<?php foreach ( $addons as $addon ) : ?>
+			<?php
+			$title_words  = preg_split( '/\s+/', (string) $addon['title'] );
+			$initials     = '';
+			foreach ( (array) $title_words as $word ) {
+				$word = trim( (string) $word );
+				if ( '' === $word ) {
+					continue;
+				}
+				$initials .= strtoupper( substr( $word, 0, 1 ) );
+				if ( strlen( $initials ) >= 2 ) {
+					break;
+				}
+			}
+			if ( '' === $initials ) {
+				$initials = 'RW';
+			}
+			?>
 			<div class="rwgc-addon-card">
-				<?php if ( ! empty( $addon['image'] ) ) : ?>
-					<img src="<?php echo esc_url( $addon['image'] ); ?>" alt="<?php echo esc_attr( $addon['title'] ); ?>" class="rwgc-addon-image" />
-				<?php endif; ?>
+				<div class="rwgc-addon-image-wrap">
+					<?php if ( ! empty( $addon['image'] ) ) : ?>
+						<img src="<?php echo esc_url( $addon['image'] ); ?>" alt="<?php echo esc_attr( $addon['title'] ); ?>" class="rwgc-addon-image" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+					<?php endif; ?>
+					<div class="rwgc-addon-image-placeholder" <?php echo ! empty( $addon['image'] ) ? 'style="display:none;"' : ''; ?>>
+						<span><?php echo esc_html( $initials ); ?></span>
+					</div>
+				</div>
 				<h2><?php echo esc_html( $addon['title'] ); ?></h2>
 				<p class="rwgc-addon-summary"><?php echo esc_html( $addon['summary'] ); ?></p>
 				<p class="rwgc-addon-status">
