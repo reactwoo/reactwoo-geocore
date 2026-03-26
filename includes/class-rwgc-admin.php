@@ -68,6 +68,15 @@ class RWGC_Admin {
 
 		add_submenu_page(
 			'rwgc-dashboard',
+			__( 'Usage', 'reactwoo-geocore' ),
+			__( 'Usage', 'reactwoo-geocore' ),
+			$cap,
+			'rwgc-usage',
+			array( __CLASS__, 'render_usage' )
+		);
+
+		add_submenu_page(
+			'rwgc-dashboard',
 			__( 'Add-ons', 'reactwoo-geocore' ),
 			__( 'Add-ons', 'reactwoo-geocore' ),
 			$cap,
@@ -143,6 +152,19 @@ class RWGC_Admin {
 		$status   = RWGC_MaxMind::get_status();
 		$data     = RWGC_API::get_visitor_data();
 		include RWGC_PATH . 'admin/views/tools-page.php';
+	}
+
+	/**
+	 * Render usage page.
+	 *
+	 * @return void
+	 */
+	public static function render_usage() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		$status = RWGC_MaxMind::get_status();
+		include RWGC_PATH . 'admin/views/usage-page.php';
 	}
 
 	/**

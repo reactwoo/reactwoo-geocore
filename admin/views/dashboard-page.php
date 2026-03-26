@@ -5,8 +5,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 <div class="wrap rwgc-wrap">
 	<h1><?php esc_html_e( 'ReactWoo Geo Core', 'reactwoo-geocore' ); ?></h1>
+	<p class="description"><?php esc_html_e( 'Central geolocation dashboard for setup, status, and integrations.', 'reactwoo-geocore' ); ?></p>
 
 	<div class="rwgc-grid">
+		<div class="rwgc-card rwgc-card--highlight">
+			<h2><?php esc_html_e( 'Getting Started', 'reactwoo-geocore' ); ?></h2>
+			<ol class="rwgc-steps">
+				<li><?php esc_html_e( 'Configure MaxMind credentials in Settings.', 'reactwoo-geocore' ); ?></li>
+				<li><?php esc_html_e( 'Download/update database from Tools.', 'reactwoo-geocore' ); ?></li>
+				<li><?php esc_html_e( 'Verify lookup and then use shortcodes/PHP/block.', 'reactwoo-geocore' ); ?></li>
+			</ol>
+			<p>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-settings' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Setup Now', 'reactwoo-geocore' ); ?></a>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-usage' ) ); ?>" class="button"><?php esc_html_e( 'View Usage Guide', 'reactwoo-geocore' ); ?></a>
+			</p>
+		</div>
+
 		<div class="rwgc-card">
 			<h2><?php esc_html_e( 'Status', 'reactwoo-geocore' ); ?></h2>
 			<ul>
@@ -38,6 +52,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="rwgc-card">
 			<h2><?php esc_html_e( 'Quick actions', 'reactwoo-geocore' ); ?></h2>
 			<p><?php esc_html_e( 'Use the Tools tab to update the MaxMind database, clear cache, and test your setup.', 'reactwoo-geocore' ); ?></p>
+			<p><?php esc_html_e( 'Use the Usage tab for shortcode, PHP, REST, Gutenberg, and Elementor Page/Popup integration examples.', 'reactwoo-geocore' ); ?></p>
 			<p><?php esc_html_e( 'Use the Add-ons tab to discover GeoElementor and WHMCS Bridge integrations.', 'reactwoo-geocore' ); ?></p>
 		</div>
 	</div>

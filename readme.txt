@@ -32,6 +32,25 @@ It is designed to be used on its own, or as a shared geo engine for premium Reac
 3. Go to **Geo Core → Settings** and enter your MaxMind license key.
 4. Use the **Tools** tab to download/update the database and test lookups.
 
+== Usage ==
+
+After setup, you can use Geo Core in multiple ways:
+
+* **Shortcodes**: `[rwgc_country]`, `[rwgc_country_code]`, `[rwgc_currency]`, `[rwgc_city]`, `[rwgc_region]`
+* **Conditional shortcode**: `[rwgc_if country="US,CA"]Special content[/rwgc_if]`
+* **PHP helpers**: `rwgc_get_visitor_country()`, `rwgc_get_visitor_currency()`, `rwgc_get_visitor_data()`
+* **REST endpoint**: `/wp-json/reactwoo-geocore/v1/location` (when enabled in settings)
+* **Gutenberg**: Use the **Geo Content** block to show/hide content by country
+* **Elementor (free baseline)**: Use Page/Popup document settings for basic show/hide by country
+
+For an in-dashboard guide, open **Geo Core → Usage** in wp-admin.
+
+Country targeting uses ISO2 **country codes** (example: `US`, `CA`, `GB`) because they are stable and reliable for logic. Use country **names** for display text to visitors.
+
+Example conditional content:
+
+`[rwgc_if country="US,CA"]Free shipping for North America[/rwgc_if]`
+
 == Frequently Asked Questions ==
 
 = Does this plugin require Elementor? =

@@ -49,6 +49,28 @@
   flex: 1 1 260px;
 }
 
+.rwgc-card--highlight {
+  border-color: #cfd8ff;
+  box-shadow: 0 1px 2px rgba(59, 130, 246, 0.08);
+}
+
+.rwgc-card--full {
+  margin-top: 16px;
+}
+
+.rwgc-steps {
+  margin: 0 0 16px 18px;
+}
+
+.rwgc-steps li {
+  margin-bottom: 6px;
+}
+
+.rwgc-snippet-table code {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .rwgc-addons-grid {
   display: flex;
   flex-wrap: wrap;

@@ -79,6 +79,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-admin.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-shortcodes.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-gutenberg.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-elementor.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-rest.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-upsells.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-migration.php';
@@ -102,6 +103,7 @@ class RWGC_Plugin {
 		// Frontend + shared.
 		RWGC_Shortcodes::init();
 		RWGC_Gutenberg::init();
+		RWGC_Elementor::init();
 		RWGC_REST::init();
 		RWGC_Upsells::init();
 	}
