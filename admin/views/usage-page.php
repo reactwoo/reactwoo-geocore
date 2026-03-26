@@ -9,6 +9,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<div class="rwgc-grid">
 		<div class="rwgc-card rwgc-card--highlight">
+			<h2><?php esc_html_e( 'Where to Configure What (Free vs Pro)', 'reactwoo-geocore' ); ?></h2>
+			<p><?php esc_html_e( 'Geo Core owns the shared geo engine and the free baseline routing behavior. GeoElementor extends it for advanced/pro scenarios.', 'reactwoo-geocore' ); ?></p>
+			<ul>
+				<li><?php esc_html_e( 'Geo Core Settings: MaxMind license, cache, and overall geo engine.', 'reactwoo-geocore' ); ?></li>
+				<li><?php esc_html_e( 'Geo Core Free Routing: Edit a page and use "Geo Variant Routing (Free)" to set 1 default + 1 additional country mapping (server-side redirect).', 'reactwoo-geocore' ); ?></li>
+				<li><?php esc_html_e( 'GeoElementor Pro: Configure variant groups and advanced/multi-variant routing in GeoElementor admin.', 'reactwoo-geocore' ); ?></li>
+			</ul>
+			<p>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-settings' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Geo Core Settings', 'reactwoo-geocore' ); ?></a>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=geo-elementor-variants' ) ); ?>" class="button"><?php esc_html_e( 'GeoElementor Groups', 'reactwoo-geocore' ); ?></a>
+			</p>
+		</div>
+
+		<div class="rwgc-card rwgc-card--highlight">
 			<h2><?php esc_html_e( 'Why Geo Core', 'reactwoo-geocore' ); ?></h2>
 			<ul>
 				<li><?php esc_html_e( 'Keep geo logic in one lightweight plugin used by your whole site.', 'reactwoo-geocore' ); ?></li>
@@ -60,10 +74,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</tr>
 				<tr>
 					<td><?php esc_html_e( 'Elementor / Bricks / Builders', 'reactwoo-geocore' ); ?></td>
-					<td><?php esc_html_e( 'Elementor free baseline is document-level only (Page/Popup settings: show/hide + countries). Other builders can use shortcode snippets.', 'reactwoo-geocore' ); ?></td>
+					<td><?php esc_html_e( 'Elementor free baseline is document-level only (Page/Popup settings: show/hide + countries). Geo Core also provides page-level server-side routing (1 default + 1 additional country variant). Other builders can use shortcode snippets.', 'reactwoo-geocore' ); ?></td>
 				</tr>
 			</tbody>
 		</table>
+	</div>
+
+	<div class="rwgc-card rwgc-card--full">
+		<h2><?php esc_html_e( 'Page Variant Routing (Free)', 'reactwoo-geocore' ); ?></h2>
+		<p><?php esc_html_e( 'Geo Core routes visitors at the page level with server-side redirects. This is designed for performance and stability.', 'reactwoo-geocore' ); ?></p>
+		<ol class="rwgc-steps">
+			<li><?php esc_html_e( 'Open the default page in wp-admin and find "Geo Variant Routing (Free)".', 'reactwoo-geocore' ); ?></li>
+			<li><?php esc_html_e( 'Enable routing and select one default fallback page.', 'reactwoo-geocore' ); ?></li>
+			<li><?php esc_html_e( 'Add one country ISO2 code (for example GB) and select its mapped page.', 'reactwoo-geocore' ); ?></li>
+			<li><?php esc_html_e( 'Save the page. Visitors from the mapped country go to the mapped page; everyone else uses fallback.', 'reactwoo-geocore' ); ?></li>
+		</ol>
+		<p class="description"><?php esc_html_e( 'Free limit is strict: 1 fallback + 1 country mapping per page. For multi-country routing and advanced logic, use GeoElementor Pro.', 'reactwoo-geocore' ); ?></p>
 	</div>
 
 	<div class="rwgc-card rwgc-card--full">

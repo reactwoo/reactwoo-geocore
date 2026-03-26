@@ -80,6 +80,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-shortcodes.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-gutenberg.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-elementor.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-routing.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-rest.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-upsells.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-migration.php';
@@ -104,6 +105,7 @@ class RWGC_Plugin {
 		RWGC_Shortcodes::init();
 		RWGC_Gutenberg::init();
 		RWGC_Elementor::init();
+		RWGC_Routing::init();
 		RWGC_REST::init();
 		RWGC_Upsells::init();
 	}

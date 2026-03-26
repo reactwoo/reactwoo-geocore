@@ -5,26 +5,31 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
   background: #f5f5f7;
+  font-size: 14px;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
 }
 
 .rwgc-wrap h1 {
-  font-size: 24px;
-  line-height: 1.3;
-  font-weight: 600;
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: #111827;
   margin: 0 0 8px;
 }
 
 .rwgc-wrap h2 {
-  font-size: 18px;
-  line-height: 1.4;
-  font-weight: 600;
+  font-size: 21px;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -0.015em;
   color: #111827;
   margin: 24px 0 8px;
 }
 
 .rwgc-wrap h3 {
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.4;
   font-weight: 600;
   color: #111827;
@@ -33,6 +38,7 @@
 
 .rwgc-wrap .description {
   color: #6b7280;
+  font-size: 13px;
 }
 
 .rwgc-wrap .rwgc-grid {
@@ -44,9 +50,10 @@
 .rwgc-card {
   background: #fff;
   border: 1px solid #dcdcde;
-  border-radius: 4px;
-  padding: 16px;
+  border-radius: 8px;
+  padding: 18px;
   flex: 1 1 260px;
+  line-height: 1.55;
 }
 
 .rwgc-card--highlight {
@@ -109,7 +116,9 @@
   width: 260px;
   padding-top: 16px;
   padding-bottom: 16px;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.01em;
 }
 
 .rwgc-wrap .form-table td {
@@ -117,3 +126,185 @@
   padding-bottom: 12px;
 }
 
+/* Shared admin UI primitives (WordPress-safe, no fake app nav). */
+.rwui-hero {
+  background: linear-gradient(135deg, #2271b1 0%, #005891 100%);
+  color: #fff;
+  border-radius: 12px;
+  padding: 22px;
+  margin: 0 0 16px;
+  box-shadow: 0 4px 12px rgba(2, 39, 74, 0.16);
+}
+
+.rwui-hero h2 {
+  margin: 0 0 8px;
+  color: #fff;
+  font-size: 25px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.rwui-hero p {
+  margin: 0 0 12px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.rwui-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rwui-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background: #eef6ff;
+  color: #0a4f8a;
+  border: 1px solid #cde0f7;
+}
+
+.rwui-badge--accent {
+  background: #fef3f2;
+  color: #b42318;
+  border-color: #fecaca;
+}
+
+.rwui-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.rwui-cta-row .button {
+  font-weight: 600;
+}
+
+.rwui-matrix {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rwui-matrix th,
+.rwui-matrix td {
+  border: 1px solid #e5e7eb;
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rwui-matrix th {
+  background: #f8fafc;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #475467;
+}
+
+/* Responsive pass for narrow admin widths */
+@media (max-width: 900px) {
+  .rwgc-wrap {
+    padding: 20px 14px;
+  }
+
+  .rwgc-wrap h1 {
+    font-size: 24px;
+  }
+
+  .rwgc-wrap h2 {
+    font-size: 18px;
+  }
+
+  .rwui-hero {
+    padding: 16px;
+  }
+
+  .rwui-hero h2 {
+    font-size: 21px;
+  }
+
+  .rwui-badges,
+  .rwui-cta-row {
+    gap: 6px;
+  }
+
+  .rwui-cta-row .button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .rwui-matrix {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .rwui-matrix th,
+  .rwui-matrix td {
+    min-width: 190px;
+  }
+}
+
+/* Dark mode compatibility (respects OS/browser preference). */
+@media (prefers-color-scheme: dark) {
+  .rwgc-wrap {
+    background: #1f2328;
+    color: #e5e7eb;
+  }
+
+  .rwgc-wrap h1,
+  .rwgc-wrap h2,
+  .rwgc-wrap h3,
+  .rwgc-wrap strong {
+    color: #f3f4f6;
+  }
+
+  .rwgc-wrap .description {
+    color: #a1a1aa;
+  }
+
+  .rwgc-card,
+  .rwgc-addon-card,
+  .rwgc-wrap .form-table,
+  .rwgc-card--full {
+    background: #111827;
+    border-color: #374151;
+    color: #e5e7eb;
+  }
+
+  .rwgc-card a,
+  .rwgc-addon-card a {
+    color: #93c5fd;
+  }
+
+  .rwui-matrix th {
+    background: #1f2937;
+    color: #d1d5db;
+    border-color: #374151;
+  }
+
+  .rwui-matrix td {
+    background: #111827;
+    color: #e5e7eb;
+    border-color: #374151;
+  }
+
+  .rwui-badge {
+    background: #1e3a5f;
+    border-color: #30567e;
+    color: #dbeafe;
+  }
+
+  .rwui-badge--accent {
+    background: #4a2224;
+    border-color: #7f1d1d;
+    color: #fecaca;
+  }
+}

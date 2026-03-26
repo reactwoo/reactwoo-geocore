@@ -7,6 +7,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<h1><?php esc_html_e( 'Geo Core Add-ons', 'reactwoo-geocore' ); ?></h1>
 	<p><?php esc_html_e( 'These add-ons extend ReactWoo Geo Core with builder-specific targeting and WHMCS-aware pricing.', 'reactwoo-geocore' ); ?></p>
 
+	<div class="rwgc-card rwgc-card--full">
+		<h2><?php esc_html_e( 'Baseline vs Extension', 'reactwoo-geocore' ); ?></h2>
+		<p class="description">
+			<?php esc_html_e( 'Free tier: Geo Core performs server-side page routing (1 default + 1 country variant per page).', 'reactwoo-geocore' ); ?>
+		</p>
+		<p class="description">
+			<?php esc_html_e( 'Pro tier: GeoElementor provides advanced/multi-variant routing via Groups and extends element-level targeting.', 'reactwoo-geocore' ); ?>
+		</p>
+		<p>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-usage' ) ); ?>" class="button"><?php esc_html_e( 'See Free Routing', 'reactwoo-geocore' ); ?></a>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=geo-elementor' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Open GeoElementor', 'reactwoo-geocore' ); ?></a>
+		</p>
+	</div>
+
 	<div class="rwgc-addons-grid">
 		<?php foreach ( $addons as $addon ) : ?>
 			<div class="rwgc-addon-card">

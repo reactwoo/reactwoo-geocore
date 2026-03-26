@@ -19,6 +19,8 @@ class RWGC_Admin {
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
 		add_action( 'admin_notices', array( __CLASS__, 'maybe_show_admin_notices' ) );
 		add_action( 'admin_post_rwgc_upload_mmdb', array( __CLASS__, 'handle_upload_mmdb' ) );
+		add_action( 'add_meta_boxes_page', array( __CLASS__, 'register_page_meta_box' ) );
+		add_action( 'save_post_page', array( __CLASS__, 'save_page_meta_box' ) );
 	}
 
 	/**
@@ -270,6 +272,111 @@ class RWGC_Admin {
 				esc_html__( 'ReactWoo Geo Core: MaxMind database may be stale. Consider updating from the Tools tab.', 'reactwoo-geocore' )
 			);
 		}
+	}
+
+	/**
+	 * Register page-level variant routing meta box.
+	 *
+	 * @return void
+	 */
+	public static function register_page_meta_box() {
+		add_meta_box(
+			'rwgc-page-routing',
+			__( 'Geo Variant Routing (Free)', 'reactwoo-geocore' ),
+			array( __CLASS__, 'render_page_meta_box' ),
+			'page',
+			'side',
+			'default'
+		);
+	}
+
+	/**
+	 * Render page-level routing controls.
+	 *
+	 * @param \WP_Post $post Post object.
+	 * @return void
+	 */
+	public static function render_page_meta_box( $post ) {
+		if ( ! ( $post instanceof WP_Post ) ) {
+			return;
+		}
+
+		$config = RWGC_Routing::get_page_route_config( (int) $post->ID );
+		wp_nonce_field( 'rwgc_page_routing_save', 'rwgc_page_routing_nonce' );
+		?>
+		<p>
+			<label>
+				<input type="checkbox" name="rwgc_route_enabled" value="1" <?php checked( ! empty( $config['enabled'] ) ); ?> />
+				<?php esc_html_e( 'Enable geo routing for this page', 'reactwoo-geocore' ); ?>
+			</label>
+		</p>
+		<p class="description"><?php esc_html_e( 'Free limit: one default fallback page and one additional country mapping.', 'reactwoo-geocore' ); ?></p>
+
+		<p><strong><?php esc_html_e( 'Default fallback page', 'reactwoo-geocore' ); ?></strong></p>
+		<p>
+			<?php
+			wp_dropdown_pages(
+				array(
+					'name'             => 'rwgc_route_default_page_id',
+					'id'               => 'rwgc_route_default_page_id',
+					'show_option_none' => __( '-- No fallback --', 'reactwoo-geocore' ),
+					'option_none_value'=> '0',
+					'selected'         => (int) $config['default_page_id'],
+				)
+			);
+			?>
+		</p>
+
+		<p><strong><?php esc_html_e( 'Additional country mapping', 'reactwoo-geocore' ); ?></strong></p>
+		<p>
+			<label for="rwgc_route_country_iso2"><?php esc_html_e( 'Country code (ISO2)', 'reactwoo-geocore' ); ?></label><br />
+			<input type="text" name="rwgc_route_country_iso2" id="rwgc_route_country_iso2" value="<?php echo esc_attr( (string) $config['country_iso2'] ); ?>" maxlength="2" class="small-text" placeholder="GB" />
+		</p>
+		<p>
+			<?php
+			wp_dropdown_pages(
+				array(
+					'name'             => 'rwgc_route_country_page_id',
+					'id'               => 'rwgc_route_country_page_id',
+					'show_option_none' => __( '-- No mapped page --', 'reactwoo-geocore' ),
+					'option_none_value'=> '0',
+					'selected'         => (int) $config['country_page_id'],
+				)
+			);
+			?>
+		</p>
+		<p class="description"><?php esc_html_e( 'Need multiple country variants per page? Use GeoElementor advanced routing.', 'reactwoo-geocore' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Save page-level routing controls.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return void
+	 */
+	public static function save_page_meta_box( $post_id ) {
+		if ( ! current_user_can( 'edit_page', $post_id ) ) {
+			return;
+		}
+
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+
+		$nonce = isset( $_POST['rwgc_page_routing_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['rwgc_page_routing_nonce'] ) ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'rwgc_page_routing_save' ) ) {
+			return;
+		}
+
+		$config = array(
+			'enabled'         => ! empty( $_POST['rwgc_route_enabled'] ),
+			'default_page_id' => isset( $_POST['rwgc_route_default_page_id'] ) ? absint( wp_unslash( $_POST['rwgc_route_default_page_id'] ) ) : 0,
+			'country_iso2'    => isset( $_POST['rwgc_route_country_iso2'] ) ? sanitize_text_field( wp_unslash( $_POST['rwgc_route_country_iso2'] ) ) : '',
+			'country_page_id' => isset( $_POST['rwgc_route_country_page_id'] ) ? absint( wp_unslash( $_POST['rwgc_route_country_page_id'] ) ) : 0,
+		);
+
+		RWGC_Routing::save_page_route_config( $post_id, $config );
 	}
 }
 

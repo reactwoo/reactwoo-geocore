@@ -7,12 +7,56 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<h1><?php esc_html_e( 'ReactWoo Geo Core', 'reactwoo-geocore' ); ?></h1>
 	<p class="description"><?php esc_html_e( 'Central geolocation dashboard for setup, status, and integrations.', 'reactwoo-geocore' ); ?></p>
 
+	<div class="rwui-hero">
+		<h2><?php esc_html_e( 'Free Baseline Routing + Shared Geo Engine', 'reactwoo-geocore' ); ?></h2>
+		<p><?php esc_html_e( 'Geo Core owns geo detection, MaxMind lifecycle, and free page-level routing. GeoElementor extends this for advanced multi-variant behavior.', 'reactwoo-geocore' ); ?></p>
+		<div class="rwui-badges">
+			<span class="rwui-badge"><?php esc_html_e( 'Geo Core: engine + baseline', 'reactwoo-geocore' ); ?></span>
+			<span class="rwui-badge rwui-badge--accent"><?php esc_html_e( 'Free limit: 1 fallback + 1 mapping', 'reactwoo-geocore' ); ?></span>
+		</div>
+		<div class="rwui-cta-row">
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-settings' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Open Core Settings', 'reactwoo-geocore' ); ?></a>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=geo-elementor-variants' ) ); ?>" class="button"><?php esc_html_e( 'Open Pro Variant Groups', 'reactwoo-geocore' ); ?></a>
+		</div>
+	</div>
+
+	<div class="rwgc-card rwgc-card--full">
+		<h2><?php esc_html_e( 'Feature Split', 'reactwoo-geocore' ); ?></h2>
+		<table class="rwui-matrix">
+			<thead>
+				<tr>
+					<th><?php esc_html_e( 'Capability', 'reactwoo-geocore' ); ?></th>
+					<th><?php esc_html_e( 'Geo Core (Free baseline)', 'reactwoo-geocore' ); ?></th>
+					<th><?php esc_html_e( 'GeoElementor (Pro extension)', 'reactwoo-geocore' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td><?php esc_html_e( 'Shared geo engine and MaxMind management', 'reactwoo-geocore' ); ?></td>
+					<td><?php esc_html_e( 'Yes', 'reactwoo-geocore' ); ?></td>
+					<td><?php esc_html_e( 'Uses Geo Core', 'reactwoo-geocore' ); ?></td>
+				</tr>
+				<tr>
+					<td><?php esc_html_e( 'Page-level server-side routing', 'reactwoo-geocore' ); ?></td>
+					<td><?php esc_html_e( 'Yes (1 default + 1 additional country)', 'reactwoo-geocore' ); ?></td>
+					<td><?php esc_html_e( 'Extends for advanced variants', 'reactwoo-geocore' ); ?></td>
+				</tr>
+				<tr>
+					<td><?php esc_html_e( 'Variant groups / advanced mappings', 'reactwoo-geocore' ); ?></td>
+					<td><?php esc_html_e( 'No', 'reactwoo-geocore' ); ?></td>
+					<td><?php esc_html_e( 'Yes', 'reactwoo-geocore' ); ?></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+
 	<div class="rwgc-grid">
 		<div class="rwgc-card rwgc-card--highlight">
 			<h2><?php esc_html_e( 'Getting Started', 'reactwoo-geocore' ); ?></h2>
 			<ol class="rwgc-steps">
 				<li><?php esc_html_e( 'Configure MaxMind credentials in Settings.', 'reactwoo-geocore' ); ?></li>
 				<li><?php esc_html_e( 'Download/update database from Tools.', 'reactwoo-geocore' ); ?></li>
+				<li><?php esc_html_e( 'Configure page-level variant routing in any page editor (Geo Variant Routing box).', 'reactwoo-geocore' ); ?></li>
 				<li><?php esc_html_e( 'Verify lookup and then use shortcodes/PHP/block.', 'reactwoo-geocore' ); ?></li>
 			</ol>
 			<p>
@@ -50,9 +94,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 
 		<div class="rwgc-card">
+			<h2><?php esc_html_e( 'Free Variant Routing', 'reactwoo-geocore' ); ?></h2>
+			<p><?php esc_html_e( 'Geo Core includes server-side page routing with a strict free limit of 1 default fallback + 1 country variant per page.', 'reactwoo-geocore' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Edit a page and use the "Geo Variant Routing (Free)" panel to map fallback and one additional country target.', 'reactwoo-geocore' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Need multiple countries or advanced rule logic? Upgrade with GeoElementor.', 'reactwoo-geocore' ); ?></p>
+		</div>
+
+		<div class="rwgc-card">
 			<h2><?php esc_html_e( 'Quick actions', 'reactwoo-geocore' ); ?></h2>
 			<p><?php esc_html_e( 'Use the Tools tab to update the MaxMind database, clear cache, and test your setup.', 'reactwoo-geocore' ); ?></p>
-			<p><?php esc_html_e( 'Use the Usage tab for shortcode, PHP, REST, Gutenberg, and Elementor Page/Popup integration examples.', 'reactwoo-geocore' ); ?></p>
+			<p><?php esc_html_e( 'Use the Usage tab for shortcode, PHP, REST, Gutenberg, and free page-level routing examples.', 'reactwoo-geocore' ); ?></p>
 			<p><?php esc_html_e( 'Use the Add-ons tab to discover GeoElementor and WHMCS Bridge integrations.', 'reactwoo-geocore' ); ?></p>
 		</div>
 	</div>
