@@ -160,19 +160,61 @@
 }
 
 .rwgc-addons-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 22px;
+}
+
+.rwgc-addons-grid--page {
+  margin-top: 22px;
 }
 
 .rwgc-addon-card {
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 20px;
-  flex: 1 1 260px;
-  max-width: none;
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+}
+
+.rwgc-addon-card h2 {
+  margin: 2px 0 6px;
+}
+
+.rwgc-addon-summary {
+  margin: 0 0 4px;
+}
+
+.rwgc-addon-status {
+  margin: 0;
+}
+
+.rwgc-addons-intro .button {
+  margin-right: 8px;
+  margin-bottom: 0;
+}
+
+.rwgc-addons-intro .button:last-child {
+  margin-right: 0;
+}
+
+.rwgc-addon-card p:last-child {
+  margin-top: auto;
+  margin-bottom: 0;
+  padding-top: 4px;
+}
+
+.rwgc-addon-card .button {
+  min-height: 32px;
+  line-height: 30px;
+  padding: 0 12px;
+}
+
+.rwgc-addons-intro p:last-child {
+  margin-bottom: 0;
 }
 
 .rwgc-addon-image {
@@ -373,6 +415,24 @@
 
   .rwgc-card--full {
     margin-top: 16px;
+  }
+
+  .rwgc-addons-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .rwgc-addons-grid--page {
+    margin-top: 16px;
+  }
+
+  .rwgc-addons-intro .button {
+    margin-right: 0;
+    margin-bottom: 8px;
+  }
+
+  .rwgc-addons-intro .button:last-child {
+    margin-bottom: 0;
   }
 }
 

@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<p><?php esc_html_e( 'These add-ons extend ReactWoo Geo Core with builder-specific targeting and WHMCS-aware pricing.', 'reactwoo-geocore' ); ?></p>
 	<?php RWGC_Admin::render_inner_nav( 'rwgc-addons' ); ?>
 
-	<div class="rwgc-card rwgc-card--full">
+	<div class="rwgc-card rwgc-card--full rwgc-addons-intro">
 		<h2><?php esc_html_e( 'Baseline vs Extension', 'reactwoo-geocore' ); ?></h2>
 		<p class="description">
 			<?php esc_html_e( 'Free tier: Geo Core performs server-side page routing (1 default + 1 country variant per page).', 'reactwoo-geocore' ); ?>
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</p>
 	</div>
 
-	<div class="rwgc-addons-grid">
+	<div class="rwgc-addons-grid rwgc-addons-grid--page">
 		<?php foreach ( $addons as $addon ) : ?>
 			<?php
 			$title_words  = preg_split( '/\s+/', (string) $addon['title'] );
