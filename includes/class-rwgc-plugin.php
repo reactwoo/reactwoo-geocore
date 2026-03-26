@@ -75,6 +75,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-cache.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-maxmind.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-geoip.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-countries.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-api.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-shortcodes.php';

@@ -11,12 +11,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div class="rwgc-grid">
 		<div class="rwgc-card rwgc-card--highlight">
 			<h2><?php esc_html_e( 'Where to Configure What (Free vs Pro)', 'reactwoo-geocore' ); ?></h2>
-			<p><?php esc_html_e( 'Geo Core owns the shared geo engine and the free baseline routing behavior. GeoElementor extends it for advanced/pro scenarios.', 'reactwoo-geocore' ); ?></p>
-			<ul>
-				<li><?php esc_html_e( 'Geo Core Settings: MaxMind license, cache, and overall geo engine.', 'reactwoo-geocore' ); ?></li>
-				<li><?php esc_html_e( 'Geo Core Free Routing: Edit a page and use "Geo Variant Routing (Free)" to set 1 default + 1 additional country mapping (server-side redirect).', 'reactwoo-geocore' ); ?></li>
-				<li><?php esc_html_e( 'GeoElementor Pro: Configure variant groups and advanced/multi-variant routing in GeoElementor admin.', 'reactwoo-geocore' ); ?></li>
-			</ul>
+			<div class="rwgc-tipbox">
+				<p><?php esc_html_e( 'Geo Core owns the shared geo engine and the free baseline routing behavior. GeoElementor extends it for advanced/pro scenarios.', 'reactwoo-geocore' ); ?></p>
+				<ul>
+					<li><?php esc_html_e( 'Geo Core Settings: MaxMind license, cache, and overall geo engine.', 'reactwoo-geocore' ); ?></li>
+					<li><?php esc_html_e( 'Geo Core Free Routing: Edit a page and use "Geo Variant Routing (Free)" to set 1 default + 1 additional country mapping (server-side redirect).', 'reactwoo-geocore' ); ?></li>
+					<li><?php esc_html_e( 'GeoElementor Pro: Configure variant groups and advanced/multi-variant routing in GeoElementor admin.', 'reactwoo-geocore' ); ?></li>
+				</ul>
+			</div>
 			<p>
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-settings' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Geo Core Settings', 'reactwoo-geocore' ); ?></a>
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=geo-elementor-variants' ) ); ?>" class="button"><?php esc_html_e( 'GeoElementor Groups', 'reactwoo-geocore' ); ?></a>

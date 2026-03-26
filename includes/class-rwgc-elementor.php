@@ -115,6 +115,77 @@ class RWGC_Elementor {
 			)
 		);
 
+		$element->add_control(
+			'rwgc_route_heading',
+			array(
+				'type'      => \Elementor\Controls_Manager::HEADING,
+				'label'     => __( 'Page Variant Routing (Free)', 'reactwoo-geocore' ),
+				'separator' => 'before',
+				'condition' => array(
+					'egp_enable_geo_targeting' => 'yes',
+				),
+			)
+		);
+
+		$element->add_control(
+			'rwgc_route_role',
+			array(
+				'label'     => __( 'Page role', 'reactwoo-geocore' ),
+				'type'      => \Elementor\Controls_Manager::SELECT,
+				'default'   => 'master',
+				'options'   => array(
+					'master'  => __( 'Master (default page)', 'reactwoo-geocore' ),
+					'variant' => __( 'Variant (country-specific page)', 'reactwoo-geocore' ),
+				),
+				'condition' => array(
+					'egp_enable_geo_targeting' => 'yes',
+				),
+			)
+		);
+
+		$element->add_control(
+			'rwgc_route_master_page_id',
+			array(
+				'label'       => __( 'Master page', 'reactwoo-geocore' ),
+				'type'        => \Elementor\Controls_Manager::SELECT2,
+				'multiple'    => false,
+				'label_block' => true,
+				'options'     => self::get_page_options(),
+				'condition'   => array(
+					'egp_enable_geo_targeting' => 'yes',
+					'rwgc_route_role'          => 'variant',
+				),
+			)
+		);
+
+		$element->add_control(
+			'rwgc_route_country_iso2',
+			array(
+				'label'       => __( 'Variant country', 'reactwoo-geocore' ),
+				'type'        => \Elementor\Controls_Manager::SELECT2,
+				'multiple'    => false,
+				'label_block' => true,
+				'options'     => self::get_country_options(),
+				'condition'   => array(
+					'egp_enable_geo_targeting' => 'yes',
+					'rwgc_route_role'          => 'variant',
+				),
+			)
+		);
+
+		$element->add_control(
+			'rwgc_route_free_note',
+			array(
+				'type'      => \Elementor\Controls_Manager::RAW_HTML,
+				'raw'       => '<div style="margin-top:8px;color:#6b7280;">'
+					. esc_html__( 'Free limit: one variant per master page. Use GeoElementor for multiple variants and advanced rules.', 'reactwoo-geocore' )
+					. '</div>',
+				'condition' => array(
+					'egp_enable_geo_targeting' => 'yes',
+				),
+			)
+		);
+
 		$element->end_controls_section();
 	}
 
@@ -178,32 +249,30 @@ class RWGC_Elementor {
 	 * @return array
 	 */
 	private static function get_country_options() {
-		return array(
-			'US' => 'United States',
-			'CA' => 'Canada',
-			'GB' => 'United Kingdom',
-			'IE' => 'Ireland',
-			'AU' => 'Australia',
-			'NZ' => 'New Zealand',
-			'DE' => 'Germany',
-			'FR' => 'France',
-			'ES' => 'Spain',
-			'IT' => 'Italy',
-			'NL' => 'Netherlands',
-			'BE' => 'Belgium',
-			'SE' => 'Sweden',
-			'NO' => 'Norway',
-			'DK' => 'Denmark',
-			'CH' => 'Switzerland',
-			'AE' => 'United Arab Emirates',
-			'SA' => 'Saudi Arabia',
-			'IN' => 'India',
-			'SG' => 'Singapore',
-			'JP' => 'Japan',
-			'BR' => 'Brazil',
-			'MX' => 'Mexico',
-			'ZA' => 'South Africa',
+		return RWGC_Countries::get_options();
+	}
+
+	/**
+	 * Page options for master page selection.
+	 *
+	 * @return array
+	 */
+	private static function get_page_options() {
+		$options = array(
+			'' => __( '-- Select master page --', 'reactwoo-geocore' ),
 		);
+		$pages   = get_pages(
+			array(
+				'post_status' => array( 'publish', 'draft', 'pending', 'private', 'future' ),
+				'sort_column' => 'post_title',
+			)
+		);
+		foreach ( $pages as $page ) {
+			if ( $page instanceof \WP_Post ) {
+				$options[ (string) $page->ID ] = $page->post_title ? $page->post_title : ( '#' . (string) $page->ID );
+			}
+		}
+		return $options;
 	}
 }
 

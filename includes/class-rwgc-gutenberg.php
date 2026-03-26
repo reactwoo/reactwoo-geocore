@@ -16,6 +16,7 @@ class RWGC_Gutenberg {
 	 */
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'register_blocks' ) );
+		add_action( 'enqueue_block_editor_assets', array( __CLASS__, 'inject_editor_country_options' ) );
 	}
 
 	/**
@@ -55,11 +56,19 @@ class RWGC_Gutenberg {
 
 		$country = strtoupper( rwgc_get_visitor_country() );
 
-		$show = true;
+		$list = array();
 		if ( ! empty( $attrs['showCountries'] ) && is_array( $attrs['showCountries'] ) ) {
-			$show = in_array( $country, array_map( 'strtoupper', $attrs['showCountries'] ), true );
+			$list = array_map( 'strtoupper', $attrs['showCountries'] );
 		}
-		if ( ! empty( $attrs['hideCountries'] ) && is_array( $attrs['hideCountries'] ) ) {
+
+		$show = true;
+		if ( ! empty( $list ) ) {
+			if ( 'hide' === $attrs['mode'] ) {
+				$show = ! in_array( $country, $list, true );
+			} else {
+				$show = in_array( $country, $list, true );
+			}
+		} elseif ( ! empty( $attrs['hideCountries'] ) && is_array( $attrs['hideCountries'] ) ) {
 			if ( in_array( $country, array_map( 'strtoupper', $attrs['hideCountries'] ), true ) ) {
 				$show = false;
 			}
@@ -70,6 +79,28 @@ class RWGC_Gutenberg {
 		}
 
 		return '<div class="rwgc-geo-content">' . do_shortcode( $content ) . '</div>';
+	}
+
+	/**
+	 * Inject country options into block editor for geo-content block UI.
+	 *
+	 * @return void
+	 */
+	public static function inject_editor_country_options() {
+		if ( ! wp_script_is( 'rwgc-geo-content-editor', 'enqueued' ) ) {
+			return;
+		}
+
+		$json = wp_json_encode( RWGC_Countries::get_options() );
+		if ( ! $json ) {
+			return;
+		}
+
+		wp_add_inline_script(
+			'rwgc-geo-content-editor',
+			'window.rwgcGeoCountryOptions = ' . $json . ';',
+			'before'
+		);
 	}
 }
 

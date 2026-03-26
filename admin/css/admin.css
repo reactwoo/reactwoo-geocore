@@ -83,8 +83,8 @@
 .rwgc-wrap .rwgc-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
-  gap: 20px;
-  margin-top: 16px;
+  gap: 24px;
+  margin-top: 20px;
 }
 
 .rwgc-card {
@@ -125,8 +125,25 @@
 }
 
 .rwgc-card--full {
-  margin-top: 0;
+  margin-top: 22px;
   grid-column: 1 / -1;
+}
+
+.rwgc-tipbox {
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  border-radius: 12px;
+  padding: 14px 14px 10px;
+  margin: 0 0 14px;
+}
+
+.rwgc-tipbox p {
+  margin: 0 0 10px;
+}
+
+.rwgc-tipbox ul {
+  margin: 0;
+  padding-left: 18px;
 }
 
 .rwgc-steps {
@@ -353,6 +370,10 @@
   .rwgc-card {
     padding: 16px;
   }
+
+  .rwgc-card--full {
+    margin-top: 16px;
+  }
 }
 
 /* Dark mode compatibility (respects OS/browser preference). */
@@ -404,6 +425,11 @@
   .rwgc-card a,
   .rwgc-addon-card a {
     color: #93c5fd;
+  }
+
+  .rwgc-tipbox {
+    background: #10233d;
+    border-color: #1d4ed8;
   }
 
   .rwgc-addon-image-placeholder {
