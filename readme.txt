@@ -22,7 +22,7 @@ It provides:
 * Shortcodes for country, city, and currency
 * A REST API endpoint for frontend apps
 * A basic Gutenberg "Geo Content" block
-* Free page-level variant routing (server-side, 1 fallback + 1 country mapping per page)
+* Free page-level master/secondary routing (server-side, 1 master + 1 secondary country mapping per master page)
 
 It is designed to be used on its own, or as a shared geo engine for premium ReactWoo plugins such as GeoElementor and ReactWoo WHMCS Bridge.
 
@@ -43,7 +43,7 @@ After setup, you can use Geo Core in multiple ways:
 * **REST endpoint**: `/wp-json/reactwoo-geocore/v1/location` (when enabled in settings)
 * **Gutenberg**: Use the **Geo Content** block to show/hide content by country
 * **Elementor (free baseline)**: Use Page/Popup document settings for basic show/hide by country
-* **Page Variant Routing (free)**: Edit any page and use "Geo Variant Routing (Free)" for server-side redirect mapping (1 default fallback + 1 additional country variant)
+* **Page Variant Routing (free)**: Edit any page and use "Geo Variant Routing (Free)" to set page role (Master/Secondary) with server-side redirect mapping (1 secondary country mapping per master)
 
 For an in-dashboard guide, open **Geo Core → Usage** in wp-admin.
 
@@ -67,7 +67,7 @@ No. You must provide your own MaxMind license key and accept their terms of use.
 
 = 0.1.2.2 =
 * Expanded country list support in geo visibility controls.
-* Added master/variant free-routing flow improvements and Elementor-side variant controls.
+* Added master/secondary free-routing flow improvements and Elementor-side routing controls.
 
 = 0.1.2.1 =
 * Added WordPress-safe inner section navigation tabs across Geo Core admin pages.
