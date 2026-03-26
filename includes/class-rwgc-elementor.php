@@ -121,9 +121,18 @@ class RWGC_Elementor {
 				'type'      => \Elementor\Controls_Manager::HEADING,
 				'label'     => __( 'Page Variant Routing (Free)', 'reactwoo-geocore' ),
 				'separator' => 'before',
-				'condition' => array(
-					'egp_enable_geo_targeting' => 'yes',
-				),
+			)
+		);
+
+		$element->add_control(
+			'rwgc_route_enabled',
+			array(
+				'label'        => __( 'Enable Page Variant Routing', 'reactwoo-geocore' ),
+				'type'         => \Elementor\Controls_Manager::SWITCHER,
+				'label_on'     => __( 'On', 'reactwoo-geocore' ),
+				'label_off'    => __( 'Off', 'reactwoo-geocore' ),
+				'return_value' => 'yes',
+				'default'      => '',
 			)
 		);
 
@@ -135,10 +144,10 @@ class RWGC_Elementor {
 				'default'   => 'master',
 				'options'   => array(
 					'master'  => __( 'Master (default page)', 'reactwoo-geocore' ),
-					'variant' => __( 'Variant (country-specific page)', 'reactwoo-geocore' ),
+					'variant' => __( 'Secondary (country-specific page)', 'reactwoo-geocore' ),
 				),
 				'condition' => array(
-					'egp_enable_geo_targeting' => 'yes',
+					'rwgc_route_enabled' => 'yes',
 				),
 			)
 		);
@@ -150,9 +159,9 @@ class RWGC_Elementor {
 				'type'        => \Elementor\Controls_Manager::SELECT2,
 				'multiple'    => false,
 				'label_block' => true,
-				'options'     => self::get_page_options(),
+				'options'     => self::get_master_page_options(),
 				'condition'   => array(
-					'egp_enable_geo_targeting' => 'yes',
+					'rwgc_route_enabled'       => 'yes',
 					'rwgc_route_role'          => 'variant',
 				),
 			)
@@ -167,7 +176,7 @@ class RWGC_Elementor {
 				'label_block' => true,
 				'options'     => self::get_country_options(),
 				'condition'   => array(
-					'egp_enable_geo_targeting' => 'yes',
+					'rwgc_route_enabled'       => 'yes',
 					'rwgc_route_role'          => 'variant',
 				),
 			)
@@ -181,7 +190,7 @@ class RWGC_Elementor {
 					. esc_html__( 'Free limit: one variant per master page. Use GeoElementor for multiple variants and advanced rules.', 'reactwoo-geocore' )
 					. '</div>',
 				'condition' => array(
-					'egp_enable_geo_targeting' => 'yes',
+					'rwgc_route_enabled' => 'yes',
 				),
 			)
 		);
@@ -253,25 +262,43 @@ class RWGC_Elementor {
 	}
 
 	/**
-	 * Page options for master page selection.
+	 * Master page options for variant routing selection.
 	 *
 	 * @return array
 	 */
-	private static function get_page_options() {
+	private static function get_master_page_options() {
 		$options = array(
 			'' => __( '-- Select master page --', 'reactwoo-geocore' ),
 		);
-		$pages   = get_pages(
+
+		$pages = get_pages(
 			array(
 				'post_status' => array( 'publish', 'draft', 'pending', 'private', 'future' ),
 				'sort_column' => 'post_title',
 			)
 		);
+
+		$masters = array();
 		foreach ( $pages as $page ) {
-			if ( $page instanceof \WP_Post ) {
-				$options[ (string) $page->ID ] = $page->post_title ? $page->post_title : ( '#' . (string) $page->ID );
+			if ( ! ( $page instanceof \WP_Post ) ) {
+				continue;
 			}
+
+			$config = RWGC_Routing::get_page_route_config( (int) $page->ID );
+			if ( empty( $config['enabled'] ) || 'master' !== $config['role'] ) {
+				continue;
+			}
+
+			$title = $page->post_title ? $page->post_title : ( '#' . (string) $page->ID );
+			$masters[ (string) $page->ID ] = $title . ' (#' . (string) $page->ID . ')';
 		}
+
+		if ( ! empty( $masters ) ) {
+			$options = $options + $masters;
+		} else {
+			$options[''] = __( '-- No enabled master pages found --', 'reactwoo-geocore' );
+		}
+
 		return $options;
 	}
 }

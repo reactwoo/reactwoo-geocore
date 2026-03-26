@@ -338,16 +338,16 @@ class RWGC_Admin {
 		<p>
 			<select name="rwgc_route_role" id="rwgc_route_role">
 				<option value="master" <?php selected( 'master', (string) $config['role'] ); ?>><?php esc_html_e( 'Master (default page)', 'reactwoo-geocore' ); ?></option>
-				<option value="variant" <?php selected( 'variant', (string) $config['role'] ); ?>><?php esc_html_e( 'Variant (country-specific page)', 'reactwoo-geocore' ); ?></option>
+				<option value="variant" <?php selected( 'variant', (string) $config['role'] ); ?>><?php esc_html_e( 'Secondary (country-specific page)', 'reactwoo-geocore' ); ?></option>
 			</select>
 		</p>
 
-		<p><strong><?php esc_html_e( 'Variant country code (ISO2)', 'reactwoo-geocore' ); ?></strong></p>
+		<p><strong><?php esc_html_e( 'Secondary country code (ISO2)', 'reactwoo-geocore' ); ?></strong></p>
 		<p>
 			<label for="rwgc_route_country_iso2"><?php esc_html_e( 'Country code (ISO2)', 'reactwoo-geocore' ); ?></label><br />
 			<input type="text" name="rwgc_route_country_iso2" id="rwgc_route_country_iso2" value="<?php echo esc_attr( (string) $config['country_iso2'] ); ?>" maxlength="2" class="small-text" placeholder="GB" />
 		</p>
-		<p><strong><?php esc_html_e( 'Variant links to this master page', 'reactwoo-geocore' ); ?></strong></p>
+		<p><strong><?php esc_html_e( 'Secondary links to this master page', 'reactwoo-geocore' ); ?></strong></p>
 		<p>
 			<?php
 			wp_dropdown_pages(
@@ -361,7 +361,7 @@ class RWGC_Admin {
 			);
 			?>
 		</p>
-		<p class="description"><?php esc_html_e( 'Tip: leave this page as Master for your default audience. On variant pages, set role to Variant and select this master page + a country code.', 'reactwoo-geocore' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Tip: leave this page as Master for your default audience. On secondary pages, set role to Secondary and select this master page + a country code.', 'reactwoo-geocore' ); ?></p>
 		<p class="description"><?php esc_html_e( 'Need multiple country variants per page? Use GeoElementor advanced routing.', 'reactwoo-geocore' ); ?></p>
 		<?php
 	}
@@ -397,7 +397,7 @@ class RWGC_Admin {
 
 		if ( ! empty( $config['enabled'] ) && 'variant' === $config['role'] ) {
 			if ( empty( $config['master_page_id'] ) || empty( $config['country_iso2'] ) ) {
-				add_settings_error( 'rwgc_tools', 'rwgc_variant_missing_fields', __( 'Variant page requires both a master page and a country code.', 'reactwoo-geocore' ), 'error' );
+				add_settings_error( 'rwgc_tools', 'rwgc_variant_missing_fields', __( 'Secondary page requires both a master page and a country code.', 'reactwoo-geocore' ), 'error' );
 				$config['enabled'] = false;
 			} elseif ( RWGC_Routing::master_has_variant( (int) $config['master_page_id'], (int) $post_id ) ) {
 				add_settings_error( 'rwgc_tools', 'rwgc_variant_limit_reached', __( 'Free limit reached: this master page already has one variant. Upgrade to GeoElementor for multiple variants.', 'reactwoo-geocore' ), 'error' );

@@ -169,6 +169,18 @@
   margin-top: 22px;
 }
 
+.rwgc-addons-page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  margin-top: 8px;
+}
+
+.rwgc-addons-page .rwgc-card--full,
+.rwgc-addons-page .rwgc-addons-grid--page {
+  margin-top: 0;
+}
+
 .rwgc-addon-card {
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -424,6 +436,11 @@
 
   .rwgc-addons-grid--page {
     margin-top: 16px;
+  }
+
+  .rwgc-addons-page {
+    gap: 18px;
+    margin-top: 4px;
   }
 
   .rwgc-addons-intro .button {
