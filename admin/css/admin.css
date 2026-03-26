@@ -46,24 +46,27 @@
 .rwgc-inner-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 8px 0 16px;
-  padding: 6px;
-  background: #ffffff;
+  gap: 10px;
+  margin: 12px 0 20px;
+  padding: 8px;
+  background: #f8fafc;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
 }
 
 .rwgc-inner-nav__link {
   text-decoration: none;
   color: #344054;
   font-weight: 600;
-  font-size: 12px;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  padding: 8px 12px;
-  border-radius: 9px;
+  font-size: 12.5px;
+  letter-spacing: 0.005em;
+  text-transform: none;
+  line-height: 1.2;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
 
 .rwgc-inner-nav__link:hover {
@@ -74,6 +77,7 @@
 .rwgc-inner-nav__link.is-active {
   background: #2271b1;
   color: #fff;
+  border-color: #1f6398;
 }
 
 .rwgc-wrap .rwgc-grid {
@@ -288,8 +292,8 @@
   }
 
   .rwgc-inner-nav {
-    gap: 6px;
-    padding: 6px;
+    gap: 8px;
+    padding: 8px;
   }
 
   .rwgc-inner-nav__link {
