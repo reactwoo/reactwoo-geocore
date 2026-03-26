@@ -1,0 +1,29 @@
+{
+  "apiVersion": 2,
+  "name": "reactwoo-geocore/geo-content",
+  "title": "Geo Content (ReactWoo)",
+  "category": "widgets",
+  "icon": "location-alt",
+  "description": "Show or hide content based on visitor country using ReactWoo Geo Core.",
+  "supports": {
+    "html": false
+  },
+  "attributes": {
+    "showCountries": {
+      "type": "array",
+      "default": []
+    },
+    "hideCountries": {
+      "type": "array",
+      "default": []
+    },
+    "mode": {
+      "type": "string",
+      "default": "show"
+    }
+  },
+  "editorScript": "rwgc-geo-content-editor",
+  "editorStyle": "rwgc-geo-content-editor",
+  "style": "rwgc-geo-content"
+}
+

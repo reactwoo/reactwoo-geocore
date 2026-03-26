@@ -1,0 +1,23 @@
+{
+  "name": "reactwoo/reactwoo-geocore",
+  "description": "Shared geolocation engine for ReactWoo products, backed by MaxMind GeoLite2.",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": ">=7.4",
+    "geoip2/geoip2": "^2.0",
+    "maxmind-db/reader": "^1.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "RWGC\\": "includes/"
+    }
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "sort-packages": true
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
+
