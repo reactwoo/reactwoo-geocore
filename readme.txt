@@ -2,9 +2,9 @@
 Contributors: reactwoo
 Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
-Tested up to: 6.5.3
+Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 0.1.0
+Stable tag: 0.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,11 @@ No. ReactWoo Geo Core works with any theme and editor. It exposes helper functio
 No. You must provide your own MaxMind license key and accept their terms of use. The plugin then downloads the GeoLite2 Country database to your site.
 
 == Changelog ==
+
+= 0.1.1 =
+* Added admin dashboard and usage guide improvements for onboarding.
+* Added Elementor free baseline geo visibility for page/popup documents.
+* Updated WordPress.org submission compliance metadata and license file.
 
 = 0.1.0 =
 * Initial beta release.
