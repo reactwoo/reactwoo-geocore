@@ -73,6 +73,13 @@ No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (se
 
 == Changelog ==
 
+= 0.1.10.0 =
+* **Admin:** Filter **`rwgc_inner_nav_items`** — satellite plugins (Geo AI, Geo Optimise, Geo Commerce) can add links to the shared **Geo Core** horizontal section nav (same UX pattern as Geo Elementor inner nav).
+* **Core:** Routing engine (context, page route resolver, variants, fallback), geo events, rule condition evaluator, legacy route migration helpers.
+* **AI bridge:** **`RWGC_AI_Orchestrator`**, platform client and preview helpers where applicable.
+* **Developer experience:** `docs/` (AGENTS, phases, QA, releases-and-git-tags), PHPUnit config and engine unit tests; `.gitignore` extended for local tooling.
+* **Dependencies:** Composer lock and vendor autoload maps refreshed (production packages).
+
 = 0.1.9.0 =
 * REST **`integration.satellite_filters`:** **`rwgo_export_csv_filename`** (Geo Optimise CSV export).
 
