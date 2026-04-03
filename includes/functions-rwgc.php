@@ -67,7 +67,10 @@ if ( ! function_exists( 'rwgc_get_visitor_country_name' ) ) {
 
 if ( ! function_exists( 'rwgc_get_visitor_region' ) ) {
 	/**
-	 * Get visitor region.
+	 * Get visitor region (informational payload).
+	 *
+	 * Geo Core does not use region for built-in page routing; routing is country-based.
+	 * Region may still appear in REST/shortcodes/admin preview.
 	 *
 	 * @return string
 	 */
@@ -78,7 +81,11 @@ if ( ! function_exists( 'rwgc_get_visitor_region' ) ) {
 
 if ( ! function_exists( 'rwgc_get_visitor_city' ) ) {
 	/**
-	 * Get visitor city.
+	 * Get visitor city string from the resolved geo payload (e.g. local MaxMind City DB or filtered API data).
+	 *
+	 * Geo Core does **not** use city for `RWGC_Routing` or other core routing decisions — those are **country**-based.
+	 * **City-based matching and Elementor routing** are implemented in **Geo Elementor** (City Targeting add-on), including
+	 * stacks where the authoritative city database is on the ReactWoo API rather than on-disk.
 	 *
 	 * @return string
 	 */

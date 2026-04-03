@@ -7,6 +7,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Page-level variant routing for Geo Core free tier.
  *
+ * Routing decisions use **visitor country only** (not city/region). City-level rules and Elementor city routing
+ * belong to Geo Elementor, not this class.
+ *
  * Free scope:
  * - One default fallback page.
  * - One additional country mapping.

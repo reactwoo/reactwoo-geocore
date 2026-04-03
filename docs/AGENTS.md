@@ -26,11 +26,11 @@
 
 | Folder | Version line (check `Version:` in main file) | Load hook | Notable APIs |
 |--------|-----------------------------------------------|-----------|--------------|
-| `reactwoo-geo-ai/` | 0.1.12+ | `rwga_loaded` | Dashboard **REST v1 base** + **REST capabilities** + **REST location**; **variant-draft REST smoke** (local validation POST); **`RWGA_Block_Editor`** (sidebar REST URL, copy + open tab + JS i18n), **`RWGA_Usage`**, `rwga_usage_display_rows`, `RWGA_Connection::get_summary()`, `rwga_stats_snapshot`; Core AI REST + `rwgc_ai_*` |
-| `reactwoo-geo-optimise/` | 0.1.12+ | `rwgo_loaded` | **`assignment_per_route_resolved`**; **`csv_export_count`** / **`last_csv_export_gmt`**; **`rwgo_export_csv_filename`**, **`rwgo_get_variant`**, **`experiment_variant_counts`**, **`RWGO_Stats::flatten_for_csv`**, `rwgo_get_assignment_map()`, Core assignment events, `rwgo_stats_snapshot`, CSV export |
-| `reactwoo-geo-commerce/` | 0.2.15+ | `rwgcm_loaded` | **`RWGCM_Admin_Orders_List`** (visitor country column, **sortable**); **`RWGCM_Catalog_Price_Variable`**; dashboard **capabilities JSON**; **Fee rules** + **`tax_class`**; **`rwgcm_fee_rule_rows`**, **`rwgcm_skip_pricing_for_cart_item`**; **`rwgcm_package_rates`**; coupons; UTM; **`rwgcm_cart_fees`**, **`rwgcm_checkout_order_meta`**, `rwgcm_geo_data`, `rwgcm-pricing` |
+| `reactwoo-geo-ai/` | 0.1.15+ | `rwga_loaded` | Dashboard **REST v1 base** + **REST capabilities** + **REST location**; **variant-draft REST smoke** (local validation POST); **`RWGA_Block_Editor`** (sidebar REST URL, copy + open tab + JS i18n), **`RWGA_Usage`**, `rwga_usage_display_rows`, `RWGA_Connection::get_summary()`, `rwga_stats_snapshot`; Core AI REST + `rwgc_ai_*` |
+| `reactwoo-geo-optimise/` | 0.1.14+ | `rwgo_loaded` | **`assignment_per_route_resolved`**; **`csv_export_count`** / **`last_csv_export_gmt`**; **`rwgo_export_csv_filename`**, **`rwgo_get_variant`**, **`experiment_variant_counts`**, **`RWGO_Stats::flatten_for_csv`**, `rwgo_get_assignment_map()`, Core assignment events, `rwgo_stats_snapshot`, CSV export |
+| `reactwoo-geo-commerce/` | 0.2.17+ | `rwgcm_loaded` | **`RWGCM_Admin_Orders_List`** (visitor country column, **sortable**); **`RWGCM_Catalog_Price_Variable`**; dashboard **capabilities JSON**; **Fee rules** + **`tax_class`**; **`rwgcm_fee_rule_rows`**, **`rwgcm_skip_pricing_for_cart_item`**; **`rwgcm_package_rates`**; coupons; UTM; **`rwgcm_cart_fees`**, **`rwgcm_checkout_order_meta`**, `rwgcm_geo_data`, `rwgcm-pricing` |
 
-Each declares **`Requires Plugins: reactwoo-geocore`** and boots on **`plugins_loaded` priority 20** after Geo Core.
+Each declares **`Requires Plugins: reactwoo-geocore`** (same slug as Core’s `wp-content/plugins/reactwoo-geocore/` folder and `RWGC_PLUGIN_SLUG`) and boots on **`plugins_loaded` priority 20** after Geo Core. **Geo Elementor** also declares **`Requires Plugins: elementor, reactwoo-geocore`**. Satellite **`package.json`** includes **`reactwooBuild.geoCoreDependencySlug`: `"reactwoo-geocore"`** for build parity checks.
 
 ## Product rule (plans + implementation)
 
@@ -42,12 +42,18 @@ Each declares **`Requires Plugins: reactwoo-geocore`** and boots on **`plugins_l
 
 **Linked to Core:** Those plugins are **not** standalone geo engines — they **require Geo Core** for visitor geo (APIs, hooks, routing). Do not duplicate MaxMind/detection stacks in satellite plugins. See master plan §1, §4.13–14, §8, §10–11.
 
+### City vs country (ReactWoo product split)
+
+- **Country** is the baseline contract everywhere: Geo Core visitor APIs, **free page variant routing** (`RWGC_Routing` — see `includes/class-rwgc-routing.php`), Geo Commerce, Geo Optimise hooks, and Geo Core’s Elementor **document** geo visibility use **country** for decisions.
+- **City** (and city-based **matching / routing** in Elementor) is a **Geo Elementor** concern: the City Targeting add-on and related Elementor rules. In deployments where the **city database lives on the ReactWoo API** (not only a local MaxMind City DB), Core may still populate `city` / `region` on the visitor payload for **display, shortcodes, REST, and debugging**, but **do not** implement city-based page routing inside Geo Core — that stays in Geo Elementor’s layer.
+- When extending agents or APIs: treat `rwgc_get_visitor_city()` / `rwgc_get_visitor_data()['city']` as **informational** for Core; **city rule evaluation** belongs in **geo-elementor** (and its API bridge), not in `RWGC_Routing`.
+
 ## Quick orientation
 
 - **Engine:** `includes/engine/`, `includes/rules/`, `includes/migration/`
 - **Routing API:** `RWGC_Routing::get_route_decision_for_page()`, filters `rwgc_page_route_bundle`, `rwgc_route_variant_decision`
 - **Geo data:** `RWGC_API::get_visitor_data()`, filter `rwgc_geo_data` (used for admin preview override)
-- **Constants:** `RWGC_PLUGIN_SLUG`, `RWGC_TEXT_DOMAIN`, `RWGC_VERSION` — match REST `/capabilities` discovery.
+- **Constants:** `RWGC_PLUGIN_SLUG`, `RWGC_TEXT_DOMAIN`, `RWGC_VERSION` — match REST `/capabilities` discovery. **Release zip root + artifact name:** `package.json` → **`reactwooBuild.pluginFolder`** / **`reactwooBuild.zipFile`** (see `docs/releases-and-git-tags.md`); `npm run package:zip`.
 - **REST discovery (when REST enabled):** `GET …/reactwoo-geocore/v1/capabilities` — `plugin_slug`, `text_domain`, `plugin_version`, `geo_ready`, `woocommerce_active`, **`satellites`**, `event_types`, `hooks`, `integration`; PHP: `rwgc_is_geo_core_active()`, `rwgc_get_rest_v1_url()` (filter `rwgc_rest_v1_url`), `rwgc_get_rest_location_url()`, `rwgc_get_rest_capabilities_url()`, `rwgc_get_geo_event_types()`, `rwgc_is_woocommerce_active()`. Geo Commerce: `docs/phases/phase-7.md`. Geo Optimise: `docs/phases/phase-6.md`.
 
 ## Optional: role-specific focus

@@ -1,3 +1,13 @@
 *.zip
 .cursor/
 .phpunit.result.cache
+/vendor/phpunit/
+/vendor/bin/phpunit
+/vendor/phar-io/
+/vendor/nikic/
+/vendor/myclabs/
+/vendor/sebastian/
+/vendor/theseer/
+/vendor/doctrine/
+/vendor/bin/
+/vendor/composer/autoload_files.php

@@ -59,6 +59,18 @@ class RWGC_Elementor {
 			)
 		);
 
+		$visitor_preview = self::build_visitor_preview_markup();
+		if ( $visitor_preview !== '' ) {
+			$element->add_control(
+				'rwgc_geo_visitor_preview',
+				array(
+					'type'            => \Elementor\Controls_Manager::RAW_HTML,
+					'raw'             => $visitor_preview,
+					'content_classes' => 'rwgc-geo-visitor-preview',
+				)
+			);
+		}
+
 		$element->add_control(
 			'egp_enable_geo_targeting',
 			array(
@@ -196,6 +208,34 @@ class RWGC_Elementor {
 		);
 
 		$element->end_controls_section();
+	}
+
+	/**
+	 * HTML for “current connection” geo (country, city, region, IP) in the editor.
+	 *
+	 * @return string Empty if Geo Core is not available or not ready.
+	 */
+	private static function build_visitor_preview_markup() {
+		if ( ! function_exists( 'rwgc_is_ready' ) || ! rwgc_is_ready() || ! function_exists( 'rwgc_get_visitor_data' ) ) {
+			return '';
+		}
+		$d      = rwgc_get_visitor_data();
+		$ip     = isset( $d['ip'] ) ? (string) $d['ip'] : '';
+		$cc     = isset( $d['country_code'] ) ? strtoupper( (string) $d['country_code'] ) : '';
+		$cn     = isset( $d['country_name'] ) ? (string) $d['country_name'] : '';
+		$city   = isset( $d['city'] ) ? (string) $d['city'] : '';
+		$region = isset( $d['region'] ) ? (string) $d['region'] : '';
+		$line1  = $cc;
+		if ( $cn !== '' ) {
+			$line1 .= ' (' . $cn . ')';
+		}
+		return '<div style="margin-bottom:10px;padding:8px;border:1px solid #e5e7eb;border-radius:4px;background:#f9fafb;font-size:12px;line-height:1.5;color:#374151;">'
+			. '<strong>' . esc_html__( 'Detected for your connection', 'reactwoo-geocore' ) . '</strong><br>'
+			. esc_html( $line1 !== '' ? $line1 : '—' ) . '<br>'
+			. esc_html__( 'City', 'reactwoo-geocore' ) . ': ' . esc_html( $city !== '' ? $city : '—' ) . '<br>'
+			. esc_html__( 'Region', 'reactwoo-geocore' ) . ': ' . esc_html( $region !== '' ? $region : '—' ) . '<br>'
+			. esc_html__( 'IP', 'reactwoo-geocore' ) . ': ' . esc_html( $ip !== '' ? $ip : '—' )
+			. '</div>';
 	}
 
 	/**
