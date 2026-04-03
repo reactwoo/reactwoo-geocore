@@ -56,5 +56,72 @@ class RWGC_Countries {
 		 */
 		return apply_filters( 'rwgc_country_options', $countries );
 	}
+
+	/**
+	 * ISO3 currency code => label for select controls (fallback UI when WooCommerce is absent).
+	 *
+	 * @return array<string, string>
+	 */
+	private static function default_currency_options() {
+		return array(
+			'USD' => 'USD — US dollar',
+			'EUR' => 'EUR — Euro',
+			'GBP' => 'GBP — British pound',
+			'CAD' => 'CAD — Canadian dollar',
+			'AUD' => 'AUD — Australian dollar',
+			'NZD' => 'NZD — New Zealand dollar',
+			'CHF' => 'CHF — Swiss franc',
+			'JPY' => 'JPY — Japanese yen',
+			'CNY' => 'CNY — Chinese yuan',
+			'INR' => 'INR — Indian rupee',
+			'BRL' => 'BRL — Brazilian real',
+			'MXN' => 'MXN — Mexican peso',
+			'ZAR' => 'ZAR — South African rand',
+			'SEK' => 'SEK — Swedish krona',
+			'NOK' => 'NOK — Norwegian krone',
+			'DKK' => 'DKK — Danish krone',
+			'PLN' => 'PLN — Polish złoty',
+			'SGD' => 'SGD — Singapore dollar',
+			'HKD' => 'HKD — Hong Kong dollar',
+			'KRW' => 'KRW — South Korean won',
+			'TRY' => 'TRY — Turkish lira',
+			'AED' => 'AED — UAE dirham',
+			'SAR' => 'SAR — Saudi riyal',
+			'ILS' => 'ILS — Israeli shekel',
+			'THB' => 'THB — Thai baht',
+			'MYR' => 'MYR — Malaysian ringgit',
+			'PHP' => 'PHP — Philippine peso',
+			'IDR' => 'IDR — Indonesian rupiah',
+			'CZK' => 'CZK — Czech koruna',
+			'HUF' => 'HUF — Hungarian forint',
+			'RON' => 'RON — Romanian leu',
+		);
+	}
+
+	/**
+	 * Currency options for select inputs (WooCommerce list when available).
+	 *
+	 * @return array<string, string> ISO3 => label
+	 */
+	public static function get_currency_options() {
+		if ( function_exists( 'get_woocommerce_currencies' ) ) {
+			$wc = get_woocommerce_currencies();
+			if ( is_array( $wc ) && ! empty( $wc ) ) {
+				/**
+				 * Filter currency dropdown options (ISO3 => label).
+				 *
+				 * @param array<string, string> $wc WooCommerce currencies.
+				 */
+				return apply_filters( 'rwgc_currency_options', $wc );
+			}
+		}
+		$fallback = self::default_currency_options();
+		/**
+		 * Filter currency dropdown options when WooCommerce is not used.
+		 *
+		 * @param array<string, string> $fallback Built-in ISO3 labels.
+		 */
+		return apply_filters( 'rwgc_currency_options', $fallback );
+	}
 }
 

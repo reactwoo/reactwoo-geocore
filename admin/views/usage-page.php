@@ -2,6 +2,15 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+if ( ! isset( $rwgc_rest_enabled ) ) {
+	$rwgc_rest_enabled = class_exists( 'RWGC_Settings', false ) ? (bool) RWGC_Settings::get( 'rest_enabled', 1 ) : true;
+}
+if ( ! isset( $rwgc_location_url ) ) {
+	$rwgc_location_url = function_exists( 'rwgc_get_rest_location_url' ) ? rwgc_get_rest_location_url() : '';
+}
+if ( ! isset( $rwgc_capabilities_url ) ) {
+	$rwgc_capabilities_url = function_exists( 'rwgc_get_rest_capabilities_url' ) ? rwgc_get_rest_capabilities_url() : '';
+}
 ?>
 <div class="wrap rwgc-wrap">
 	<h1><?php esc_html_e( 'Geo Core Usage Guide', 'reactwoo-geocore' ); ?></h1>
@@ -14,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div class="rwgc-tipbox">
 				<p><?php esc_html_e( 'Geo Core owns the shared geo engine and the free baseline routing behavior. GeoElementor extends it for advanced/pro scenarios.', 'reactwoo-geocore' ); ?></p>
 				<ul>
-					<li><?php esc_html_e( 'Geo Core Settings: MaxMind license, cache, and overall geo engine.', 'reactwoo-geocore' ); ?></li>
+					<li><?php esc_html_e( 'Geo Core Settings: MaxMind (GeoLite2) credentials for database downloads, cache, and overall geo engine. No ReactWoo product license is required for core geo.', 'reactwoo-geocore' ); ?></li>
 					<li><?php esc_html_e( 'Geo Core Free Routing: Edit a page and use "Geo Variant Routing (Free)" to set 1 default + 1 additional country mapping (server-side redirect).', 'reactwoo-geocore' ); ?></li>
 					<li><?php esc_html_e( 'GeoElementor Pro: Configure variant groups and advanced/multi-variant routing in GeoElementor admin.', 'reactwoo-geocore' ); ?></li>
 				</ul>
@@ -38,9 +47,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<h2><?php esc_html_e( 'Quick Start', 'reactwoo-geocore' ); ?></h2>
 			<ol class="rwgc-steps">
 				<li><?php esc_html_e( 'Open Geo Core > Settings and enable geolocation.', 'reactwoo-geocore' ); ?></li>
-				<li><?php esc_html_e( 'Add your MaxMind Account ID and License Key.', 'reactwoo-geocore' ); ?></li>
+				<li><?php esc_html_e( 'Add your MaxMind Account ID and MaxMind license key (GeoLite2 — third-party; not a ReactWoo product license).', 'reactwoo-geocore' ); ?></li>
 				<li><?php esc_html_e( 'Go to Tools and run "Update MaxMind Database".', 'reactwoo-geocore' ); ?></li>
-				<li><?php esc_html_e( 'Use "Test current lookup" in Tools to verify detected country.', 'reactwoo-geocore' ); ?></li>
+				<li><?php esc_html_e( 'Use "Test current lookup" in Tools to verify detected country. Optional: same screen has ReactWoo AI reachability / license tests (AI is optional; core geo does not need a ReactWoo key).', 'reactwoo-geocore' ); ?></li>
 				<li><?php esc_html_e( 'Add shortcode/block/PHP logic where geo targeting is needed.', 'reactwoo-geocore' ); ?></li>
 			</ol>
 			<p>
@@ -97,6 +106,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<div class="rwgc-card rwgc-card--full">
 		<h2><?php esc_html_e( 'Shortcodes', 'reactwoo-geocore' ); ?></h2>
+		<p class="description"><?php esc_html_e( 'Prefer the Geo Content block for authoring: it uses searchable country pickers. Shortcode attributes below use comma-separated ISO2 codes for backward compatibility only — not the primary configuration pattern (see master plan §5.1).', 'reactwoo-geocore' ); ?></p>
 		<table class="widefat striped rwgc-snippet-table">
 			<thead>
 				<tr>
@@ -118,11 +128,28 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<td><code>[rwgc_currency]</code></td>
 				</tr>
 				<tr>
-					<td><?php esc_html_e( 'Conditional content by country', 'reactwoo-geocore' ); ?></td>
+					<td><?php esc_html_e( 'Conditional content by country (include list)', 'reactwoo-geocore' ); ?></td>
 					<td><code>[rwgc_if country="US,CA"]Special content[/rwgc_if]</code></td>
+				</tr>
+				<tr>
+					<td><?php esc_html_e( 'Hide content for specific countries (exclude-only)', 'reactwoo-geocore' ); ?></td>
+					<td><code>[rwgc_if exclude="US,CA"]Shown elsewhere[/rwgc_if]</code></td>
+				</tr>
+				<tr>
+					<td><?php esc_html_e( 'Include + exclude (same rules as variant conditions)', 'reactwoo-geocore' ); ?></td>
+					<td><code>[rwgc_if country="DE,AT" exclude="CH"]…[/rwgc_if]</code></td>
+				</tr>
+				<tr>
+					<td><?php esc_html_e( 'Named country groups (registered under Country Groups)', 'reactwoo-geocore' ); ?></td>
+					<td><code>[rwgc_if groups="eu"]…[/rwgc_if]</code></td>
+				</tr>
+				<tr>
+					<td><?php esc_html_e( 'Exclude a registered group', 'reactwoo-geocore' ); ?></td>
+					<td><code>[rwgc_if groups_exclude="blocked"]…[/rwgc_if]</code></td>
 				</tr>
 			</tbody>
 		</table>
+		<p class="description"><?php esc_html_e( 'Administrators can append ?rwgc_preview_country=GB to any front URL to test detection (see Dashboard).', 'reactwoo-geocore' ); ?></p>
 	</div>
 
 	<div class="rwgc-card rwgc-card--full">
@@ -154,9 +181,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<div class="rwgc-card rwgc-card--full">
 		<h2><?php esc_html_e( 'Real-World Usage Examples', 'reactwoo-geocore' ); ?></h2>
-		<p class="description"><?php esc_html_e( 'Content placed between opening and closing rwgc_if shortcodes is shown only for matching countries.', 'reactwoo-geocore' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Content placed between opening and closing rwgc_if shortcodes is shown only when conditions match (include/exclude lists use the same ISO2 rules as the engine).', 'reactwoo-geocore' ); ?></p>
 		<pre><code><?php echo esc_html( "[rwgc_if country=\"US,CA\"]\nFree shipping for North America this week.\n[/rwgc_if]" ); ?></code></pre>
 		<pre><code><?php echo esc_html( "[rwgc_if country=\"GB,IE\"]\nPrices shown include VAT.\n[/rwgc_if]" ); ?></code></pre>
+		<pre><code><?php echo esc_html( "[rwgc_if exclude=\"US\"]\nInternational shipping message.\n[/rwgc_if]" ); ?></code></pre>
 		<pre><code><?php echo esc_html( "Welcome visitor from [rwgc_country] ([rwgc_country_code]).\nYour default currency is [rwgc_currency]." ); ?></code></pre>
 	</div>
 
@@ -164,15 +192,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="rwgc-card">
 			<h2><?php esc_html_e( 'PHP Integration', 'reactwoo-geocore' ); ?></h2>
 			<p class="description"><?php esc_html_e( 'Use these helpers in your theme or custom plugin.', 'reactwoo-geocore' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Preview: append ?rwgc_preview_country=GB to the URL while logged in as an administrator (filter rwgc_can_preview_geo).', 'reactwoo-geocore' ); ?></p>
 			<pre><code><?php echo esc_html( "if ( function_exists( 'rwgc_get_visitor_country' ) ) {\n    \$country = rwgc_get_visitor_country(); // e.g. US\n    \$currency = rwgc_get_visitor_currency(); // e.g. USD\n}" ); ?></code></pre>
 			<pre><code><?php echo esc_html( "if ( rwgc_get_visitor_country() === 'GB' ) {\n    echo 'GBP-only message';\n}" ); ?></code></pre>
 		</div>
 
 		<div class="rwgc-card">
 			<h2><?php esc_html_e( 'REST API', 'reactwoo-geocore' ); ?></h2>
-			<p class="description"><?php esc_html_e( 'Endpoint (when enabled):', 'reactwoo-geocore' ); ?></p>
-			<code><?php echo esc_html( rest_url( 'reactwoo-geocore/v1/location' ) ); ?></code>
-			<p class="description"><?php esc_html_e( 'Example payload fields: ip, country_code, country_name, city, region, currency, source, cached.', 'reactwoo-geocore' ); ?></p>
+			<?php if ( ! empty( $rwgc_rest_enabled ) ) : ?>
+				<p class="description"><?php esc_html_e( 'Visitor location (public when REST is enabled):', 'reactwoo-geocore' ); ?></p>
+				<p><code><?php echo ! empty( $rwgc_location_url ) ? esc_html( $rwgc_location_url ) : esc_html( rest_url( 'reactwoo-geocore/v1/location' ) ); ?></code></p>
+				<p class="description"><?php esc_html_e( 'Discovery — plugin_slug, text_domain, version, geo_ready, woocommerce_active, event_types, hooks, satellites (Geo AI / Optimise / Commerce ready + version), integration filter/action names (no visitor PII):', 'reactwoo-geocore' ); ?></p>
+				<p><code><?php echo ! empty( $rwgc_capabilities_url ) ? esc_html( $rwgc_capabilities_url ) : esc_html__( '(enable REST in Settings)', 'reactwoo-geocore' ); ?></code></p>
+				<p class="description"><?php esc_html_e( 'PHP: rwgc_is_geo_core_active(), rwgc_get_rest_location_url(), rwgc_get_rest_capabilities_url(), rwgc_get_rest_v1_url( $endpoint ), rwgc_get_geo_event_types(), rwgc_is_woocommerce_active(). Constants: RWGC_PLUGIN_SLUG, RWGC_TEXT_DOMAIN.', 'reactwoo-geocore' ); ?></p>
+			<?php else : ?>
+				<p class="description"><?php esc_html_e( 'REST routes are turned off. Enable “REST API” in Geo Core → Settings to expose /location and /capabilities.', 'reactwoo-geocore' ); ?></p>
+			<?php endif; ?>
+			<p class="description"><?php esc_html_e( 'The location and capabilities endpoints do not require a ReactWoo product license. Optional AI draft endpoints use editor capability plus ReactWoo API credentials when configured.', 'reactwoo-geocore' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Example location payload fields: ip, country_code, country_name, city, region, currency, source, cached.', 'reactwoo-geocore' ); ?></p>
 		</div>
 
 		<div class="rwgc-card">
@@ -180,5 +217,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<p><?php esc_html_e( 'Use the "Geo Content" block to show/hide blocks by visitor country without code.', 'reactwoo-geocore' ); ?></p>
 			<p class="description"><?php esc_html_e( 'Tip: set Show Countries for allow-lists and Hide Countries for exclusions.', 'reactwoo-geocore' ); ?></p>
 		</div>
+	</div>
+
+	<div class="rwgc-card rwgc-card--full">
+		<h2><?php esc_html_e( 'Events & hooks (developers)', 'reactwoo-geocore' ); ?></h2>
+		<p class="description"><?php esc_html_e( 'Structured geo events for analytics and experiments: action and filter rwgc_geo_event (payload array); action rwgc_route_variant_resolved after route decisions; event_type route_redirect before a server-side variant redirect (filter rwgc_emit_route_redirect_event to disable). PHP helpers: rwgc_get_geo_event_types(), rwgc_get_rest_location_url(), rwgc_get_rest_capabilities_url(). See REST API above. Full detail: docs/phases/phase-6.md in the plugin.', 'reactwoo-geocore' ); ?></p>
 	</div>
 </div>

@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 <div class="wrap rwgc-wrap">
 	<h1><?php esc_html_e( 'ReactWoo Geo Core', 'reactwoo-geocore' ); ?></h1>
-	<p class="description"><?php esc_html_e( 'Central geolocation dashboard for setup, status, and integrations.', 'reactwoo-geocore' ); ?></p>
+	<p class="description"><?php esc_html_e( 'Central geolocation dashboard for setup, status, and integrations. Geo Core is free (WordPress.org): core detection, routing, shortcodes, block, and the public REST location endpoint do not require a ReactWoo product license.', 'reactwoo-geocore' ); ?></p>
 	<?php RWGC_Admin::render_inner_nav( 'rwgc-dashboard' ); ?>
 
 	<div class="rwui-hero">
@@ -55,7 +55,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="rwgc-card rwgc-card--highlight">
 			<h2><?php esc_html_e( 'Getting Started', 'reactwoo-geocore' ); ?></h2>
 			<ol class="rwgc-steps">
-				<li><?php esc_html_e( 'Configure MaxMind credentials in Settings.', 'reactwoo-geocore' ); ?></li>
+				<li><?php esc_html_e( 'Configure MaxMind (GeoLite2) credentials in Settings.', 'reactwoo-geocore' ); ?></li>
 				<li><?php esc_html_e( 'Download/update database from Tools.', 'reactwoo-geocore' ); ?></li>
 				<li><?php esc_html_e( 'Configure page-level variant routing in any page editor (Geo Variant Routing box).', 'reactwoo-geocore' ); ?></li>
 				<li><?php esc_html_e( 'Verify lookup and then use shortcodes/PHP/block.', 'reactwoo-geocore' ); ?></li>
@@ -70,7 +70,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<h2><?php esc_html_e( 'Status', 'reactwoo-geocore' ); ?></h2>
 			<ul>
 				<li><strong><?php esc_html_e( 'Geo enabled', 'reactwoo-geocore' ); ?>:</strong> <?php echo RWGC_Settings::get( 'enabled', 1 ) ? esc_html__( 'Yes', 'reactwoo-geocore' ) : esc_html__( 'No', 'reactwoo-geocore' ); ?></li>
-				<li><strong><?php esc_html_e( 'MaxMind license key', 'reactwoo-geocore' ); ?>:</strong> <?php echo ! empty( $settings['maxmind_license_key'] ) ? esc_html__( 'Configured', 'reactwoo-geocore' ) : esc_html__( 'Not set', 'reactwoo-geocore' ); ?></li>
+				<li><strong><?php esc_html_e( 'MaxMind license key (GeoLite2)', 'reactwoo-geocore' ); ?>:</strong> <?php echo ! empty( $settings['maxmind_license_key'] ) ? esc_html__( 'Configured', 'reactwoo-geocore' ) : esc_html__( 'Not set', 'reactwoo-geocore' ); ?></li>
 				<li><strong><?php esc_html_e( 'DB path', 'reactwoo-geocore' ); ?>:</strong> <code><?php echo esc_html( $status['path'] ); ?></code></li>
 				<li><strong><?php esc_html_e( 'DB exists', 'reactwoo-geocore' ); ?>:</strong> <?php echo $status['exists'] ? esc_html__( 'Yes', 'reactwoo-geocore' ) : esc_html__( 'No', 'reactwoo-geocore' ); ?></li>
 				<li><strong><?php esc_html_e( 'DB last updated', 'reactwoo-geocore' ); ?>:</strong> <?php echo $status['last_updated'] ? esc_html( $status['last_updated'] ) : esc_html__( 'Unknown', 'reactwoo-geocore' ); ?></li>
@@ -92,6 +92,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<?php else : ?>
 				<p><?php esc_html_e( 'No geo data available yet.', 'reactwoo-geocore' ); ?></p>
 			<?php endif; ?>
+		</div>
+
+		<div class="rwgc-card">
+			<h2><?php esc_html_e( 'Preview & conditional content', 'reactwoo-geocore' ); ?></h2>
+			<p class="description"><?php esc_html_e( 'Administrators can simulate another country on the front end by adding a query argument (same override used for shortcodes and blocks):', 'reactwoo-geocore' ); ?></p>
+			<p><code>?rwgc_preview_country=GB</code></p>
+			<p class="description"><?php esc_html_e( 'Use the admin bar notice to clear preview mode. Filter rwgc_can_preview_geo can grant access to other roles.', 'reactwoo-geocore' ); ?></p>
+			<p><strong><?php esc_html_e( 'Shortcode examples', 'reactwoo-geocore' ); ?>:</strong></p>
+			<ul class="rwgc-docs-list">
+				<li><code>[rwgc_if country="GB,US"]…[/rwgc_if]</code></li>
+				<li><code>[rwgc_if exclude="US,CA"]…[/rwgc_if]</code></li>
+				<li><code>[rwgc_if country="DE" exclude="BE"]…[/rwgc_if]</code></li>
+				<li><code>[rwgc_if groups="your_group_slug"]…[/rwgc_if]</code></li>
+			</ul>
+			<p class="description"><?php esc_html_e( 'See the Usage screen for the full list.', 'reactwoo-geocore' ); ?></p>
 		</div>
 
 		<div class="rwgc-card">

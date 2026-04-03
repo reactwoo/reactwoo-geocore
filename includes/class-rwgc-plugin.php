@@ -77,11 +77,25 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-geoip.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-countries.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-api.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-preview.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-platform-client.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-ai-orchestrator.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-shortcodes.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-gutenberg.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-elementor.php';
+		require_once RWGC_PATH . 'includes/engine/class-rwgc-context.php';
+		require_once RWGC_PATH . 'includes/engine/class-rwgc-country-groups.php';
+		require_once RWGC_PATH . 'includes/rules/class-rwgc-rule-condition-evaluator.php';
+		require_once RWGC_PATH . 'includes/engine/class-rwgc-variant.php';
+		require_once RWGC_PATH . 'includes/engine/class-rwgc-page-route-bundle.php';
+		require_once RWGC_PATH . 'includes/engine/class-rwgc-fallback-resolver.php';
+		require_once RWGC_PATH . 'includes/engine/class-rwgc-page-route-resolver.php';
+		require_once RWGC_PATH . 'includes/events/class-rwgc-event.php';
+		require_once RWGC_PATH . 'includes/events/class-rwgc-events.php';
+		require_once RWGC_PATH . 'includes/rules/class-rwgc-rule.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-routing.php';
+		require_once RWGC_PATH . 'includes/migration/class-rwgc-legacy-route-mapper.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-rest.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-upsells.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-migration.php';
@@ -96,7 +110,10 @@ class RWGC_Plugin {
 	private function register_services() {
 		// Settings and migration always available.
 		RWGC_Settings::init();
+		RWGC_Platform_Client::init();
 		RWGC_Migration::init();
+		RWGC_Country_Groups::init();
+		RWGC_Preview::init();
 
 		if ( is_admin() ) {
 			RWGC_Admin::init();
@@ -121,6 +138,9 @@ class RWGC_Plugin {
 		RWGC_Settings::ensure_defaults();
 		// Prepare upload directory and DB path if needed.
 		RWGC_MaxMind::ensure_storage_dir();
+		if ( false === get_option( 'rwgc_country_groups', false ) ) {
+			add_option( 'rwgc_country_groups', array(), '', 'no' );
+		}
 	}
 
 	/**

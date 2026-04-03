@@ -36,7 +36,7 @@ $option_key = RWGC_Settings::OPTION_KEY;
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><?php esc_html_e( 'MaxMind account & license', 'reactwoo-geocore' ); ?></th>
+				<th scope="row"><?php esc_html_e( 'MaxMind account (GeoLite2)', 'reactwoo-geocore' ); ?></th>
 				<td>
 					<p>
 						<label>
@@ -46,13 +46,13 @@ $option_key = RWGC_Settings::OPTION_KEY;
 					</p>
 					<p>
 						<label>
-							<?php esc_html_e( 'License key', 'reactwoo-geocore' ); ?>
+							<?php esc_html_e( 'MaxMind license key', 'reactwoo-geocore' ); ?>
 							<input type="text" name="<?php echo esc_attr( $option_key ); ?>[maxmind_license_key]" value="<?php echo esc_attr( $settings['maxmind_license_key'] ); ?>" class="regular-text" />
 						</label>
 					</p>
 					<p class="description">
-						<?php esc_html_e( 'Required for automatic GeoLite2 database downloads. ReactWoo Geo Core uses HTTP Basic Authentication with your Account ID and License Key.', 'reactwoo-geocore' ); ?>
-						<?php esc_html_e( 'You need a free MaxMind GeoLite2 license key (commercial use may require a different agreement).', 'reactwoo-geocore' ); ?>
+						<?php esc_html_e( 'This is your MaxMind (third-party) credential for GeoLite2 downloads — not a ReactWoo product license. Geo Core uses HTTP Basic Authentication with your Account ID and MaxMind license key.', 'reactwoo-geocore' ); ?>
+						<?php esc_html_e( 'You need a free MaxMind GeoLite2 license (commercial use may require a different agreement).', 'reactwoo-geocore' ); ?>
 					</p>
 					<p class="description">
 						<strong><?php esc_html_e( 'How to get your Account ID and License Key:', 'reactwoo-geocore' ); ?></strong><br />
@@ -71,18 +71,33 @@ $option_key = RWGC_Settings::OPTION_KEY;
 				<th scope="row"><?php esc_html_e( 'Fallback location', 'reactwoo-geocore' ); ?></th>
 				<td>
 					<p>
-						<label>
-							<?php esc_html_e( 'Fallback country (ISO2)', 'reactwoo-geocore' ); ?>
-							<input type="text" name="<?php echo esc_attr( $option_key ); ?>[fallback_country]" value="<?php echo esc_attr( $settings['fallback_country'] ); ?>" maxlength="2" class="small-text" />
-						</label>
+						<label for="rwgc_fallback_country"><?php esc_html_e( 'Fallback country', 'reactwoo-geocore' ); ?></label><br />
+						<?php
+						RWGC_Admin::render_country_select(
+							$option_key . '[fallback_country]',
+							isset( $settings['fallback_country'] ) ? (string) $settings['fallback_country'] : 'US',
+							array(
+								'id'               => 'rwgc_fallback_country',
+								'class'            => 'rwgc-select-country regular-text',
+								'show_option_none' => '',
+							)
+						);
+						?>
 					</p>
 					<p>
-						<label>
-							<?php esc_html_e( 'Fallback currency (ISO3)', 'reactwoo-geocore' ); ?>
-							<input type="text" name="<?php echo esc_attr( $option_key ); ?>[fallback_currency]" value="<?php echo esc_attr( $settings['fallback_currency'] ); ?>" maxlength="3" class="small-text" />
-						</label>
+						<label for="rwgc_fallback_currency"><?php esc_html_e( 'Fallback currency', 'reactwoo-geocore' ); ?></label><br />
+						<?php
+						RWGC_Admin::render_currency_select(
+							$option_key . '[fallback_currency]',
+							isset( $settings['fallback_currency'] ) ? (string) $settings['fallback_currency'] : 'USD',
+							array(
+								'id'    => 'rwgc_fallback_currency',
+								'class' => 'rwgc-select-currency regular-text',
+							)
+						);
+						?>
 					</p>
-					<p class="description"><?php esc_html_e( 'Used when lookups fail or the database is missing.', 'reactwoo-geocore' ); ?></p>
+					<p class="description"><?php esc_html_e( 'Used when lookups fail or the database is missing. Values are chosen from prepopulated lists (no manual ISO codes).', 'reactwoo-geocore' ); ?></p>
 				</td>
 			</tr>
 			<tr>
@@ -90,8 +105,11 @@ $option_key = RWGC_Settings::OPTION_KEY;
 				<td>
 					<label>
 						<input type="checkbox" name="<?php echo esc_attr( $option_key ); ?>[rest_enabled]" value="1" <?php checked( $settings['rest_enabled'], 1 ); ?> />
-						<?php esc_html_e( 'Expose /wp-json/reactwoo-geocore/v1/location endpoint.', 'reactwoo-geocore' ); ?>
+						<?php esc_html_e( 'Expose REST routes: /location, /capabilities (discovery, no PII), and authenticated AI draft endpoints.', 'reactwoo-geocore' ); ?>
 					</label>
+					<p class="description">
+						<?php esc_html_e( 'The public location and capabilities endpoints do not require a commercial license. AI draft routes require editor capability; ReactWoo API credentials are configured in commercial satellite plugins (e.g. Geo AI), not in Geo Core.', 'reactwoo-geocore' ); ?>
+					</p>
 				</td>
 			</tr>
 			<tr>

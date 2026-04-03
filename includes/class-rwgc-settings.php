@@ -60,7 +60,9 @@ class RWGC_Settings {
 		if ( ! is_array( $stored ) ) {
 			$stored = array();
 		}
-		return array_merge( $defaults, $stored );
+		$merged = array_merge( $defaults, $stored );
+		unset( $merged['reactwoo_api_base'], $merged['reactwoo_license_key'] );
+		return $merged;
 	}
 
 	/**
@@ -120,8 +122,13 @@ class RWGC_Settings {
 		$out['auto_update_db']      = ! empty( $settings['auto_update_db'] ) ? 1 : 0;
 		$out['cache_enabled']       = ! empty( $settings['cache_enabled'] ) ? 1 : 0;
 		$out['cache_ttl']           = isset( $settings['cache_ttl'] ) ? max( 60, (int) $settings['cache_ttl'] ) : $defaults['cache_ttl'];
-		$out['fallback_country']    = isset( $settings['fallback_country'] ) ? strtoupper( substr( sanitize_text_field( $settings['fallback_country'] ), 0, 2 ) ) : $defaults['fallback_country'];
-		$out['fallback_currency']   = isset( $settings['fallback_currency'] ) ? strtoupper( substr( sanitize_text_field( $settings['fallback_currency'] ), 0, 3 ) ) : $defaults['fallback_currency'];
+		$fc = isset( $settings['fallback_country'] ) ? strtoupper( substr( sanitize_text_field( $settings['fallback_country'] ), 0, 2 ) ) : $defaults['fallback_country'];
+		$country_opts               = class_exists( 'RWGC_Countries', false ) ? RWGC_Countries::get_options() : array();
+		$out['fallback_country']    = isset( $country_opts[ $fc ] ) ? $fc : $defaults['fallback_country'];
+
+		$fcur = isset( $settings['fallback_currency'] ) ? strtoupper( substr( sanitize_text_field( $settings['fallback_currency'] ), 0, 3 ) ) : $defaults['fallback_currency'];
+		$currency_opts              = class_exists( 'RWGC_Countries', false ) ? RWGC_Countries::get_currency_options() : array();
+		$out['fallback_currency']     = isset( $currency_opts[ $fcur ] ) ? $fcur : $defaults['fallback_currency'];
 		$out['rest_enabled']        = ! empty( $settings['rest_enabled'] ) ? 1 : 0;
 		$out['debug_mode']          = ! empty( $settings['debug_mode'] ) ? 1 : 0;
 		$out['db_last_updated']     = isset( $settings['db_last_updated'] ) ? sanitize_text_field( $settings['db_last_updated'] ) : '';

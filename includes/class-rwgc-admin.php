@@ -165,7 +165,10 @@ class RWGC_Admin {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
-		$status = RWGC_MaxMind::get_status();
+		$status                = RWGC_MaxMind::get_status();
+		$rwgc_rest_enabled     = (bool) RWGC_Settings::get( 'rest_enabled', 1 );
+		$rwgc_location_url     = function_exists( 'rwgc_get_rest_location_url' ) ? rwgc_get_rest_location_url() : '';
+		$rwgc_capabilities_url = function_exists( 'rwgc_get_rest_capabilities_url' ) ? rwgc_get_rest_capabilities_url() : '';
 		include RWGC_PATH . 'admin/views/usage-page.php';
 	}
 
@@ -244,6 +247,15 @@ class RWGC_Admin {
 			'rwgc-usage'     => __( 'Usage', 'reactwoo-geocore' ),
 			'rwgc-addons'    => __( 'Add-ons', 'reactwoo-geocore' ),
 		);
+
+		/**
+		 * Extra Geo Core submenu pages (e.g. satellite plugins under the same menu).
+		 *
+		 * @param array  $items   Admin page slug => label.
+		 * @param string $current Current page slug (for context).
+		 */
+		$items = apply_filters( 'rwgc_inner_nav_items', $items, $current );
+
 		echo '<nav class="rwgc-inner-nav" aria-label="' . esc_attr__( 'Geo Core section navigation', 'reactwoo-geocore' ) . '">';
 		foreach ( $items as $slug => $label ) {
 			$class = 'rwgc-inner-nav__link' . ( $slug === $current ? ' is-active' : '' );
@@ -342,10 +354,21 @@ class RWGC_Admin {
 			</select>
 		</p>
 
-		<p><strong><?php esc_html_e( 'Secondary country code (ISO2)', 'reactwoo-geocore' ); ?></strong></p>
+		<p><strong><?php esc_html_e( 'Secondary country', 'reactwoo-geocore' ); ?></strong></p>
 		<p>
-			<label for="rwgc_route_country_iso2"><?php esc_html_e( 'Country code (ISO2)', 'reactwoo-geocore' ); ?></label><br />
-			<input type="text" name="rwgc_route_country_iso2" id="rwgc_route_country_iso2" value="<?php echo esc_attr( (string) $config['country_iso2'] ); ?>" maxlength="2" class="small-text" placeholder="GB" />
+			<label for="rwgc_route_country_iso2" class="screen-reader-text"><?php esc_html_e( 'Country', 'reactwoo-geocore' ); ?></label>
+			<?php
+			self::render_country_select(
+				'rwgc_route_country_iso2',
+				(string) $config['country_iso2'],
+				array(
+					'id'                => 'rwgc_route_country_iso2',
+					'class'             => 'rwgc-select-country widefat',
+					'show_option_none'  => __( '-- Select country --', 'reactwoo-geocore' ),
+					'option_none_value' => '',
+				)
+			);
+			?>
 		</p>
 		<p><strong><?php esc_html_e( 'Secondary links to this master page', 'reactwoo-geocore' ); ?></strong></p>
 		<p>
@@ -409,6 +432,104 @@ class RWGC_Admin {
 		}
 
 		RWGC_Routing::save_page_route_config( $post_id, $config );
+	}
+
+	/**
+	 * Output a prepopulated country &lt;select&gt; (no free-typed ISO2).
+	 *
+	 * @param string       $name     Input name.
+	 * @param string       $selected Current ISO2 (uppercase).
+	 * @param array<string, mixed> $args {
+	 *   @type string $id               Element id (default: $name).
+	 *   @type string $class            CSS classes.
+	 *   @type string $show_option_none Label for empty option; empty string to omit.
+	 *   @type string $option_none_value Value for empty option.
+	 * }
+	 * @return void
+	 */
+	public static function render_country_select( $name, $selected, $args = array() ) {
+		$args = wp_parse_args(
+			$args,
+			array(
+				'id'                 => $name,
+				'class'              => 'rwgc-select-country regular-text',
+				'show_option_none'   => __( '-- Select country --', 'reactwoo-geocore' ),
+				'option_none_value'  => '',
+			)
+		);
+		$countries = RWGC_Countries::get_options();
+		$selected  = strtoupper( substr( (string) $selected, 0, 2 ) );
+		printf(
+			'<select name="%1$s" id="%2$s" class="%3$s">',
+			esc_attr( $name ),
+			esc_attr( $args['id'] ),
+			esc_attr( $args['class'] )
+		);
+		if ( '' !== $args['show_option_none'] ) {
+			printf(
+				'<option value="%1$s"%2$s>%3$s</option>',
+				esc_attr( (string) $args['option_none_value'] ),
+				selected( $selected, (string) $args['option_none_value'], false ),
+				esc_html( $args['show_option_none'] )
+			);
+		}
+		foreach ( $countries as $code => $label ) {
+			$code = strtoupper( (string) $code );
+			printf(
+				'<option value="%1$s"%2$s>%3$s</option>',
+				esc_attr( $code ),
+				selected( $selected, $code, false ),
+				esc_html( $label . ' (' . $code . ')' )
+			);
+		}
+		echo '</select>';
+	}
+
+	/**
+	 * Output a prepopulated currency &lt;select&gt; (ISO3).
+	 *
+	 * @param string               $name     Input name.
+	 * @param string               $selected Current ISO3.
+	 * @param array<string, mixed> $args     Same shape as {@see render_country_select()}.
+	 * @return void
+	 */
+	public static function render_currency_select( $name, $selected, $args = array() ) {
+		$args = wp_parse_args(
+			$args,
+			array(
+				'id'                => $name,
+				'class'             => 'rwgc-select-currency regular-text',
+				'show_option_none'  => '',
+				'option_none_value' => '',
+			)
+		);
+		$currencies = RWGC_Countries::get_currency_options();
+		$selected   = strtoupper( substr( (string) $selected, 0, 3 ) );
+		printf(
+			'<select name="%1$s" id="%2$s" class="%3$s">',
+			esc_attr( $name ),
+			esc_attr( $args['id'] ),
+			esc_attr( $args['class'] )
+		);
+		if ( '' !== $args['show_option_none'] ) {
+			printf(
+				'<option value="%1$s"%2$s>%3$s</option>',
+				esc_attr( (string) $args['option_none_value'] ),
+				selected( $selected, (string) $args['option_none_value'], false ),
+				esc_html( $args['show_option_none'] )
+			);
+		}
+		foreach ( $currencies as $code => $label ) {
+			$code = strtoupper( substr( (string) $code, 0, 3 ) );
+			$lab  = is_string( $label ) ? wp_strip_all_tags( $label ) : $code;
+			printf(
+				'<option value="%1$s"%2$s>%3$s</option>',
+				esc_attr( $code ),
+				selected( $selected, $code, false ),
+				esc_html( $lab )
+			);
+		}
+		echo '</select>';
 	}
 }
 

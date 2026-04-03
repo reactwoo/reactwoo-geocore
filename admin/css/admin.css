@@ -539,3 +539,12 @@
     color: #fecaca;
   }
 }
+
+.rwgc-wrap ul.rwgc-docs-list {
+  margin: 8px 0 0 1.25em;
+  list-style: disc;
+}
+
+.rwgc-wrap ul.rwgc-docs-list code {
+  font-size: 13px;
+}

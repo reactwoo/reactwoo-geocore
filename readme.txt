@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 0.1.2.2
+Stable tag: 0.1.10.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -30,7 +30,7 @@ It is designed to be used on its own, or as a shared geo engine for premium Reac
 
 1. Upload the plugin files to the `/wp-content/plugins/reactwoo-geocore` directory, or install via WordPress plugin upload.
 2. Activate the plugin through the 'Plugins' screen in WordPress.
-3. Go to **Geo Core → Settings** and enter your MaxMind license key.
+3. Go to **Geo Core → Settings** and enter your **MaxMind** (GeoLite2) account credentials. This is a third-party MaxMind license for downloading the database — not a ReactWoo product license. Core geo works without any ReactWoo key.
 4. Use the **Tools** tab to download/update the database and test lookups.
 
 == Usage ==
@@ -40,7 +40,7 @@ After setup, you can use Geo Core in multiple ways:
 * **Shortcodes**: `[rwgc_country]`, `[rwgc_country_code]`, `[rwgc_currency]`, `[rwgc_city]`, `[rwgc_region]`
 * **Conditional shortcode**: `[rwgc_if country="US,CA"]Special content[/rwgc_if]`
 * **PHP helpers**: `rwgc_get_visitor_country()`, `rwgc_get_visitor_currency()`, `rwgc_get_visitor_data()`
-* **REST endpoint**: `/wp-json/reactwoo-geocore/v1/location` (when enabled in settings)
+* **REST endpoints** (when enabled in settings): `/wp-json/reactwoo-geocore/v1/location` (visitor geo), `/wp-json/reactwoo-geocore/v1/capabilities` (plugin discovery: event types and hooks; no visitor PII)
 * **Gutenberg**: Use the **Geo Content** block to show/hide content by country
 * **Elementor (free baseline)**: Use Page/Popup document settings for basic show/hide by country
 * **Page Variant Routing (free)**: Edit any page and use "Geo Variant Routing (Free)" to set page role (Master/Secondary) with server-side redirect mapping (1 secondary country mapping per master)
@@ -63,7 +63,96 @@ No. ReactWoo Geo Core works with any theme and editor. It exposes helper functio
 
 No. You must provide your own MaxMind license key and accept their terms of use. The plugin then downloads the GeoLite2 Country database to your site.
 
+= Does Geo Core require a ReactWoo product license? =
+
+No. Detection, shortcodes, the Gutenberg block, page routing, and the public REST location endpoint work without a ReactWoo key. A ReactWoo product license in settings is **optional** and used only if you enable optional AI-assisted features that call the ReactWoo API.
+
+= Does this plugin require WooCommerce? =
+
+No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
+
 == Changelog ==
+
+= 0.1.9.0 =
+* REST **`integration.satellite_filters`:** **`rwgo_export_csv_filename`** (Geo Optimise CSV export).
+
+= 0.1.8.0 =
+* REST: **`rwgcm_fee_rule_rows`**, **`rwgcm_skip_pricing_for_cart_item`** (Geo Commerce fees + bundle-safe pricing).
+
+= 0.1.7.0 =
+* REST: **`rwgcm_coupon_allowed_for_visitor`**, **`rwgcm_coupon_valid_when_country_unknown`** (Geo Commerce coupon geo).
+
+= 0.1.6.0 =
+* REST: **`rwgcm_package_rates`** (Geo Commerce shipping extension).
+
+= 0.1.5.9 =
+* REST: **`rwga_usage_display_rows`** (Geo AI cached usage table).
+
+= 0.1.5.8 =
+* REST: **`rwgcm_store_utm_on_orders`**, **`rwgcm_attribution_query_keys`** (Geo Commerce attribution).
+
+= 0.1.5.7 =
+* REST: **`rwgcm_cart_fees`**, **`rwgcm_checkout_order_meta`**.
+
+= 0.1.5.6 =
+* REST `/capabilities`: `rwgcm_order_attributed`, `rwgcm_order_visitor_geo`, `rwgo_emit_assignment_geo_event`.
+
+= 0.1.5.5 =
+* REST `/capabilities` → `satellite_filters`: **`rwgcm_apply_catalog_price`**.
+
+= 0.1.5.4 =
+* REST `/capabilities` → `satellite_filters`: **`rwga_stats_snapshot`**.
+
+= 0.1.5.2 =
+* REST `/capabilities` → `integration`: `rwgo_variant_assigned`, `rwgcm_adjusted_unit_price`.
+
+= 0.1.5.1 =
+* REST `/capabilities` → `integration`: document `rwgcm_before_cart_totals` and `rwgo_stats_snapshot`.
+
+= 0.1.5.0 =
+* REST **`GET …/capabilities`**: `satellites` object (`geo_ai`, `geo_optimise`, `geo_commerce`) with `ready` + `version` when each load hook ran. `integration` lists `satellite_actions` / `satellite_filters`. Master plan **§17** (next wave backlog).
+
+= 0.1.4.0 =
+* Master plan **§16** (execution status). Docs + AGENTS: Core phase contracts complete; satellites (`reactwoo-geo-ai`, `reactwoo-geo-optimise`, `reactwoo-geo-commerce`) carry product depth.
+
+= 0.1.3.8 =
+* Docs: satellite plugin scaffolds (`reactwoo-geo-ai`, `reactwoo-geo-commerce`, `reactwoo-geo-optimise`) live alongside Geo Core in `wp-content/plugins/`; see `docs/AGENTS.md` and master plan §1.
+
+= 0.1.3.7 =
+* Constants `RWGC_PLUGIN_SLUG`, `RWGC_TEXT_DOMAIN`; helper `rwgc_is_geo_core_active()` for satellite guards. Phase 6 doc: Geo Optimise checklist. Phase 7 checklist uses the helper.
+
+= 0.1.3.6 =
+* REST `/capabilities`: `plugin_slug` and `text_domain` for satellite discovery. `docs/phases/phase-7.md` — Geo Commerce author checklist.
+
+= 0.1.3.5 =
+* Filter `rwgc_rest_v1_url` for REST URL overrides; listed under `/capabilities` → `integration.filters`. Phase 5 doc: Core AI bridge marked shipped.
+
+= 0.1.3.4 =
+* `rwgc_get_rest_v1_url()`, `rwgc_get_rest_location_url()`; refactored capabilities URL helper. Master plan §10: Geo Core phase status paragraph.
+
+= 0.1.3.3 =
+* Phase 7 prep: `rwgc_is_woocommerce_active()` (filter `rwgc_is_woocommerce_active`); REST `/capabilities` includes `woocommerce_active` for Geo Commerce discovery.
+
+= 0.1.3.2 =
+* REST `/capabilities` includes `integration` (curated filter, action, and AI filter names) for satellite plugins.
+
+= 0.1.3.1 =
+* Phase 6: `rwgc_get_rest_capabilities_url()` helper; Usage screen lists `/location` and `/capabilities` when REST is enabled.
+
+= 0.1.3.0 =
+* Phase 6: REST GET `/capabilities` (discovery: version, geo_ready, event_types, hooks; no PII). `RWGC_Event::known_event_types()` and `rwgc_get_geo_event_types()` with filter `rwgc_geo_event_known_types`.
+
+= 0.1.2.9 =
+* Phase 6 (events): `route_redirect` geo event before server-side variant redirect; filter `rwgc_emit_route_redirect_event`. Docs: `docs/phases/phase-6.md`, `docs/phases/phase-7.md`.
+
+= 0.1.2.8 =
+* Phase 5 (AI): Tools page — optional ReactWoo AI reachability test (no license) and authenticated assistant usage test; phase doc updated.
+
+= 0.1.2.7 =
+* Dashboard and Usage guide: MaxMind (GeoLite2) vs optional ReactWoo product license; REST location described as license-free for core geo. Phase docs: `docs/phases/phase-4.md` complete, `docs/phases/phase-5.md` (AI) stub.
+
+= 0.1.2.6 =
+* Clarified WordPress.org positioning: core geo does not require a ReactWoo product license; MaxMind vs ReactWoo credentials distinguished in settings and docs.
 
 = 0.1.2.2 =
 * Expanded country list support in geo visibility controls.

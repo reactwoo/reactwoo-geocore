@@ -55,36 +55,11 @@ class RWGC_Routing {
 			return;
 		}
 
-		$target_page_id = 0;
-		$reason         = 'none';
-
-		if ( 'variant' === $config['role'] ) {
-			if ( ! empty( $config['country_iso2'] ) && $country !== $config['country_iso2'] && ! empty( $config['master_page_id'] ) ) {
-				$target_page_id = (int) $config['master_page_id'];
-				$reason         = 'variant_fallback_to_master';
-			}
-		} else {
-			$variant_page_id = self::find_variant_for_master_country( $page_id, $country );
-			if ( $variant_page_id > 0 ) {
-				$target_page_id = $variant_page_id;
-				$reason         = 'master_country_variant_match';
-			}
+		$context  = RWGC_Context::from_visitor();
+		$decision = self::get_route_decision_for_page( $page_id, $context, $config );
+		if ( ! is_array( $decision ) ) {
+			return;
 		}
-
-		$decision = array(
-			'target_page_id' => $target_page_id,
-			'reason'         => $reason,
-			'page_id'        => (int) $page_id,
-			'country'        => $country,
-		);
-
-		/**
-		 * Allow add-ons (for example GeoElementor Pro) to extend base decisions.
-		 *
-		 * @param array $decision Routing decision.
-		 * @param array $config   Base free-tier page config.
-		 */
-		$decision = apply_filters( 'rwgc_route_variant_decision', $decision, $config );
 
 		$final_target = isset( $decision['target_page_id'] ) ? absint( $decision['target_page_id'] ) : 0;
 		if ( $final_target <= 0 || $final_target === (int) $page_id ) {
@@ -105,6 +80,24 @@ class RWGC_Routing {
 
 		self::mark_redirect( $page_id, $final_target );
 		self::maybe_debug_log( 'Redirecting to page', $decision );
+
+		/**
+		 * Whether Geo Core should emit a `route_redirect` geo event before a server-side variant redirect.
+		 *
+		 * @param bool               $emit     Default true.
+		 * @param array<string, mixed> $decision Route decision.
+		 * @param RWGC_Context       $context  Visitor context.
+		 * @param int                $page_id  Current page ID.
+		 * @param int                $final_target Target page ID.
+		 */
+		$emit_event = (bool) apply_filters( 'rwgc_emit_route_redirect_event', true, $decision, $context, $page_id, $final_target );
+		if ( $emit_event && function_exists( 'rwgc_emit_geo_event' ) && class_exists( 'RWGC_Event', false ) ) {
+			$event = RWGC_Event::from_route_decision( $decision, $context, RWGC_Event::TYPE_ROUTE_REDIRECT );
+			$event->meta['target_url'] = $target_url;
+			$event->meta['http_status'] = 302;
+			rwgc_emit_geo_event( $event );
+		}
+
 		wp_safe_redirect( $target_url, 302 );
 		exit;
 	}
@@ -348,7 +341,7 @@ class RWGC_Routing {
 	 * @param string $country_iso2 Country code.
 	 * @return int
 	 */
-	private static function find_variant_for_master_country( $master_page_id, $country_iso2 ) {
+	public static function find_variant_for_master_country( $master_page_id, $country_iso2 ) {
 		$master_page_id = absint( $master_page_id );
 		$country_iso2   = strtoupper( sanitize_text_field( (string) $country_iso2 ) );
 		if ( $master_page_id <= 0 || '' === $country_iso2 ) {
@@ -383,6 +376,68 @@ class RWGC_Routing {
 		);
 
 		return ! empty( $ids ) ? absint( $ids[0] ) : 0;
+	}
+
+	/**
+	 * Canonical page route bundle (legacy meta → default + variants) after `rwgc_page_route_bundle` filter.
+	 *
+	 * @param int        $page_id Page ID.
+	 * @param array|null $config  Optional preloaded config from get_page_route_config().
+	 * @return RWGC_Page_Route_Bundle|null
+	 */
+	public static function get_page_route_bundle( $page_id, $config = null ) {
+		$page_id = absint( $page_id );
+		if ( $page_id <= 0 || ! class_exists( 'RWGC_Legacy_Route_Mapper', false ) ) {
+			return null;
+		}
+		if ( ! is_array( $config ) ) {
+			$config = self::get_page_route_config( $page_id );
+		}
+		$bundle = RWGC_Legacy_Route_Mapper::bundle_from_legacy_config( $page_id, $config );
+		return apply_filters( 'rwgc_page_route_bundle', $bundle, $config, $page_id );
+	}
+
+	/**
+	 * Resolve redirect decision for a page (same pipeline as template routing).
+	 *
+	 * @param int               $page_id Page ID.
+	 * @param RWGC_Context|null $context Context or null for current visitor.
+	 * @param array|null        $config  Optional preloaded config from get_page_route_config().
+	 * @return array|null Keys: target_page_id, reason, page_id, country, variant_id.
+	 */
+	public static function get_route_decision_for_page( $page_id, $context = null, $config = null ) {
+		$page_id = absint( $page_id );
+		if ( $page_id <= 0 || ! class_exists( 'RWGC_Legacy_Route_Mapper', false ) ) {
+			return null;
+		}
+		if ( ! is_array( $config ) ) {
+			$config = self::get_page_route_config( $page_id );
+		}
+		$bundle = RWGC_Legacy_Route_Mapper::bundle_from_legacy_config( $page_id, $config );
+		$bundle = apply_filters( 'rwgc_page_route_bundle', $bundle, $config, $page_id );
+		if ( ! $context instanceof RWGC_Context ) {
+			$context = RWGC_Context::from_visitor();
+		}
+		$decision = RWGC_Page_Route_Resolver::resolve( $bundle, $context );
+		/**
+		 * Filter the resolved route decision for a page.
+		 *
+		 * @param array            $decision Decision: target_page_id, reason, page_id, country, variant_id.
+		 * @param array            $config   Sanitized {@see RWGC_Routing::get_page_route_config()} output.
+		 * @param int              $page_id  Page ID passed to {@see RWGC_Routing::get_route_decision_for_page()}.
+		 * @param RWGC_Context     $context  Context used for resolution.
+		 */
+		$decision = apply_filters( 'rwgc_route_variant_decision', $decision, $config, $page_id, $context );
+		/**
+		 * Fires after a route variant decision is computed (reporting, experiments).
+		 *
+		 * @param array<string, mixed> $decision Includes variant_id when resolved.
+		 * @param RWGC_Context         $context  Context used for resolution.
+		 * @param array<string, mixed> $config   Page route config.
+		 * @param int                    $page_id  Page id passed to the resolver.
+		 */
+		do_action( 'rwgc_route_variant_resolved', $decision, $context, $config, $page_id );
+		return $decision;
 	}
 
 	/**
