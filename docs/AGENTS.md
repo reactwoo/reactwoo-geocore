@@ -26,11 +26,13 @@
 
 | Folder | Version line (check `Version:` in main file) | Load hook | Notable APIs |
 |--------|-----------------------------------------------|-----------|--------------|
-| `reactwoo-geo-ai/` | 0.1.16+ | `rwga_loaded` | Top-level **wp-admin** menu (Overview, License & API, Help); Geo Core dashboard **summary card**; dashboard **REST v1 base** + **REST capabilities** + **REST location**; **variant-draft REST smoke**; **`RWGA_Block_Editor`**, **`RWGA_Usage`**, `rwga_usage_display_rows`, `RWGA_Connection::get_summary()`, `rwga_stats_snapshot`; Core AI REST + `rwgc_ai_*` |
+| `reactwoo-geo-ai/` | 0.1.18+ | `rwga_loaded` | Top-level **wp-admin** menu (Overview, License, Drafts / Queue, Advanced, Help); Overview **Geo suite** quick links to other satellites; Geo Core dashboard **summary card**; **REST v1** + **capabilities** + **location**; **variant-draft REST smoke**; **`RWGA_Block_Editor`**, **`RWGA_Usage`**, `rwga_usage_display_rows`, `RWGA_Connection::get_summary()`, `rwga_stats_snapshot`; Core AI REST + `rwgc_ai_*` |
 | `reactwoo-geo-optimise/` | 0.1.15+ | `rwgo_loaded` | Top-level **wp-admin** menu (Overview, Help); Geo Core dashboard **summary card**; **`assignment_per_route_resolved`**; **`csv_export_count`** / **`last_csv_export_gmt`**; **`rwgo_export_csv_filename`**, **`rwgo_get_variant`**, **`experiment_variant_counts`**, **`RWGO_Stats::flatten_for_csv`**, `rwgo_get_assignment_map()`, Core assignment events, `rwgo_stats_snapshot`, CSV export |
 | `reactwoo-geo-commerce/` | 0.2.18+ | `rwgcm_loaded` | Top-level **wp-admin** menu; Geo Core dashboard **summary card**; **`RWGCM_Admin_Orders_List`** (visitor country column, **sortable**); **`RWGCM_Catalog_Price_Variable`**; **Fee rules** + **`tax_class`**; **`rwgcm_fee_rule_rows`**, **`rwgcm_skip_pricing_for_cart_item`**; **`rwgcm_package_rates`**; coupons; UTM; **`rwgcm_cart_fees`**, **`rwgcm_checkout_order_meta`**, `rwgcm_geo_data` |
 
 Each declares **`Requires Plugins: reactwoo-geocore`** (same slug as Core’s `wp-content/plugins/reactwoo-geocore/` folder and `RWGC_PLUGIN_SLUG`) and boots on **`plugins_loaded` priority 20** after Geo Core. **Geo Elementor** also declares **`Requires Plugins: elementor, reactwoo-geocore`**. Satellite **`package.json`** includes **`reactwooBuild.geoCoreDependencySlug`: `"reactwoo-geocore"`** for build parity checks.
+
+**Cross-satellite admin:** Geo Elementor enqueues **`rwgc-admin`** + **`rwgc-suite`** + **`egp-geo-suite.css`** on its admin screens and shows **Geo suite** quick links (full card on Dashboard, compact **Suite links** on Rules). Geo AI Overview includes a **Geo suite** row linking to Core, Elementor (if active), Commerce, and Optimise when installed.
 
 ## Product rule (plans + implementation)
 
@@ -47,6 +49,12 @@ Each declares **`Requires Plugins: reactwoo-geocore`** (same slug as Core’s `w
 - **Country** is the baseline contract everywhere: Geo Core visitor APIs, **free page variant routing** (`RWGC_Routing` — see `includes/class-rwgc-routing.php`), Geo Commerce, Geo Optimise hooks, and Geo Core’s Elementor **document** geo visibility use **country** for decisions.
 - **City** (and city-based **matching / routing** in Elementor) is a **Geo Elementor** concern: the City Targeting add-on and related Elementor rules. In deployments where the **city database lives on the ReactWoo API** (not only a local MaxMind City DB), Core may still populate `city` / `region` on the visitor payload for **display, shortcodes, REST, and debugging**, but **do not** implement city-based page routing inside Geo Core — that stays in Geo Elementor’s layer.
 - When extending agents or APIs: treat `rwgc_get_visitor_city()` / `rwgc_get_visitor_data()['city']` as **informational** for Core; **city rule evaluation** belongs in **geo-elementor** (and its API bridge), not in `RWGC_Routing`.
+
+## Geo Suite admin shell (Phase 1+)
+
+- **`RWGC_Admin_UI`** (`includes/class-rwgc-admin-ui.php`): reusable stat cards, checklist rows, badges, quick-action row, satellite card grid; filter **`rwgc_suite_satellite_definitions`**.
+- **`admin/css/rwgc-suite.css`**: suite tokens + component classes; enqueued after **`admin/css/admin.css`** on all `rwgc-*` screens.
+- **Branding:** `assets/icon-128x128.png`, `assets/icon-256x256.png` (WordPress/plugin UI expectations).
 
 ## Quick orientation
 

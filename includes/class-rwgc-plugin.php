@@ -80,6 +80,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-preview.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-platform-client.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-ai-orchestrator.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-admin-ui.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-shortcodes.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-gutenberg.php';

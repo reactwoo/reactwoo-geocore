@@ -103,6 +103,12 @@ class RWGC_Admin {
 			array(),
 			RWGC_VERSION
 		);
+		wp_enqueue_style(
+			'rwgc-suite',
+			RWGC_URL . 'admin/css/rwgc-suite.css',
+			array( 'rwgc-admin' ),
+			RWGC_VERSION
+		);
 		wp_enqueue_script(
 			'rwgc-admin',
 			RWGC_URL . 'admin/js/admin.js',
