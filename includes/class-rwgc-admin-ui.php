@@ -28,6 +28,52 @@ class RWGC_Admin_UI {
 	}
 
 	/**
+	 * Whether a satellite plugin is active, trying `file` plus optional `alt_files` (e.g. Geo Elementor folder casing).
+	 *
+	 * @param array<string, mixed> $def Definition from get_suite_satellite_definitions().
+	 * @return bool
+	 */
+	public static function satellite_plugin_is_active( $def ) {
+		$paths = array();
+		if ( ! empty( $def['file'] ) && is_string( $def['file'] ) ) {
+			$paths[] = $def['file'];
+		}
+		if ( ! empty( $def['alt_files'] ) && is_array( $def['alt_files'] ) ) {
+			foreach ( $def['alt_files'] as $af ) {
+				if ( is_string( $af ) && '' !== $af ) {
+					$paths[] = $af;
+				}
+			}
+		}
+		$paths = array_unique( $paths );
+		foreach ( $paths as $p ) {
+			if ( self::is_plugin_active( $p ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Compact metadata pill (dashboard add-on cards).
+	 *
+	 * @param string $text    Visible label.
+	 * @param string $variant success|danger|neutral|warning.
+	 * @return void
+	 */
+	public static function render_pill( $text, $variant = 'neutral' ) {
+		$variant = sanitize_key( $variant );
+		if ( ! in_array( $variant, array( 'success', 'danger', 'neutral', 'warning' ), true ) ) {
+			$variant = 'neutral';
+		}
+		printf(
+			'<span class="rwgc-pill rwgc-pill--%1$s">%2$s</span>',
+			esc_attr( $variant ),
+			esc_html( $text )
+		);
+	}
+
+	/**
 	 * Page title + optional subtitle (suite shell).
 	 *
 	 * @param string               $title    Main heading (plain text).
@@ -161,44 +207,51 @@ class RWGC_Admin_UI {
 	/**
 	 * Satellite / add-on summary cards for the suite overview.
 	 *
-	 * @return array<int, array<string, string>>
+	 * @return array<int, array<string, mixed>>
 	 */
 	public static function get_suite_satellite_definitions() {
 		$defs = array(
 			array(
-				'slug'    => 'geoelementor',
-				'title'   => __( 'GeoElementor', 'reactwoo-geocore' ),
-				'summary' => __( 'Elementor-native geo targeting, rules, and variant groups.', 'reactwoo-geocore' ),
-				'file'    => 'GeoElementor/elementor-geo-popup.php',
-				'url'     => admin_url( 'admin.php?page=geo-elementor' ),
+				'slug'      => 'geoelementor',
+				'title'     => __( 'GeoElementor', 'reactwoo-geocore' ),
+				'summary'   => __( 'Elementor-native geo targeting, rules, and variant groups.', 'reactwoo-geocore' ),
+				'file'      => 'geo-elementor/elementor-geo-popup.php',
+				'alt_files' => array( 'GeoElementor/elementor-geo-popup.php' ),
+				'url'       => admin_url( 'admin.php?page=geo-elementor' ),
+				'dashicon'  => 'dashicons-location-alt',
 			),
 			array(
-				'slug'    => 'geo_ai',
-				'title'   => __( 'Geo AI', 'reactwoo-geocore' ),
-				'summary' => __( 'AI-assisted page variants via the ReactWoo API.', 'reactwoo-geocore' ),
-				'file'    => 'reactwoo-geo-ai/reactwoo-geo-ai.php',
-				'url'     => admin_url( 'admin.php?page=rwga-dashboard' ),
+				'slug'     => 'geo_ai',
+				'title'    => __( 'Geo AI', 'reactwoo-geocore' ),
+				'summary'  => __( 'AI-assisted page variants via the ReactWoo API.', 'reactwoo-geocore' ),
+				'file'     => 'reactwoo-geo-ai/reactwoo-geo-ai.php',
+				'url'      => admin_url( 'admin.php?page=rwga-dashboard' ),
+				'dashicon' => 'dashicons-lightbulb',
 			),
 			array(
-				'slug'    => 'geo_commerce',
-				'title'   => __( 'Geo Commerce', 'reactwoo-geocore' ),
-				'summary' => __( 'WooCommerce pricing, fees, and order geo context.', 'reactwoo-geocore' ),
-				'file'    => 'reactwoo-geo-commerce/reactwoo-geo-commerce.php',
-				'url'     => admin_url( 'admin.php?page=rwgcm-dashboard' ),
+				'slug'     => 'geo_commerce',
+				'title'    => __( 'Geo Commerce', 'reactwoo-geocore' ),
+				'summary'  => __( 'WooCommerce pricing, fees, and order geo context.', 'reactwoo-geocore' ),
+				'file'     => 'reactwoo-geo-commerce/reactwoo-geo-commerce.php',
+				'url'      => admin_url( 'admin.php?page=rwgcm-dashboard' ),
+				'dashicon' => 'dashicons-cart',
 			),
 			array(
-				'slug'    => 'geo_optimise',
-				'title'   => __( 'Geo Optimise', 'reactwoo-geocore' ),
-				'summary' => __( 'Experiments, assignments, and optimisation metrics.', 'reactwoo-geocore' ),
-				'file'    => 'reactwoo-geo-optimise/reactwoo-geo-optimise.php',
-				'url'     => admin_url( 'admin.php?page=rwgo-dashboard' ),
+				'slug'     => 'geo_optimise',
+				'title'    => __( 'Geo Optimise', 'reactwoo-geocore' ),
+				'summary'  => __( 'Experiments, assignments, and optimisation metrics.', 'reactwoo-geocore' ),
+				'file'     => 'reactwoo-geo-optimise/reactwoo-geo-optimise.php',
+				'url'      => admin_url( 'admin.php?page=rwgo-dashboard' ),
+				'dashicon' => 'dashicons-chart-area',
 			),
 		);
 
 		/**
 		 * Filter satellite cards on the Geo Core suite dashboard.
 		 *
-		 * @param array<int, array<string, string>> $defs Definitions.
+		 * Each item may include: slug, title, summary, file, alt_files (array), url, dashicon (dashicons class suffix).
+		 *
+		 * @param array<int, array<string, mixed>> $defs Definitions.
 		 */
 		return apply_filters( 'rwgc_suite_satellite_definitions', $defs );
 	}
@@ -210,19 +263,25 @@ class RWGC_Admin_UI {
 	 */
 	public static function render_satellite_cards() {
 		$defs = self::get_suite_satellite_definitions();
-		echo '<div class="rwgc-suite-satellite-grid">';
+		echo '<div class="rwgc-suite-satellite-grid" role="region" aria-label="' . esc_attr__( 'ReactWoo satellite plugins', 'reactwoo-geocore' ) . '">';
 		foreach ( $defs as $def ) {
-			$active = self::is_plugin_active( $def['file'] );
-			echo '<div class="rwgc-suite-satellite-card">';
-			echo '<div class="rwgc-suite-satellite-card__head">';
+			$active   = self::satellite_plugin_is_active( $def );
+			$dashicon = isset( $def['dashicon'] ) && is_string( $def['dashicon'] ) ? $def['dashicon'] : 'dashicons-admin-plugins';
+			echo '<div class="rwgc-addon-card rwgc-addon-card--satellite">';
+			echo '<div class="rwgc-addon-card__header">';
+			echo '<div class="rwgc-addon-card__icon" aria-hidden="true"><span class="dashicons ' . esc_attr( $dashicon ) . '"></span></div>';
+			echo '<div class="rwgc-addon-card__heading">';
 			echo '<h3>' . esc_html( $def['title'] ) . '</h3>';
+			echo '<p>' . esc_html( $def['summary'] ) . '</p>';
+			echo '</div></div>';
+			echo '<div class="rwgc-addon-card__meta">';
 			if ( $active ) {
-				self::render_badge( __( 'Active', 'reactwoo-geocore' ), 'success' );
+				self::render_pill( __( 'Active', 'reactwoo-geocore' ), 'success' );
 			} else {
-				self::render_badge( __( 'Not installed', 'reactwoo-geocore' ), 'neutral' );
+				self::render_pill( __( 'Not installed', 'reactwoo-geocore' ), 'neutral' );
 			}
 			echo '</div>';
-			echo '<p class="rwgc-suite-satellite-card__summary">' . esc_html( $def['summary'] ) . '</p>';
+			echo '<div class="rwgc-addon-card__actions">';
 			if ( $active ) {
 				printf(
 					'<a class="button button-primary" href="%1$s">%2$s</a>',
@@ -236,7 +295,7 @@ class RWGC_Admin_UI {
 					esc_html__( 'Install plugins', 'reactwoo-geocore' )
 				);
 			}
-			echo '</div>';
+			echo '</div></div>';
 		}
 		echo '</div>';
 	}

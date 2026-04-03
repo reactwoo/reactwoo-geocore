@@ -147,30 +147,44 @@ if ( class_exists( 'RWGO_Plugin', false ) ) {
 	<p class="description"><?php esc_html_e( 'These plugins extend Geo Core. Each keeps its own screens — open one to work on pricing, AI, experiments, or Elementor rules.', 'reactwoo-geocore' ); ?></p>
 	<?php RWGC_Admin_UI::render_satellite_cards(); ?>
 
+	<div class="rwgc-addon-card-stack" role="region" aria-label="<?php esc_attr_e( 'Add-on summaries', 'reactwoo-geocore' ); ?>">
 	<?php
 	/** Extra dashboard cards (e.g. Geo Commerce summary when the plugin is active). */
 	do_action( 'rwgc_dashboard_satellite_panels' );
 	?>
-
-	<div class="rwgc-grid">
-		<div class="rwgc-card">
-			<h2><?php esc_html_e( 'Current visitor (admin preview)', 'reactwoo-geocore' ); ?></h2>
-			<?php if ( ! empty( $data ) ) : ?>
-				<ul>
-					<li><strong><?php esc_html_e( 'Country', 'reactwoo-geocore' ); ?>:</strong> <?php echo esc_html( $data['country_code'] . ' – ' . $data['country_name'] ); ?></li>
-					<li><strong><?php esc_html_e( 'Currency', 'reactwoo-geocore' ); ?>:</strong> <?php echo esc_html( $data['currency'] ); ?></li>
-					<li><strong><?php esc_html_e( 'Source', 'reactwoo-geocore' ); ?>:</strong> <?php echo esc_html( $data['source'] ); ?></li>
-				</ul>
-			<?php else : ?>
-				<p><?php esc_html_e( 'No geo sample in this screen yet.', 'reactwoo-geocore' ); ?></p>
-			<?php endif; ?>
-		</div>
 	</div>
 
-	<details class="rwgc-suite-details">
-		<summary><?php esc_html_e( 'Technical reference (shortcodes, routing limits, feature matrix)', 'reactwoo-geocore' ); ?></summary>
+	<div class="rwgc-addon-card rwgc-addon-card--visitor">
+		<div class="rwgc-addon-card__header">
+			<div class="rwgc-addon-card__icon" aria-hidden="true"><span class="dashicons dashicons-location"></span></div>
+			<div class="rwgc-addon-card__heading">
+				<h3><?php esc_html_e( 'Current visitor (admin preview)', 'reactwoo-geocore' ); ?></h3>
+			</div>
+		</div>
+		<?php if ( ! empty( $data ) ) : ?>
+			<div class="rwgc-visitor-stats">
+				<div class="rwgc-visitor-stat">
+					<span class="rwgc-visitor-stat__label"><?php esc_html_e( 'Country', 'reactwoo-geocore' ); ?></span>
+					<strong class="rwgc-visitor-stat__value"><?php echo esc_html( $data['country_code'] . ' – ' . $data['country_name'] ); ?></strong>
+				</div>
+				<div class="rwgc-visitor-stat">
+					<span class="rwgc-visitor-stat__label"><?php esc_html_e( 'Currency', 'reactwoo-geocore' ); ?></span>
+					<strong class="rwgc-visitor-stat__value"><?php echo esc_html( $data['currency'] ); ?></strong>
+				</div>
+				<div class="rwgc-visitor-stat">
+					<span class="rwgc-visitor-stat__label"><?php esc_html_e( 'Source', 'reactwoo-geocore' ); ?></span>
+					<strong class="rwgc-visitor-stat__value"><?php echo esc_html( $data['source'] ); ?></strong>
+				</div>
+			</div>
+		<?php else : ?>
+			<p class="rwgc-addon-card__empty"><?php esc_html_e( 'No geo sample in this screen yet.', 'reactwoo-geocore' ); ?></p>
+		<?php endif; ?>
+	</div>
 
-		<div class="rwgc-card rwgc-card--full" style="margin-top:12px;">
+	<details class="rwgc-tech-ref-details">
+		<summary class="rwgc-tech-ref-details__summary"><?php esc_html_e( 'Technical reference and developer tools', 'reactwoo-geocore' ); ?></summary>
+
+		<div class="rwgc-card rwgc-card--full rwgc-tech-ref-details__inner">
 			<h2><?php esc_html_e( 'Feature split', 'reactwoo-geocore' ); ?></h2>
 			<table class="rwui-matrix">
 				<thead>

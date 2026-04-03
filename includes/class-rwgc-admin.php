@@ -41,6 +41,41 @@ class RWGC_Admin {
 			58
 		);
 
+		if ( class_exists( 'RWGC_Suite_Admin', false ) ) {
+			add_submenu_page(
+				'rwgc-dashboard',
+				__( 'Suite Home', 'reactwoo-geocore' ),
+				__( 'Suite Home', 'reactwoo-geocore' ),
+				$cap,
+				'rwgc-suite-home',
+				array( 'RWGC_Suite_Admin', 'render_suite_home' )
+			);
+			add_submenu_page(
+				'rwgc-dashboard',
+				__( 'Getting Started', 'reactwoo-geocore' ),
+				__( 'Getting Started', 'reactwoo-geocore' ),
+				$cap,
+				'rwgc-getting-started',
+				array( 'RWGC_Suite_Admin', 'render_getting_started' )
+			);
+			add_submenu_page(
+				'rwgc-dashboard',
+				__( 'Create country page version', 'reactwoo-geocore' ),
+				__( 'Create page version', 'reactwoo-geocore' ),
+				$cap,
+				'rwgc-workflow-variant',
+				array( 'RWGC_Suite_Admin', 'render_workflow_variant' )
+			);
+			add_submenu_page(
+				'rwgc-dashboard',
+				__( 'Geo Suite — Page versions', 'reactwoo-geocore' ),
+				__( 'Page versions', 'reactwoo-geocore' ),
+				$cap,
+				'rwgc-suite-variants',
+				array( 'RWGC_Suite_Admin', 'render_suite_variants' )
+			);
+		}
+
 		add_submenu_page(
 			'rwgc-dashboard',
 			__( 'Dashboard', 'reactwoo-geocore' ),
@@ -109,6 +144,14 @@ class RWGC_Admin {
 			array( 'rwgc-admin' ),
 			RWGC_VERSION
 		);
+		if ( preg_match( '/(rwgc-suite-home|rwgc-getting-started|rwgc-workflow-variant|rwgc-suite-variants)/', $hook ) ) {
+			wp_enqueue_style(
+				'rwgc-suite-shell',
+				RWGC_URL . 'admin/css/suite-admin.css',
+				array( 'rwgc-suite' ),
+				RWGC_VERSION
+			);
+		}
 		wp_enqueue_script(
 			'rwgc-admin',
 			RWGC_URL . 'admin/js/admin.js',

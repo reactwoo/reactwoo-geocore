@@ -306,3 +306,47 @@ if ( ! function_exists( 'rwgc_is_woocommerce_active' ) ) {
 	}
 }
 
+if ( ! function_exists( 'rwgc_get_suite_handoff_request_context' ) ) {
+	/**
+	 * Parse Geo Suite workflow handoff query args (`rwgc_handoff`, `rwgc_from`, `rwgc_launcher`, `rwgc_variant_page_id`).
+	 * Satellites use this on their admin screens to show context after deep links from Suite Home / Getting Started / next steps.
+	 *
+	 * @return array{active: bool, from: string, launcher: string, variant_page_id: int}
+	 */
+	function rwgc_get_suite_handoff_request_context() {
+		$out = array(
+			'active'            => false,
+			'from'              => '',
+			'launcher'          => '',
+			'variant_page_id'   => 0,
+		);
+		if ( ! is_admin() ) {
+			return $out;
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only request context for UX.
+		if ( ! isset( $_GET['rwgc_handoff'] ) || '1' !== (string) wp_unslash( $_GET['rwgc_handoff'] ) ) {
+			return $out;
+		}
+		$out['active'] = true;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['rwgc_from'] ) ) {
+			$out['from'] = sanitize_key( wp_unslash( (string) $_GET['rwgc_from'] ) );
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['rwgc_launcher'] ) ) {
+			$out['launcher'] = sanitize_key( wp_unslash( (string) $_GET['rwgc_launcher'] ) );
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['rwgc_variant_page_id'] ) ) {
+			$out['variant_page_id'] = absint( wp_unslash( $_GET['rwgc_variant_page_id'] ) );
+		}
+		/**
+		 * Filter parsed suite handoff request context (tests or custom entry points).
+		 *
+		 * @param array{active: bool, from: string, launcher: string, variant_page_id: int} $out Parsed values.
+		 */
+		$filtered = apply_filters( 'rwgc_suite_handoff_request_context', $out );
+		return is_array( $filtered ) ? array_merge( $out, $filtered ) : $out;
+	}
+}
+

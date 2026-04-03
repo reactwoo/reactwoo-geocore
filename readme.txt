@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.2.4
+Stable tag: 1.3.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -72,6 +72,28 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.3.3 =
+* **Suite handoff:** Public helper `rwgc_get_suite_handoff_request_context()` for satellite admin UIs; filter `rwgc_suite_handoff_request_context`. Documented in `docs/GEO_SUITE_HOOKS.md`.
+
+= 1.3.2 =
+* **Getting Started:** True 3-step flow (goal → environment → admin detection preview) with visual stepper; wizard actions `goal`, `advance_env`, `complete`; legacy onboarding states normalize to the correct step.
+* **Page versions:** New **Geo Core → Page versions** screen listing default pages with routing and their local version (if any); links to pre-fill **Create page version** with `rwgc_master_page_id`.
+* **Workflows:** Launcher filter runs before handoff query args; next-step links to Geo AI / Geo Optimise include `rwgc_variant_page_id` when a variant was just created.
+* **Filter:** `rwgc_routing_overview_rows` for the Page versions table.
+
+= 1.3.1 =
+* **Suite UX:** Goal-based guidance panel on Getting Started, launchers reordered to match the saved goal, Suite Home readiness uses the same goal for WooCommerce-focused messaging.
+* **Workflows:** Default `rwgc_next_steps` for successful variant creation (filterable); success screen uses that list instead of hard-coded buttons.
+* **Activity:** `rwgc_suite_activity_providers` — callables can append rows; list is merged, sorted by time, then passed through `rwgc_suite_activity`.
+
+= 1.3.0 =
+* **Geo Suite shell (MVP):** Suite Home and Getting Started screens, environment readiness table, task-first workflow launchers, guided “Create country page version” flow (uses the same routing rules as the page meta box), recent activity log, and first-activation redirect to Getting Started.
+* **Hooks:** `rwgc_register_modules`, `rwgc_workflow_launchers`, `rwgc_suite_activity`, `rwgc_variant_created`, etc. — see `docs/GEO_SUITE_HOOKS.md`.
+
+= 1.2.5 =
+* **Dashboard:** Compact add-on cards (`.rwgc-addon-card`), metadata pills, visitor stats grid, subdued technical reference panel; satellite grid uses the same card styles.
+* **Satellites:** Geo AI, Geo Commerce, and Geo Optimise Geo Core dashboard summaries use the shared card markup and shorter copy.
 
 = 1.2.4 =
 * **Release:** Patch bump for remote update pipeline (version-only).

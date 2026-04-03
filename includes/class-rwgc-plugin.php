@@ -81,6 +81,11 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-platform-client.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-ai-orchestrator.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-ui.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-module-registry.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-onboarding.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-workflows.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-variant-manager.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-suite-admin.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-shortcodes.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-gutenberg.php';
@@ -135,6 +140,7 @@ class RWGC_Plugin {
 	 * @return void
 	 */
 	public static function activate() {
+		require_once RWGC_PATH . 'includes/class-rwgc-onboarding.php';
 		// Ensure settings exist.
 		RWGC_Settings::ensure_defaults();
 		// Prepare upload directory and DB path if needed.
@@ -142,6 +148,7 @@ class RWGC_Plugin {
 		if ( false === get_option( 'rwgc_country_groups', false ) ) {
 			add_option( 'rwgc_country_groups', array(), '', 'no' );
 		}
+		RWGC_Onboarding::flag_activation_redirect();
 	}
 
 	/**
