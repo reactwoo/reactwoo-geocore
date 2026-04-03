@@ -94,6 +94,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<?php endif; ?>
 		</div>
 
+		<?php
+		/** Extra dashboard cards (e.g. Geo Commerce summary when the plugin is active). */
+		do_action( 'rwgc_dashboard_satellite_panels' );
+		?>
+
 		<div class="rwgc-card">
 			<h2><?php esc_html_e( 'Preview & conditional content', 'reactwoo-geocore' ); ?></h2>
 			<p class="description"><?php esc_html_e( 'Administrators can simulate another country on the front end by adding a query argument (same override used for shortcodes and blocks):', 'reactwoo-geocore' ); ?></p>
