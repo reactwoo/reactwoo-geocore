@@ -25,6 +25,20 @@ class RWGC_Routing {
 	const TRANSIENT_LOOP_PREFIX = 'rwgc_route_loop_';
 
 	/**
+	 * Memoize builder bypass per resolved post_id key (avoids repeated Elementor API calls per request).
+	 *
+	 * @var array<string, bool>
+	 */
+	private static $memo_builder_bypass = array();
+
+	/**
+	 * Memoize Elementor surface detection (cheap GET + optional deep check once).
+	 *
+	 * @var bool|null
+	 */
+	private static $memo_elementor_surface = null;
+
+	/**
 	 * Init hooks.
 	 *
 	 * @return void
@@ -40,8 +54,11 @@ class RWGC_Routing {
 	 */
 	public static function maybe_route_request() {
 		if ( self::should_bypass_request() ) {
+			self::maybe_log_bypass_branch( 'maybe_route_request_skip', array( 'action' => 'skip_routing' ) );
 			return;
 		}
+
+		self::maybe_log_bypass_branch( 'maybe_route_request_run', array( 'action' => 'run_route_resolution' ) );
 
 		$page_id = get_queried_object_id();
 		if ( ! $page_id || 'page' !== get_post_type( $page_id ) ) {
@@ -449,27 +466,36 @@ class RWGC_Routing {
 	 * @return bool
 	 */
 	private static function should_bypass_request() {
+		$reason = '';
+		$out    = false;
 		if ( is_admin() || ( function_exists( 'wp_doing_ajax' ) && wp_doing_ajax() ) ) {
-			return true;
+			$reason = 'admin_or_ajax';
+			$out    = true;
+		} elseif ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+			$reason = 'rest';
+			$out    = true;
+		} elseif ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+			$reason = 'cron';
+			$out    = true;
+		} elseif ( is_feed() || is_trackback() || is_robots() || is_preview() ) {
+			$reason = 'feed_trackback_robots_preview';
+			$out    = true;
+		} elseif ( self::is_builder_edit_request() ) {
+			$reason = 'builder_edit';
+			$out    = true;
+		} else {
+			$reason = 'none';
+			$out    = false;
 		}
 
-		if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
-			return true;
-		}
-
-		if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
-			return true;
-		}
-
-		if ( is_feed() || is_trackback() || is_robots() || is_preview() ) {
-			return true;
-		}
-
-		if ( self::is_builder_edit_request() ) {
-			return true;
-		}
-
-		return false;
+		self::maybe_log_bypass_branch(
+			'should_bypass_request',
+			array(
+				'result' => $out,
+				'reason' => $reason,
+			)
+		);
+		return $out;
 	}
 
 	/**
@@ -481,6 +507,11 @@ class RWGC_Routing {
 	 * @return bool
 	 */
 	public static function is_builder_edit_request( $post_id = null ) {
+		$key = null === $post_id ? '_null' : (string) (int) $post_id;
+		if ( isset( self::$memo_builder_bypass[ $key ] ) ) {
+			return self::$memo_builder_bypass[ $key ];
+		}
+
 		$resolved = self::resolve_builder_context_post_id( $post_id );
 		$inner    = self::compute_builder_edit_bypass( $resolved );
 		/**
@@ -489,7 +520,18 @@ class RWGC_Routing {
 		 * @param bool $inner    Whether core heuristics + capability matched.
 		 * @param int  $resolved Resolved document/post ID (0 if unknown).
 		 */
-		return (bool) apply_filters( 'rwgc_should_bypass_builder_request', $inner, $resolved );
+		$out = (bool) apply_filters( 'rwgc_should_bypass_builder_request', $inner, $resolved );
+		self::$memo_builder_bypass[ $key ] = $out;
+		self::maybe_log_bypass_branch(
+			'is_builder_edit_request',
+			array(
+				'cache_key' => $key,
+				'resolved'  => $resolved,
+				'inner'     => $inner,
+				'bypass'    => $out,
+			)
+		);
+		return $out;
 	}
 
 	/**
@@ -514,28 +556,60 @@ class RWGC_Routing {
 	 * @return bool
 	 */
 	private static function detect_elementor_builder_surface_request() {
+		if ( null !== self::$memo_elementor_surface ) {
+			return self::$memo_elementor_surface;
+		}
+
+		// 1) Cheap request hints (no Elementor bootstrap).
 		if ( ! empty( $_GET['elementor-preview'] ) || ! empty( $_GET['elementor_library'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			self::$memo_elementor_surface = true;
+			self::maybe_log_bypass_branch( 'detect_elementor_surface_get_preview', array( 'via' => 'get_param', 'elementor_preview_or_library' => true ) );
 			return true;
 		}
 
 		if ( ! empty( $_GET['action'] ) && 'elementor' === $_GET['action'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			self::$memo_elementor_surface = true;
+			self::maybe_log_bypass_branch( 'detect_elementor_surface_get_action', array( 'via' => 'get_param', 'action_elementor' => true ) );
 			return true;
 		}
 
-		if ( class_exists( '\Elementor\Plugin' ) ) {
-			try {
-				$plugin = \Elementor\Plugin::$instance;
-				if ( $plugin && isset( $plugin->editor ) && is_object( $plugin->editor ) && method_exists( $plugin->editor, 'is_edit_mode' ) && $plugin->editor->is_edit_mode() ) {
-					return true;
-				}
-				if ( $plugin && isset( $plugin->preview ) && is_object( $plugin->preview ) && method_exists( $plugin->preview, 'is_preview_mode' ) && $plugin->preview->is_preview_mode() ) {
-					return true;
-				}
-			} catch ( \Throwable $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
-				return false;
-			}
+		// Do not call Elementor edit/preview APIs on ordinary frontend document loads (logged-in editors browsing the site).
+		if ( ! is_admin() && ! ( function_exists( 'wp_doing_ajax' ) && wp_doing_ajax() ) ) {
+			self::$memo_elementor_surface = false;
+			return false;
 		}
 
+		// 2) Only in admin or AJAX: ask Elementor runtime (guard against re-entrancy from filters).
+		static $deep_in_progress = false;
+		if ( $deep_in_progress ) {
+			return false;
+		}
+		if ( ! class_exists( '\Elementor\Plugin', false ) ) {
+			self::$memo_elementor_surface = false;
+			return false;
+		}
+
+		$deep_in_progress = true;
+		try {
+			$plugin = \Elementor\Plugin::$instance;
+			if ( $plugin && isset( $plugin->editor ) && is_object( $plugin->editor ) && method_exists( $plugin->editor, 'is_edit_mode' ) && $plugin->editor->is_edit_mode() ) {
+				self::$memo_elementor_surface = true;
+				self::maybe_log_bypass_branch( 'detect_elementor_surface_runtime_edit', array( 'via' => 'runtime', 'edit_mode' => true ) );
+				return true;
+			}
+			if ( $plugin && isset( $plugin->preview ) && is_object( $plugin->preview ) && method_exists( $plugin->preview, 'is_preview_mode' ) && $plugin->preview->is_preview_mode() ) {
+				self::$memo_elementor_surface = true;
+				self::maybe_log_bypass_branch( 'detect_elementor_surface_runtime_preview', array( 'via' => 'runtime', 'preview_mode' => true ) );
+				return true;
+			}
+		} catch ( \Throwable $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
+			self::$memo_elementor_surface = false;
+			return false;
+		} finally {
+			$deep_in_progress = false;
+		}
+
+		self::$memo_elementor_surface = false;
 		return false;
 	}
 
@@ -651,6 +725,37 @@ class RWGC_Routing {
 
 		$payload = is_array( $context ) ? wp_json_encode( $context ) : '';
 		error_log( '[RWGC Routing] ' . sanitize_text_field( $message ) . ' ' . $payload ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+	}
+
+	/**
+	 * One log line per $where per request when Geo Core debug mode is enabled.
+	 *
+	 * @param string               $where Logical branch name.
+	 * @param array<string, mixed> $extra Additional fields.
+	 * @return void
+	 */
+	private static function maybe_log_bypass_branch( $where, $extra = array() ) {
+		if ( ! class_exists( 'RWGC_Settings', false ) || ! RWGC_Settings::get( 'debug_mode', 0 ) ) {
+			return;
+		}
+		static $logged = array();
+		if ( isset( $logged[ $where ] ) ) {
+			return;
+		}
+		$logged[ $where ] = true;
+
+		$base = array(
+			'branch'                 => $where,
+			'request_uri'            => isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '',
+			'is_admin'               => is_admin(),
+			'wp_doing_ajax'          => function_exists( 'wp_doing_ajax' ) && wp_doing_ajax(),
+			'REST_REQUEST'           => defined( 'REST_REQUEST' ) && REST_REQUEST,
+			'GET_elementor_preview'  => isset( $_GET['elementor-preview'] ),
+			'GET_action_is_elementor'=> isset( $_GET['action'] ) && 'elementor' === $_GET['action'],
+			'class_Elementor_Plugin' => class_exists( '\Elementor\Plugin', false ),
+		);
+		$line = array_merge( $base, is_array( $extra ) ? $extra : array() );
+		error_log( '[RWGC bypass] ' . wp_json_encode( $line ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 	}
 }
 
