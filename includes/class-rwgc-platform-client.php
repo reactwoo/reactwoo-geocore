@@ -124,6 +124,15 @@ class RWGC_Platform_Client {
 			'license_key' => $license,
 			'domain'      => $domain,
 		);
+		/**
+		 * Add optional fields for multi-product JWTs (e.g. product_slug, plan_code). Satellites should
+		 * only augment when the license_key matches their stored key.
+		 *
+		 * @param array<string, string> $body    JSON body for POST /api/v5/auth/login.
+		 * @param string                  $license Effective license key.
+		 * @param string                  $domain  Site host.
+		 */
+		$body = apply_filters( 'rwgc_auth_login_body', $body, $license, $domain );
 
 		$response = wp_remote_post(
 			$url,
