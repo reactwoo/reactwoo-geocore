@@ -239,7 +239,7 @@ class RWGC_Admin_UI {
 			array(
 				'slug'     => 'geo_optimise',
 				'title'    => __( 'Geo Optimise', 'reactwoo-geocore' ),
-				'summary'  => __( 'Experiments, assignments, and optimisation metrics.', 'reactwoo-geocore' ),
+				'summary'  => __( 'Page tests, variants, and reports; measurement and developer tools in one place.', 'reactwoo-geocore' ),
 				'file'     => 'reactwoo-geo-optimise/reactwoo-geo-optimise.php',
 				'url'      => admin_url( 'admin.php?page=rwgo-dashboard' ),
 				'dashicon' => 'dashicons-chart-area',

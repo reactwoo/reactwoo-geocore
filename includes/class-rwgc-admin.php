@@ -24,12 +24,41 @@ class RWGC_Admin {
 	}
 
 	/**
+	 * Menu primitive cap (aligned with Geo Elementor: admins + WooCommerce shop managers).
+	 *
+	 * @return string
+	 */
+	public static function required_capability() {
+		$default_cap = 'manage_options';
+		if ( ! current_user_can( 'manage_options' ) && current_user_can( 'manage_woocommerce' ) ) {
+			$default_cap = 'manage_woocommerce';
+		}
+		$capability = apply_filters( 'rwgc_required_capability', $default_cap );
+		if ( ! is_string( $capability ) || '' === $capability ) {
+			$capability = $default_cap;
+		}
+		if ( ! current_user_can( $capability ) && current_user_can( 'manage_options' ) ) {
+			$capability = 'manage_options';
+		}
+		return $capability;
+	}
+
+	/**
+	 * Whether the current user may use Geo Core wp-admin screens.
+	 *
+	 * @return bool
+	 */
+	public static function can_manage() {
+		return current_user_can( self::required_capability() );
+	}
+
+	/**
 	 * Register top-level menu and submenus.
 	 *
 	 * @return void
 	 */
 	public static function register_menu() {
-		$cap = 'manage_options';
+		$cap = self::required_capability();
 
 		add_menu_page(
 			__( 'ReactWoo Geo Core', 'reactwoo-geocore' ),
@@ -167,7 +196,7 @@ class RWGC_Admin {
 	 * @return void
 	 */
 	public static function render_dashboard() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! self::can_manage() ) {
 			return;
 		}
 		$settings = RWGC_Settings::get_settings();
@@ -183,7 +212,7 @@ class RWGC_Admin {
 	 * @return void
 	 */
 	public static function render_settings() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! self::can_manage() ) {
 			return;
 		}
 		$settings = RWGC_Settings::get_settings();
@@ -196,7 +225,7 @@ class RWGC_Admin {
 	 * @return void
 	 */
 	public static function render_tools() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! self::can_manage() ) {
 			return;
 		}
 		$settings = RWGC_Settings::get_settings();
@@ -211,7 +240,7 @@ class RWGC_Admin {
 	 * @return void
 	 */
 	public static function render_usage() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! self::can_manage() ) {
 			return;
 		}
 		$status                = RWGC_MaxMind::get_status();
@@ -227,7 +256,7 @@ class RWGC_Admin {
 	 * @return void
 	 */
 	public static function handle_upload_mmdb() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! self::can_manage() ) {
 			wp_die( -1 );
 		}
 		check_admin_referer( 'rwgc_upload_mmdb' );
@@ -275,7 +304,7 @@ class RWGC_Admin {
 	 * @return void
 	 */
 	public static function render_addons() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! self::can_manage() ) {
 			return;
 		}
 		$addons = RWGC_Upsells::get_addons();
@@ -319,7 +348,7 @@ class RWGC_Admin {
 	 * @return void
 	 */
 	public static function maybe_show_admin_notices() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! self::can_manage() ) {
 			return;
 		}
 

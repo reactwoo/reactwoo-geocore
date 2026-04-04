@@ -39,8 +39,8 @@ class RWGC_Workflows {
 			array(
 				'id'          => 'experiment',
 				'title'       => __( 'Start a geo split test', 'reactwoo-geocore' ),
-				'description' => __( 'Compare versions and track assignments in Geo Optimise.', 'reactwoo-geocore' ),
-				'url'         => class_exists( 'RWGO_Plugin', false ) ? admin_url( 'admin.php?page=rwgo-experiments' ) : admin_url( 'admin.php?page=rwgc-addons' ),
+				'description' => __( 'Create a page test in Geo Optimise: duplicate a variant, route traffic, and review assignments.', 'reactwoo-geocore' ),
+				'url'         => class_exists( 'RWGO_Plugin', false ) ? admin_url( 'admin.php?page=rwgo-create-test' ) : admin_url( 'admin.php?page=rwgc-addons' ),
 				'primary'     => false,
 				'icon'        => 'dashicons-chart-area',
 				'requires'    => 'geo_optimise',
@@ -129,7 +129,7 @@ class RWGC_Workflows {
 				break;
 			case 'tests':
 				$out['headline'] = __( 'Path: split tests', 'reactwoo-geocore' );
-				$out['body']     = __( 'Geo Optimise tracks experiments on top of Geo Core routing. Install Geo Optimise, then define an experiment that targets your pages or variants.', 'reactwoo-geocore' );
+				$out['body']     = __( 'Install Geo Optimise, then use Create Test: pick a page, publish a variant, and read reports — Geo Core supplies visitor context for routing and targeting.', 'reactwoo-geocore' );
 				break;
 			case 'commerce':
 				$out['headline'] = __( 'Path: WooCommerce by country', 'reactwoo-geocore' );
@@ -237,7 +237,7 @@ class RWGC_Workflows {
 					);
 				}
 				if ( class_exists( 'RWGO_Plugin', false ) ) {
-					$ex_url = self::add_handoff_query_args( admin_url( 'admin.php?page=rwgo-experiments' ), 'experiment' );
+					$ex_url = self::add_handoff_query_args( admin_url( 'admin.php?page=rwgo-create-test' ), 'experiment' );
 					if ( ! empty( $ctx['variant_page_id'] ) ) {
 						$ex_url = add_query_arg( 'rwgc_variant_page_id', (int) $ctx['variant_page_id'], $ex_url );
 					}

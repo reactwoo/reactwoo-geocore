@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.3.9
+Stable tag: 1.3.10
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.3.10 =
+* **Admin:** Geo Core menu and screens align with Geo Elementor: `manage_options`, or `manage_woocommerce` for WooCommerce shop managers who do not have `manage_options`. Filter: `rwgc_required_capability`.
 
 = 1.3.9 =
 * **Docs:** Installation and FAQ state clearly that **no Composer or SSH** is required on customer hosting; libraries ship in `vendor/`.

@@ -57,7 +57,7 @@ class RWGC_Module_Registry {
 			self::build_satellite_module(
 				self::MODULE_GEO_OPT,
 				__( 'Geo Optimise', 'reactwoo-geocore' ),
-				__( 'Experiments, assignments, and results.', 'reactwoo-geocore' ),
+				__( 'Page tests, variants, and reports — full workflow in wp-admin.', 'reactwoo-geocore' ),
 				class_exists( 'RWGO_Plugin', false ),
 				'rwgo-dashboard',
 				array( 'reactwoo-geo-optimise/reactwoo-geo-optimise.php' )
