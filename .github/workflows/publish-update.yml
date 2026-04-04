@@ -128,7 +128,7 @@ jobs:
             fi
             sleep 15
           done
-          echo "::error::API did not return HTTP 200 on GET /health after 5 tries (last code: ${CODE}). On the cPanel host: \`pm2 status\`, \`pm2 logs reactwoo-api\`, then \`pm2 reload ecosystem.config.js --env production\` (see docs/PRODUCTION-SERVER.md)."
+          echo "::error::API did not return HTTP 200 on GET /health after 5 tries (last code: ${CODE}). On the cPanel host: \`npx pm2 status\`, \`npx pm2 logs reactwoo-api\`, then \`npx pm2 reload ecosystem.config.js --env production\` (see docs/PRODUCTION-SERVER.md)."
           exit 1
 
       - name: Publish release metadata to API
