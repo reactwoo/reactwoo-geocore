@@ -350,3 +350,20 @@ if ( ! function_exists( 'rwgc_get_suite_handoff_request_context' ) ) {
 	}
 }
 
+if ( ! function_exists( 'rwgc_is_builder_edit_request' ) ) {
+	/**
+	 * Whether the current request is an Elementor (or future builder) edit/preview surface that should skip geo routing.
+	 *
+	 * Delegates to {@see RWGC_Routing::is_builder_edit_request()}.
+	 *
+	 * @param int|null $post_id Optional document ID for capability checks.
+	 * @return bool
+	 */
+	function rwgc_is_builder_edit_request( $post_id = null ) {
+		if ( ! class_exists( 'RWGC_Routing', false ) ) {
+			return false;
+		}
+		return RWGC_Routing::is_builder_edit_request( $post_id );
+	}
+}
+

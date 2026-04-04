@@ -258,6 +258,10 @@ class RWGC_Elementor {
 		}
 
 		$post_id = get_queried_object_id();
+		if ( function_exists( 'rwgc_is_builder_edit_request' ) && rwgc_is_builder_edit_request( $post_id ) ) {
+			return $content;
+		}
+
 		if ( ! $post_id ) {
 			return $content;
 		}

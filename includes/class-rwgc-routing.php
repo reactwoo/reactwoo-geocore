@@ -465,11 +465,125 @@ class RWGC_Routing {
 			return true;
 		}
 
-		if ( ! empty( $_GET['elementor-preview'] ) || ! empty( $_GET['action'] ) && 'elementor' === $_GET['action'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( self::is_builder_edit_request() ) {
 			return true;
 		}
 
 		return false;
+	}
+
+	/**
+	 * Whether this request should skip Geo Core routing (Elementor and other builder surfaces).
+	 *
+	 * Requires a logged-in user who can edit the resolved document, plus builder/editor heuristics.
+	 *
+	 * @param int|null $post_id Optional document/post ID; resolved from the request when null.
+	 * @return bool
+	 */
+	public static function is_builder_edit_request( $post_id = null ) {
+		$resolved = self::resolve_builder_context_post_id( $post_id );
+		$inner    = self::compute_builder_edit_bypass( $resolved );
+		/**
+		 * Whether Geo Core should bypass page routing and other geo enforcement for builder/editor requests.
+		 *
+		 * @param bool $inner    Whether core heuristics + capability matched.
+		 * @param int  $resolved Resolved document/post ID (0 if unknown).
+		 */
+		return (bool) apply_filters( 'rwgc_should_bypass_builder_request', $inner, $resolved );
+	}
+
+	/**
+	 * @param int $resolved_post_id Resolved post ID.
+	 * @return bool
+	 */
+	private static function compute_builder_edit_bypass( $resolved_post_id ) {
+		if ( ! is_user_logged_in() ) {
+			return false;
+		}
+
+		if ( ! self::detect_elementor_builder_surface_request() ) {
+			return false;
+		}
+
+		return self::user_can_edit_builder_context( $resolved_post_id );
+	}
+
+	/**
+	 * Elementor editor iframe, admin editor entry, or Elementor runtime edit/preview mode.
+	 *
+	 * @return bool
+	 */
+	private static function detect_elementor_builder_surface_request() {
+		if ( ! empty( $_GET['elementor-preview'] ) || ! empty( $_GET['elementor_library'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return true;
+		}
+
+		if ( ! empty( $_GET['action'] ) && 'elementor' === $_GET['action'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return true;
+		}
+
+		if ( class_exists( '\Elementor\Plugin' ) ) {
+			try {
+				$plugin = \Elementor\Plugin::$instance;
+				if ( $plugin && isset( $plugin->editor ) && is_object( $plugin->editor ) && method_exists( $plugin->editor, 'is_edit_mode' ) && $plugin->editor->is_edit_mode() ) {
+					return true;
+				}
+				if ( $plugin && isset( $plugin->preview ) && is_object( $plugin->preview ) && method_exists( $plugin->preview, 'is_preview_mode' ) && $plugin->preview->is_preview_mode() ) {
+					return true;
+				}
+			} catch ( \Throwable $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
+				return false;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Resolve the document being edited for capability checks.
+	 *
+	 * @param int|null $post_id Optional explicit ID.
+	 * @return int Post ID or 0.
+	 */
+	private static function resolve_builder_context_post_id( $post_id ) {
+		if ( null !== $post_id && (int) $post_id > 0 ) {
+			return (int) $post_id;
+		}
+
+		if ( ! empty( $_GET['elementor-preview'] ) && is_numeric( $_GET['elementor-preview'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return (int) $_GET['elementor-preview'];
+		}
+
+		if ( ! empty( $_GET['p'] ) && isset( $_GET['action'] ) && 'elementor' === $_GET['action'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return (int) $_GET['p'];
+		}
+
+		if ( ! empty( $_REQUEST['post'] ) && is_numeric( $_REQUEST['post'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return (int) $_REQUEST['post'];
+		}
+
+		if ( ! empty( $_REQUEST['editor_post_id'] ) && is_numeric( $_REQUEST['editor_post_id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return (int) $_REQUEST['editor_post_id'];
+		}
+
+		$q = (int) get_queried_object_id();
+		if ( $q > 0 ) {
+			return $q;
+		}
+
+		return 0;
+	}
+
+	/**
+	 * @param int $resolved_post_id Resolved post ID (0 = unknown).
+	 * @return bool
+	 */
+	private static function user_can_edit_builder_context( $resolved_post_id ) {
+		if ( $resolved_post_id > 0 ) {
+			return (bool) current_user_can( 'edit_post', $resolved_post_id );
+		}
+
+		return (bool) ( current_user_can( 'edit_posts' ) || current_user_can( 'edit_pages' ) );
 	}
 
 	/**
