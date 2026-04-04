@@ -79,6 +79,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-api.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-preview.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-platform-client.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-satellite-updater.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-ai-orchestrator.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-ui.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-module-registry.php';
@@ -132,6 +133,20 @@ class RWGC_Plugin {
 		RWGC_Routing::init();
 		RWGC_REST::init();
 		RWGC_Upsells::init();
+
+		// Free Geo Core: same R2 pipeline; `attach_bearer_token` false = no Authorization header (API allows slug via UPDATES_FREE_SLUGS).
+		if ( class_exists( 'RWGC_Satellite_Updater', false ) ) {
+			RWGC_Satellite_Updater::register(
+				array(
+					'basename'            => plugin_basename( RWGC_FILE ),
+					'version'             => RWGC_VERSION,
+					'catalog_slug'        => 'reactwoo-geocore',
+					'attach_bearer_token' => false,
+					'name'                => __( 'ReactWoo Geo Core', 'reactwoo-geocore' ),
+					'description'         => __( 'Free geolocation engine: MaxMind country detection, routing, REST, block.', 'reactwoo-geocore' ),
+				)
+			);
+		}
 	}
 
 	/**

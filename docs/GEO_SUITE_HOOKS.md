@@ -7,7 +7,7 @@ Geo Core ships an **onboarding + workflow shell** (`RWGC_Suite_Admin`, Suite Hom
 | Hook | When |
 |------|------|
 | `rwgc_loaded` | Geo Core finished bootstrapping (existing). |
-| `rwgc_suite_activity_logged` | `( $item )` — after a row is stored for Suite Home “Recent activity”. |
+| `rwgc_suite_activity_logged` | `( $item )` — after a row is stored for Suite Home "Recent activity". |
 | `rwgc_variant_created` | `( $result )` — after `RWGC_Variant_Manager::create_country_variant()` succeeds. `variant_page_id`, `master_page_id`, `edit_url`, `country_iso2`. |
 
 ## Filters
@@ -44,3 +44,22 @@ On activation, option `rwgc_activation_redirect` is set. On next load of `index.
 ## Handoff query parameters
 
 Suite workflow buttons append: `rwgc_handoff=1`, `rwgc_from=suite`, `rwgc_launcher={id}`. After creating a variant, **Geo AI** / **Geo Optimise** next-step URLs may also include `rwgc_variant_page_id={id}` so satellites can open the relevant page context.
+
+## Satellite updates (API + R2)
+
+Private builds are published to R2 with metadata in Redis; WordPress calls **`POST /api/v5/updates/check`** and receives a time-limited **`download_url`**.
+
+**Geo Core (free)** uses catalog slug **`reactwoo-geocore`**, **`attach_bearer_token` false** (client does not send `Authorization`). The API **allowlists** that slug in **`UPDATES_FREE_SLUGS`**; JWT is still required for other slugs when **`UPDATES_REQUIRE_LICENSE_TOKEN=true`**. CI publishes Core with the same **`/api/v5/updates/publish`** flow as paid plugins.
+
+**Commercial** plugins send **`Authorization: Bearer`** (license JWT). The API enforces JWT for those slugs when **`UPDATES_REQUIRE_LICENSE_TOKEN`** is on.
+
+**`RWGC_Satellite_Updater`** registers Geo Core plus each satellite that calls **`register()`**.
+
+| Plugin | `catalog_slug` | License JWT |
+|--------|----------------|-------------|
+| Geo Core | `reactwoo-geocore` | No (free slug on API) |
+| Geo AI | `reactwoo-geo-ai` | Yes |
+| Geo Optimise | `reactwoo-geo-optimise` | Yes |
+| Geo Commerce | `reactwoo-geo-commerce` | Yes |
+
+Filter **`rwgc_satellite_updater_items`** can adjust registered configs. **Geo Elementor** uses its own updater in `geo-elementor/includes/plugin-updater.php`; it prefers **`egp_license_access_token`** and falls back to **`RWGC_Platform_Client::get_access_token()`** when that option is empty.

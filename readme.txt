@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.3.3
+Stable tag: 1.3.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -72,6 +72,15 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.3.6 =
+* **Geo Core updates (R2, no product license):** Geo Core registers `RWGC_Satellite_Updater` with catalog slug `reactwoo-geocore` and `attach_bearer_token` false (no `Authorization` header; enforcement is server-side by slug). The API skips JWT only for slugs in `UPDATES_FREE_SLUGS` (default includes `reactwoo-geocore`) when `UPDATES_REQUIRE_LICENSE_TOKEN` is on. Publish zips with the same `POST /api/v5/updates/publish` flow as commercial plugins. Docs: `docs/GEO_SUITE_HOOKS.md`, `docs/AGENTS.md`.
+
+= 1.3.5 =
+* **Satellite updates:** `RWGC_Satellite_Updater` only calls the updates API for commercial slugs when a valid license JWT is available (same login as `RWGC_Platform_Client`); no unauthenticated check for paid products.
+
+= 1.3.4 =
+* **Satellite updates:** `RWGC_Satellite_Updater` — commercial satellites can register plugin updates via `POST /api/v5/updates/check` using the same JWT as `RWGC_Platform_Client` (R2 signed `download_url`). Filter: `rwgc_satellite_updater_items`.
 
 = 1.3.3 =
 * **Suite handoff:** Public helper `rwgc_get_suite_handoff_request_context()` for satellite admin UIs; filter `rwgc_suite_handoff_request_context`. Documented in `docs/GEO_SUITE_HOOKS.md`.
