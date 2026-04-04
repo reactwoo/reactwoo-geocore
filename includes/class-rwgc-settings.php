@@ -18,6 +18,20 @@ class RWGC_Settings {
 	 */
 	public static function init() {
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
+		add_filter( 'option_page_capability_rwgc_settings_group', array( __CLASS__, 'filter_option_page_capability' ) );
+	}
+
+	/**
+	 * options.php defaults to manage_options; align with RWGC_Admin::required_capability().
+	 *
+	 * @param string $cap Default manage_options.
+	 * @return string
+	 */
+	public static function filter_option_page_capability( $cap ) {
+		if ( class_exists( 'RWGC_Admin', false ) ) {
+			return RWGC_Admin::required_capability();
+		}
+		return $cap;
 	}
 
 	/**
@@ -38,6 +52,10 @@ class RWGC_Settings {
 	 * @return void
 	 */
 	public static function register_settings() {
+		$cap = 'manage_options';
+		if ( class_exists( 'RWGC_Admin', false ) ) {
+			$cap = RWGC_Admin::required_capability();
+		}
 		register_setting(
 			'rwgc_settings_group',
 			self::OPTION_KEY,
@@ -45,6 +63,7 @@ class RWGC_Settings {
 				'type'              => 'array',
 				'sanitize_callback' => array( __CLASS__, 'sanitize_settings' ),
 				'default'           => self::get_defaults(),
+				'capability'        => $cap,
 			)
 		);
 	}
