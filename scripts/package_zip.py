@@ -51,8 +51,32 @@ INCLUDE_FILES = [
 ]
 
 
+def _assert_shippable_vendor(base: Path) -> None:
+    """
+    Customers must not run Composer on the server — the zip must contain a complete
+    production vendor/. Fail fast if autoload was generated with dev deps (PHPUnit, etc.).
+    Maintainer fix: composer install --no-dev --optimize-autoloader
+    """
+    static_path = base / "vendor" / "composer" / "autoload_static.php"
+    if not static_path.is_file():
+        raise RuntimeError(
+            "Missing vendor/composer/autoload_static.php. Run "
+            "`composer install --no-dev --optimize-autoloader` before packaging (maintainers only)."
+        )
+    text = static_path.read_text(encoding="utf-8", errors="replace")
+    # Dev-only packages that must not appear in production autoload
+    needles = ("myclabs", "phpunit", "DeepCopy\\")
+    for n in needles:
+        if n in text:
+            raise RuntimeError(
+                f"vendor/composer/autoload_static.php still references {n!r} (dev dependency). "
+                "Run `composer install --no-dev --optimize-autoloader` before packaging (maintainers only)."
+            )
+
+
 def main() -> None:
     base = Path(__file__).resolve().parent.parent
+    _assert_shippable_vendor(base)
     root_folder, zip_name = _zip_paths(base)
     out = base / zip_name
 

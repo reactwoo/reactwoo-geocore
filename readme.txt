@@ -28,6 +28,8 @@ It is designed to be used on its own, or as a shared geo engine for premium Reac
 
 == Installation ==
 
+**No Composer, SSH, or WP-CLI is required on your server.** Geo Core ships with bundled PHP libraries under `vendor/` (MaxMind / GeoIP2). You only upload or update the plugin like any other WordPress plugin.
+
 1. Upload the plugin files to the `/wp-content/plugins/reactwoo-geocore` directory, or install via WordPress plugin upload.
 2. Activate the plugin through the 'Plugins' screen in WordPress.
 3. Go to **Geo Core → Settings** and enter your **MaxMind** (GeoLite2) account credentials. This is a third-party MaxMind license for downloading the database — not a ReactWoo product license. Core geo works without any ReactWoo key.
@@ -67,6 +69,10 @@ No. You must provide your own MaxMind license key and accept their terms of use.
 
 No. Detection, shortcodes, the Gutenberg block, page routing, and the public REST location endpoint work without a ReactWoo key. A ReactWoo product license in settings is **optional** and used only if you enable optional AI-assisted features that call the ReactWoo API.
 
+= Does the server need Composer or SSH? =
+
+**No.** All required PHP packages are included in the plugin’s `vendor/` directory. You should never need to run `composer install` on a customer site. (Composer is used only when **we** build the release zip in development or CI.)
+
 = Does this plugin require WooCommerce? =
 
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
@@ -74,7 +80,7 @@ No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (se
 == Changelog ==
 
 = 1.3.8 =
-* **Release (Composer):** Regenerate committed `vendor/composer/*` with **`composer install --no-dev`** so autoload no longer references PHPUnit / `myclabs/deep-copy` (those paths were never shipped; dev-only `composer install` had polluted the lockfile autoload). Prevents fatal `Failed opening required ... deep_copy.php` on sites installing from the update zip. CI now runs Composer before building the zip.
+* **Bundled vendor:** Fixed a bad release build where Composer autoload pointed at **dev-only** test libraries that were not included in the zip — **no customer action or hosting tools required**; sites only install the update as usual. Release zips are now built with production dependencies only; CI runs that step before packaging.
 
 = 1.3.7 =
 * **License login:** Filter **`rwgc_auth_login_body`** — satellites can add fields (e.g. `product_slug`, `catalog_slug`) to the JSON body for `POST /api/v5/auth/login` before the JWT is minted.
