@@ -33,6 +33,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          tools: composer:v2
+
+      - name: Composer install (production vendor — no dev / PHPUnit)
+        run: composer install --no-dev --optimize-autoloader
+
       - name: Setup Python
         uses: actions/setup-python@v6
         with:

@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.3.7
+Stable tag: 1.3.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -72,6 +72,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.3.8 =
+* **Release (Composer):** Regenerate committed `vendor/composer/*` with **`composer install --no-dev`** so autoload no longer references PHPUnit / `myclabs/deep-copy` (those paths were never shipped; dev-only `composer install` had polluted the lockfile autoload). Prevents fatal `Failed opening required ... deep_copy.php` on sites installing from the update zip. CI now runs Composer before building the zip.
 
 = 1.3.7 =
 * **License login:** Filter **`rwgc_auth_login_body`** — satellites can add fields (e.g. `product_slug`, `catalog_slug`) to the JSON body for `POST /api/v5/auth/login` before the JWT is minted.
