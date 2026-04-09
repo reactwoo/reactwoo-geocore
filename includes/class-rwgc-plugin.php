@@ -48,6 +48,8 @@ class RWGC_Plugin {
 		/**
 		 * Fires when ReactWoo Geo Core has loaded.
 		 */
+		add_action( 'rwgc_loaded', array( 'RWGC_Target_Registry', 'init' ), 1 );
+
 		do_action( 'rwgc_loaded' );
 	}
 
@@ -107,6 +109,21 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-upsells.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-migration.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-compat.php';
+
+		require_once RWGC_PATH . 'includes/targeting/interface-rwgc-target-provider.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-context-snapshot.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-operators.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-availability.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-simulator.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-registry.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-context-resolver.php';
+		require_once RWGC_PATH . 'includes/targeting/providers/class-rwgc-target-provider-geo.php';
+		require_once RWGC_PATH . 'includes/targeting/providers/class-rwgc-target-provider-language.php';
+		require_once RWGC_PATH . 'includes/targeting/providers/class-rwgc-target-provider-time.php';
+		require_once RWGC_PATH . 'includes/targeting/providers/class-rwgc-target-provider-device.php';
+		require_once RWGC_PATH . 'includes/targeting/providers/class-rwgc-target-provider-weather.php';
+		require_once RWGC_PATH . 'includes/targeting/providers/class-rwgc-target-provider-analytics.php';
+		require_once RWGC_PATH . 'includes/targeting/providers/class-rwgc-target-provider-commerce.php';
 	}
 
 	/**

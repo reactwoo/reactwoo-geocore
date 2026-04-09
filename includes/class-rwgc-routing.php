@@ -522,15 +522,6 @@ class RWGC_Routing {
 		 */
 		$out = (bool) apply_filters( 'rwgc_should_bypass_builder_request', $inner, $resolved );
 		self::$memo_builder_bypass[ $key ] = $out;
-		self::maybe_log_bypass_branch(
-			'is_builder_edit_request',
-			array(
-				'cache_key' => $key,
-				'resolved'  => $resolved,
-				'inner'     => $inner,
-				'bypass'    => $out,
-			)
-		);
 		return $out;
 	}
 
@@ -563,13 +554,11 @@ class RWGC_Routing {
 		// 1) Cheap request hints (no Elementor bootstrap).
 		if ( ! empty( $_GET['elementor-preview'] ) || ! empty( $_GET['elementor_library'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			self::$memo_elementor_surface = true;
-			self::maybe_log_bypass_branch( 'detect_elementor_surface_get_preview', array( 'via' => 'get_param', 'elementor_preview_or_library' => true ) );
 			return true;
 		}
 
 		if ( ! empty( $_GET['action'] ) && 'elementor' === $_GET['action'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			self::$memo_elementor_surface = true;
-			self::maybe_log_bypass_branch( 'detect_elementor_surface_get_action', array( 'via' => 'get_param', 'action_elementor' => true ) );
 			return true;
 		}
 
@@ -594,12 +583,10 @@ class RWGC_Routing {
 			$plugin = \Elementor\Plugin::$instance;
 			if ( $plugin && isset( $plugin->editor ) && is_object( $plugin->editor ) && method_exists( $plugin->editor, 'is_edit_mode' ) && $plugin->editor->is_edit_mode() ) {
 				self::$memo_elementor_surface = true;
-				self::maybe_log_bypass_branch( 'detect_elementor_surface_runtime_edit', array( 'via' => 'runtime', 'edit_mode' => true ) );
 				return true;
 			}
 			if ( $plugin && isset( $plugin->preview ) && is_object( $plugin->preview ) && method_exists( $plugin->preview, 'is_preview_mode' ) && $plugin->preview->is_preview_mode() ) {
 				self::$memo_elementor_surface = true;
-				self::maybe_log_bypass_branch( 'detect_elementor_surface_runtime_preview', array( 'via' => 'runtime', 'preview_mode' => true ) );
 				return true;
 			}
 		} catch ( \Throwable $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
@@ -722,9 +709,27 @@ class RWGC_Routing {
 		if ( ! RWGC_Settings::get( 'debug_mode', 0 ) ) {
 			return;
 		}
+		if ( self::cheap_builder_request_hint() ) {
+			return;
+		}
 
 		$payload = is_array( $context ) ? wp_json_encode( $context ) : '';
 		error_log( '[RWGC Routing] ' . sanitize_text_field( $message ) . ' ' . $payload ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+	}
+
+	/**
+	 * Cheap Elementor / builder request hints (no Elementor API). Used to skip debug I/O on editor loads.
+	 *
+	 * @return bool
+	 */
+	private static function cheap_builder_request_hint() {
+		if ( ! empty( $_GET['elementor-preview'] ) || ! empty( $_GET['elementor_library'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return true;
+		}
+		if ( ! empty( $_GET['action'] ) && 'elementor' === $_GET['action'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -736,6 +741,13 @@ class RWGC_Routing {
 	 */
 	private static function maybe_log_bypass_branch( $where, $extra = array() ) {
 		if ( ! class_exists( 'RWGC_Settings', false ) || ! RWGC_Settings::get( 'debug_mode', 0 ) ) {
+			return;
+		}
+		// Debug must never slow Elementor: no bypass-branch logs on builder-like requests.
+		if ( self::cheap_builder_request_hint() ) {
+			return;
+		}
+		if ( ! empty( $extra['reason'] ) && 'builder_edit' === $extra['reason'] ) {
 			return;
 		}
 		static $logged = array();

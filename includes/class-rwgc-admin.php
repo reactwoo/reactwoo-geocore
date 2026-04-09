@@ -143,6 +143,33 @@ class RWGC_Admin {
 
 		add_submenu_page(
 			'rwgc-dashboard',
+			__( 'Target types', 'reactwoo-geocore' ),
+			__( 'Target types', 'reactwoo-geocore' ),
+			$cap,
+			'rwgc-target-types',
+			array( __CLASS__, 'render_target_types' )
+		);
+
+		add_submenu_page(
+			'rwgc-dashboard',
+			__( 'Context preview', 'reactwoo-geocore' ),
+			__( 'Context preview', 'reactwoo-geocore' ),
+			$cap,
+			'rwgc-context-preview',
+			array( __CLASS__, 'render_context_preview' )
+		);
+
+		add_submenu_page(
+			'rwgc-dashboard',
+			__( 'Targeting providers', 'reactwoo-geocore' ),
+			__( 'Providers', 'reactwoo-geocore' ),
+			$cap,
+			'rwgc-target-providers',
+			array( __CLASS__, 'render_target_providers' )
+		);
+
+		add_submenu_page(
+			'rwgc-dashboard',
 			__( 'Add-ons', 'reactwoo-geocore' ),
 			__( 'Add-ons', 'reactwoo-geocore' ),
 			$cap,
@@ -296,6 +323,92 @@ class RWGC_Admin {
 		add_settings_error( 'rwgc_tools', 'rwgc_upload_success', __( 'MaxMind database uploaded successfully.', 'reactwoo-geocore' ), 'updated' );
 		wp_safe_redirect( admin_url( 'admin.php?page=rwgc-tools' ) );
 		exit;
+	}
+
+	/**
+	 * Suite targeting: registered target types.
+	 *
+	 * @return void
+	 */
+	public static function render_target_types() {
+		if ( ! self::can_manage() ) {
+			return;
+		}
+		if ( ! class_exists( 'RWGC_Target_Registry', false ) ) {
+			echo '<div class="wrap"><p>' . esc_html__( 'Geo Core targeting API is not loaded.', 'reactwoo-geocore' ) . '</p></div>';
+			return;
+		}
+		RWGC_Target_Registry::init();
+		$rwgc_target_types = function_exists( 'rwgc_get_target_types' ) ? rwgc_get_target_types() : array();
+		include RWGC_PATH . 'admin/views/target-types-page.php';
+	}
+
+	/**
+	 * Suite targeting: simulate context values.
+	 *
+	 * @return void
+	 */
+	public static function render_context_preview() {
+		if ( ! self::can_manage() ) {
+			return;
+		}
+		$overrides = array();
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only preview fields.
+		if ( ! empty( $_GET['rwgc_preview'] ) && '1' === (string) wp_unslash( $_GET['rwgc_preview'] ) ) {
+			$keys = array( 'country', 'language', 'locale', 'device_type', 'time_of_day', 'day_of_week', 'currency' );
+			foreach ( $keys as $k ) {
+				if ( isset( $_GET[ 'rwgc_' . $k ] ) ) {
+					$overrides[ $k ] = sanitize_text_field( wp_unslash( (string) $_GET[ 'rwgc_' . $k ] ) );
+				}
+			}
+		}
+		$rwgc_preview_snapshot = function_exists( 'rwgc_resolve_preview_context' )
+			? rwgc_resolve_preview_context( $overrides )
+			: array();
+		include RWGC_PATH . 'admin/views/context-preview-page.php';
+	}
+
+	/**
+	 * Suite targeting: provider status.
+	 *
+	 * @return void
+	 */
+	public static function render_target_providers() {
+		if ( ! self::can_manage() ) {
+			return;
+		}
+		if ( ! interface_exists( 'RWGC_Target_Provider_Interface', false ) ) {
+			echo '<div class="wrap"><p>' . esc_html__( 'Geo Core targeting API is not loaded.', 'reactwoo-geocore' ) . '</p></div>';
+			return;
+		}
+		RWGC_Target_Registry::init();
+		$rwgc_provider_rows = array();
+		$classes            = apply_filters(
+			'rwgc_target_provider_classes',
+			array(
+				'RWGC_Target_Provider_Geo',
+				'RWGC_Target_Provider_Language',
+				'RWGC_Target_Provider_Time',
+				'RWGC_Target_Provider_Device',
+				'RWGC_Target_Provider_Weather',
+				'RWGC_Target_Provider_Analytics',
+				'RWGC_Target_Provider_Commerce',
+			)
+		);
+		foreach ( $classes as $class ) {
+			if ( ! is_string( $class ) || ! class_exists( $class ) ) {
+				continue;
+			}
+			$obj = new $class();
+			if ( ! $obj instanceof RWGC_Target_Provider_Interface ) {
+				continue;
+			}
+			$rwgc_provider_rows[] = array_merge(
+				array( 'key' => $obj->get_provider_key() ),
+				$obj->get_admin_status()
+			);
+		}
+		include RWGC_PATH . 'admin/views/target-providers-page.php';
 	}
 
 	/**

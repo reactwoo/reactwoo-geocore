@@ -367,3 +367,122 @@ if ( ! function_exists( 'rwgc_is_builder_edit_request' ) ) {
 	}
 }
 
+if ( ! function_exists( 'rwgc_is_builder_context' ) ) {
+	/**
+	 * Alias for builder/editor detection used by Geo Elementor and other integrations.
+	 * Debug mode does not change the return value.
+	 *
+	 * @param int|null $post_id Optional document ID for capability checks.
+	 * @return bool
+	 */
+	function rwgc_is_builder_context( $post_id = null ) {
+		return rwgc_is_builder_edit_request( $post_id );
+	}
+}
+
+if ( ! function_exists( 'rwgc_get_target_types' ) ) {
+	/**
+	 * All registered target type definitions (suite targeting vocabulary).
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	function rwgc_get_target_types() {
+		if ( ! class_exists( 'RWGC_Target_Registry', false ) ) {
+			return array();
+		}
+		RWGC_Target_Registry::init();
+		return RWGC_Target_Registry::instance()->get_target_types();
+	}
+}
+
+if ( ! function_exists( 'rwgc_get_available_target_types' ) ) {
+	/**
+	 * Target types that pass availability checks for this site/request.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	function rwgc_get_available_target_types() {
+		if ( ! class_exists( 'RWGC_Target_Registry', false ) ) {
+			return array();
+		}
+		RWGC_Target_Registry::init();
+		return RWGC_Target_Registry::instance()->get_available_target_types();
+	}
+}
+
+if ( ! function_exists( 'rwgc_get_target_definition' ) ) {
+	/**
+	 * Single target definition by key.
+	 *
+	 * @param string $key Target key.
+	 * @return array<string, mixed>|null
+	 */
+	function rwgc_get_target_definition( $key ) {
+		if ( ! class_exists( 'RWGC_Target_Registry', false ) ) {
+			return null;
+		}
+		RWGC_Target_Registry::init();
+		return RWGC_Target_Registry::instance()->get_target_type( (string) $key );
+	}
+}
+
+if ( ! function_exists( 'rwgc_get_context_snapshot' ) ) {
+	/**
+	 * Normalised context for the current visitor/request (array shape).
+	 *
+	 * @return array<string, mixed>
+	 */
+	function rwgc_get_context_snapshot() {
+		if ( ! class_exists( 'RWGC_Context_Resolver', false ) ) {
+			return array();
+		}
+		return RWGC_Context_Resolver::resolve_current()->to_array();
+	}
+}
+
+if ( ! function_exists( 'rwgc_get_context_value' ) ) {
+	/**
+	 * One resolved value from the current context snapshot.
+	 *
+	 * @param string $key Target key.
+	 * @return mixed|null
+	 */
+	function rwgc_get_context_value( $key ) {
+		if ( ! class_exists( 'RWGC_Context_Resolver', false ) ) {
+			return null;
+		}
+		return RWGC_Context_Resolver::resolve_target_value( (string) $key );
+	}
+}
+
+if ( ! function_exists( 'rwgc_resolve_preview_context' ) ) {
+	/**
+	 * Simulated context for admin previews (overrides merged when supported).
+	 *
+	 * @param array<string, mixed> $overrides Keyed overrides.
+	 * @return array<string, mixed>
+	 */
+	function rwgc_resolve_preview_context( $overrides = array() ) {
+		if ( ! class_exists( 'RWGC_Context_Resolver', false ) ) {
+			return is_array( $overrides ) ? $overrides : array();
+		}
+		return RWGC_Context_Resolver::resolve_for_preview( is_array( $overrides ) ? $overrides : array() )->to_array();
+	}
+}
+
+if ( ! function_exists( 'rwgc_is_target_available' ) ) {
+	/**
+	 * Whether a target key is available for rule building on this site.
+	 *
+	 * @param string $key Target key.
+	 * @return bool
+	 */
+	function rwgc_is_target_available( $key ) {
+		$def = rwgc_get_target_definition( $key );
+		if ( null === $def || ! class_exists( 'RWGC_Target_Availability', false ) ) {
+			return false;
+		}
+		return RWGC_Target_Availability::is_available( $def );
+	}
+}
+
