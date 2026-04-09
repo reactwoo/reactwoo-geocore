@@ -9,8 +9,8 @@
  * it does not grant access. You cannot “unlock” a commercial product by flipping a local boolean; you would only
  * get a response for the slug you request, and paid slugs still need JWT server-side.
  *
- * **Commercial** plugins register with `attach_bearer_token` true (default) and send
- * {@see RWGC_Platform_Client::get_access_token()} as Bearer. **Geo Core** registers with `attach_bearer_token` false
+ * **Commercial** plugins register with `attach_bearer_token` true (default) and may provide their own
+ * bearer/api-base callbacks. **Geo Core** registers with `attach_bearer_token` false
  * and catalog slug `reactwoo-geocore` (API must list that slug in `UPDATES_FREE_SLUGS`).
  *
  * @package ReactWooGeoCore
@@ -36,13 +36,15 @@ class RWGC_Satellite_Updater {
 	private static $hooks_added = false;
 
 	/**
-	 * @param array<string, string> $config {
+	 * @param array<string, mixed> $config {
 	 *     @type string $basename      Plugin basename, e.g. reactwoo-geo-ai/reactwoo-geo-ai.php
 	 *     @type string $version       Current plugin version.
 	 *     @type string $catalog_slug     Release catalog slug (must match CI publish; commercial slugs also need license entitlements).
 	 *     @type string $name             Human-readable plugin name.
 	 *     @type string $description      Short description for the Plugins API “View details” modal.
-	 *     @type bool   $attach_bearer_token If false, HTTP client does not send `Authorization` (use only with a free slug allowed by API `UPDATES_FREE_SLUGS`). Default true. Deprecated alias: `requires_license` (same meaning).
+	 *     @type bool     $attach_bearer_token If false, HTTP client does not send `Authorization` (use only with a free slug allowed by API `UPDATES_FREE_SLUGS`). Default true. Deprecated alias: `requires_license` (same meaning).
+	 *     @type callable $get_bearer_callback Optional callback returning string|null bearer token for this plugin.
+	 *     @type callable $get_api_base_callback Optional callback returning string API base for this plugin.
 	 * }
 	 * @return void
 	 */
@@ -107,6 +109,35 @@ class RWGC_Satellite_Updater {
 	}
 
 	/**
+	 * @param array<string, mixed> $cfg Item config.
+	 * @return string|null
+	 */
+	private static function item_bearer_for_updates( $cfg ) {
+		if ( is_array( $cfg ) && ! empty( $cfg['get_bearer_callback'] ) && is_callable( $cfg['get_bearer_callback'] ) ) {
+			$token = call_user_func( $cfg['get_bearer_callback'] );
+			if ( is_string( $token ) && '' !== $token ) {
+				return $token;
+			}
+			return null;
+		}
+		return self::get_bearer_for_updates();
+	}
+
+	/**
+	 * @param array<string, mixed> $cfg Item config.
+	 * @return string
+	 */
+	private static function item_api_base( $cfg ) {
+		if ( is_array( $cfg ) && ! empty( $cfg['get_api_base_callback'] ) && is_callable( $cfg['get_api_base_callback'] ) ) {
+			$base = call_user_func( $cfg['get_api_base_callback'] );
+			if ( is_string( $base ) && '' !== trim( $base ) ) {
+				return untrailingslashit( trim( $base ) );
+			}
+		}
+		return RWGC_Platform_Client::get_api_base();
+	}
+
+	/**
 	 * @return void
 	 */
 	private static function add_hooks() {
@@ -147,7 +178,7 @@ class RWGC_Satellite_Updater {
 			}
 			$current        = isset( $cfg['version'] ) ? (string) $cfg['version'] : '';
 			$attach_bearer = self::item_attach_bearer_token( $cfg );
-			$offer          = self::request_update_offer( (string) $slug, $current, $attach_bearer );
+			$offer          = self::request_update_offer( (string) $slug, $current, $attach_bearer, $cfg );
 			if ( null === $offer ) {
 				continue;
 			}
@@ -185,24 +216,25 @@ class RWGC_Satellite_Updater {
 	}
 
 	/**
-	 * @param string $catalog_slug Catalog slug.
-	 * @param string $current_version Installed version.
-	 * @param bool   $attach_bearer_token Whether to send Authorization: Bearer (must match API policy for this slug).
+	 * @param string               $catalog_slug Catalog slug.
+	 * @param string               $current_version Installed version.
+	 * @param bool                 $attach_bearer_token Whether to send Authorization: Bearer (must match API policy for this slug).
+	 * @param array<string, mixed> $cfg Item config.
 	 * @return array{version: string, package: string, tested?: string, requires?: string}|null
 	 */
-	private static function request_update_offer( $catalog_slug, $current_version, $attach_bearer_token = true ) {
+	private static function request_update_offer( $catalog_slug, $current_version, $attach_bearer_token = true, $cfg = array() ) {
 		$headers = array(
 			'Content-Type' => 'application/json',
 		);
 		if ( $attach_bearer_token ) {
-			$bearer = self::get_bearer_for_updates();
+			$bearer = self::item_bearer_for_updates( $cfg );
 			if ( null === $bearer ) {
 				return null;
 			}
 			$headers['Authorization'] = 'Bearer ' . $bearer;
 		}
 
-		$api_base = RWGC_Platform_Client::get_api_base();
+		$api_base = self::item_api_base( $cfg );
 		if ( '' === $api_base ) {
 			return null;
 		}
@@ -288,14 +320,14 @@ class RWGC_Satellite_Updater {
 			'Content-Type' => 'application/json',
 		);
 		if ( $attach_bearer ) {
-			$bearer = self::get_bearer_for_updates();
+			$bearer = self::item_bearer_for_updates( $cfg );
 			if ( null === $bearer ) {
 				return $result;
 			}
 			$headers['Authorization'] = 'Bearer ' . $bearer;
 		}
 
-		$api_base = RWGC_Platform_Client::get_api_base();
+		$api_base = self::item_api_base( $cfg );
 		if ( '' === $api_base ) {
 			return $result;
 		}
