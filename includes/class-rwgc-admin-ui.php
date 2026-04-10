@@ -193,7 +193,7 @@ class RWGC_Admin_UI {
 				continue;
 			}
 			$primary = ! empty( $action['primary'] );
-			$class   = $primary ? 'button button-primary' : 'button';
+			$class   = $primary ? 'rwgc-btn rwgc-btn--primary' : 'rwgc-btn rwgc-btn--secondary';
 			printf(
 				'<a class="%1$s" href="%2$s">%3$s</a>',
 				esc_attr( $class ),
@@ -202,6 +202,125 @@ class RWGC_Admin_UI {
 			);
 		}
 		echo '</div>';
+	}
+
+	/**
+	 * Section title + optional lead (place inside `.rwgc-section` or a card).
+	 *
+	 * @param string $title Section heading.
+	 * @param string $lead  Optional supporting line.
+	 * @return void
+	 */
+	public static function render_section_header( $title, $lead = '' ) {
+		echo '<header class="rwgc-section__head">';
+		echo '<h2 class="rwgc-section__title">' . esc_html( $title ) . '</h2>';
+		if ( is_string( $lead ) && '' !== $lead ) {
+			echo '<p class="rwgc-section__lead">' . esc_html( $lead ) . '</p>';
+		}
+		echo '</header>';
+	}
+
+	/**
+	 * Empty state block with optional CTA links (rwgc-btn).
+	 *
+	 * @param string               $title   Heading.
+	 * @param string               $body    Explanation.
+	 * @param array<int, array{url:string,label:string,primary?:bool}> $actions Optional buttons.
+	 * @param array<string, mixed> $args    Optional: class (wrapper), dashicon (e.g. `dashicons-analytics`).
+	 * @return void
+	 */
+	public static function render_empty_state( $title, $body, $actions = array(), $args = array() ) {
+		$args = wp_parse_args(
+			$args,
+			array(
+				'class'    => 'rwgc-empty-state',
+				'dashicon' => '',
+			)
+		);
+		echo '<div class="' . esc_attr( $args['class'] ) . '">';
+		if ( is_string( $args['dashicon'] ) && '' !== $args['dashicon'] ) {
+			$d = sanitize_html_class( $args['dashicon'] );
+			echo '<div class="rwgc-empty-state__icon" aria-hidden="true"><span class="dashicons ' . esc_attr( $d ) . '"></span></div>';
+		}
+		echo '<h3 class="rwgc-empty-state__title">' . esc_html( $title ) . '</h3>';
+		echo '<p class="rwgc-empty-state__body">' . esc_html( $body ) . '</p>';
+		if ( is_array( $actions ) && ! empty( $actions ) ) {
+			echo '<div class="rwgc-empty-state__actions">';
+			foreach ( $actions as $action ) {
+				if ( empty( $action['url'] ) || empty( $action['label'] ) ) {
+					continue;
+				}
+				$primary = ! empty( $action['primary'] );
+				$class   = $primary ? 'rwgc-btn rwgc-btn--primary' : 'rwgc-btn rwgc-btn--secondary';
+				printf(
+					'<a class="%1$s" href="%2$s">%3$s</a>',
+					esc_attr( $class ),
+					esc_url( $action['url'] ),
+					esc_html( $action['label'] )
+				);
+			}
+			echo '</div>';
+		}
+		echo '</div>';
+	}
+
+	/**
+	 * Horizontal row of rwgc buttons (links).
+	 *
+	 * @param array<int, array{url:string,label:string,primary?:bool,variant?:string}> $actions Actions.
+	 * @param array<string, mixed> $args Optional: class, stack_mobile bool.
+	 * @return void
+	 */
+	public static function render_button_row( $actions, $args = array() ) {
+		if ( ! is_array( $actions ) || empty( $actions ) ) {
+			return;
+		}
+		$args = wp_parse_args(
+			$args,
+			array(
+				'class'        => 'rwgc-button-row',
+				'stack_mobile' => false,
+			)
+		);
+		$classes = $args['class'];
+		if ( ! empty( $args['stack_mobile'] ) ) {
+			$classes .= ' rwgc-actions--stack-mobile';
+		}
+		echo '<div class="' . esc_attr( $classes ) . '">';
+		foreach ( $actions as $action ) {
+			if ( empty( $action['url'] ) || empty( $action['label'] ) ) {
+				continue;
+			}
+			$variant = isset( $action['variant'] ) ? sanitize_key( (string) $action['variant'] ) : '';
+			if ( '' === $variant ) {
+				$variant = ! empty( $action['primary'] ) ? 'primary' : 'secondary';
+			}
+			$map = array(
+				'primary'   => 'rwgc-btn rwgc-btn--primary',
+				'secondary' => 'rwgc-btn rwgc-btn--secondary',
+				'tertiary'  => 'rwgc-btn rwgc-btn--tertiary',
+				'danger'    => 'rwgc-btn rwgc-btn--danger',
+			);
+			$class = isset( $map[ $variant ] ) ? $map[ $variant ] : $map['secondary'];
+			printf(
+				'<a class="%1$s" href="%2$s">%3$s</a>',
+				esc_attr( $class ),
+				esc_url( $action['url'] ),
+				esc_html( $action['label'] )
+			);
+		}
+		echo '</div>';
+	}
+
+	/**
+	 * Status pill — alias of {@see self::render_pill()} for semantic clarity in views.
+	 *
+	 * @param string $text    Label.
+	 * @param string $variant success|danger|neutral|warning.
+	 * @return void
+	 */
+	public static function render_status_pill( $text, $variant = 'neutral' ) {
+		self::render_pill( $text, $variant );
 	}
 
 	/**
@@ -284,13 +403,13 @@ class RWGC_Admin_UI {
 			echo '<div class="rwgc-addon-card__actions">';
 			if ( $active ) {
 				printf(
-					'<a class="button button-primary" href="%1$s">%2$s</a>',
+					'<a class="rwgc-btn rwgc-btn--primary" href="%1$s">%2$s</a>',
 					esc_url( $def['url'] ),
 					esc_html__( 'Open', 'reactwoo-geocore' )
 				);
 			} else {
 				printf(
-					'<a class="button" href="%1$s">%2$s</a>',
+					'<a class="rwgc-btn rwgc-btn--secondary" href="%1$s">%2$s</a>',
 					esc_url( admin_url( 'plugin-install.php' ) ),
 					esc_html__( 'Install plugins', 'reactwoo-geocore' )
 				);
