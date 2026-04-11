@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.3.19
+Stable tag: 1.3.20
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,10 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.3.20 =
+* **Getting Started:** Stepper sits in a suite card; wizard and footer actions use `rwgc-btn` (consistent radius and spacing) instead of default WordPress buttons.
+* **Suite shell:** Stacked section cards use adjacent-sibling top margin (and grid gap where applicable) so spacing is reliable when a single card sits in a grid wrapper.
 
 = 1.3.19 =
 * **Admin (suite shell):** Vertical spacing between stacked `.rwgc-card` sections, extra space below inner tab nav, and bottom padding on suite wraps so dashboards feel less cramped. Applies to all satellites using the shared shell.

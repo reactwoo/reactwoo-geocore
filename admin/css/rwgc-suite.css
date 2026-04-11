@@ -539,9 +539,14 @@
   box-shadow: var(--rw-suite-shadow-sm);
 }
 
-/* Vertical rhythm: separate stacked section cards (dashboards, settings pages). */
-.rwgc-wrap.rwgc-suite .rwgc-card:not(:last-child) {
-  margin-bottom: var(--rw-suite-space-5);
+/* Vertical rhythm: stacked section cards (use adjacent margin so a lone card in a grid still stacks with siblings). */
+.rwgc-wrap.rwgc-suite .rwga-wrap > .rwgc-card + .rwgc-card,
+.rwgc-wrap.rwgc-suite.rwgc-suite-shell > .rwgc-card + .rwgc-card {
+  margin-top: var(--rw-suite-space-5);
+}
+
+.rwgc-wrap.rwgc-suite .rwgc-grid > .rwgc-card + .rwgc-card {
+  margin-top: 0; /* grid gap handles spacing */
 }
 
 /* Nested cards (rare): keep a smaller internal gap only. */
@@ -792,6 +797,14 @@
   flex-wrap: wrap;
   gap: var(--rw-suite-space-2);
   align-items: center;
+}
+
+.rwgc-wrap.rwgc-suite .rwgc-card .rwgc-steps + .rwga-help-workflow-actions {
+  margin-top: var(--rw-suite-space-4);
+}
+
+.rwgc-wrap.rwgc-suite .rwga-filter-hint {
+  margin-top: 0;
 }
 
 .rwgc-wrap.rwgc-suite .rwgc-actions--stack-mobile {

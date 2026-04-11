@@ -236,6 +236,14 @@
 }
 
 /* Wizard stepper */
+.rwgc-suite-stepper-card {
+  margin-bottom: 28px;
+}
+
+.rwgc-suite-stepper-card .rwgc-suite-stepper {
+  margin-bottom: 0;
+}
+
 .rwgc-suite-stepper {
   display: flex;
   flex-wrap: wrap;
@@ -321,6 +329,10 @@
   margin-top: 24px;
   padding-top: 16px;
   border-top: 1px solid #e5e7eb;
+}
+
+.rwgc-suite-wizard-footer.rwgc-actions {
+  align-items: center;
 }
 
 .rwgc-suite-variants-table td {
