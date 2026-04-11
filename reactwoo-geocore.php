@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ReactWoo Geo Core
  * Description: Free geolocation engine for WordPress (WordPress.org). MaxMind-based country detection, cache, shortcodes, REST API, and a Gutenberg block. No ReactWoo product license required for core geo; optional AI uses ReactWoo API when configured.
- * Version: 1.3.17
+ * Version: 1.3.18
  * Author: ReactWoo
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Core constants.
 if ( ! defined( 'RWGC_VERSION' ) ) {
-	define( 'RWGC_VERSION', '1.3.17' );
+	define( 'RWGC_VERSION', '1.3.18' );
 }
 if ( ! defined( 'RWGC_FILE' ) ) {
 	define( 'RWGC_FILE', __FILE__ );
