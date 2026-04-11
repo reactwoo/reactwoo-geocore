@@ -4,6 +4,8 @@
  */
 
 .rwgc-wrap.rwgc-suite {
+  /* Bottom breathing room so the last block is not flush with the screen edge */
+  padding-bottom: var(--rw-suite-space-6);
   /* Canonical suite design tokens */
   --rw-suite-bg: transparent;
   --rw-suite-surface: #ffffff;
@@ -494,7 +496,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--rw-suite-space-2);
-  margin: var(--rw-suite-space-3) 0 var(--rw-suite-space-5);
+  /* Extra space below tabs so the first card is not visually glued to the nav */
+  margin: var(--rw-suite-space-3) 0 var(--rw-suite-space-6);
   padding: var(--rw-suite-space-2);
   background: var(--rw-suite-surface-alt);
   border: 1px solid var(--rw-suite-border);
@@ -534,6 +537,16 @@
   padding: var(--rw-suite-space-5);
   line-height: 1.55;
   box-shadow: var(--rw-suite-shadow-sm);
+}
+
+/* Vertical rhythm: separate stacked section cards (dashboards, settings pages). */
+.rwgc-wrap.rwgc-suite .rwgc-card:not(:last-child) {
+  margin-bottom: var(--rw-suite-space-5);
+}
+
+/* Nested cards (rare): keep a smaller internal gap only. */
+.rwgc-wrap.rwgc-suite .rwgc-card .rwgc-card:not(:last-child) {
+  margin-bottom: var(--rw-suite-space-4);
 }
 
 .rwgc-wrap.rwgc-suite .rwgc-card--highlight {
