@@ -229,6 +229,13 @@ class RWGC_Satellite_Updater {
 		if ( $attach_bearer_token ) {
 			$bearer = self::item_bearer_for_updates( $cfg );
 			if ( null === $bearer ) {
+				/**
+				 * Commercial slugs need a license JWT for /updates/check; no token means no update row (silent in WP UI).
+				 *
+				 * @param string               $catalog_slug Catalog slug.
+				 * @param array<string, mixed> $cfg          Item config.
+				 */
+				do_action( 'rwgc_satellite_updater_no_bearer', $catalog_slug, $cfg );
 				return null;
 			}
 			$headers['Authorization'] = 'Bearer ' . $bearer;
@@ -262,13 +269,36 @@ class RWGC_Satellite_Updater {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			return null;
-		}
-		if ( 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+			/**
+			 * Transport failure calling /api/v5/updates/check (timeout, SSL, DNS, etc.).
+			 *
+			 * @param string               $catalog_slug Catalog slug.
+			 * @param \WP_Error            $response     Error object.
+			 * @param array<string, mixed> $cfg          Item config.
+			 */
+			do_action( 'rwgc_satellite_updater_check_transport_error', $catalog_slug, $response, $cfg );
 			return null;
 		}
 
-		$data = json_decode( wp_remote_retrieve_body( $response ), true );
+		$http_code = (int) wp_remote_retrieve_response_code( $response );
+		$raw_body  = (string) wp_remote_retrieve_body( $response );
+		$data      = json_decode( $raw_body, true );
+
+		/**
+		 * Raw HTTP result from /api/v5/updates/check (for diagnostics). Fires even when the response is not usable.
+		 *
+		 * @param string               $catalog_slug Catalog slug.
+		 * @param int                  $http_code    HTTP status code.
+		 * @param string               $raw_body     Response body (string).
+		 * @param mixed                $data         json_decode result (array|null).
+		 * @param array<string, mixed> $cfg          Item config.
+		 */
+		do_action( 'rwgc_satellite_updater_check_http', $catalog_slug, $http_code, $raw_body, $data, $cfg );
+
+		if ( 200 !== $http_code ) {
+			return null;
+		}
+
 		if ( ! is_array( $data ) || empty( $data['update'] ) || empty( $data['version'] ) || empty( $data['download_url'] ) ) {
 			return null;
 		}
