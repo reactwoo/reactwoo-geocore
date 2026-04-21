@@ -129,58 +129,22 @@ class RWGC_Target_Provider_Analytics implements RWGC_Target_Provider_Interface {
 	 * @inheritDoc
 	 */
 	public function resolve_context_values( array $base = array() ) {
-		$utm = self::read_utm_from_request();
-		$returning = self::is_returning_visitor();
-
-		$audiences = array();
-		/**
-		 * Filter resolved analytics audience slugs for the current request.
-		 *
-		 * @param string[] $audiences Audience slugs.
-		 * @param array<string, mixed> $base Base merged values.
-		 */
-		$audiences = apply_filters( 'rwgc_analytics_audiences', $audiences, $base );
+		$attribution = RWGC_Context_Attribution::resolve();
+		$returning   = ! empty( $attribution['returning_visitor'] );
+		$audiences   = isset( $attribution['analytics_audiences'] ) && is_array( $attribution['analytics_audiences'] )
+			? $attribution['analytics_audiences']
+			: array();
 
 		return array(
 			'ga_audience'             => $audiences,
 			'analytics_device_type'   => isset( $base['device_type'] ) ? (string) $base['device_type'] : '',
 			'analytics_user_type'     => $returning ? 'returning' : 'new',
-			'source'                  => isset( $utm['source'] ) ? $utm['source'] : '',
-			'medium'                  => isset( $utm['medium'] ) ? $utm['medium'] : '',
-			'campaign'                => isset( $utm['campaign'] ) ? $utm['campaign'] : '',
+			'source'                  => isset( $attribution['source'] ) ? (string) $attribution['source'] : '',
+			'medium'                  => isset( $attribution['medium'] ) ? (string) $attribution['medium'] : '',
+			'campaign'                => isset( $attribution['campaign'] ) ? (string) $attribution['campaign'] : '',
 			'returning_visitor'       => $returning,
 			'new_visitor'             => ! $returning,
 		);
-	}
-
-	/**
-	 * @return array{source: string, medium: string, campaign: string}
-	 */
-	private static function read_utm_from_request() {
-		$out = array( 'source' => '', 'medium' => '', 'campaign' => '' );
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only analytics context.
-		if ( isset( $_GET['utm_source'] ) ) {
-			$out['source'] = sanitize_text_field( wp_unslash( (string) $_GET['utm_source'] ) );
-		}
-		if ( isset( $_GET['utm_medium'] ) ) {
-			$out['medium'] = sanitize_text_field( wp_unslash( (string) $_GET['utm_medium'] ) );
-		}
-		if ( isset( $_GET['utm_campaign'] ) ) {
-			$out['campaign'] = sanitize_text_field( wp_unslash( (string) $_GET['utm_campaign'] ) );
-		}
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
-		return $out;
-	}
-
-	/**
-	 * @return bool
-	 */
-	private static function is_returning_visitor() {
-		$cookie = isset( $_COOKIE['rwgc_returning'] ) ? sanitize_text_field( wp_unslash( (string) $_COOKIE['rwgc_returning'] ) ) : '';
-		if ( '' !== $cookie ) {
-			return true;
-		}
-		return false;
 	}
 
 	/**

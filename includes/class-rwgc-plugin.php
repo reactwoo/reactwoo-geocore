@@ -93,6 +93,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-shortcodes.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-gutenberg.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-elementor.php';
+		require_once RWGC_PATH . 'includes/context/class-rwgc-context-attribution.php';
 		require_once RWGC_PATH . 'includes/engine/class-rwgc-context.php';
 		require_once RWGC_PATH . 'includes/engine/class-rwgc-country-groups.php';
 		require_once RWGC_PATH . 'includes/rules/class-rwgc-rule-condition-evaluator.php';

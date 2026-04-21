@@ -34,6 +34,7 @@ class RWGC_Context_Resolver {
 
 		$merged = self::collect_provider_values();
 		$merged = self::apply_definition_resolve_callbacks( $merged );
+		$merged = self::attach_attribution_context( $merged );
 
 		/**
 		 * Filter merged raw context values before wrapping in snapshot.
@@ -136,6 +137,73 @@ class RWGC_Context_Resolver {
 			}
 			$merged[ $key ] = $val;
 		}
+		return $merged;
+	}
+
+	/**
+	 * Attach normalized attribution context and top-level aliases.
+	 *
+	 * @param array<string, mixed> $merged Values.
+	 * @return array<string, mixed>
+	 */
+	private static function attach_attribution_context( array $merged ) {
+		if ( ! class_exists( 'RWGC_Context_Attribution' ) ) {
+			return $merged;
+		}
+
+		$attribution            = RWGC_Context_Attribution::resolve();
+		$merged['attribution']  = $attribution;
+		$merged['source']       = isset( $attribution['source'] ) ? (string) $attribution['source'] : ( isset( $merged['source'] ) ? (string) $merged['source'] : '' );
+		$merged['medium']       = isset( $attribution['medium'] ) ? (string) $attribution['medium'] : ( isset( $merged['medium'] ) ? (string) $merged['medium'] : '' );
+		$merged['campaign']     = isset( $attribution['campaign'] ) ? (string) $attribution['campaign'] : ( isset( $merged['campaign'] ) ? (string) $merged['campaign'] : '' );
+		$merged['content']      = isset( $attribution['content'] ) ? (string) $attribution['content'] : ( isset( $merged['content'] ) ? (string) $merged['content'] : '' );
+		$merged['term']         = isset( $attribution['term'] ) ? (string) $attribution['term'] : ( isset( $merged['term'] ) ? (string) $merged['term'] : '' );
+		$merged['gclid']        = isset( $attribution['gclid'] ) ? (string) $attribution['gclid'] : ( isset( $merged['gclid'] ) ? (string) $merged['gclid'] : '' );
+		$merged['ga_audience']  = isset( $attribution['analytics_audiences'] ) && is_array( $attribution['analytics_audiences'] ) ? $attribution['analytics_audiences'] : ( isset( $merged['ga_audience'] ) ? $merged['ga_audience'] : array() );
+		$merged['returning_visitor'] = ! empty( $attribution['returning_visitor'] );
+		$merged['new_visitor']  = empty( $attribution['returning_visitor'] );
+		$merged                 = self::attach_profile_context( $merged );
+
+		return $merged;
+	}
+
+	/**
+	 * Attach profile matching extension points for Pro/satellites.
+	 *
+	 * @param array<string, mixed> $merged Values.
+	 * @return array<string, mixed>
+	 */
+	private static function attach_profile_context( array $merged ) {
+		/**
+		 * Filter profile candidates for the current runtime context.
+		 *
+		 * @param array<int|string, mixed> $candidates Candidate profiles.
+		 * @param array<string, mixed>      $merged Context values.
+		 */
+		$candidates = apply_filters( 'rwgc_profile_match_candidates', array(), $merged );
+
+		/**
+		 * Filter selected profile for the current runtime context.
+		 *
+		 * @param mixed                     $matched Selected profile or null.
+		 * @param array<int|string, mixed>  $candidates Candidate profiles.
+		 * @param array<string, mixed>      $merged Context values.
+		 */
+		$matched = apply_filters( 'rwgc_matched_experience_profile', null, $candidates, $merged );
+
+		if ( null !== $matched ) {
+			$merged['matched_profile'] = $matched;
+		}
+
+		/**
+		 * Action fired after a profile is resolved for runtime context.
+		 *
+		 * @param mixed                    $matched Selected profile or null.
+		 * @param array<int|string, mixed> $candidates Candidate profiles.
+		 * @param array<string, mixed>     $merged Context values.
+		 */
+		do_action( 'rwgc_matched_experience_profile', $matched, $candidates, $merged );
+
 		return $merged;
 	}
 

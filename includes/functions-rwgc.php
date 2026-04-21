@@ -32,6 +32,19 @@ if ( ! function_exists( 'rwgc_is_ready' ) ) {
 	}
 }
 
+if ( ! function_exists( 'rwgc_is_pro_enabled' ) ) {
+	/**
+	 * Whether a Pro runtime extension is active for this site.
+	 *
+	 * Geo Core defaults to false; GeoCore Pro can return true through the filter.
+	 *
+	 * @return bool
+	 */
+	function rwgc_is_pro_enabled() {
+		return (bool) apply_filters( 'rwgc_pro_enabled', false );
+	}
+}
+
 if ( ! function_exists( 'rwgc_get_visitor_data' ) ) {
 	/**
 	 * Get full visitor geo payload.

@@ -9,6 +9,7 @@ Geo Core ships an **onboarding + workflow shell** (`RWGC_Suite_Admin`, Suite Hom
 | `rwgc_loaded` | Geo Core finished bootstrapping (existing). |
 | `rwgc_suite_activity_logged` | `( $item )` — after a row is stored for Suite Home "Recent activity". |
 | `rwgc_variant_created` | `( $result )` — after `RWGC_Variant_Manager::create_country_variant()` succeeds. `variant_page_id`, `master_page_id`, `edit_url`, `country_iso2`. |
+| `rwgc_matched_experience_profile` | `( $matched, $candidates, $context )` — after runtime profile resolution completes (Core/Satellites can observe match outcomes). |
 
 ## Filters
 
@@ -24,6 +25,10 @@ Geo Core ships an **onboarding + workflow shell** (`RWGC_Suite_Admin`, Suite Hom
 | `rwgc_next_steps` | `( $steps, $context, $ctx )` | Recommended links after a workflow. Core defines `variant_created`; satellites can add steps for other contexts. |
 | `rwgc_routing_overview_rows` | `( $rows )` | Rows for **Page versions** (`RWGC_Variant_Manager::get_routing_overview_rows()`). |
 | `rwgc_inner_nav_items` | `( $items, $current )` | Geo Core inner nav (existing). Suite adds Suite Home + Getting Started. |
+| `rwgc_context_attribution` | `( $attribution )` | Final normalized attribution payload (`source`, `medium`, `campaign`, `content`, `term`, `gclid`, first/session touch, audiences). |
+| `rwgc_profile_match_candidates` | `( $candidates, $context )` | Provide profile candidates before matching. Intended for GeoCore Pro/Cloud-synced profile bundles. |
+| `rwgc_matched_experience_profile` | `( $matched, $candidates, $context )` | Select a single matched profile for the active request context. |
+| `rwgc_analytics_targets_configured` | `( $configured )` | Signals whether analytics-backed targets are operational; drives availability and admin status messaging. |
 
 ## Services (PHP)
 

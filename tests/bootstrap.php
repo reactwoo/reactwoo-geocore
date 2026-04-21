@@ -48,6 +48,26 @@ if ( ! function_exists( 'apply_filters' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_unslash' ) ) {
+	/**
+	 * @param mixed $value Value.
+	 * @return mixed
+	 */
+	function wp_unslash( $value ) {
+		return $value;
+	}
+}
+
+if ( ! function_exists( 'wp_json_encode' ) ) {
+	/**
+	 * @param mixed $value Value.
+	 * @return string|false
+	 */
+	function wp_json_encode( $value ) {
+		return json_encode( $value );
+	}
+}
+
 if ( ! function_exists( 'do_action' ) ) {
 	/**
 	 * @param string $hook Hook name.
@@ -59,6 +79,7 @@ if ( ! function_exists( 'do_action' ) ) {
 }
 
 $base = dirname( __DIR__ ) . '/includes/';
+require_once $base . 'context/class-rwgc-context-attribution.php';
 require_once $base . 'engine/class-rwgc-context.php';
 require_once $base . 'rules/class-rwgc-rule-condition-evaluator.php';
 require_once $base . 'engine/class-rwgc-variant.php';
