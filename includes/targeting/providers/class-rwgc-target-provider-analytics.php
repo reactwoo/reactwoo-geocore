@@ -88,6 +88,18 @@ class RWGC_Target_Provider_Analytics implements RWGC_Target_Provider_Interface {
 		}
 		$registry->register_target_type(
 			array(
+				'key'           => 'profile_id',
+				'label'         => __( 'Experience profile', 'reactwoo-geocore' ),
+				'group'         => 'analytics',
+				'description'   => __( 'Matched experience profile ID from GeoCore Pro runtime context.', 'reactwoo-geocore' ),
+				'operators'     => array( 'is', 'is_not', 'in', 'not_in', 'contains', 'not_contains' ),
+				'value_mode'    => 'text',
+				'provider'      => $this->get_provider_key(),
+				'supports_simulation' => true,
+			)
+		);
+		$registry->register_target_type(
+			array(
 				'key'           => 'returning_visitor',
 				'label'         => __( 'Returning visitor', 'reactwoo-geocore' ),
 				'group'         => 'analytics',
@@ -134,6 +146,14 @@ class RWGC_Target_Provider_Analytics implements RWGC_Target_Provider_Interface {
 		$audiences   = isset( $attribution['analytics_audiences'] ) && is_array( $attribution['analytics_audiences'] )
 			? $attribution['analytics_audiences']
 			: array();
+		$profile_id = '';
+		if ( isset( $base['matched_profile'] ) ) {
+			if ( is_array( $base['matched_profile'] ) && ! empty( $base['matched_profile']['profile_id'] ) ) {
+				$profile_id = sanitize_key( (string) $base['matched_profile']['profile_id'] );
+			} elseif ( is_string( $base['matched_profile'] ) ) {
+				$profile_id = sanitize_key( $base['matched_profile'] );
+			}
+		}
 
 		return array(
 			'ga_audience'             => $audiences,
@@ -142,6 +162,7 @@ class RWGC_Target_Provider_Analytics implements RWGC_Target_Provider_Interface {
 			'source'                  => isset( $attribution['source'] ) ? (string) $attribution['source'] : '',
 			'medium'                  => isset( $attribution['medium'] ) ? (string) $attribution['medium'] : '',
 			'campaign'                => isset( $attribution['campaign'] ) ? (string) $attribution['campaign'] : '',
+			'profile_id'              => $profile_id,
 			'returning_visitor'       => $returning,
 			'new_visitor'             => ! $returning,
 		);
