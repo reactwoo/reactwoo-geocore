@@ -80,3 +80,20 @@ This document captures the agreed architecture and sprint order for introducing 
   - `rwgc_matched_experience_profile`
 - Add tests for attribution precedence and malformed input handling.
 - Expose analytics readiness (`rwgc_analytics_targets_configured`) in admin diagnostics with clearer docs.
+
+## Incremental delivery notes
+
+### React Cloud — site config (control plane)
+
+- `GET /geo-api/v1/site/config` — returns `schema_version`, `profiles`, `mappings` (keyed by license JWT domain in process memory until persistent storage is added).
+- `PUT /geo-api/v1/site/profiles` — replace `profiles` (optional `mappings` in body).
+- `PUT /geo-api/v1/site/mappings` — replace `mappings` only.
+
+### GeoCore Pro — pointing Pro at React Cloud for config
+
+- Optional PHP constant `RWGCP_API_BASE` (e.g. `https://cloud.reactwoo.com`) plus filter `rwgcp_site_config_path` defaulting to `/api/v5/site/config`; for Cloud direct use `/geo-api/v1/site/config`.
+- Filters: `rwgcp_api_base`, `rwgcp_site_config_path`.
+
+### GeoCore Pro — profile simulator
+
+- Settings → GeoCore Pro includes a **Profile simulator** form (synthetic country, device, attribution) and prints the matched profile JSON for the cached profile bundle.
