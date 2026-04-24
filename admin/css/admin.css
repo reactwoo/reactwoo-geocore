@@ -548,3 +548,64 @@
 .rwgc-wrap ul.rwgc-docs-list code {
   font-size: 13px;
 }
+
+/* GeoCore Pro status (shown under Geo Core inner nav) */
+.rwgc-pro-status {
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.rwgc-pro-status--active {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+}
+
+.rwgc-pro-status--inactive {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.rwgc-pro-status--upsell {
+  border-color: #e5e7eb;
+  background: #f8fafc;
+}
+
+.rwgc-pro-status__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.rwgc-pro-status__title {
+  font-size: 15px;
+}
+
+.rwgc-pro-status__badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #2271b1;
+  color: #fff;
+}
+
+.rwgc-pro-status__list {
+  margin: 0 0 10px 1.1em;
+  list-style: disc;
+  color: #374151;
+}
+
+.rwgc-pro-status__list li {
+  margin: 4px 0;
+}
+
+.rwgc-pro-status__actions {
+  margin: 0;
+}

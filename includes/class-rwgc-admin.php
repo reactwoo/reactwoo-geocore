@@ -442,17 +442,145 @@ class RWGC_Admin {
 		/**
 		 * Extra Geo Core submenu pages (e.g. satellite plugins under the same menu).
 		 *
-		 * @param array  $items   Admin page slug => label.
-		 * @param string $current Current page slug (for context).
+		 * @param array<string, string|array{label:string,url?:string}> $items   Slug => label string, or slug => array with `label` and optional `url`.
+		 * @param string                                                  $current Current page slug (for context).
 		 */
 		$items = apply_filters( 'rwgc_inner_nav_items', $items, $current );
 
 		echo '<nav class="rwgc-inner-nav" aria-label="' . esc_attr__( 'Geo Core section navigation', 'reactwoo-geocore' ) . '">';
-		foreach ( $items as $slug => $label ) {
-			$class = 'rwgc-inner-nav__link' . ( $slug === $current ? ' is-active' : '' );
-			echo '<a class="' . esc_attr( $class ) . '" href="' . esc_url( admin_url( 'admin.php?page=' . $slug ) ) . '">' . esc_html( $label ) . '</a>';
+		foreach ( $items as $slug => $entry ) {
+			$label = '';
+			$url   = '';
+			if ( is_array( $entry ) ) {
+				$label = isset( $entry['label'] ) ? (string) $entry['label'] : '';
+				$url   = isset( $entry['url'] ) && is_string( $entry['url'] ) && '' !== $entry['url']
+					? $entry['url']
+					: admin_url( 'admin.php?page=' . $slug );
+			} else {
+				$label = (string) $entry;
+				$url   = admin_url( 'admin.php?page=' . $slug );
+			}
+			if ( '' === $label ) {
+				continue;
+			}
+			$class = 'rwgc-inner-nav__link' . ( (string) $slug === (string) $current ? ' is-active' : '' );
+			echo '<a class="' . esc_attr( $class ) . '" href="' . esc_url( $url ) . '">' . esc_html( $label ) . '</a>';
 		}
 		echo '</nav>';
+
+		self::render_geocore_pro_status_card( (string) $current );
+	}
+
+	/**
+	 * GeoCore Pro status and link to license / cloud settings (when Pro is active or relevant).
+	 *
+	 * @param string $current Current Geo Core admin page slug.
+	 * @return void
+	 */
+	public static function render_geocore_pro_status_card( $current = '' ) {
+		if ( ! self::can_manage() ) {
+			return;
+		}
+
+		/**
+		 * Replace the default GeoCore Pro status card HTML (return non-empty string to skip default output).
+		 *
+		 * @param string $html    Empty string by default; non-empty replaces entire card.
+		 * @param string $current Current Geo Core admin page slug.
+		 */
+		$custom = apply_filters( 'rwgc_geocore_pro_status_card_html', '', $current );
+		if ( is_string( $custom ) && '' !== $custom ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Filter authors own escaping policy.
+			echo $custom;
+			return;
+		}
+
+		$pro_main_file = trailingslashit( WP_PLUGIN_DIR ) . 'reactwoo-geocore-pro/reactwoo-geocore-pro.php';
+		$pro_installed = is_readable( $pro_main_file );
+		$pro_on        = function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled();
+		$show_upsell   = in_array( $current, array( 'rwgc-dashboard', 'rwgc-settings' ), true );
+
+		if ( $pro_on ) {
+			$license_key = (string) get_option( 'rwgcp_license_key', '' );
+			$token       = (string) get_option( 'rwgcp_access_token', '' );
+			$expires_at  = (int) get_option( 'rwgcp_token_expires_at', 0 );
+			$profiles    = get_option( 'rwgcp_profiles_cache', array() );
+			$profile_n   = is_array( $profiles ) ? count( $profiles ) : 0;
+
+			$masked = '';
+			if ( strlen( $license_key ) > 8 ) {
+				$masked = str_repeat( '•', max( 0, strlen( $license_key ) - 4 ) ) . substr( $license_key, -4 );
+			} elseif ( '' !== $license_key ) {
+				$masked = str_repeat( '•', min( 8, strlen( $license_key ) ) );
+			}
+
+			$cloud = ( '' !== $token );
+			if ( $cloud && $expires_at > 0 && $expires_at < time() ) {
+				$cloud = false;
+			}
+
+			$matched_id = '';
+			if ( function_exists( 'rwgc_get_context_snapshot' ) ) {
+				$snap = rwgc_get_context_snapshot();
+				if ( is_array( $snap ) && isset( $snap['matched_profile'] ) && is_array( $snap['matched_profile'] ) && ! empty( $snap['matched_profile']['profile_id'] ) ) {
+					$matched_id = (string) $snap['matched_profile']['profile_id'];
+				}
+			}
+
+			echo '<div class="rwgc-pro-status rwgc-pro-status--active" role="region" aria-label="' . esc_attr__( 'GeoCore Pro status', 'reactwoo-geocore' ) . '">';
+			echo '<div class="rwgc-pro-status__head">';
+			echo '<strong class="rwgc-pro-status__title">' . esc_html__( 'GeoCore Pro', 'reactwoo-geocore' ) . '</strong>';
+			echo '<span class="rwgc-pro-status__badge">' . esc_html__( 'Active', 'reactwoo-geocore' ) . '</span>';
+			echo '</div>';
+			echo '<ul class="rwgc-pro-status__list">';
+			echo '<li>' . esc_html__( 'Adds: license + cloud token, profile bundle sync, runtime profile matching, and attribution persistence hooks.', 'reactwoo-geocore' ) . '</li>';
+			echo '<li><strong>' . esc_html__( 'License key', 'reactwoo-geocore' ) . ':</strong> ';
+			if ( '' !== $license_key ) {
+				echo '<code>' . esc_html( $masked ) . '</code>';
+			} else {
+				echo esc_html__( 'Not saved yet', 'reactwoo-geocore' );
+			}
+			echo '</li>';
+			echo '<li><strong>' . esc_html__( 'Cloud', 'reactwoo-geocore' ) . ':</strong> ';
+			echo $cloud ? esc_html__( 'Connected (cached token)', 'reactwoo-geocore' ) : esc_html__( 'Not connected — save a valid key under Settings → GeoCore Pro', 'reactwoo-geocore' );
+			echo '</li>';
+			echo '<li><strong>' . esc_html__( 'Cached experience profiles', 'reactwoo-geocore' ) . ':</strong> ' . esc_html( (string) (int) $profile_n ) . '</li>';
+			if ( '' !== $matched_id ) {
+				echo '<li><strong>' . esc_html__( 'Current context profile (admin preview)', 'reactwoo-geocore' ) . ':</strong> <code>' . esc_html( $matched_id ) . '</code></li>';
+			}
+			echo '</ul>';
+			if ( current_user_can( 'manage_options' ) ) {
+				$url = admin_url( 'options-general.php?page=rwgcp-settings' );
+				echo '<p class="rwgc-pro-status__actions"><a class="button button-primary" href="' . esc_url( $url ) . '">' . esc_html__( 'Manage GeoCore Pro license & sync', 'reactwoo-geocore' ) . '</a></p>';
+			} else {
+				echo '<p class="description">' . esc_html__( 'Ask a site administrator to enter the GeoCore Pro license under Settings → GeoCore Pro.', 'reactwoo-geocore' ) . '</p>';
+			}
+			echo '</div>';
+			return;
+		}
+
+		if ( $pro_installed ) {
+			echo '<div class="rwgc-pro-status rwgc-pro-status--inactive" role="region" aria-label="' . esc_attr__( 'GeoCore Pro status', 'reactwoo-geocore' ) . '">';
+			echo '<p><strong>' . esc_html__( 'GeoCore Pro is installed but not active', 'reactwoo-geocore' ) . '</strong> ';
+			echo esc_html__( 'Activate it to enable premium runtime features.', 'reactwoo-geocore' ) . '</p>';
+			if ( current_user_can( 'activate_plugins' ) ) {
+				$url = admin_url( 'plugins.php' );
+				echo '<p><a class="button" href="' . esc_url( $url ) . '">' . esc_html__( 'Open Plugins', 'reactwoo-geocore' ) . '</a></p>';
+			}
+			echo '</div>';
+			return;
+		}
+
+		if ( $show_upsell ) {
+			echo '<div class="rwgc-pro-status rwgc-pro-status--upsell" role="region" aria-label="' . esc_attr__( 'GeoCore Pro', 'reactwoo-geocore' ) . '">';
+			echo '<p><strong>' . esc_html__( 'GeoCore Pro', 'reactwoo-geocore' ) . '</strong> ';
+			echo esc_html__( 'extends Geo Core with licensing, ReactWoo Cloud sync, cached experience profiles, and profile matching in the runtime context.', 'reactwoo-geocore' );
+			echo ' ';
+			echo esc_html__( 'License and connection are configured under Settings → GeoCore Pro once the plugin is installed.', 'reactwoo-geocore' );
+			echo '</p>';
+			echo '<p><a class="button" href="' . esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ) . '">' . esc_html__( 'Browse add-ons', 'reactwoo-geocore' ) . '</a></p>';
+			echo '</div>';
+		}
 	}
 
 	/**
