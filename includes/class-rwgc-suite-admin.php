@@ -37,12 +37,8 @@ class RWGC_Suite_Admin {
 		if ( ! is_array( $items ) ) {
 			$items = array();
 		}
-		$prepend = array(
-			'rwgc-suite-home'       => __( 'Suite Home', 'reactwoo-geocore' ),
-			'rwgc-getting-started'  => __( 'Getting Started', 'reactwoo-geocore' ),
-			'rwgc-suite-variants'   => __( 'Page versions', 'reactwoo-geocore' ),
-		);
-		return array_merge( $prepend, $items );
+		// Keep inner navigation focused on the primary Geo Core workflow.
+		return $items;
 	}
 
 	/**

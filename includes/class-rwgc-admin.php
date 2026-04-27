@@ -73,32 +73,8 @@ class RWGC_Admin {
 		if ( class_exists( 'RWGC_Suite_Admin', false ) ) {
 			add_submenu_page(
 				'rwgc-dashboard',
-				__( 'Suite Home', 'reactwoo-geocore' ),
-				__( 'Suite Home', 'reactwoo-geocore' ),
-				$cap,
-				'rwgc-suite-home',
-				array( 'RWGC_Suite_Admin', 'render_suite_home' )
-			);
-			add_submenu_page(
-				'rwgc-dashboard',
-				__( 'Getting Started', 'reactwoo-geocore' ),
-				__( 'Getting Started', 'reactwoo-geocore' ),
-				$cap,
-				'rwgc-getting-started',
-				array( 'RWGC_Suite_Admin', 'render_getting_started' )
-			);
-			add_submenu_page(
-				'rwgc-dashboard',
-				__( 'Create country page version', 'reactwoo-geocore' ),
-				__( 'Create page version', 'reactwoo-geocore' ),
-				$cap,
-				'rwgc-workflow-variant',
-				array( 'RWGC_Suite_Admin', 'render_workflow_variant' )
-			);
-			add_submenu_page(
-				'rwgc-dashboard',
-				__( 'Geo Suite — Page versions', 'reactwoo-geocore' ),
-				__( 'Page versions', 'reactwoo-geocore' ),
+				__( 'Rules / Page Versions', 'reactwoo-geocore' ),
+				__( 'Rules / Page Versions', 'reactwoo-geocore' ),
 				$cap,
 				'rwgc-suite-variants',
 				array( 'RWGC_Suite_Admin', 'render_suite_variants' )
@@ -134,8 +110,8 @@ class RWGC_Admin {
 
 		add_submenu_page(
 			'rwgc-dashboard',
-			__( 'Usage', 'reactwoo-geocore' ),
-			__( 'Usage', 'reactwoo-geocore' ),
+			__( 'Reports', 'reactwoo-geocore' ),
+			__( 'Reports', 'reactwoo-geocore' ),
 			$cap,
 			'rwgc-usage',
 			array( __CLASS__, 'render_usage' )
@@ -143,29 +119,11 @@ class RWGC_Admin {
 
 		add_submenu_page(
 			'rwgc-dashboard',
-			__( 'Target types', 'reactwoo-geocore' ),
-			__( 'Target types', 'reactwoo-geocore' ),
+			__( 'Targeting', 'reactwoo-geocore' ),
+			__( 'Targeting', 'reactwoo-geocore' ),
 			$cap,
 			'rwgc-target-types',
 			array( __CLASS__, 'render_target_types' )
-		);
-
-		add_submenu_page(
-			'rwgc-dashboard',
-			__( 'Context preview', 'reactwoo-geocore' ),
-			__( 'Context preview', 'reactwoo-geocore' ),
-			$cap,
-			'rwgc-context-preview',
-			array( __CLASS__, 'render_context_preview' )
-		);
-
-		add_submenu_page(
-			'rwgc-dashboard',
-			__( 'Targeting providers', 'reactwoo-geocore' ),
-			__( 'Providers', 'reactwoo-geocore' ),
-			$cap,
-			'rwgc-target-providers',
-			array( __CLASS__, 'render_target_providers' )
 		);
 
 		add_submenu_page(
@@ -340,6 +298,33 @@ class RWGC_Admin {
 		}
 		RWGC_Target_Registry::init();
 		$rwgc_target_types = function_exists( 'rwgc_get_target_types' ) ? rwgc_get_target_types() : array();
+		$rwgc_provider_rows = array();
+		$classes            = apply_filters(
+			'rwgc_target_provider_classes',
+			array(
+				'RWGC_Target_Provider_Geo',
+				'RWGC_Target_Provider_Language',
+				'RWGC_Target_Provider_Time',
+				'RWGC_Target_Provider_Device',
+				'RWGC_Target_Provider_Weather',
+				'RWGC_Target_Provider_Analytics',
+				'RWGC_Target_Provider_Commerce',
+			)
+		);
+		foreach ( $classes as $class ) {
+			if ( ! is_string( $class ) || ! class_exists( $class ) ) {
+				continue;
+			}
+			$obj = new $class();
+			if ( ! $obj instanceof RWGC_Target_Provider_Interface ) {
+				continue;
+			}
+			$rwgc_provider_rows[] = array_merge(
+				array( 'key' => $obj->get_provider_key() ),
+				$obj->get_admin_status()
+			);
+		}
+		$rwgc_pro_enabled = function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled();
 		include RWGC_PATH . 'admin/views/target-types-page.php';
 	}
 
@@ -432,11 +417,13 @@ class RWGC_Admin {
 	 */
 	public static function render_inner_nav( $current ) {
 		$items = array(
-			'rwgc-dashboard' => __( 'Dashboard', 'reactwoo-geocore' ),
-			'rwgc-settings'  => __( 'Settings', 'reactwoo-geocore' ),
-			'rwgc-tools'     => __( 'Tools', 'reactwoo-geocore' ),
-			'rwgc-usage'     => __( 'Usage', 'reactwoo-geocore' ),
-			'rwgc-addons'    => __( 'Add-ons', 'reactwoo-geocore' ),
+			'rwgc-dashboard'     => __( 'Dashboard', 'reactwoo-geocore' ),
+			'rwgc-suite-variants'=> __( 'Rules / Page Versions', 'reactwoo-geocore' ),
+			'rwgc-target-types'  => __( 'Targeting', 'reactwoo-geocore' ),
+			'rwgc-usage'         => __( 'Reports', 'reactwoo-geocore' ),
+			'rwgc-tools'         => __( 'Tools', 'reactwoo-geocore' ),
+			'rwgc-settings'      => __( 'Settings', 'reactwoo-geocore' ),
+			'rwgc-addons'        => __( 'Add-ons', 'reactwoo-geocore' ),
 		);
 
 		/**
@@ -533,7 +520,7 @@ class RWGC_Admin {
 			echo '<span class="rwgc-pro-status__badge">' . esc_html__( 'Active', 'reactwoo-geocore' ) . '</span>';
 			echo '</div>';
 			echo '<ul class="rwgc-pro-status__list">';
-			echo '<li>' . esc_html__( 'Adds: license + cloud token, profile bundle sync, runtime profile matching, and attribution persistence hooks.', 'reactwoo-geocore' ) . '</li>';
+			echo '<li>' . esc_html__( 'Unlocks campaign, attribution, and experience profile targeting inside Geo Core.', 'reactwoo-geocore' ) . '</li>';
 			echo '<li><strong>' . esc_html__( 'License key', 'reactwoo-geocore' ) . ':</strong> ';
 			if ( '' !== $license_key ) {
 				echo '<code>' . esc_html( $masked ) . '</code>';
@@ -542,7 +529,7 @@ class RWGC_Admin {
 			}
 			echo '</li>';
 			echo '<li><strong>' . esc_html__( 'Cloud', 'reactwoo-geocore' ) . ':</strong> ';
-			echo $cloud ? esc_html__( 'Connected (cached token)', 'reactwoo-geocore' ) : esc_html__( 'Not connected — save a valid key under Settings → GeoCore Pro', 'reactwoo-geocore' );
+			echo $cloud ? esc_html__( 'Connected', 'reactwoo-geocore' ) : esc_html__( 'Not connected — add your licence in GeoCore Pro', 'reactwoo-geocore' );
 			echo '</li>';
 			echo '<li><strong>' . esc_html__( 'Cached experience profiles', 'reactwoo-geocore' ) . ':</strong> ' . esc_html( (string) (int) $profile_n ) . '</li>';
 			if ( '' !== $matched_id ) {
@@ -550,8 +537,8 @@ class RWGC_Admin {
 			}
 			echo '</ul>';
 			if ( current_user_can( 'manage_options' ) ) {
-				$url = admin_url( 'options-general.php?page=rwgcp-settings' );
-				echo '<p class="rwgc-pro-status__actions"><a class="button button-primary" href="' . esc_url( $url ) . '">' . esc_html__( 'Manage GeoCore Pro license & sync', 'reactwoo-geocore' ) . '</a></p>';
+				$url = admin_url( 'admin.php?page=rwgcp-geocore-pro' );
+				echo '<p class="rwgc-pro-status__actions"><a class="button button-primary" href="' . esc_url( $url ) . '">' . esc_html__( 'Open GeoCore Pro', 'reactwoo-geocore' ) . '</a></p>';
 			} else {
 				echo '<p class="description">' . esc_html__( 'Ask a site administrator to enter the GeoCore Pro license under Settings → GeoCore Pro.', 'reactwoo-geocore' ) . '</p>';
 			}
@@ -574,9 +561,9 @@ class RWGC_Admin {
 		if ( $show_upsell ) {
 			echo '<div class="rwgc-pro-status rwgc-pro-status--upsell" role="region" aria-label="' . esc_attr__( 'GeoCore Pro', 'reactwoo-geocore' ) . '">';
 			echo '<p><strong>' . esc_html__( 'GeoCore Pro', 'reactwoo-geocore' ) . '</strong> ';
-			echo esc_html__( 'extends Geo Core with licensing, ReactWoo Cloud sync, cached experience profiles, and profile matching in the runtime context.', 'reactwoo-geocore' );
+			echo esc_html__( 'unlocks campaign, attribution, and profile-based targeting.', 'reactwoo-geocore' );
 			echo ' ';
-			echo esc_html__( 'License and connection are configured under Settings → GeoCore Pro once the plugin is installed.', 'reactwoo-geocore' );
+			echo esc_html__( 'Install and connect GeoCore Pro to enable advanced targeting signals.', 'reactwoo-geocore' );
 			echo '</p>';
 			echo '<p><a class="button" href="' . esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ) . '">' . esc_html__( 'Browse add-ons', 'reactwoo-geocore' ) . '</a></p>';
 			echo '</div>';

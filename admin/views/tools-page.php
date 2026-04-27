@@ -73,6 +73,7 @@ settings_errors( 'rwgc_tools' );
 ?>
 <div class="wrap rwgc-wrap">
 	<h1><?php esc_html_e( 'Geo Core Tools', 'reactwoo-geocore' ); ?></h1>
+	<p class="description"><?php esc_html_e( 'Test visitor detection and run maintenance utilities.', 'reactwoo-geocore' ); ?></p>
 	<?php RWGC_Admin::render_inner_nav( 'rwgc-tools' ); ?>
 
 	<div class="rwgc-card rwgc-card--full">
@@ -125,15 +126,23 @@ settings_errors( 'rwgc_tools' );
 	</div>
 
 	<div class="rwgc-card rwgc-card--full">
-		<h2><?php esc_html_e( 'Test current lookup', 'reactwoo-geocore' ); ?></h2>
+		<h2><?php esc_html_e( 'Test current visitor', 'reactwoo-geocore' ); ?></h2>
 		<?php if ( ! empty( $data ) ) : ?>
-			<pre><?php echo esc_html( wp_json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) ); ?></pre>
+			<p><strong><?php esc_html_e( 'Country', 'reactwoo-geocore' ); ?>:</strong> <?php echo esc_html( isset( $data['country_code'] ) ? (string) $data['country_code'] : '' ); ?></p>
+			<p><strong><?php esc_html_e( 'Language', 'reactwoo-geocore' ); ?>:</strong> <?php echo esc_html( isset( $data['language'] ) ? (string) $data['language'] : '' ); ?></p>
+			<p><strong><?php esc_html_e( 'Device', 'reactwoo-geocore' ); ?>:</strong> <?php echo esc_html( isset( $data['device_type'] ) ? (string) $data['device_type'] : '' ); ?></p>
+			<details>
+				<summary><?php esc_html_e( 'Developer details', 'reactwoo-geocore' ); ?></summary>
+				<pre><?php echo esc_html( wp_json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) ); ?></pre>
+			</details>
 		<?php else : ?>
-			<p><?php esc_html_e( 'No geo data available yet.', 'reactwoo-geocore' ); ?></p>
+			<p><?php esc_html_e( 'No visitor data available yet.', 'reactwoo-geocore' ); ?></p>
 		<?php endif; ?>
 	</div>
 
-	<div class="rwgc-card rwgc-card--full">
+	<details class="rwgc-tech-ref-details">
+		<summary class="rwgc-tech-ref-details__summary"><?php esc_html_e( 'Advanced: Developer tools', 'reactwoo-geocore' ); ?></summary>
+		<div class="rwgc-card rwgc-card--full rwgc-tech-ref-details__inner">
 		<h2><?php esc_html_e( 'ReactWoo AI (optional)', 'reactwoo-geocore' ); ?></h2>
 		<p class="description">
 			<?php esc_html_e( 'Core Geo does not require a ReactWoo product license. These actions only help verify optional AI endpoints after you add a license under Settings → ReactWoo API.', 'reactwoo-geocore' ); ?>
@@ -152,6 +161,7 @@ settings_errors( 'rwgc_tools' );
 		<p class="description">
 			<?php esc_html_e( 'Reachability calls the public health endpoint (no license). The assistant usage test exchanges your license for a token and calls a protected route — use it to confirm credentials.', 'reactwoo-geocore' ); ?>
 		</p>
-	</div>
+		</div>
+	</details>
 </div>
 

@@ -6,11 +6,13 @@ $option_key = RWGC_Settings::OPTION_KEY;
 ?>
 <div class="wrap rwgc-wrap">
 	<h1><?php esc_html_e( 'Geo Core Settings', 'reactwoo-geocore' ); ?></h1>
+	<p class="description"><?php esc_html_e( 'Configure detection, database, behavior, and integrations.', 'reactwoo-geocore' ); ?></p>
 	<?php RWGC_Admin::render_inner_nav( 'rwgc-settings' ); ?>
 
 	<form method="post" action="options.php">
 		<?php settings_fields( 'rwgc_settings_group' ); ?>
 		<table class="form-table" role="presentation">
+			<tr><th colspan="2"><h2><?php esc_html_e( 'Detection', 'reactwoo-geocore' ); ?></h2></th></tr>
 			<tr>
 				<th scope="row"><?php esc_html_e( 'Enable geolocation', 'reactwoo-geocore' ); ?></th>
 				<td>
@@ -35,6 +37,7 @@ $option_key = RWGC_Settings::OPTION_KEY;
 					</p>
 				</td>
 			</tr>
+			<tr><th colspan="2"><h2><?php esc_html_e( 'Database', 'reactwoo-geocore' ); ?></h2></th></tr>
 			<tr>
 				<th scope="row"><?php esc_html_e( 'MaxMind account (GeoLite2)', 'reactwoo-geocore' ); ?></th>
 				<td>
@@ -67,6 +70,7 @@ $option_key = RWGC_Settings::OPTION_KEY;
 					</label>
 				</td>
 			</tr>
+			<tr><th colspan="2"><h2><?php esc_html_e( 'Behaviour', 'reactwoo-geocore' ); ?></h2></th></tr>
 			<tr>
 				<th scope="row"><?php esc_html_e( 'Fallback location', 'reactwoo-geocore' ); ?></th>
 				<td>
@@ -100,6 +104,7 @@ $option_key = RWGC_Settings::OPTION_KEY;
 					<p class="description"><?php esc_html_e( 'Used when lookups fail or the database is missing. Values are chosen from prepopulated lists (no manual ISO codes).', 'reactwoo-geocore' ); ?></p>
 				</td>
 			</tr>
+			<tr><th colspan="2"><h2><?php esc_html_e( 'Integrations', 'reactwoo-geocore' ); ?></h2></th></tr>
 			<tr>
 				<th scope="row"><?php esc_html_e( 'REST API', 'reactwoo-geocore' ); ?></th>
 				<td>
@@ -112,16 +117,21 @@ $option_key = RWGC_Settings::OPTION_KEY;
 					</p>
 				</td>
 			</tr>
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Debug mode', 'reactwoo-geocore' ); ?></th>
-				<td>
-					<label>
-						<input type="checkbox" name="<?php echo esc_attr( $option_key ); ?>[debug_mode]" value="1" <?php checked( $settings['debug_mode'], 1 ); ?> />
-						<?php esc_html_e( 'Log geo errors to debug.log when WP_DEBUG is enabled.', 'reactwoo-geocore' ); ?>
-					</label>
-				</td>
-			</tr>
 		</table>
+		<details class="rwgc-tech-ref-details">
+			<summary class="rwgc-tech-ref-details__summary"><?php esc_html_e( 'Advanced', 'reactwoo-geocore' ); ?></summary>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Debug mode', 'reactwoo-geocore' ); ?></th>
+					<td>
+						<label>
+							<input type="checkbox" name="<?php echo esc_attr( $option_key ); ?>[debug_mode]" value="1" <?php checked( $settings['debug_mode'], 1 ); ?> />
+							<?php esc_html_e( 'Log geo errors to debug.log when WP_DEBUG is enabled.', 'reactwoo-geocore' ); ?>
+						</label>
+					</td>
+				</tr>
+			</table>
+		</details>
 
 		<?php submit_button(); ?>
 	</form>

@@ -5,21 +5,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 <div class="wrap rwgc-wrap">
 	<h1><?php esc_html_e( 'Geo Core Add-ons', 'reactwoo-geocore' ); ?></h1>
-	<p><?php esc_html_e( 'These add-ons extend ReactWoo Geo Core with builder-specific targeting and WHMCS-aware pricing.', 'reactwoo-geocore' ); ?></p>
+	<p><?php esc_html_e( 'Add-ons extend Geo Core with extra targeting and integrations.', 'reactwoo-geocore' ); ?></p>
 	<?php RWGC_Admin::render_inner_nav( 'rwgc-addons' ); ?>
 
 	<div class="rwgc-addons-page">
 		<div class="rwgc-card rwgc-card--full rwgc-addons-intro">
-			<h2><?php esc_html_e( 'Baseline vs Extension', 'reactwoo-geocore' ); ?></h2>
+			<h2><?php esc_html_e( 'Core and extensions', 'reactwoo-geocore' ); ?></h2>
 			<p class="description">
-				<?php esc_html_e( 'Free tier: Geo Core performs server-side page routing (1 default + 1 country variant per page).', 'reactwoo-geocore' ); ?>
+				<?php esc_html_e( 'Geo Core handles location detection and page version routing.', 'reactwoo-geocore' ); ?>
 			</p>
 			<p class="description">
-				<?php esc_html_e( 'Pro tier: GeoElementor provides advanced/multi-variant routing via Groups and extends element-level targeting.', 'reactwoo-geocore' ); ?>
+				<?php esc_html_e( 'GeoCore Pro unlocks campaign, attribution, and experience-profile targeting inside Geo Core.', 'reactwoo-geocore' ); ?>
 			</p>
 			<p>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-usage' ) ); ?>" class="button"><?php esc_html_e( 'See Free Routing', 'reactwoo-geocore' ); ?></a>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=geo-elementor' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Open GeoElementor', 'reactwoo-geocore' ); ?></a>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-suite-variants' ) ); ?>" class="button"><?php esc_html_e( 'Open Rules / Page Versions', 'reactwoo-geocore' ); ?></a>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgcp-geocore-pro' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Open GeoCore Pro', 'reactwoo-geocore' ); ?></a>
 			</p>
 		</div>
 

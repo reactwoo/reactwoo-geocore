@@ -31,8 +31,8 @@ $goal_label    = isset( $goal_labels[ $goal ] ) ? $goal_labels[ $goal ] : '';
 <div class="wrap rwgc-wrap rwgc-suite rwgc-suite-shell">
 	<?php
 	RWGC_Admin_UI::render_page_header(
-		__( 'Geo Suite — Getting Started', 'reactwoo-geocore' ),
-		__( 'Three short steps: pick an outcome, confirm your environment, then verify detection. You can return here any time from the Geo Core menu.', 'reactwoo-geocore' )
+		__( 'Geo Core Setup', 'reactwoo-geocore' ),
+		__( 'Three short steps: choose your goal, confirm setup, then verify visitor detection.', 'reactwoo-geocore' )
 	);
 	?>
 	<?php RWGC_Admin::render_inner_nav( 'rwgc-getting-started' ); ?>
@@ -42,7 +42,7 @@ $goal_label    = isset( $goal_labels[ $goal ] ) ? $goal_labels[ $goal ] : '';
 	<?php endif; ?>
 
 	<?php if ( $welcome ) : ?>
-		<div class="notice notice-info"><p><?php esc_html_e( 'Welcome — you are in the right place. Work through the steps below, then use Suite Home for day-to-day shortcuts.', 'reactwoo-geocore' ); ?></p></div>
+		<div class="notice notice-info"><p><?php esc_html_e( 'Welcome. Complete setup, then use Dashboard and Rules / Page Versions for daily work.', 'reactwoo-geocore' ); ?></p></div>
 	<?php endif; ?>
 
 	<section class="rwgc-card rwgc-suite-stepper-card" aria-labelledby="rwgc-stepper-heading">
@@ -203,15 +203,14 @@ $goal_label    = isset( $goal_labels[ $goal ] ) ? $goal_labels[ $goal ] : '';
 			<input type="hidden" name="rwgc_wizard_action" value="complete" />
 			<p class="rwgc-actions">
 				<button type="submit" class="rwgc-btn rwgc-btn--primary"><?php esc_html_e( 'Mark setup as done', 'reactwoo-geocore' ); ?></button>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-suite-home' ) ); ?>" class="rwgc-btn rwgc-btn--secondary"><?php esc_html_e( 'Suite Home', 'reactwoo-geocore' ); ?></a>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-dashboard' ) ); ?>" class="rwgc-btn rwgc-btn--secondary"><?php esc_html_e( 'Dashboard', 'reactwoo-geocore' ); ?></a>
 			</p>
 		</form>
 	</section>
 	<?php endif; ?>
 
 	<p class="rwgc-suite-wizard-footer rwgc-actions">
-		<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-suite-home' ) ); ?>" class="rwgc-btn rwgc-btn--secondary"><?php esc_html_e( 'Suite Home', 'reactwoo-geocore' ); ?></a>
-		<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-dashboard' ) ); ?>" class="rwgc-btn rwgc-btn--secondary"><?php esc_html_e( 'Classic dashboard', 'reactwoo-geocore' ); ?></a>
-		<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-suite-variants' ) ); ?>" class="rwgc-btn rwgc-btn--secondary"><?php esc_html_e( 'Page versions', 'reactwoo-geocore' ); ?></a>
+		<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-dashboard' ) ); ?>" class="rwgc-btn rwgc-btn--secondary"><?php esc_html_e( 'Dashboard', 'reactwoo-geocore' ); ?></a>
+		<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-suite-variants' ) ); ?>" class="rwgc-btn rwgc-btn--secondary"><?php esc_html_e( 'Rules / Page Versions', 'reactwoo-geocore' ); ?></a>
 	</p>
 </div>

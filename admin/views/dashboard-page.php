@@ -12,17 +12,17 @@ $maxmind_ok    = ! empty( $settings['maxmind_license_key'] );
 $db_ready      = ! empty( $status['exists'] );
 $rest_enabled  = (bool) RWGC_Settings::get( 'rest_enabled', 1 );
 
-$stat_geo   = $geo_enabled ? __( 'On', 'reactwoo-geocore' ) : __( 'Off', 'reactwoo-geocore' );
-$stat_geo_t = $geo_enabled ? __( 'Visitor geo is active', 'reactwoo-geocore' ) : __( 'Enable geo in Settings', 'reactwoo-geocore' );
+$stat_geo   = $geo_enabled ? __( 'Active', 'reactwoo-geocore' ) : __( 'Needs setup', 'reactwoo-geocore' );
+$stat_geo_t = __( 'Visitor country detection is running.', 'reactwoo-geocore' );
 
-$stat_mm   = $maxmind_ok ? __( 'Configured', 'reactwoo-geocore' ) : __( 'Missing', 'reactwoo-geocore' );
-$stat_mm_t = $maxmind_ok ? __( 'GeoLite2 credentials saved', 'reactwoo-geocore' ) : __( 'Add MaxMind keys in Settings', 'reactwoo-geocore' );
+$stat_mm   = $db_ready ? __( 'Ready', 'reactwoo-geocore' ) : __( 'Missing', 'reactwoo-geocore' );
+$stat_mm_t = __( 'MaxMind country database status.', 'reactwoo-geocore' );
 
-$stat_db   = $db_ready ? __( 'Ready', 'reactwoo-geocore' ) : __( 'Missing', 'reactwoo-geocore' );
-$stat_db_t = $db_ready ? __( 'Country database on disk', 'reactwoo-geocore' ) : __( 'Download from Tools', 'reactwoo-geocore' );
+$stat_db   = isset( $status['is_stale'] ) && $status['is_stale'] ? __( 'Stale', 'reactwoo-geocore' ) : ( $db_ready ? __( 'Ready', 'reactwoo-geocore' ) : __( 'Missing', 'reactwoo-geocore' ) );
+$stat_db_t = __( 'MaxMind country database status.', 'reactwoo-geocore' );
 
-$stat_rest   = $rest_enabled ? __( 'On', 'reactwoo-geocore' ) : __( 'Off', 'reactwoo-geocore' );
-$stat_rest_t = $rest_enabled ? __( 'REST discovery & location routes', 'reactwoo-geocore' ) : __( 'Enable in Settings for integrations', 'reactwoo-geocore' );
+$stat_rest   = __( '0', 'reactwoo-geocore' );
+$stat_rest_t = __( 'Rule matches (coming from reports data).', 'reactwoo-geocore' );
 
 $tone_geo   = $geo_enabled ? 'success' : 'warning';
 $tone_mm    = $maxmind_ok ? 'success' : 'warning';
@@ -32,22 +32,17 @@ $tone_rest  = $rest_enabled ? 'success' : 'neutral';
 $quick_actions = array(
 	array(
 		'url'     => admin_url( 'admin.php?page=rwgc-settings' ),
-		'label'   => __( 'Configure geo detection', 'reactwoo-geocore' ),
+		'label'   => __( 'Configure Detection', 'reactwoo-geocore' ),
 		'primary' => true,
 	),
 	array(
 		'url'     => admin_url( 'admin.php?page=rwgc-tools' ),
-		'label'   => __( 'Database & cache tools', 'reactwoo-geocore' ),
-		'primary' => false,
-	),
-	array(
-		'url'     => admin_url( 'admin.php?page=rwgc-addons' ),
-		'label'   => __( 'Explore add-ons', 'reactwoo-geocore' ),
+		'label'   => __( 'Test Visitor Context', 'reactwoo-geocore' ),
 		'primary' => false,
 	),
 	array(
 		'url'     => admin_url( 'admin.php?page=rwgc-usage' ),
-		'label'   => __( 'Usage guide', 'reactwoo-geocore' ),
+		'label'   => __( 'View Reports', 'reactwoo-geocore' ),
 		'primary' => false,
 	),
 );
@@ -77,28 +72,28 @@ if ( class_exists( 'RWGO_Plugin', false ) ) {
 <div class="wrap rwgc-wrap rwgc-suite">
 	<?php
 	RWGC_Admin_UI::render_page_header(
-		__( 'ReactWoo Geo Suite', 'reactwoo-geocore' ),
-		__( 'Geo Core is the shared engine for country detection, routing, and integrations. Use this dashboard for setup status, then open each add-on for its own workflows.', 'reactwoo-geocore' )
+		__( 'Geo Core', 'reactwoo-geocore' ),
+		__( 'Control content and page versions by visitor location.', 'reactwoo-geocore' )
 	);
 	?>
 	<?php RWGC_Admin::render_inner_nav( 'rwgc-dashboard' ); ?>
 
 	<section class="rwgc-suite-hero" aria-labelledby="rwgc-suite-hero-title">
-		<h2 id="rwgc-suite-hero-title"><?php esc_html_e( 'Welcome to Geo Core', 'reactwoo-geocore' ); ?></h2>
-		<p><?php esc_html_e( 'You get accurate visitor country data, optional REST endpoints for your stack, and free page-level routing. Premium ReactWoo plugins extend this foundation — they stay separate products but share this engine.', 'reactwoo-geocore' ); ?></p>
+		<h2 id="rwgc-suite-hero-title"><?php esc_html_e( 'Ready to create visitor rules?', 'reactwoo-geocore' ); ?></h2>
+		<p><?php esc_html_e( 'Start with simple rules to show, hide, redirect, or route page versions by visitor conditions.', 'reactwoo-geocore' ); ?></p>
 		<div class="rwgc-suite-hero__actions">
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-settings' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Configure detection', 'reactwoo-geocore' ); ?></a>
-			<a href="<?php echo esc_url( admin_url( 'edit.php?post_type=page' ) ); ?>" class="button"><?php esc_html_e( 'Pages & routing', 'reactwoo-geocore' ); ?></a>
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ); ?>" class="button"><?php esc_html_e( 'Browse add-ons', 'reactwoo-geocore' ); ?></a>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-suite-variants' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Create Geo Rule', 'reactwoo-geocore' ); ?></a>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-settings' ) ); ?>" class="button"><?php esc_html_e( 'Configure Detection', 'reactwoo-geocore' ); ?></a>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-tools' ) ); ?>" class="button"><?php esc_html_e( 'Test Visitor Context', 'reactwoo-geocore' ); ?></a>
 		</div>
 	</section>
 
 	<?php
 	RWGC_Admin_UI::render_stat_grid_open();
-	RWGC_Admin_UI::render_stat_card( __( 'Geo detection', 'reactwoo-geocore' ), $stat_geo, array( 'hint' => $stat_geo_t, 'tone' => $tone_geo ) );
-	RWGC_Admin_UI::render_stat_card( __( 'MaxMind (GeoLite2)', 'reactwoo-geocore' ), $stat_mm, array( 'hint' => $stat_mm_t, 'tone' => $tone_mm ) );
-	RWGC_Admin_UI::render_stat_card( __( 'IP database', 'reactwoo-geocore' ), $stat_db, array( 'hint' => $stat_db_t, 'tone' => $tone_db ) );
-	RWGC_Admin_UI::render_stat_card( __( 'REST API', 'reactwoo-geocore' ), $stat_rest, array( 'hint' => $stat_rest_t, 'tone' => $tone_rest ) );
+	RWGC_Admin_UI::render_stat_card( __( 'Location Detection', 'reactwoo-geocore' ), $stat_geo, array( 'hint' => $stat_geo_t, 'tone' => $tone_geo ) );
+	RWGC_Admin_UI::render_stat_card( __( 'Geo Database', 'reactwoo-geocore' ), $stat_db, array( 'hint' => $stat_db_t, 'tone' => $tone_db ) );
+	RWGC_Admin_UI::render_stat_card( __( 'Active Rules', 'reactwoo-geocore' ), __( '0', 'reactwoo-geocore' ), array( 'hint' => __( 'Rules currently controlling content or routing.', 'reactwoo-geocore' ), 'tone' => $tone_mm ) );
+	RWGC_Admin_UI::render_stat_card( __( 'Rule Matches', 'reactwoo-geocore' ), $stat_rest, array( 'hint' => $stat_rest_t, 'tone' => $tone_rest ) );
 	RWGC_Admin_UI::render_stat_grid_close();
 	?>
 

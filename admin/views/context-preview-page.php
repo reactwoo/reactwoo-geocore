@@ -7,9 +7,9 @@ $rwgc_preview_snapshot = isset( $rwgc_preview_snapshot ) && is_array( $rwgc_prev
 $preview_url           = admin_url( 'admin.php?page=rwgc-context-preview' );
 ?>
 <div class="wrap rwgc-wrap">
-	<h1><?php esc_html_e( 'Context preview', 'reactwoo-geocore' ); ?></h1>
+	<h1><?php esc_html_e( 'Visitor test (advanced)', 'reactwoo-geocore' ); ?></h1>
 	<p class="description">
-		<?php esc_html_e( 'Simulate targeting context in wp-admin. Overrides merge onto the resolved snapshot for keys that support simulation.', 'reactwoo-geocore' ); ?>
+		<?php esc_html_e( 'Use this advanced tool to simulate visitor values. Most users should use Tools > Test current visitor.', 'reactwoo-geocore' ); ?>
 	</p>
 
 	<form method="get" action="<?php echo esc_url( $preview_url ); ?>" class="rwgc-context-preview-form">
@@ -76,6 +76,12 @@ $preview_url           = admin_url( 'admin.php?page=rwgc-context-preview' );
 		<?php submit_button( __( 'Apply preview', 'reactwoo-geocore' ) ); ?>
 	</form>
 
-	<h2><?php esc_html_e( 'Resulting snapshot', 'reactwoo-geocore' ); ?></h2>
-	<pre class="rwgc-code-block" style="max-height:28em;overflow:auto;background:#f6f7f7;padding:12px;border:1px solid #c3c4c7;"><?php echo esc_html( wp_json_encode( $rwgc_preview_snapshot, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) ); ?></pre>
+	<h2><?php esc_html_e( 'Friendly result', 'reactwoo-geocore' ); ?></h2>
+	<p><strong><?php esc_html_e( 'Country', 'reactwoo-geocore' ); ?>:</strong> <?php echo esc_html( isset( $rwgc_preview_snapshot['country'] ) ? (string) $rwgc_preview_snapshot['country'] : '' ); ?></p>
+	<p><strong><?php esc_html_e( 'Language', 'reactwoo-geocore' ); ?>:</strong> <?php echo esc_html( isset( $rwgc_preview_snapshot['language'] ) ? (string) $rwgc_preview_snapshot['language'] : '' ); ?></p>
+	<p><strong><?php esc_html_e( 'Device', 'reactwoo-geocore' ); ?>:</strong> <?php echo esc_html( isset( $rwgc_preview_snapshot['device_type'] ) ? (string) $rwgc_preview_snapshot['device_type'] : '' ); ?></p>
+	<details class="rwgc-tech-ref-details">
+		<summary class="rwgc-tech-ref-details__summary"><?php esc_html_e( 'Developer details', 'reactwoo-geocore' ); ?></summary>
+		<pre class="rwgc-code-block" style="max-height:28em;overflow:auto;background:#f6f7f7;padding:12px;border:1px solid #c3c4c7;"><?php echo esc_html( wp_json_encode( $rwgc_preview_snapshot, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) ); ?></pre>
+	</details>
 </div>

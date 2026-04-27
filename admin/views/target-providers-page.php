@@ -6,9 +6,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 $rwgc_provider_rows = isset( $rwgc_provider_rows ) && is_array( $rwgc_provider_rows ) ? $rwgc_provider_rows : array();
 ?>
 <div class="wrap rwgc-wrap">
-	<h1><?php esc_html_e( 'Targeting providers', 'reactwoo-geocore' ); ?></h1>
+	<h1><?php esc_html_e( 'Targeting providers (developer)', 'reactwoo-geocore' ); ?></h1>
 	<p class="description">
-		<?php esc_html_e( 'Internal and external providers contribute target types and resolved context. Future integrations (weather, analytics) surface here.', 'reactwoo-geocore' ); ?>
+		<?php esc_html_e( 'This is a technical diagnostics screen for targeting integrations. Most users should use the Targeting screen.', 'reactwoo-geocore' ); ?>
 	</p>
 
 	<table class="widefat striped">
