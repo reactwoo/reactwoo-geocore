@@ -11,6 +11,7 @@ $geo_enabled   = (bool) RWGC_Settings::get( 'enabled', 1 );
 $maxmind_ok    = ! empty( $settings['maxmind_license_key'] );
 $db_ready      = ! empty( $status['exists'] );
 $rest_enabled  = (bool) RWGC_Settings::get( 'rest_enabled', 1 );
+$overview_rows = class_exists( 'RWGC_Variant_Manager', false ) ? RWGC_Variant_Manager::get_routing_overview_rows() : array();
 
 $stat_geo   = $geo_enabled ? __( 'Active', 'reactwoo-geocore' ) : __( 'Needs setup', 'reactwoo-geocore' );
 $stat_geo_t = __( 'Visitor country detection is running.', 'reactwoo-geocore' );
@@ -21,13 +22,28 @@ $stat_mm_t = __( 'MaxMind country database status.', 'reactwoo-geocore' );
 $stat_db   = isset( $status['is_stale'] ) && $status['is_stale'] ? __( 'Stale', 'reactwoo-geocore' ) : ( $db_ready ? __( 'Ready', 'reactwoo-geocore' ) : __( 'Missing', 'reactwoo-geocore' ) );
 $stat_db_t = __( 'MaxMind country database status.', 'reactwoo-geocore' );
 
-$stat_rest   = __( '0', 'reactwoo-geocore' );
-$stat_rest_t = __( 'Rule matches (coming from reports data).', 'reactwoo-geocore' );
+$active_rules_count = is_array( $overview_rows ) ? count( $overview_rows ) : 0;
+/**
+ * Filter dashboard active rule count so add-ons can contribute popup/section rules.
+ *
+ * @param int                      $active_rules_count Default count from Geo Core page-version routing rules.
+ * @param array<int, array<string, mixed>> $overview_rows      Routing overview rows used for the default count.
+ */
+$active_rules_count = (int) apply_filters( 'rwgc_dashboard_active_rules_count', $active_rules_count, $overview_rows );
+
+/**
+ * Filter dashboard rule match count so runtime/reporting integrations can supply real totals.
+ *
+ * @param int $matches_count Default 0 when no reporting source is connected.
+ */
+$rule_matches_count = (int) apply_filters( 'rwgc_dashboard_rule_matches_count', 0 );
+$stat_rest          = (string) max( 0, $rule_matches_count );
+$stat_rest_t        = __( 'Times Geo Core matched visitor conditions.', 'reactwoo-geocore' );
 
 $tone_geo   = $geo_enabled ? 'success' : 'warning';
 $tone_mm    = $maxmind_ok ? 'success' : 'warning';
 $tone_db    = $db_ready ? 'success' : 'warning';
-$tone_rest  = $rest_enabled ? 'success' : 'neutral';
+$tone_rest  = $rule_matches_count > 0 ? 'success' : 'neutral';
 
 $quick_actions = array(
 	array(
@@ -92,7 +108,7 @@ if ( class_exists( 'RWGO_Plugin', false ) ) {
 	RWGC_Admin_UI::render_stat_grid_open();
 	RWGC_Admin_UI::render_stat_card( __( 'Location Detection', 'reactwoo-geocore' ), $stat_geo, array( 'hint' => $stat_geo_t, 'tone' => $tone_geo ) );
 	RWGC_Admin_UI::render_stat_card( __( 'Geo Database', 'reactwoo-geocore' ), $stat_db, array( 'hint' => $stat_db_t, 'tone' => $tone_db ) );
-	RWGC_Admin_UI::render_stat_card( __( 'Active Rules', 'reactwoo-geocore' ), __( '0', 'reactwoo-geocore' ), array( 'hint' => __( 'Rules currently controlling content or routing.', 'reactwoo-geocore' ), 'tone' => $tone_mm ) );
+	RWGC_Admin_UI::render_stat_card( __( 'Active Rules', 'reactwoo-geocore' ), (string) max( 0, $active_rules_count ), array( 'hint' => __( 'Rules currently controlling content or routing.', 'reactwoo-geocore' ), 'tone' => $tone_mm ) );
 	RWGC_Admin_UI::render_stat_card( __( 'Rule Matches', 'reactwoo-geocore' ), $stat_rest, array( 'hint' => $stat_rest_t, 'tone' => $tone_rest ) );
 	RWGC_Admin_UI::render_stat_grid_close();
 	?>
