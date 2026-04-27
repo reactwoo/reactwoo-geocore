@@ -154,16 +154,11 @@ if ( class_exists( 'RWGO_Plugin', false ) ) {
 	<h2 class="screen-reader-text"><?php esc_html_e( 'Quick actions', 'reactwoo-geocore' ); ?></h2>
 	<?php RWGC_Admin_UI::render_quick_actions( $quick_actions ); ?>
 
-	<h2><?php esc_html_e( 'Installed ReactWoo satellites', 'reactwoo-geocore' ); ?></h2>
-	<p class="description"><?php esc_html_e( 'These plugins extend Geo Core. Each keeps its own screens — open one to work on pricing, AI, experiments, or Elementor rules.', 'reactwoo-geocore' ); ?></p>
-	<?php RWGC_Admin_UI::render_satellite_cards(); ?>
-
-	<div class="rwgc-addon-card-stack" role="region" aria-label="<?php esc_attr_e( 'Add-on summaries', 'reactwoo-geocore' ); ?>">
-	<?php
-	/** Extra dashboard cards (e.g. Geo Commerce summary when the plugin is active). */
-	do_action( 'rwgc_dashboard_satellite_panels' );
-	?>
-	</div>
+	<section class="rwgc-dashboard-satellites">
+		<h2><?php esc_html_e( 'Installed add-ons', 'reactwoo-geocore' ); ?></h2>
+		<p class="description"><?php esc_html_e( 'Open an add-on to manage its features.', 'reactwoo-geocore' ); ?></p>
+		<?php RWGC_Admin_UI::render_satellite_cards(); ?>
+	</section>
 
 	<div class="rwgc-addon-card rwgc-addon-card--visitor">
 		<div class="rwgc-addon-card__header">

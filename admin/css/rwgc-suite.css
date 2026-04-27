@@ -828,3 +828,16 @@
   gap: var(--rw-suite-space-2);
   margin-bottom: var(--rw-suite-space-5);
 }
+
+/* Dashboard add-ons section: tighter, cleaner rhythm */
+.rwgc-wrap.rwgc-suite .rwgc-dashboard-satellites {
+  margin-bottom: var(--rw-suite-space-4);
+}
+
+.rwgc-wrap.rwgc-suite .rwgc-dashboard-satellites > h2 {
+  margin: 0 0 4px;
+}
+
+.rwgc-wrap.rwgc-suite .rwgc-dashboard-satellites > .description {
+  margin: 0 0 var(--rw-suite-space-3);
+}
