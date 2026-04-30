@@ -338,3 +338,22 @@
 .rwgc-suite-variants-table td {
   vertical-align: top;
 }
+
+.rwgc-suite-variants-table {
+  margin-top: 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  background: #fff;
+}
+
+.rwgc-suite-variants-table th,
+.rwgc-suite-variants-table td {
+  padding: 12px 14px;
+}
+
+.rwgc-suite-variants-table thead th {
+  background: #f8fafc;
+}

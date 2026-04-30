@@ -270,16 +270,30 @@
 
 .rwgc-wrap .form-table th {
   width: 260px;
-  padding-top: 16px;
-  padding-bottom: 16px;
+  padding: 16px 20px 16px 16px;
   font-weight: 600;
   font-size: 13px;
   letter-spacing: 0.01em;
+  vertical-align: top;
 }
 
 .rwgc-wrap .form-table td {
-  padding-top: 12px;
-  padding-bottom: 12px;
+  padding: 14px 16px;
+}
+
+.rwgc-wrap .form-table tr + tr th,
+.rwgc-wrap .form-table tr + tr td {
+  border-top: 1px solid #f1f5f9;
+}
+
+.rwgc-wrap .form-table th h2 {
+  margin: 4px 0;
+}
+
+.rwgc-wrap p > .button + .button,
+.rwgc-wrap p > .button + input + .button,
+.rwgc-wrap .rwgc-actions .button + .button {
+  margin-left: 8px;
 }
 
 /* Shared admin UI primitives (WordPress-safe, no fake app nav). */
