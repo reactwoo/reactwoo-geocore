@@ -3,13 +3,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 ?>
-<div class="wrap rwgc-wrap">
+<div class="wrap rwgc-wrap rwgc-suite">
 	<h1><?php esc_html_e( 'Geo Core Add-ons', 'reactwoo-geocore' ); ?></h1>
 	<p><?php esc_html_e( 'Add-ons extend Geo Core with extra targeting and integrations.', 'reactwoo-geocore' ); ?></p>
 	<?php RWGC_Admin::render_inner_nav( 'rwgc-addons' ); ?>
 
 	<div class="rwgc-addons-page">
-		<div class="rwgc-card rwgc-card--full rwgc-addons-intro">
+		<div class="rwgc-card rwgc-card--full rwgc-addons-intro rwgc-addons-intro--focus">
 			<h2><?php esc_html_e( 'Core and extensions', 'reactwoo-geocore' ); ?></h2>
 			<p class="description">
 				<?php esc_html_e( 'Geo Core handles location detection and page version routing.', 'reactwoo-geocore' ); ?>

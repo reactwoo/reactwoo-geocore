@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 180" role="img" aria-labelledby="title desc">
+  <title id="title">GeoElementor</title>
+  <desc id="desc">GeoElementor brand card</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="55%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="180" rx="16" fill="url(#bg)"/>
+  <g fill="#dbeafe">
+    <circle cx="52" cy="90" r="26" fill="#1d4ed8"/>
+    <path d="M52 62l8 20h22l-18 13 7 21-19-13-19 13 7-21-18-13h22z" fill="#bfdbfe"/>
+  </g>
+  <text x="98" y="84" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="700" fill="#eff6ff">GeoElementor</text>
+  <text x="98" y="116" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#bfdbfe">Elementor-native geo targeting extension</text>
+</svg>

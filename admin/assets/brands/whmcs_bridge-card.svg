@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 180" role="img" aria-labelledby="title desc">
+  <title id="title">ReactWoo WHMCS Bridge</title>
+  <desc id="desc">WHMCS Bridge brand card</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="50%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f4c81"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="180" rx="16" fill="url(#bg)"/>
+  <rect x="26" y="56" width="54" height="54" rx="12" fill="#0ea5e9"/>
+  <text x="53" y="92" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="700" fill="#e0f2fe">RW</text>
+  <text x="98" y="82" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#e2e8f0">WHMCS Bridge</text>
+  <text x="98" y="114" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#bae6fd">Sync products, pricing, and geo CTAs</text>
+</svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 180" role="img" aria-labelledby="title desc">
+  <title id="title">ReactWoo Extension</title>
+  <desc id="desc">Default ReactWoo extension brand card</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="180" rx="16" fill="url(#bg)"/>
+  <circle cx="55" cy="90" r="28" fill="#1e3a8a"/>
+  <text x="55" y="98" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#dbeafe">RW</text>
+  <text x="98" y="84" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="700" fill="#eff6ff">ReactWoo</text>
+  <text x="98" y="116" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#bfdbfe">Extension module</text>
+</svg>
