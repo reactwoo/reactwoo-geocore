@@ -78,7 +78,77 @@ if ( ! function_exists( 'do_action' ) ) {
 	}
 }
 
+if ( ! function_exists( 'current_user_can' ) ) {
+	/**
+	 * @param string $capability Capability.
+	 * @return bool
+	 */
+	function current_user_can( $capability ) {
+		unset( $capability );
+		return true;
+	}
+}
+
+if ( ! function_exists( '__' ) ) {
+	/**
+	 * @param string $text Text.
+	 * @param string $domain Text domain.
+	 * @return string
+	 */
+	function __( $text, $domain = 'default' ) {
+		unset( $domain );
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'add_menu_page' ) ) {
+	/**
+	 * @param string   $page_title Page title.
+	 * @param string   $menu_title Menu title.
+	 * @param string   $capability Capability.
+	 * @param string   $menu_slug  Menu slug.
+	 * @param callable $callback   Callback.
+	 * @param string   $icon_url   Icon URL.
+	 * @param int|null $position   Position.
+	 * @return string
+	 */
+	function add_menu_page( $page_title, $menu_title, $capability, $menu_slug, $callback = '', $icon_url = '', $position = null ) {
+		$GLOBALS['rwgc_test_menu_pages'][ $menu_slug ] = compact( 'page_title', 'menu_title', 'capability', 'menu_slug', 'callback', 'icon_url', 'position' );
+		return 'toplevel_page_' . $menu_slug;
+	}
+}
+
+if ( ! function_exists( 'add_submenu_page' ) ) {
+	/**
+	 * @param string   $parent_slug Parent slug.
+	 * @param string   $page_title  Page title.
+	 * @param string   $menu_title  Menu title.
+	 * @param string   $capability  Capability.
+	 * @param string   $menu_slug   Menu slug.
+	 * @param callable $callback    Callback.
+	 * @return string
+	 */
+	function add_submenu_page( $parent_slug, $page_title, $menu_title, $capability, $menu_slug, $callback = '' ) {
+		$GLOBALS['rwgc_test_submenu_pages'][ $menu_slug ] = compact( 'parent_slug', 'page_title', 'menu_title', 'capability', 'menu_slug', 'callback' );
+		return $parent_slug . '_page_' . $menu_slug;
+	}
+}
+
+if ( ! function_exists( 'remove_submenu_page' ) ) {
+	/**
+	 * @param string $menu_slug    Menu slug.
+	 * @param string $submenu_slug Submenu slug.
+	 * @return array<string, string>|false
+	 */
+	function remove_submenu_page( $menu_slug, $submenu_slug ) {
+		$GLOBALS['rwgc_test_removed_submenu_pages'][] = $submenu_slug;
+		return array( $menu_slug, $submenu_slug );
+	}
+}
+
 $base = dirname( __DIR__ ) . '/includes/';
+require_once $base . 'class-rwgc-suite-admin.php';
+require_once $base . 'class-rwgc-admin.php';
 require_once $base . 'context/class-rwgc-context-attribution.php';
 require_once $base . 'engine/class-rwgc-context.php';
 require_once $base . 'rules/class-rwgc-rule-condition-evaluator.php';
