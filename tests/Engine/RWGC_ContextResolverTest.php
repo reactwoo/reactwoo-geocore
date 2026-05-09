@@ -36,7 +36,8 @@ final class RWGC_ContextResolverTest extends TestCase {
 	public function test_profile_id_alias_is_attached_after_runtime_profile_match(): void {
 		add_filter(
 			'rwgc_matched_experience_profile',
-			static function () {
+			static function ( $matched, $candidates, $context ) {
+				unset( $matched, $candidates, $context );
 				return array(
 					'profile_id' => 'Enterprise-UK',
 				);
