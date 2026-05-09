@@ -95,7 +95,7 @@ class RWGC_Suite_Admin {
 	 * @return void
 	 */
 	public static function render_suite_variants() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! RWGC_Admin::can_manage() ) {
 			return;
 		}
 		$overview_rows = class_exists( 'RWGC_Variant_Manager', false )
