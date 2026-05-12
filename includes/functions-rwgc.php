@@ -45,6 +45,24 @@ if ( ! function_exists( 'rwgc_is_pro_enabled' ) ) {
 	}
 }
 
+if ( ! function_exists( 'rwgc_get_portable_targeting_editor_context' ) ) {
+	/**
+	 * Portable JSON authoring context (audiences, campaigns, Pro flag) for admin and editors.
+	 *
+	 * @return array<string, mixed>
+	 */
+	function rwgc_get_portable_targeting_editor_context() {
+		if ( ! class_exists( 'RWGC_Targeting_Rule_Set_Schema', false ) ) {
+			return array(
+				'pro'       => (bool) apply_filters( 'rwgc_pro_enabled', false ),
+				'audiences' => array(),
+				'campaigns' => array(),
+			);
+		}
+		return RWGC_Targeting_Rule_Set_Schema::get_editor_context();
+	}
+}
+
 if ( ! function_exists( 'rwgc_get_visitor_data' ) ) {
 	/**
 	 * Get full visitor geo payload.

@@ -18,6 +18,7 @@ class RWGC_Elementor {
 	 */
 	public static function init() {
 		add_action( 'elementor/init', array( __CLASS__, 'register_hooks' ) );
+		add_action( 'elementor/editor/before_enqueue_scripts', array( __CLASS__, 'enqueue_editor_portable_assist' ) );
 	}
 
 	/**
@@ -139,6 +140,19 @@ class RWGC_Elementor {
 				'description' => self::portable_targeting_control_description(),
 				'condition'   => array(
 					'egp_enable_geo_targeting'       => 'yes',
+					'rwgc_use_portable_geo_targeting' => 'yes',
+				),
+			)
+		);
+
+		$element->add_control(
+			'rwgc_portable_geo_quick_insert',
+			array(
+				'type'            => \Elementor\Controls_Manager::RAW_HTML,
+				'raw'             => self::build_portable_quick_insert_markup(),
+				'content_classes' => 'rwgc-portable-quick-insert',
+				'condition'       => array(
+					'egp_enable_geo_targeting'        => 'yes',
 					'rwgc_use_portable_geo_targeting' => 'yes',
 				),
 			)
@@ -345,10 +359,111 @@ class RWGC_Elementor {
 	 */
 	private static function portable_targeting_control_description() {
 		$base = __( 'Schema: enabled, mode (show|hide), match (any|all), rules with conditions (type, operator, value). Country-only rules work in Geo Core; campaign, audience, time, and reactwoo:… types require GeoCore Pro.', 'reactwoo-geocore' );
+		$hint  = ' ' . __( 'Use the quick-insert panel below for synced GA audiences or Google Ads campaigns when GeoCore Pro is connected.', 'reactwoo-geocore' );
 		if ( (bool) apply_filters( 'rwgc_pro_enabled', false ) ) {
-			return $base;
+			return $base . $hint;
 		}
 		return $base . ' ' . __( 'Advanced targeting types are removed from JSON when Pro is inactive.', 'reactwoo-geocore' );
+	}
+
+	/**
+	 * Geo Visibility → portable JSON: buttons to insert audience/campaign rule skeletons.
+	 *
+	 * @return string
+	 */
+	private static function build_portable_quick_insert_markup() {
+		if ( ! function_exists( 'rwgc_get_portable_targeting_editor_context' ) ) {
+			return '';
+		}
+		$ctx       = rwgc_get_portable_targeting_editor_context();
+		$audiences = isset( $ctx['audiences'] ) && is_array( $ctx['audiences'] ) ? $ctx['audiences'] : array();
+		$campaigns = isset( $ctx['campaigns'] ) && is_array( $ctx['campaigns'] ) ? $ctx['campaigns'] : array();
+		$pro       = ! empty( $ctx['pro'] );
+
+		ob_start();
+		echo '<div class="rwgc-portable-el-assist" style="margin-top:8px;">';
+		echo '<p class="elementor-control-field-description" style="margin-bottom:8px;">' . esc_html__( 'Quick insert (fills the JSON field above): pick a synced entity or paste your own JSON.', 'reactwoo-geocore' ) . '</p>';
+
+		if ( ! $pro ) {
+			echo '<p class="description">' . esc_html__( 'GeoCore Pro adds synced Google Analytics audiences and Ads campaigns here after you connect and sync.', 'reactwoo-geocore' ) . '</p>';
+			echo '</div>';
+			return (string) ob_get_clean();
+		}
+
+		if ( ! empty( $audiences ) ) {
+			echo '<p style="margin:6px 0 4px;font-weight:600;">' . esc_html__( 'Analytics audiences', 'reactwoo-geocore' ) . '</p>';
+			echo '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">';
+			foreach ( $audiences as $row ) {
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+				$id   = isset( $row['id'] ) ? (string) $row['id'] : '';
+				$name = isset( $row['name'] ) ? (string) $row['name'] : $id;
+				if ( '' === $id ) {
+					continue;
+				}
+				$label = $name !== '' ? $name : $id;
+				printf(
+					'<button type="button" class="button button-small rwgc-el-insert-audience" data-audience-id="%s">%s</button>',
+					esc_attr( $id ),
+					esc_html( $label )
+				);
+			}
+			echo '</div>';
+		}
+
+		if ( ! empty( $campaigns ) ) {
+			echo '<p style="margin:6px 0 4px;font-weight:600;">' . esc_html__( 'Google Ads campaigns', 'reactwoo-geocore' ) . '</p>';
+			echo '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">';
+			foreach ( $campaigns as $row ) {
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+				$id   = isset( $row['id'] ) ? (string) $row['id'] : '';
+				$name = isset( $row['name'] ) ? (string) $row['name'] : $id;
+				$cmp  = $name !== '' ? $name : $id;
+				if ( '' === $cmp ) {
+					continue;
+				}
+				printf(
+					'<button type="button" class="button button-small rwgc-el-insert-campaign" data-campaign="%s">%s</button>',
+					esc_attr( $cmp ),
+					esc_html( $name !== '' ? $name : $cmp )
+				);
+			}
+			echo '</div>';
+		}
+
+		if ( empty( $audiences ) && empty( $campaigns ) ) {
+			echo '<p class="description">' . esc_html__( 'No cached audiences or campaigns yet. In wp-admin open GeoCore Pro → Integrations, connect Google, then Sync audiences / campaigns.', 'reactwoo-geocore' ) . '</p>';
+		}
+
+		echo '</div>';
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Elementor editor: JS to write portable JSON from quick-insert buttons.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_editor_portable_assist() {
+		if ( ! function_exists( 'rwgc_get_portable_targeting_editor_context' ) ) {
+			return;
+		}
+		wp_register_script(
+			'rwgc-portable-elementor',
+			RWGC_URL . 'assets/js/portable-targeting-elementor.js',
+			array( 'jquery', 'elementor-editor' ),
+			RWGC_VERSION,
+			true
+		);
+		wp_localize_script(
+			'rwgc-portable-elementor',
+			'rwgcPortableTargetingAssist',
+			rwgc_get_portable_targeting_editor_context()
+		);
+		wp_enqueue_script( 'rwgc-portable-elementor' );
 	}
 
 	/**

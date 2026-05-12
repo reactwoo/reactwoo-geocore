@@ -23,6 +23,78 @@
 		const selected = Array.isArray(attrs.showCountries) ? attrs.showCountries : [];
 		const portable = typeof attrs.portableTargeting === 'string' ? attrs.portableTargeting : '';
 		const [comboKey, setComboKey] = useState(0);
+		const [assistAudKey, setAssistAudKey] = useState(0);
+		const [assistCmpKey, setAssistCmpKey] = useState(0);
+
+		const assist =
+			typeof window !== 'undefined' && window.rwgcPortableTargetingAssist
+				? window.rwgcPortableTargetingAssist
+				: { audiences: [], campaigns: [], pro: false };
+
+		function buildPortableRule(type, token, mode) {
+			const cond =
+				type === 'audience'
+					? { type: 'audience', operator: 'in', value: [String(token)] }
+					: { type: 'campaign', operator: 'in', value: [String(token)] };
+			return JSON.stringify(
+				{
+					schema_version: 1,
+					enabled: true,
+					mode: mode || 'show',
+					match: 'any',
+					rules: [
+						{
+							id: type === 'audience' ? 'rule_audience' : 'rule_campaign',
+							label: '',
+							match: 'all',
+							conditions: [cond],
+						},
+					],
+				},
+				null,
+				2
+			);
+		}
+
+		function onInsertAudience(audienceId) {
+			if (!audienceId) {
+				return;
+			}
+			setAttr('portableTargeting', buildPortableRule('audience', audienceId, attrs.mode || 'show'));
+			setAssistAudKey(function (k) {
+				return k + 1;
+			});
+		}
+
+		function onInsertCampaign(cmp) {
+			if (!cmp) {
+				return;
+			}
+			setAttr('portableTargeting', buildPortableRule('campaign', cmp, attrs.mode || 'show'));
+			setAssistCmpKey(function (k) {
+				return k + 1;
+			});
+		}
+
+		const audienceAssistOptions = [
+			{ label: __('— Pick synced audience —', 'reactwoo-geocore'), value: '' },
+		].concat(
+			(Array.isArray(assist.audiences) ? assist.audiences : []).map(function (a) {
+				return {
+					label: (a.name || a.id) + ' (' + (a.id || '') + ')',
+					value: String(a.id || ''),
+				};
+			})
+		);
+
+		const campaignAssistOptions = [
+			{ label: __('— Pick synced campaign —', 'reactwoo-geocore'), value: '' },
+		].concat(
+			(Array.isArray(assist.campaigns) ? assist.campaigns : []).map(function (c) {
+				var tok = c.name && String(c.name) !== '' ? String(c.name) : String(c.id || '');
+				return { label: tok, value: tok };
+			})
+		);
 
 		function addCode(code) {
 			if (!code) {
@@ -87,6 +159,34 @@
 							setAttr('portableTargeting', v || '');
 						},
 					}),
+					assist.pro && audienceAssistOptions.length > 1
+						? wp.element.createElement(SelectControl, {
+								key: 'rwgc-aud-assist-' + assistAudKey,
+								label: __('Insert synced audience rule', 'reactwoo-geocore'),
+								value: '',
+								options: audienceAssistOptions,
+								onChange: onInsertAudience,
+						  })
+						: null,
+					assist.pro && campaignAssistOptions.length > 1
+						? wp.element.createElement(SelectControl, {
+								key: 'rwgc-cmp-assist-' + assistCmpKey,
+								label: __('Insert synced Ads campaign rule', 'reactwoo-geocore'),
+								value: '',
+								options: campaignAssistOptions,
+								onChange: onInsertCampaign,
+						  })
+						: null,
+					assist.pro && audienceAssistOptions.length <= 1 && campaignAssistOptions.length <= 1
+						? wp.element.createElement(
+								'p',
+								{ className: 'components-base-control__help' },
+								__(
+									'GeoCore Pro: sync audiences/campaigns under GeoCore Pro → Integrations to enable quick-insert here.',
+									'reactwoo-geocore'
+								)
+						  )
+						: null,
 					wp.element.createElement(
 						'p',
 						{ className: 'components-base-control__help' },
@@ -147,7 +247,7 @@
 					'p',
 					null,
 					__(
-						'Geo Content — inner blocks render only when visitor country matches the rules above.',
+						'Geo Content — inner blocks render when rules match: portable JSON above overrides country rules when set.',
 						'reactwoo-geocore'
 					)
 				),

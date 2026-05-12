@@ -187,4 +187,30 @@ class RWGC_Targeting_Rule_Set_Schema {
 			'conditions' => $conditions_out,
 		);
 	}
+
+	/**
+	 * Authoring payload for portable JSON (Elementor, Geo Content block, Targeting admin).
+	 *
+	 * GeoCore Pro extends `audiences` / `campaigns` from synced Google entities.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function get_editor_context() {
+		$base = array(
+			'pro'         => self::is_pro_active(),
+			'audiences'   => array(),
+			'campaigns'   => array(),
+			'ui_surfaces' => array(
+				'elementor' => __( 'Elementor → page/post/popup settings → Advanced → Geo Visibility → enable geo, turn on “Use portable targeting rules”, edit JSON.', 'reactwoo-geocore' ),
+				'block'     => __( 'Block editor → Geo Content block → sidebar “Portable targeting (JSON)”.', 'reactwoo-geocore' ),
+			),
+		);
+		/**
+		 * Extend portable-rule authoring data (synced audiences, campaigns, etc.).
+		 *
+		 * @param array<string, mixed> $base Default: pro (bool), audiences[], campaigns[], ui_surfaces.
+		 *                                     Audience rows: `id`, `name`. Campaign rows: `id`, `name`.
+		 */
+		return apply_filters( 'rwgc_portable_targeting_editor_context', $base );
+	}
 }

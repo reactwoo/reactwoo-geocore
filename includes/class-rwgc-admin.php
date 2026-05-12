@@ -173,6 +173,25 @@ class RWGC_Admin {
 			RWGC_VERSION,
 			true
 		);
+
+		if ( false !== strpos( $hook, 'rwgc-target-types' ) ) {
+			wp_enqueue_script(
+				'rwgc-portable-targeting-admin',
+				RWGC_URL . 'admin/js/portable-targeting-admin.js',
+				array(),
+				RWGC_VERSION,
+				true
+			);
+			wp_localize_script(
+				'rwgc-portable-targeting-admin',
+				'rwgcPortableTargetingAdmin',
+				array(
+					'strings' => array(
+						'copied' => __( 'Copied', 'reactwoo-geocore' ),
+					),
+				)
+			);
+		}
 	}
 
 	/**
@@ -324,7 +343,8 @@ class RWGC_Admin {
 				$obj->get_admin_status()
 			);
 		}
-		$rwgc_pro_enabled = function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled();
+		$rwgc_pro_enabled   = function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled();
+		$rwgc_portable_ctx  = function_exists( 'rwgc_get_portable_targeting_editor_context' ) ? rwgc_get_portable_targeting_editor_context() : array();
 		include RWGC_PATH . 'admin/views/target-types-page.php';
 	}
 
