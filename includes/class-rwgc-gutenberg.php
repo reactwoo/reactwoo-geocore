@@ -48,11 +48,25 @@ class RWGC_Gutenberg {
 		$attrs = wp_parse_args(
 			is_array( $attributes ) ? $attributes : array(),
 			array(
-				'showCountries' => array(),
-				'hideCountries' => array(),
-				'mode'          => 'show',
+				'showCountries'      => array(),
+				'hideCountries'      => array(),
+				'mode'               => 'show',
+				'portableTargeting'  => '',
 			)
 		);
+
+		$portable_raw = isset( $attrs['portableTargeting'] ) ? (string) $attrs['portableTargeting'] : '';
+		if ( is_string( $portable_raw ) && '' !== trim( $portable_raw )
+			&& class_exists( 'RWGC_Targeting_Rule_Set_Schema' )
+			&& class_exists( 'RWGC_Targeting_Rule_Set_Evaluator' )
+			&& class_exists( 'RWGC_Context_Resolver' ) ) {
+			$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $portable_raw );
+			if ( is_array( $set ) ) {
+				$snapshot = RWGC_Context_Resolver::resolve_current();
+				$show     = RWGC_Targeting_Rule_Set_Evaluator::should_render_content( $set, $snapshot );
+				return $show ? '<div class="rwgc-geo-content">' . do_shortcode( $content ) . '</div>' : '';
+			}
+		}
 
 		$country = strtoupper( rwgc_get_visitor_country() );
 

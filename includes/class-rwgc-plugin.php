@@ -114,6 +114,8 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/targeting/interface-rwgc-target-provider.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-context-snapshot.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-operators.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-targeting-rule-set-schema.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-targeting-rule-set-evaluator.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-availability.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-simulator.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-registry.php';

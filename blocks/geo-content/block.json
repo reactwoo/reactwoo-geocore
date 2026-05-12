@@ -20,6 +20,10 @@
     "mode": {
       "type": "string",
       "default": "show"
+    },
+    "portableTargeting": {
+      "type": "string",
+      "default": ""
     }
   },
   "editorScript": "rwgc-geo-content-editor",

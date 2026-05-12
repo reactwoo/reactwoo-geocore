@@ -1,6 +1,6 @@
 (function (wp) {
 	const { registerBlockType } = wp.blocks;
-	const { ComboboxControl, Button, SelectControl } = wp.components;
+	const { ComboboxControl, Button, SelectControl, TextareaControl } = wp.components;
 	const { useBlockProps, InspectorControls } = wp.blockEditor || wp.editor;
 	const { Fragment, useState } = wp.element;
 	const { __ } = wp.i18n;
@@ -21,6 +21,7 @@
 			return { label: countryMap[code] + ' (' + code + ')', value: code };
 		});
 		const selected = Array.isArray(attrs.showCountries) ? attrs.showCountries : [];
+		const portable = typeof attrs.portableTargeting === 'string' ? attrs.portableTargeting : '';
 		const [comboKey, setComboKey] = useState(0);
 
 		function addCode(code) {
@@ -72,6 +73,18 @@
 						],
 						onChange: function (v) {
 							setAttr('mode', v);
+						},
+					}),
+					wp.element.createElement(TextareaControl, {
+						label: __('Portable targeting (JSON)', 'reactwoo-geocore'),
+						help: __(
+							'Optional. When non-empty and valid, this overrides the country list below. Same schema as Geo Core portable rules (enabled, mode, match, rules).',
+							'reactwoo-geocore'
+						),
+						value: portable,
+						rows: 8,
+						onChange: function (v) {
+							setAttr('portableTargeting', v || '');
 						},
 					}),
 					wp.element.createElement(

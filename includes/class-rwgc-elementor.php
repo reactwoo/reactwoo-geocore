@@ -114,6 +114,37 @@ class RWGC_Elementor {
 		);
 
 		$element->add_control(
+			'rwgc_use_portable_geo_targeting',
+			array(
+				'label'        => __( 'Use portable targeting rules (JSON)', 'reactwoo-geocore' ),
+				'type'         => \Elementor\Controls_Manager::SWITCHER,
+				'label_on'     => __( 'Yes', 'reactwoo-geocore' ),
+				'label_off'    => __( 'No', 'reactwoo-geocore' ),
+				'return_value' => 'yes',
+				'default'      => '',
+				'description'  => __( 'When enabled, the JSON rule set below replaces the country list for this document. Leave off to keep country-only behaviour.', 'reactwoo-geocore' ),
+				'condition'    => array(
+					'egp_enable_geo_targeting' => 'yes',
+				),
+			)
+		);
+
+		$element->add_control(
+			'rwgc_portable_geo_targeting',
+			array(
+				'label'       => __( 'Portable targeting JSON', 'reactwoo-geocore' ),
+				'type'        => \Elementor\Controls_Manager::TEXTAREA,
+				'rows'        => 10,
+				'label_block' => true,
+				'description' => self::portable_targeting_control_description(),
+				'condition'   => array(
+					'egp_enable_geo_targeting'       => 'yes',
+					'rwgc_use_portable_geo_targeting' => 'yes',
+				),
+			)
+		);
+
+		$element->add_control(
 			'rwgc_geo_upgrade_note',
 			array(
 				'type'            => \Elementor\Controls_Manager::RAW_HTML,
@@ -275,6 +306,17 @@ class RWGC_Elementor {
 			return $content;
 		}
 
+		if ( ! empty( $settings['rwgc_use_portable_geo_targeting'] ) && 'yes' === (string) $settings['rwgc_use_portable_geo_targeting'] ) {
+			$raw_json = isset( $settings['rwgc_portable_geo_targeting'] ) ? wp_unslash( (string) $settings['rwgc_portable_geo_targeting'] ) : '';
+			if ( is_string( $raw_json ) && '' !== trim( $raw_json ) && class_exists( 'RWGC_Targeting_Rule_Set_Schema' ) && class_exists( 'RWGC_Targeting_Rule_Set_Evaluator' ) && class_exists( 'RWGC_Context_Resolver' ) ) {
+				$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $raw_json );
+				if ( is_array( $set ) ) {
+					$snapshot = RWGC_Context_Resolver::resolve_current();
+					return RWGC_Targeting_Rule_Set_Evaluator::should_render_content( $set, $snapshot ) ? $content : '';
+				}
+			}
+		}
+
 		$selected = array();
 		if ( isset( $settings['egp_countries'] ) && is_array( $settings['egp_countries'] ) ) {
 			$selected = array_map( 'strtoupper', array_map( 'sanitize_text_field', $settings['egp_countries'] ) );
@@ -294,6 +336,19 @@ class RWGC_Elementor {
 		$should_hide = ( 'show' === $mode && ! $match ) || ( 'hide' === $mode && $match );
 
 		return $should_hide ? '' : $content;
+	}
+
+	/**
+	 * Help text for portable JSON control (Pro-aware).
+	 *
+	 * @return string
+	 */
+	private static function portable_targeting_control_description() {
+		$base = __( 'Schema: enabled, mode (show|hide), match (any|all), rules with conditions (type, operator, value). Country-only rules work in Geo Core; campaign, audience, time, and reactwoo:… types require GeoCore Pro.', 'reactwoo-geocore' );
+		if ( (bool) apply_filters( 'rwgc_pro_enabled', false ) ) {
+			return $base;
+		}
+		return $base . ' ' . __( 'Advanced targeting types are removed from JSON when Pro is inactive.', 'reactwoo-geocore' );
 	}
 
 	/**
