@@ -157,6 +157,18 @@ if ( class_exists( 'RWGO_Plugin', false ) ) {
 	<section class="rwgc-dashboard-satellites">
 		<h2><?php esc_html_e( 'Installed add-ons', 'reactwoo-geocore' ); ?></h2>
 		<p class="description"><?php esc_html_e( 'Open an add-on to manage its features.', 'reactwoo-geocore' ); ?></p>
+		<?php
+		if ( has_action( 'rwgc_dashboard_satellite_panels' ) ) {
+			echo '<div class="rwgc-suite-satellite-grid" role="region" aria-label="' . esc_attr__( 'Active add-on summaries', 'reactwoo-geocore' ) . '">';
+			/**
+			 * Extra summary cards on the Geo Core dashboard (active Geo Commerce, Geo AI, Geo Optimise, etc.).
+			 *
+			 * @since 1.2.2
+			 */
+			do_action( 'rwgc_dashboard_satellite_panels' );
+			echo '</div>';
+		}
+		?>
 		<?php RWGC_Admin_UI::render_satellite_cards(); ?>
 	</section>
 
