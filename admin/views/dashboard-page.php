@@ -63,27 +63,16 @@ $quick_actions = array(
 	),
 );
 
-if ( class_exists( 'RWGA_Plugin', false ) ) {
-	$quick_actions[] = array(
-		'url'     => admin_url( 'admin.php?page=rwga-dashboard' ),
-		'label'   => __( 'Open Geo AI', 'reactwoo-geocore' ),
-		'primary' => false,
-	);
+if ( class_exists( 'RWGC_Module_Registry', false ) ) {
+	$quick_actions = RWGC_Module_Registry::append_satellite_quick_actions( $quick_actions );
 }
-if ( class_exists( 'RWGCM_Plugin', false ) ) {
-	$quick_actions[] = array(
-		'url'     => admin_url( 'admin.php?page=rwgcm-dashboard' ),
-		'label'   => __( 'Open Geo Commerce', 'reactwoo-geocore' ),
-		'primary' => false,
-	);
-}
-if ( class_exists( 'RWGO_Plugin', false ) ) {
-	$quick_actions[] = array(
-		'url'     => admin_url( 'admin.php?page=rwgo-dashboard' ),
-		'label'   => __( 'Open Geo Optimise', 'reactwoo-geocore' ),
-		'primary' => false,
-	);
-}
+
+/**
+ * Filter Geo Core dashboard quick actions (Configure Detection, satellites, etc.).
+ *
+ * @param array<int, array<string, mixed>> $quick_actions Each item: url, label, primary (bool).
+ */
+$quick_actions = apply_filters( 'rwgc_dashboard_quick_actions', $quick_actions );
 ?>
 <div class="wrap rwgc-wrap rwgc-suite">
 	<?php

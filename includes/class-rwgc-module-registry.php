@@ -82,6 +82,61 @@ class RWGC_Module_Registry {
 	}
 
 	/**
+	 * Append Geo Core dashboard quick-action links for active suite satellites.
+	 *
+	 * Uses the same module rows as readiness / Suite Home (`rwgc_register_modules`).
+	 * Order: Geo AI, Geo Commerce, Geo Optimise (matches historical dashboard buttons).
+	 *
+	 * @param array<int, array<string, mixed>> $quick_actions Existing quick actions (url, label, primary).
+	 * @return array<int, array<string, mixed>>
+	 */
+	public static function append_satellite_quick_actions( array $quick_actions ) {
+		$modules = self::get_registered_modules();
+		$by_id   = array();
+		foreach ( $modules as $mod ) {
+			if ( empty( $mod['id'] ) || ! is_string( $mod['id'] ) ) {
+				continue;
+			}
+			$by_id[ $mod['id'] ] = $mod;
+		}
+
+		$order = array( self::MODULE_GEO_AI, self::MODULE_GEO_COMM, self::MODULE_GEO_OPT );
+		foreach ( $order as $id ) {
+			if ( empty( $by_id[ $id ] ) || ! is_array( $by_id[ $id ] ) ) {
+				continue;
+			}
+			$mod = $by_id[ $id ];
+			if ( isset( $mod['is_active_callback'] ) && is_callable( $mod['is_active_callback'] ) ) {
+				$active = (bool) call_user_func( $mod['is_active_callback'] );
+			} else {
+				$active = ! empty( $mod['active'] );
+			}
+			if ( ! $active ) {
+				continue;
+			}
+			$url = isset( $mod['admin_url'] ) ? (string) $mod['admin_url'] : '';
+			if ( '' === $url ) {
+				continue;
+			}
+			$label = isset( $mod['label'] ) ? (string) $mod['label'] : '';
+			if ( '' === $label ) {
+				continue;
+			}
+			$quick_actions[] = array(
+				'url'     => $url,
+				'label'   => sprintf(
+					/* translators: %s: satellite product name (e.g. "Geo AI"). */
+					__( 'Open %s', 'reactwoo-geocore' ),
+					$label
+				),
+				'primary' => false,
+			);
+		}
+
+		return $quick_actions;
+	}
+
+	/**
 	 * Readiness rows with status: ready | needs_setup | optional | missing.
 	 *
 	 * @param string $goal Optional wizard goal slug for contextual requirements.

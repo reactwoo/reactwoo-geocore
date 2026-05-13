@@ -16,6 +16,7 @@ Geo Core ships an **onboarding + workflow shell** (`RWGC_Suite_Admin`, Suite Hom
 | Filter | Args | Purpose |
 |--------|------|---------|
 | `rwgc_register_modules` | `( $modules )` | Add/replace rows in `RWGC_Module_Registry::get_registered_modules()`. Each row: `id`, `label`, `description`, optional `active`, `admin_url`, `install_url`, `is_active_callback`. |
+| `rwgc_dashboard_quick_actions` | `( $actions )` | Geo Core **Dashboard** quick-action row after Core appends satellite “Open …” links from `RWGC_Module_Registry`. Each item: `url`, `label`, `primary` (bool). |
 | `rwgc_readiness_rows` | `( $rows, $goal )` | Adjust computed readiness list for Suite Home / Getting Started. |
 | `rwgc_workflow_launchers` | `( $launchers )` | Cards on Suite Home / Getting Started: `id`, `title`, `description`, `url`, `primary` (bool), `icon` (dashicons class), optional `requires`. |
 | `rwgc_workflow_launchers_for_goal` | `( $launchers, $goal )` | After Getting Started reorders launchers to match the wizard goal. |
