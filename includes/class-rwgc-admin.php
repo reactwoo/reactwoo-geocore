@@ -79,6 +79,32 @@ class RWGC_Admin {
 				'rwgc-suite-variants',
 				array( 'RWGC_Suite_Admin', 'render_suite_variants' )
 			);
+
+			// Keep legacy/direct workflow URLs routable without adding them back to the visible menu.
+			add_submenu_page(
+				null,
+				__( 'Suite Home', 'reactwoo-geocore' ),
+				__( 'Suite Home', 'reactwoo-geocore' ),
+				$cap,
+				'rwgc-suite-home',
+				array( 'RWGC_Suite_Admin', 'render_suite_home' )
+			);
+			add_submenu_page(
+				null,
+				__( 'Getting Started', 'reactwoo-geocore' ),
+				__( 'Getting Started', 'reactwoo-geocore' ),
+				$cap,
+				'rwgc-getting-started',
+				array( 'RWGC_Suite_Admin', 'render_getting_started' )
+			);
+			add_submenu_page(
+				null,
+				__( 'Create Geo Rule', 'reactwoo-geocore' ),
+				__( 'Create Geo Rule', 'reactwoo-geocore' ),
+				$cap,
+				'rwgc-workflow-variant',
+				array( 'RWGC_Suite_Admin', 'render_workflow_variant' )
+			);
 		}
 
 		add_submenu_page(
