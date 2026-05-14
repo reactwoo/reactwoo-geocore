@@ -2,7 +2,7 @@
 	const { registerBlockType } = wp.blocks;
 	const { ComboboxControl, Button, SelectControl, TextareaControl } = wp.components;
 	const { useBlockProps, InspectorControls } = wp.blockEditor || wp.editor;
-	const { Fragment, useState } = wp.element;
+	const { Fragment, useState, useEffect, useRef } = wp.element;
 	const { __ } = wp.i18n;
 
 	function GeoContentEdit(props) {
@@ -12,6 +12,10 @@
 			o[key] = val;
 			props.setAttributes(o);
 		};
+		const attrsRef = useRef(attrs);
+		attrsRef.current = attrs;
+		const rbWrapRef = useRef(null);
+
 		const countryMap =
 			typeof window !== 'undefined' && window.rwgcGeoCountryOptions
 				? window.rwgcGeoCountryOptions
@@ -23,77 +27,36 @@
 		const selected = Array.isArray(attrs.showCountries) ? attrs.showCountries : [];
 		const portable = typeof attrs.portableTargeting === 'string' ? attrs.portableTargeting : '';
 		const [comboKey, setComboKey] = useState(0);
-		const [assistAudKey, setAssistAudKey] = useState(0);
-		const [assistCmpKey, setAssistCmpKey] = useState(0);
 
-		const assist =
-			typeof window !== 'undefined' && window.rwgcPortableTargetingAssist
-				? window.rwgcPortableTargetingAssist
-				: { audiences: [], campaigns: [], pro: false };
-
-		function buildPortableRule(type, token, mode) {
-			const cond =
-				type === 'audience'
-					? { type: 'audience', operator: 'in', value: [String(token)] }
-					: { type: 'campaign', operator: 'in', value: [String(token)] };
-			return JSON.stringify(
-				{
-					schema_version: 1,
-					enabled: true,
-					mode: mode || 'show',
-					match: 'any',
-					rules: [
-						{
-							id: type === 'audience' ? 'rule_audience' : 'rule_campaign',
-							label: '',
-							match: 'all',
-							conditions: [cond],
-						},
-					],
-				},
-				null,
-				2
-			);
-		}
-
-		function onInsertAudience(audienceId) {
-			if (!audienceId) {
-				return;
-			}
-			setAttr('portableTargeting', buildPortableRule('audience', audienceId, attrs.mode || 'show'));
-			setAssistAudKey(function (k) {
-				return k + 1;
-			});
-		}
-
-		function onInsertCampaign(cmp) {
-			if (!cmp) {
-				return;
-			}
-			setAttr('portableTargeting', buildPortableRule('campaign', cmp, attrs.mode || 'show'));
-			setAssistCmpKey(function (k) {
-				return k + 1;
-			});
-		}
-
-		const audienceAssistOptions = [
-			{ label: __('— Pick synced audience —', 'reactwoo-geocore'), value: '' },
-		].concat(
-			(Array.isArray(assist.audiences) ? assist.audiences : []).map(function (a) {
-				return {
-					label: (a.name || a.id) + ' (' + (a.id || '') + ')',
-					value: String(a.id || ''),
+		useEffect(
+			function () {
+				if (!rbWrapRef.current || !window.ReactWooRuleBuilder || typeof window.ReactWooRuleBuilder.mount !== 'function') {
+					return undefined;
+				}
+				var cancelled = false;
+				var tries = 0;
+				var id = setInterval(function () {
+					if (cancelled || tries++ > 40) {
+						clearInterval(id);
+						return;
+					}
+					var ta = rbWrapRef.current && rbWrapRef.current.querySelector('textarea');
+					if (ta && !ta.getAttribute('data-rwgc-rb-mounted')) {
+						window.ReactWooRuleBuilder.mount({
+							textarea: ta,
+							getMode: function () {
+								return attrsRef.current.mode || 'show';
+							},
+						});
+						clearInterval(id);
+					}
+				}, 120);
+				return function () {
+					cancelled = true;
+					clearInterval(id);
 				};
-			})
-		);
-
-		const campaignAssistOptions = [
-			{ label: __('— Pick synced campaign —', 'reactwoo-geocore'), value: '' },
-		].concat(
-			(Array.isArray(assist.campaigns) ? assist.campaigns : []).map(function (c) {
-				var tok = c.name && String(c.name) !== '' ? String(c.name) : String(c.id || '');
-				return { label: tok, value: tok };
-			})
+			},
+			[]
 		);
 
 		function addCode(code) {
@@ -147,46 +110,23 @@
 							setAttr('mode', v);
 						},
 					}),
-					wp.element.createElement(TextareaControl, {
-						label: __('Portable targeting (JSON)', 'reactwoo-geocore'),
-						help: __(
-							'Optional. When non-empty and valid, this overrides the country list below. Same schema as Geo Core portable rules (enabled, mode, match, rules).',
-							'reactwoo-geocore'
-						),
-						value: portable,
-						rows: 8,
-						onChange: function (v) {
-							setAttr('portableTargeting', v || '');
-						},
-					}),
-					assist.pro && audienceAssistOptions.length > 1
-						? wp.element.createElement(SelectControl, {
-								key: 'rwgc-aud-assist-' + assistAudKey,
-								label: __('Insert synced audience rule', 'reactwoo-geocore'),
-								value: '',
-								options: audienceAssistOptions,
-								onChange: onInsertAudience,
-						  })
-						: null,
-					assist.pro && campaignAssistOptions.length > 1
-						? wp.element.createElement(SelectControl, {
-								key: 'rwgc-cmp-assist-' + assistCmpKey,
-								label: __('Insert synced Ads campaign rule', 'reactwoo-geocore'),
-								value: '',
-								options: campaignAssistOptions,
-								onChange: onInsertCampaign,
-						  })
-						: null,
-					assist.pro && audienceAssistOptions.length <= 1 && campaignAssistOptions.length <= 1
-						? wp.element.createElement(
-								'p',
-								{ className: 'components-base-control__help' },
-								__(
-									'GeoCore Pro: sync audiences/campaigns under GeoCore Pro → Integrations to enable quick-insert here.',
-									'reactwoo-geocore'
-								)
-						  )
-						: null,
+					wp.element.createElement(
+						'div',
+						{ ref: rbWrapRef },
+						wp.element.createElement(TextareaControl, {
+							label: __('Advanced visibility (optional)', 'reactwoo-geocore'),
+							help: __(
+								'When set, this overrides the country list below. Use the rule builder, or open advanced view to edit stored data directly.',
+								'reactwoo-geocore'
+							),
+							value: portable,
+							rows: 6,
+							className: 'rwgc-geo-portable-textarea',
+							onChange: function (v) {
+								setAttr('portableTargeting', v || '');
+							},
+						})
+					),
 					wp.element.createElement(
 						'p',
 						{ className: 'components-base-control__help' },
@@ -228,13 +168,17 @@
 									' — ',
 									countryMap[code] || code
 								),
-								wp.element.createElement(Button, {
-									isSmall: true,
-									isDestructive: true,
-									onClick: function () {
-										removeCode(code);
+								wp.element.createElement(
+									Button,
+									{
+										isSmall: true,
+										isDestructive: true,
+										onClick: function () {
+											removeCode(code);
+										},
 									},
-								}, __('Remove', 'reactwoo-geocore'))
+									__('Remove', 'reactwoo-geocore')
+								)
 							);
 						})
 					)
@@ -247,7 +191,7 @@
 					'p',
 					null,
 					__(
-						'Geo Content — inner blocks render when rules match: portable JSON above overrides country rules when set.',
+						'Geo Content — inner blocks render when visitor rules match. Advanced visibility overrides country rules when set.',
 						'reactwoo-geocore'
 					)
 				),

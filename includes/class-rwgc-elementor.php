@@ -117,13 +117,13 @@ class RWGC_Elementor {
 		$element->add_control(
 			'rwgc_use_portable_geo_targeting',
 			array(
-				'label'        => __( 'Use portable targeting rules (JSON)', 'reactwoo-geocore' ),
+				'label'        => __( 'Use advanced visibility rules', 'reactwoo-geocore' ),
 				'type'         => \Elementor\Controls_Manager::SWITCHER,
 				'label_on'     => __( 'Yes', 'reactwoo-geocore' ),
 				'label_off'    => __( 'No', 'reactwoo-geocore' ),
 				'return_value' => 'yes',
 				'default'      => '',
-				'description'  => __( 'When enabled, the JSON rule set below replaces the country list for this document. Leave off to keep country-only behaviour.', 'reactwoo-geocore' ),
+				'description'  => __( 'When enabled, the rule builder below replaces the country list for this document. Leave off to keep country-only behaviour.', 'reactwoo-geocore' ),
 				'condition'    => array(
 					'egp_enable_geo_targeting' => 'yes',
 				),
@@ -133,26 +133,14 @@ class RWGC_Elementor {
 		$element->add_control(
 			'rwgc_portable_geo_targeting',
 			array(
-				'label'       => __( 'Portable targeting JSON', 'reactwoo-geocore' ),
+				'label'       => __( 'Visibility rules', 'reactwoo-geocore' ),
 				'type'        => \Elementor\Controls_Manager::TEXTAREA,
-				'rows'        => 10,
+				'rows'        => 6,
 				'label_block' => true,
 				'description' => self::portable_targeting_control_description(),
+				'classes'     => 'rwgc-portable-geo-targeting-textarea rwgc-rb-textarea-hidden',
 				'condition'   => array(
 					'egp_enable_geo_targeting'       => 'yes',
-					'rwgc_use_portable_geo_targeting' => 'yes',
-				),
-			)
-		);
-
-		$element->add_control(
-			'rwgc_portable_geo_quick_insert',
-			array(
-				'type'            => \Elementor\Controls_Manager::RAW_HTML,
-				'raw'             => self::build_portable_quick_insert_markup(),
-				'content_classes' => 'rwgc-portable-quick-insert',
-				'condition'       => array(
-					'egp_enable_geo_targeting'        => 'yes',
 					'rwgc_use_portable_geo_targeting' => 'yes',
 				),
 			)
@@ -163,7 +151,7 @@ class RWGC_Elementor {
 			array(
 				'type'            => \Elementor\Controls_Manager::RAW_HTML,
 				'raw'             => '<div style="margin-top:8px;color:#6b7280;">'
-					. esc_html__( 'Need advanced rules, multiple conditions, or analytics? Upgrade with GeoElementor.', 'reactwoo-geocore' )
+					. esc_html__( 'Advanced targeting is available in GeoCore Pro.', 'reactwoo-geocore' )
 					. '</div>',
 				'content_classes' => 'rwgc-geo-upgrade-note',
 				'condition'       => array(
@@ -322,11 +310,11 @@ class RWGC_Elementor {
 
 		if ( ! empty( $settings['rwgc_use_portable_geo_targeting'] ) && 'yes' === (string) $settings['rwgc_use_portable_geo_targeting'] ) {
 			$raw_json = isset( $settings['rwgc_portable_geo_targeting'] ) ? wp_unslash( (string) $settings['rwgc_portable_geo_targeting'] ) : '';
-			if ( is_string( $raw_json ) && '' !== trim( $raw_json ) && class_exists( 'RWGC_Targeting_Rule_Set_Schema' ) && class_exists( 'RWGC_Targeting_Rule_Set_Evaluator' ) && class_exists( 'RWGC_Context_Resolver' ) ) {
+			if ( is_string( $raw_json ) && '' !== trim( $raw_json ) && class_exists( 'RWGC_Targeting_Rule_Set_Schema' ) && class_exists( 'RWGC_Rule_Evaluator' ) && class_exists( 'RWGC_Context_Resolver' ) ) {
 				$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $raw_json );
 				if ( is_array( $set ) ) {
 					$snapshot = RWGC_Context_Resolver::resolve_current();
-					return RWGC_Targeting_Rule_Set_Evaluator::should_render_content( $set, $snapshot ) ? $content : '';
+					return RWGC_Rule_Evaluator::should_render_content( $set, $snapshot ) ? $content : '';
 				}
 			}
 		}
@@ -358,88 +346,10 @@ class RWGC_Elementor {
 	 * @return string
 	 */
 	private static function portable_targeting_control_description() {
-		$base = __( 'Schema: enabled, mode (show|hide), match (any|all), rules with conditions (type, operator, value). Country-only rules work in Geo Core; campaign, audience, time, and reactwoo:… types require GeoCore Pro.', 'reactwoo-geocore' );
-		$hint  = ' ' . __( 'Use the quick-insert panel below for synced GA audiences or Google Ads campaigns when GeoCore Pro is connected.', 'reactwoo-geocore' );
 		if ( (bool) apply_filters( 'rwgc_pro_enabled', false ) ) {
-			return $base . $hint;
+			return __( 'Pick countries, GA4 audiences, campaigns, and traffic signals with the rule builder. GeoCore Pro supplies synced Google lists after you connect in Integrations.', 'reactwoo-geocore' );
 		}
-		return $base . ' ' . __( 'Advanced targeting types are removed from JSON when Pro is inactive.', 'reactwoo-geocore' );
-	}
-
-	/**
-	 * Geo Visibility → portable JSON: buttons to insert audience/campaign rule skeletons.
-	 *
-	 * @return string
-	 */
-	private static function build_portable_quick_insert_markup() {
-		if ( ! function_exists( 'rwgc_get_portable_targeting_editor_context' ) ) {
-			return '';
-		}
-		$ctx       = rwgc_get_portable_targeting_editor_context();
-		$audiences = isset( $ctx['audiences'] ) && is_array( $ctx['audiences'] ) ? $ctx['audiences'] : array();
-		$campaigns = isset( $ctx['campaigns'] ) && is_array( $ctx['campaigns'] ) ? $ctx['campaigns'] : array();
-		$pro       = ! empty( $ctx['pro'] );
-
-		ob_start();
-		echo '<div class="rwgc-portable-el-assist" style="margin-top:8px;">';
-		echo '<p class="elementor-control-field-description" style="margin-bottom:8px;">' . esc_html__( 'Quick insert (fills the JSON field above): pick a synced entity or paste your own JSON.', 'reactwoo-geocore' ) . '</p>';
-
-		if ( ! $pro ) {
-			echo '<p class="description">' . esc_html__( 'GeoCore Pro adds synced Google Analytics audiences and Ads campaigns here after you connect and sync.', 'reactwoo-geocore' ) . '</p>';
-			echo '</div>';
-			return (string) ob_get_clean();
-		}
-
-		if ( ! empty( $audiences ) ) {
-			echo '<p style="margin:6px 0 4px;font-weight:600;">' . esc_html__( 'Analytics audiences', 'reactwoo-geocore' ) . '</p>';
-			echo '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">';
-			foreach ( $audiences as $row ) {
-				if ( ! is_array( $row ) ) {
-					continue;
-				}
-				$id   = isset( $row['id'] ) ? (string) $row['id'] : '';
-				$name = isset( $row['name'] ) ? (string) $row['name'] : $id;
-				if ( '' === $id ) {
-					continue;
-				}
-				$label = $name !== '' ? $name : $id;
-				printf(
-					'<button type="button" class="button button-small rwgc-el-insert-audience" data-audience-id="%s">%s</button>',
-					esc_attr( $id ),
-					esc_html( $label )
-				);
-			}
-			echo '</div>';
-		}
-
-		if ( ! empty( $campaigns ) ) {
-			echo '<p style="margin:6px 0 4px;font-weight:600;">' . esc_html__( 'Google Ads campaigns', 'reactwoo-geocore' ) . '</p>';
-			echo '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">';
-			foreach ( $campaigns as $row ) {
-				if ( ! is_array( $row ) ) {
-					continue;
-				}
-				$id   = isset( $row['id'] ) ? (string) $row['id'] : '';
-				$name = isset( $row['name'] ) ? (string) $row['name'] : $id;
-				$cmp  = $name !== '' ? $name : $id;
-				if ( '' === $cmp ) {
-					continue;
-				}
-				printf(
-					'<button type="button" class="button button-small rwgc-el-insert-campaign" data-campaign="%s">%s</button>',
-					esc_attr( $cmp ),
-					esc_html( $name !== '' ? $name : $cmp )
-				);
-			}
-			echo '</div>';
-		}
-
-		if ( empty( $audiences ) && empty( $campaigns ) ) {
-			echo '<p class="description">' . esc_html__( 'No cached audiences or campaigns yet. In wp-admin open GeoCore Pro → Integrations, connect Google, then Sync audiences / campaigns.', 'reactwoo-geocore' ) . '</p>';
-		}
-
-		echo '</div>';
-		return (string) ob_get_clean();
+		return __( 'Pick countries and built-in visitor signals with the rule builder. GeoCore Pro unlocks synced GA4 audiences, Google Ads campaigns, schedules, and weather.', 'reactwoo-geocore' );
 	}
 
 	/**
@@ -454,7 +364,7 @@ class RWGC_Elementor {
 		wp_register_script(
 			'rwgc-portable-elementor',
 			RWGC_URL . 'assets/js/portable-targeting-elementor.js',
-			array( 'jquery', 'elementor-editor' ),
+			array( 'jquery', 'elementor-editor', RWGC_Targeting_Rule_Builder_Assets::SCRIPT_HANDLE ),
 			RWGC_VERSION,
 			true
 		);

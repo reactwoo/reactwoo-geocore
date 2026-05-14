@@ -36,6 +36,9 @@ class RWGC_Gutenberg {
 				'render_callback' => array( __CLASS__, 'render_geo_content_block' ),
 			)
 		);
+		if ( class_exists( 'RWGC_Targeting_Rule_Builder_Assets', false ) ) {
+			RWGC_Targeting_Rule_Builder_Assets::patch_block_editor_script_deps();
+		}
 	}
 
 	/**
@@ -47,9 +50,10 @@ class RWGC_Gutenberg {
 		if ( ! function_exists( 'rwgc_get_portable_targeting_editor_context' ) ) {
 			return;
 		}
-		$ctx = rwgc_get_portable_targeting_editor_context();
+		$ctx    = rwgc_get_portable_targeting_editor_context();
+		$handle = wp_script_is( 'rwgc-geo-content-editor', 'registered' ) ? 'rwgc-geo-content-editor' : 'wp-blocks';
 		wp_add_inline_script(
-			'wp-blocks',
+			$handle,
 			'window.rwgcPortableTargetingAssist = ' . wp_json_encode( $ctx ) . ';',
 			'before'
 		);
@@ -76,12 +80,12 @@ class RWGC_Gutenberg {
 		$portable_raw = isset( $attrs['portableTargeting'] ) ? (string) $attrs['portableTargeting'] : '';
 		if ( is_string( $portable_raw ) && '' !== trim( $portable_raw )
 			&& class_exists( 'RWGC_Targeting_Rule_Set_Schema' )
-			&& class_exists( 'RWGC_Targeting_Rule_Set_Evaluator' )
+			&& class_exists( 'RWGC_Rule_Evaluator' )
 			&& class_exists( 'RWGC_Context_Resolver' ) ) {
 			$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $portable_raw );
 			if ( is_array( $set ) ) {
 				$snapshot = RWGC_Context_Resolver::resolve_current();
-				$show     = RWGC_Targeting_Rule_Set_Evaluator::should_render_content( $set, $snapshot );
+				$show     = RWGC_Rule_Evaluator::should_render_content( $set, $snapshot );
 				return $show ? '<div class="rwgc-geo-content">' . do_shortcode( $content ) . '</div>' : '';
 			}
 		}

@@ -14,10 +14,47 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class RWGC_Targeting_Rule_Set_Schema {
 
-	const VERSION = 1;
+	const VERSION = 2;
+
+	/**
+	 * Condition types available without GeoCore Pro (engine-level; UI may still emphasise country-only).
+	 *
+	 * @var string[]
+	 */
+	const FREE_CONDITION_TYPES = array(
+		'country',
+		'country_group',
+		'language',
+		'locale',
+		'device',
+		'device_type',
+		'time_of_day',
+		'day_of_week',
+		'logged_in',
+	);
 
 	/** @var string[] */
-	const PRO_CONDITION_TYPES = array( 'campaign', 'audience', 'time' );
+	const PRO_CONDITION_TYPES = array(
+		'campaign',
+		'utm_campaign',
+		'utm_source',
+		'utm_medium',
+		'audience',
+		'time',
+		'day',
+		'date',
+		'weather_condition',
+		'temperature',
+		'precipitation_probability',
+		'wind_speed',
+		'humidity',
+		'source',
+		'medium',
+		'gclid',
+		'content',
+		'term',
+		'profile_id',
+	);
 
 	/**
 	 * Whether GeoCore Pro is active for advanced condition types.
@@ -52,10 +89,69 @@ class RWGC_Targeting_Rule_Set_Schema {
 	 * @return bool
 	 */
 	public static function is_pro_gated_condition_type( $type ) {
+		if ( in_array( $type, self::FREE_CONDITION_TYPES, true ) ) {
+			return false;
+		}
 		if ( in_array( $type, self::PRO_CONDITION_TYPES, true ) ) {
 			return true;
 		}
-		return 0 === strpos( $type, 'reactwoo:' );
+		if ( 0 === strpos( $type, 'reactwoo:' ) ) {
+			return true;
+		}
+		/**
+		 * Whether a condition type requires GeoCore Pro to persist in sanitized rule JSON.
+		 *
+		 * @param bool   $gated Default true for unknown extension types unless opted-in via filter.
+		 * @param string $type  Sanitized type slug.
+		 */
+		return (bool) apply_filters( 'rwgc_rule_condition_requires_pro', true, $type );
+	}
+
+	/**
+	 * Labels and hints for builder UIs (choices are augmented server-side per site).
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	public static function get_rule_target_type_definitions() {
+		$defs = array(
+			'country'       => array(
+				'label'       => __( 'Country', 'reactwoo-geocore' ),
+				'pro'         => false,
+				'description' => __( 'ISO country codes. Leave empty to match all countries.', 'reactwoo-geocore' ),
+			),
+			'country_group' => array(
+				'label'       => __( 'Country group', 'reactwoo-geocore' ),
+				'pro'         => false,
+				'description' => __( 'Named country lists. Leave empty to match all visitors.', 'reactwoo-geocore' ),
+			),
+			'campaign'      => array(
+				'label'       => __( 'Campaign', 'reactwoo-geocore' ),
+				'pro'         => true,
+				'description' => __( 'UTM / Ads campaign context. Empty means all campaigns.', 'reactwoo-geocore' ),
+			),
+			'audience'      => array(
+				'label'       => __( 'Audience', 'reactwoo-geocore' ),
+				'pro'         => true,
+				'description' => __( 'Analytics audiences. Empty means all audiences.', 'reactwoo-geocore' ),
+			),
+			'time'          => array(
+				'label'       => __( 'Time window', 'reactwoo-geocore' ),
+				'pro'         => true,
+				'description' => __( 'Clock-based windows using your selected timezone strategy.', 'reactwoo-geocore' ),
+			),
+			'weather_condition' => array(
+				'label'       => __( 'Weather', 'reactwoo-geocore' ),
+				'pro'         => true,
+				'description' => __( 'Normalized weather conditions (requires a BYOK weather provider).', 'reactwoo-geocore' ),
+			),
+		);
+
+		/**
+		 * Portable targeting vocabulary for builders (merge or replace entries).
+		 *
+		 * @param array<string, array<string, mixed>> $defs Keys are condition type slugs.
+		 */
+		return apply_filters( 'rwgc_rule_target_types', $defs );
 	}
 
 	/**
@@ -196,15 +292,30 @@ class RWGC_Targeting_Rule_Set_Schema {
 	 * @return array<string, mixed>
 	 */
 	public static function get_editor_context() {
+		/**
+		 * Structured choice lists for dynamic builder controls (campaign pickers, presets, etc.).
+		 *
+		 * @param array<string, mixed> $choices Arbitrary keyed lists.
+		 */
+		$choices = apply_filters( 'rwgc_rule_condition_choices', array() );
+
 		$base = array(
-			'pro'         => self::is_pro_active(),
-			'audiences'   => array(),
-			'campaigns'   => array(),
-			'ui_surfaces' => array(
+			'pro'                 => self::is_pro_active(),
+			'audiences'           => array(),
+			'campaigns'           => array(),
+			'countries'           => self::build_country_choice_rows(),
+			'help_urls'           => array(
+				'geocore_targeting' => admin_url( 'admin.php?page=rwgc-target-types' ),
+			),
+			'rule_target_types'   => self::get_rule_target_type_definitions(),
+			'rule_condition_choices' => is_array( $choices ) ? $choices : array(),
+			'upgrade_message'     => __( 'Advanced targeting is available in GeoCore Pro.', 'reactwoo-geocore' ),
+			'ui_surfaces'         => array(
 				'elementor' => __( 'Elementor → page/post/popup settings → Advanced → Geo Visibility → enable geo, turn on “Use portable targeting rules”, edit JSON.', 'reactwoo-geocore' ),
 				'block'     => __( 'Block editor → Geo Content block → sidebar “Portable targeting (JSON)”.', 'reactwoo-geocore' ),
 			),
 		);
+		$base['help_urls'] = apply_filters( 'rwgc_rule_builder_help_urls', $base['help_urls'] );
 		/**
 		 * Extend portable-rule authoring data (synced audiences, campaigns, etc.).
 		 *
@@ -212,5 +323,38 @@ class RWGC_Targeting_Rule_Set_Schema {
 		 *                                     Audience rows: `id`, `name`. Campaign rows: `id`, `name`.
 		 */
 		return apply_filters( 'rwgc_portable_targeting_editor_context', $base );
+	}
+
+	/**
+	 * ISO2 rows for rule-builder pickers (code + label).
+	 *
+	 * @return array<int, array{code:string,label:string}>
+	 */
+	private static function build_country_choice_rows() {
+		if ( ! class_exists( 'RWGC_Countries', false ) ) {
+			return array();
+		}
+		$opts = RWGC_Countries::get_options();
+		if ( ! is_array( $opts ) ) {
+			return array();
+		}
+		$out = array();
+		foreach ( $opts as $code => $label ) {
+			$c = strtoupper( sanitize_text_field( (string) $code ) );
+			if ( ! preg_match( '/^[A-Z]{2}$/', $c ) ) {
+				continue;
+			}
+			$out[] = array(
+				'code'  => $c,
+				'label' => sanitize_text_field( (string) $label ),
+			);
+		}
+		usort(
+			$out,
+			static function ( $a, $b ) {
+				return strcmp( (string) $a['label'], (string) $b['label'] );
+			}
+		);
+		return $out;
 	}
 }

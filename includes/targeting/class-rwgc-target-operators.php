@@ -25,11 +25,17 @@ class RWGC_Target_Operators {
 			'is_not',
 			'in',
 			'not_in',
+			'empty',
+			'not_empty',
 			'contains',
 			'not_contains',
 			'greater_than',
 			'less_than',
 			'between',
+			'before',
+			'after',
+			'weekend',
+			'weekday',
 		);
 	}
 
@@ -81,6 +87,16 @@ class RWGC_Target_Operators {
 				return self::normalize_scalar( $actual ) === self::normalize_scalar( $expected );
 			case 'is_not':
 				return self::normalize_scalar( $actual ) !== self::normalize_scalar( $expected );
+			case 'empty':
+				if ( is_array( $actual ) ) {
+					return array() === $actual;
+				}
+				return '' === trim( (string) $actual );
+			case 'not_empty':
+				if ( is_array( $actual ) ) {
+					return array() !== $actual;
+				}
+				return '' !== trim( (string) $actual );
 			case 'in':
 				return self::actual_in_expected_list( $actual, $expected, true );
 			case 'not_in':
@@ -95,6 +111,14 @@ class RWGC_Target_Operators {
 				return self::to_float( $actual ) < self::to_float( $expected );
 			case 'between':
 				return self::between( $actual, $expected );
+			case 'before':
+				return self::to_float( $actual ) < self::to_float( $expected );
+			case 'after':
+				return self::to_float( $actual ) > self::to_float( $expected );
+			case 'weekend':
+				return self::is_weekend_day_name( $actual );
+			case 'weekday':
+				return self::is_weekday_day_name( $actual );
 			default:
 				return false;
 		}
@@ -197,6 +221,27 @@ class RWGC_Target_Operators {
 			return (float) $v;
 		}
 		return floatval( preg_replace( '/[^0-9.\-]/', '', (string) $v ) );
+	}
+
+	/**
+	 * @param mixed $v Value.
+	 * @return list<string>
+	 */
+	/**
+	 * @param mixed $actual Weekday string or bucket.
+	 * @return bool
+	 */
+	private static function is_weekend_day_name( $actual ) {
+		$d = strtolower( trim( (string) $actual ) );
+		return 'saturday' === $d || 'sunday' === $d;
+	}
+
+	/**
+	 * @param mixed $actual Weekday string.
+	 * @return bool
+	 */
+	private static function is_weekday_day_name( $actual ) {
+		return ! self::is_weekend_day_name( $actual ) && '' !== strtolower( trim( (string) $actual ) );
 	}
 
 	/**

@@ -1,0 +1,193 @@
+/* ReactWoo Geo — shared visibility rule builder */
+.rwgc-rb {
+	font-size: 13px;
+	line-height: 1.45;
+	color: #1d2327;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+.rwgc-rb * {
+	box-sizing: border-box;
+}
+.rwgc-rb__title {
+	font-weight: 600;
+	margin: 0 0 10px;
+	font-size: 14px;
+}
+.rwgc-rb__match {
+	margin-bottom: 12px;
+}
+.rwgc-rb__match select {
+	max-width: 100%;
+	width: 100%;
+}
+.rwgc-rb__row {
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	padding: 10px;
+	margin-bottom: 10px;
+	background: #fff;
+}
+.rwgc-rb__row--invalid {
+	border-color: #d63638;
+	box-shadow: 0 0 0 1px rgba(214, 54, 56, 0.15);
+}
+.rwgc-rb__row--unknown {
+	background: #fcf9e8;
+	border-color: #dba617;
+}
+.rwgc-rb__row-head {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: flex-end;
+	margin-bottom: 8px;
+}
+.rwgc-rb__field {
+	flex: 1 1 140px;
+	min-width: 120px;
+}
+.rwgc-rb__field label,
+.rwgc-rb__op label,
+.rwgc-rb__val label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 4px;
+	font-size: 12px;
+}
+.rwgc-rb__field select,
+.rwgc-rb__op select,
+.rwgc-rb__val input[type='text'],
+.rwgc-rb__val select {
+	width: 100%;
+	max-width: 100%;
+}
+.rwgc-rb__op {
+	flex: 0 1 160px;
+	min-width: 120px;
+}
+.rwgc-rb__val {
+	flex: 1 1 200px;
+	min-width: 160px;
+}
+.rwgc-rb__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: 8px;
+}
+.rwgc-rb__btn {
+	cursor: pointer;
+	border: 1px solid #c3c4c7;
+	background: #f6f7f7;
+	border-radius: 4px;
+	padding: 4px 10px;
+	font-size: 12px;
+}
+.rwgc-rb__btn:hover {
+	background: #f0f0f1;
+}
+.rwgc-rb__btn--danger {
+	color: #b32d2e;
+	border-color: #d63638;
+}
+.rwgc-rb__pill {
+	display: inline-block;
+	font-size: 11px;
+	padding: 2px 6px;
+	border-radius: 3px;
+	background: #f0f0f1;
+	margin-left: 6px;
+	vertical-align: middle;
+}
+.rwgc-rb__pill--ga4 {
+	background: #e7f5fe;
+	color: #135e96;
+}
+.rwgc-rb__pill--ads {
+	background: #edfaef;
+	color: #1e4620;
+}
+.rwgc-rb__multi {
+	max-height: 160px;
+	overflow: auto;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	padding: 6px;
+	background: #fcfcfc;
+}
+.rwgc-rb__multi label {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-weight: 400;
+	margin: 0 0 4px;
+	font-size: 12px;
+}
+.rwgc-rb__summary {
+	margin-top: 12px;
+	padding: 10px;
+	border-radius: 6px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+}
+.rwgc-rb__summary--warn {
+	background: #fcf0f1;
+	border-color: #f0b0b5;
+}
+.rwgc-rb__empty {
+	padding: 10px;
+	border: 1px dashed #c3c4c7;
+	border-radius: 6px;
+	margin-bottom: 10px;
+	color: #50575e;
+}
+.rwgc-rb__empty-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 8px;
+}
+.rwgc-rb__empty-actions a {
+	text-decoration: none;
+}
+.rwgc-rb__advanced {
+	margin-top: 14px;
+	border-top: 1px solid #dcdcde;
+	padding-top: 10px;
+}
+.rwgc-rb__advanced summary {
+	cursor: pointer;
+	font-weight: 600;
+	color: #50575e;
+}
+.rwgc-rb__advanced-warn {
+	margin: 8px 0;
+	color: #50575e;
+	font-size: 12px;
+}
+.rwgc-rb__json {
+	width: 100%;
+	min-height: 120px;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	font-size: 12px;
+}
+.rwgc-rb__err {
+	color: #b32d2e;
+	margin-top: 6px;
+	font-size: 12px;
+}
+.rwgc-rb__search {
+	width: 100%;
+	margin-bottom: 6px;
+}
+.elementor-control-rwgc_portable_geo_targeting.rwgc-rb-textarea-hidden textarea {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect(0, 0, 0, 0) !important;
+	border: 0 !important;
+}

@@ -92,6 +92,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-admin.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-shortcodes.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-gutenberg.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-targeting-rule-builder-assets.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-elementor.php';
 		require_once RWGC_PATH . 'includes/context/class-rwgc-context-attribution.php';
 		require_once RWGC_PATH . 'includes/engine/class-rwgc-context.php';
@@ -115,6 +116,8 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-context-snapshot.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-operators.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-targeting-rule-set-schema.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-rule-evaluator.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-context-snapshot-formatter.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-targeting-rule-set-evaluator.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-availability.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-simulator.php';
@@ -149,6 +152,7 @@ class RWGC_Plugin {
 		// Frontend + shared.
 		RWGC_Shortcodes::init();
 		RWGC_Gutenberg::init();
+		RWGC_Targeting_Rule_Builder_Assets::init();
 		RWGC_Elementor::init();
 		RWGC_Routing::init();
 		RWGC_REST::init();
