@@ -16,6 +16,7 @@ Geo Core ships an **onboarding + workflow shell** (`RWGC_Suite_Admin`, Suite Hom
 | Filter | Args | Purpose |
 |--------|------|---------|
 | `rwgc_register_modules` | `( $modules )` | Add/replace rows in `RWGC_Module_Registry::get_registered_modules()`. Each row: `id`, `label`, `description`, optional `active`, `admin_url`, `install_url`, `is_active_callback`. |
+| `egp_admin_menu_parent` | `( $parent )` | Geo Elementor: parent slug for wp-admin submenus (`rwgc-dashboard` when Geo Core is active). |
 | `rwgc_dashboard_quick_actions` | `( $actions )` | Geo Core **Dashboard** quick-action row after Core appends satellite “Open …” links from `RWGC_Module_Registry`. Each item: `url`, `label`, `primary` (bool). |
 | `rwgc_readiness_rows` | `( $rows, $goal )` | Adjust computed readiness list for Suite Home / Getting Started. |
 | `rwgc_workflow_launchers` | `( $launchers )` | Cards on Suite Home / Getting Started: `id`, `title`, `description`, `url`, `primary` (bool), `icon` (dashicons class), optional `requires`. |
@@ -37,6 +38,8 @@ Geo Core ships an **onboarding + workflow shell** (`RWGC_Suite_Admin`, Suite Hom
 - `RWGC_Onboarding::get_state()` / `update_state()` — wizard progress (`rwgc_onboarding_state` option).
 - `RWGC_Onboarding::log_activity()` — append to `rwgc_suite_activity`.
 - `RWGC_Module_Registry::get_readiness_rows( $goal )` — environment checklist.
+- `rw_geo_register_module( $module )` — register/replace one module row (wraps `rwgc_register_modules`).
+- `rw_geo_register_dashboard_card( $callback )` — hook a summary card on the Geo Core dashboard (`rwgc_dashboard_satellite_panels`).
 - `RWGC_Workflows::get_launchers()` — task-first deep links.
 - `RWGC_Workflows::get_goal_guidance( $goal )` — short copy for the wizard goal.
 - `RWGC_Workflows::order_launchers_for_goal( $launchers, $goal )` — reorder launchers on Getting Started.

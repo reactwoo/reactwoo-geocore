@@ -467,7 +467,11 @@ if ( ! function_exists( 'rwgc_get_context_snapshot' ) ) {
 		if ( ! class_exists( 'RWGC_Context_Resolver', false ) ) {
 			return array();
 		}
-		return RWGC_Context_Resolver::resolve_current()->to_array();
+		$flat = RWGC_Context_Resolver::resolve_current()->to_array();
+		if ( class_exists( 'RWGC_Context_Snapshot_Formatter', false ) ) {
+			return RWGC_Context_Snapshot_Formatter::enrich( $flat );
+		}
+		return $flat;
 	}
 }
 
@@ -514,6 +518,55 @@ if ( ! function_exists( 'rwgc_is_target_available' ) ) {
 			return false;
 		}
 		return RWGC_Target_Availability::is_available( $def );
+	}
+}
+
+if ( ! function_exists( 'rw_geo_register_module' ) ) {
+	/**
+	 * Register or replace a Geo Suite module row (alias for rwgc_register_modules).
+	 *
+	 * @param array<string, mixed> $module Module row: id, label, description, optional active, admin_url, install_url, is_active_callback, plugin_files.
+	 * @return void
+	 */
+	function rw_geo_register_module( array $module ) {
+		if ( empty( $module['id'] ) || ! is_string( $module['id'] ) ) {
+			return;
+		}
+		$id = $module['id'];
+		add_filter(
+			'rwgc_register_modules',
+			static function ( $modules ) use ( $module, $id ) {
+				if ( ! is_array( $modules ) ) {
+					$modules = array();
+				}
+				$replaced = false;
+				foreach ( $modules as $i => $row ) {
+					if ( is_array( $row ) && isset( $row['id'] ) && (string) $row['id'] === (string) $id ) {
+						$modules[ $i ] = array_merge( $row, $module );
+						$replaced      = true;
+						break;
+					}
+				}
+				if ( ! $replaced ) {
+					$modules[] = $module;
+				}
+				return $modules;
+			}
+		);
+	}
+}
+
+if ( ! function_exists( 'rw_geo_register_dashboard_card' ) ) {
+	/**
+	 * Register a Geo Core dashboard summary card (fires on rwgc_dashboard_satellite_panels).
+	 *
+	 * @param callable $callback Echoes card markup (same pattern as satellite summary cards).
+	 * @return void
+	 */
+	function rw_geo_register_dashboard_card( $callback ) {
+		if ( is_callable( $callback ) ) {
+			add_action( 'rwgc_dashboard_satellite_panels', $callback, 10, 0 );
+		}
 	}
 }
 
