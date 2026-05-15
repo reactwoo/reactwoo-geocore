@@ -570,3 +570,44 @@ if ( ! function_exists( 'rw_geo_register_dashboard_card' ) ) {
 	}
 }
 
+if ( ! function_exists( 'rw_geo_register_admin_submenu' ) ) {
+	/**
+	 * Register a wp-admin submenu under the Geo Core hub (free plugin sidebar: Geo Core).
+	 *
+	 * @param array<string, mixed> $args page_title, menu_title, capability, menu_slug, callback; optional position.
+	 * @return string|false Hook suffix from add_submenu_page.
+	 */
+	function rw_geo_register_admin_submenu( array $args ) {
+		if ( class_exists( 'RWGC_Admin_Platform', false ) ) {
+			return RWGC_Admin_Platform::register_submenu( $args );
+		}
+		$parent = 'rwgc-dashboard';
+		$slug   = isset( $args['menu_slug'] ) ? sanitize_key( (string) $args['menu_slug'] ) : '';
+		if ( '' === $slug || empty( $args['callback'] ) || ! is_callable( $args['callback'] ) ) {
+			return false;
+		}
+		return add_submenu_page(
+			$parent,
+			isset( $args['page_title'] ) ? (string) $args['page_title'] : '',
+			isset( $args['menu_title'] ) ? (string) $args['menu_title'] : '',
+			isset( $args['capability'] ) ? (string) $args['capability'] : 'manage_options',
+			$slug,
+			$args['callback'],
+			isset( $args['position'] ) ? $args['position'] : null
+		);
+	}
+}
+
+if ( ! function_exists( 'rwgc_admin_menu_parent' ) ) {
+	/**
+	 * Geo Core hub parent menu slug for satellite submenus.
+	 *
+	 * @return string
+	 */
+	function rwgc_admin_menu_parent() {
+		return class_exists( 'RWGC_Admin_Platform', false )
+			? RWGC_Admin_Platform::menu_parent()
+			: 'rwgc-dashboard';
+	}
+}
+

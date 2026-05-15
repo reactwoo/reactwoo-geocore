@@ -860,3 +860,28 @@
 .rwgc-wrap.rwgc-suite .rwgc-dashboard-satellites > .description {
   margin: 0 0 var(--rw-suite-space-3);
 }
+
+/* Geo Core hub: grouped wp-admin submenu (free plugin sidebar stays "Geo Core") */
+#adminmenu a[href*="page=rwgc-menu-heading-extensions"],
+#adminmenu a.rwgc-menu-heading {
+  pointer-events: none;
+  cursor: default;
+  color: #a7aaad !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#adminmenu .wp-submenu a .rwgc-wp-submenu-heading {
+  display: block;
+  padding: 6px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #a7aaad;
+  opacity: 0.95;
+}
+
+#adminmenu .wp-has-current-submenu .wp-submenu a .rwgc-wp-submenu-heading {
+  color: rgba(240, 246, 252, 0.65);
+}

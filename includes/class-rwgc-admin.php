@@ -60,11 +60,15 @@ class RWGC_Admin {
 	public static function register_menu() {
 		$cap = self::required_capability();
 
+		$menu_label = class_exists( 'RWGC_Admin_Platform', false )
+			? RWGC_Admin_Platform::menu_label()
+			: __( 'Geo Core', 'reactwoo-geocore' );
+
 		add_menu_page(
 			__( 'ReactWoo Geo Core', 'reactwoo-geocore' ),
-			__( 'Geo Core', 'reactwoo-geocore' ),
+			$menu_label,
 			$cap,
-			'rwgc-dashboard',
+			class_exists( 'RWGC_Admin_Platform', false ) ? RWGC_Admin_Platform::menu_parent() : 'rwgc-dashboard',
 			array( __CLASS__, 'render_dashboard' ),
 			'dashicons-location-alt',
 			58
@@ -72,7 +76,7 @@ class RWGC_Admin {
 
 		if ( class_exists( 'RWGC_Suite_Admin', false ) ) {
 			add_submenu_page(
-				'rwgc-dashboard',
+				RWGC_Admin_Platform::menu_parent(),
 				__( 'Rules / Page Versions', 'reactwoo-geocore' ),
 				__( 'Rules / Page Versions', 'reactwoo-geocore' ),
 				$cap,
@@ -81,8 +85,10 @@ class RWGC_Admin {
 			);
 		}
 
+		$parent = RWGC_Admin_Platform::menu_parent();
+
 		add_submenu_page(
-			'rwgc-dashboard',
+			$parent,
 			__( 'Dashboard', 'reactwoo-geocore' ),
 			__( 'Dashboard', 'reactwoo-geocore' ),
 			$cap,
@@ -91,7 +97,7 @@ class RWGC_Admin {
 		);
 
 		add_submenu_page(
-			'rwgc-dashboard',
+			$parent,
 			__( 'Settings', 'reactwoo-geocore' ),
 			__( 'Settings', 'reactwoo-geocore' ),
 			$cap,
@@ -100,7 +106,7 @@ class RWGC_Admin {
 		);
 
 		add_submenu_page(
-			'rwgc-dashboard',
+			$parent,
 			__( 'Tools', 'reactwoo-geocore' ),
 			__( 'Tools', 'reactwoo-geocore' ),
 			$cap,
@@ -109,7 +115,7 @@ class RWGC_Admin {
 		);
 
 		add_submenu_page(
-			'rwgc-dashboard',
+			$parent,
 			__( 'Reports', 'reactwoo-geocore' ),
 			__( 'Reports', 'reactwoo-geocore' ),
 			$cap,
@@ -118,7 +124,7 @@ class RWGC_Admin {
 		);
 
 		add_submenu_page(
-			'rwgc-dashboard',
+			$parent,
 			__( 'Targeting', 'reactwoo-geocore' ),
 			__( 'Targeting', 'reactwoo-geocore' ),
 			$cap,
@@ -127,7 +133,7 @@ class RWGC_Admin {
 		);
 
 		add_submenu_page(
-			'rwgc-dashboard',
+			$parent,
 			__( 'Add-ons', 'reactwoo-geocore' ),
 			__( 'Add-ons', 'reactwoo-geocore' ),
 			$cap,
