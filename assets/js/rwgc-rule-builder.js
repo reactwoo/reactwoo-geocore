@@ -370,11 +370,16 @@
 
 	function setRowValueSelected(row, value, selected) {
 		var val = String(value);
-		row.values = Array.isArray(row.values)
-			? row.values.filter(function (x, idx, arr) {
-					return arr.indexOf(x) === idx;
-			  })
-			: [];
+		var next = [];
+		if (Array.isArray(row.values)) {
+			row.values.forEach(function (x) {
+				var current = String(x);
+				if (next.indexOf(current) === -1) {
+					next.push(current);
+				}
+			});
+		}
+		row.values = next;
 		var exists = row.values.indexOf(val) !== -1;
 		if (selected && !exists) {
 			row.values.push(val);
