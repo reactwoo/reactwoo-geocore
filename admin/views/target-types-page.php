@@ -12,6 +12,9 @@ $rwgc_portable_ctx  = isset( $rwgc_portable_ctx ) && is_array( $rwgc_portable_ct
 	'campaigns'   => array(),
 	'ui_surfaces' => array(),
 );
+$audiences          = isset( $rwgc_portable_ctx['audiences'] ) && is_array( $rwgc_portable_ctx['audiences'] ) ? $rwgc_portable_ctx['audiences'] : array();
+$campaigns          = isset( $rwgc_portable_ctx['campaigns'] ) && is_array( $rwgc_portable_ctx['campaigns'] ) ? $rwgc_portable_ctx['campaigns'] : array();
+$help               = isset( $rwgc_portable_ctx['help_urls'] ) && is_array( $rwgc_portable_ctx['help_urls'] ) ? $rwgc_portable_ctx['help_urls'] : array();
 ?>
 <div class="wrap rwgc-wrap">
 	<h1><?php esc_html_e( 'Targeting', 'reactwoo-geocore' ); ?></h1>
@@ -27,9 +30,50 @@ $rwgc_portable_ctx  = isset( $rwgc_portable_ctx ) && is_array( $rwgc_portable_ct
 		<div class="rwgc-card"><h2><?php esc_html_e( 'Analytics', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'Optional analytics signals.', 'reactwoo-geocore' ); ?></p></div>
 	</div>
 
-	<div class="rwgc-card rwgc-card--full">
-		<h2><?php esc_html_e( 'Portable rules (Elementor & Geo Content block)', 'reactwoo-geocore' ); ?></h2>
-		<p><?php esc_html_e( 'Multi-condition visibility—including synced Google Analytics audiences when GeoCore Pro is active—uses the portable JSON schema in two places (not the suite page-versions rule builder alone).', 'reactwoo-geocore' ); ?></p>
+	<div class="rwgc-card rwgc-card--full rwgc-rb-playground-card">
+		<h2><?php esc_html_e( 'Visibility rule builder', 'reactwoo-geocore' ); ?></h2>
+		<p class="description"><?php esc_html_e( 'Build who should see content using the same controls as Elementor, the Geo Content block, and Geo Elementor geo rules. Synced GA4 audiences and Google Ads campaigns appear by name when GeoCore Pro has finished a sync.', 'reactwoo-geocore' ); ?></p>
+
+		<div class="rwgc-rb-sync-status">
+			<div class="rwgc-rb-sync-status__item">
+				<strong><?php esc_html_e( 'GA4 audiences', 'reactwoo-geocore' ); ?></strong>
+				<span class="rwgc-rb__pill rwgc-rb__pill--ga4"><?php esc_html_e( 'GA4', 'reactwoo-geocore' ); ?></span>
+				<p class="description">
+					<?php
+					if ( count( $audiences ) > 0 ) {
+						echo esc_html( sprintf( _n( '%d audience available', '%d audiences available', count( $audiences ), 'reactwoo-geocore' ), count( $audiences ) ) );
+					} elseif ( ! empty( $rwgc_pro_enabled ) ) {
+						esc_html_e( 'No audiences synced yet.', 'reactwoo-geocore' );
+					} else {
+						esc_html_e( 'Requires GeoCore Pro.', 'reactwoo-geocore' );
+					}
+					?>
+				</p>
+			</div>
+			<div class="rwgc-rb-sync-status__item">
+				<strong><?php esc_html_e( 'Google Ads campaigns', 'reactwoo-geocore' ); ?></strong>
+				<span class="rwgc-rb__pill rwgc-rb__pill--ads"><?php esc_html_e( 'Google Ads', 'reactwoo-geocore' ); ?></span>
+				<p class="description">
+					<?php
+					if ( count( $campaigns ) > 0 ) {
+						echo esc_html( sprintf( _n( '%d campaign available', '%d campaigns available', count( $campaigns ), 'reactwoo-geocore' ), count( $campaigns ) ) );
+					} elseif ( ! empty( $rwgc_pro_enabled ) ) {
+						esc_html_e( 'No campaigns synced yet.', 'reactwoo-geocore' );
+					} else {
+						esc_html_e( 'Requires GeoCore Pro.', 'reactwoo-geocore' );
+					}
+					?>
+				</p>
+			</div>
+		</div>
+
+		<?php if ( ! empty( $rwgc_pro_enabled ) && ( empty( $audiences ) || empty( $campaigns ) ) && ! empty( $help['integrations_ga'] ) ) : ?>
+			<p>
+				<a class="button button-secondary" href="<?php echo esc_url( (string) $help['integrations_ga'] ); ?>"><?php esc_html_e( 'Open GeoCore Pro integrations', 'reactwoo-geocore' ); ?></a>
+			</p>
+		<?php endif; ?>
+
+		<p class="description"><?php esc_html_e( 'Where to use saved rules:', 'reactwoo-geocore' ); ?></p>
 		<ul class="ul-disc" style="margin-left:1.25em;">
 			<?php if ( ! empty( $rwgc_portable_ctx['ui_surfaces']['elementor'] ) ) : ?>
 				<li><?php echo esc_html( (string) $rwgc_portable_ctx['ui_surfaces']['elementor'] ); ?></li>
@@ -37,82 +81,20 @@ $rwgc_portable_ctx  = isset( $rwgc_portable_ctx ) && is_array( $rwgc_portable_ct
 			<?php if ( ! empty( $rwgc_portable_ctx['ui_surfaces']['block'] ) ) : ?>
 				<li><?php echo esc_html( (string) $rwgc_portable_ctx['ui_surfaces']['block'] ); ?></li>
 			<?php endif; ?>
+			<?php if ( ! empty( $rwgc_portable_ctx['ui_surfaces']['geo_rule'] ) ) : ?>
+				<li><?php echo esc_html( (string) $rwgc_portable_ctx['ui_surfaces']['geo_rule'] ); ?></li>
+			<?php endif; ?>
 		</ul>
-		<?php
-		$audiences = isset( $rwgc_portable_ctx['audiences'] ) && is_array( $rwgc_portable_ctx['audiences'] ) ? $rwgc_portable_ctx['audiences'] : array();
-		$campaigns = isset( $rwgc_portable_ctx['campaigns'] ) && is_array( $rwgc_portable_ctx['campaigns'] ) ? $rwgc_portable_ctx['campaigns'] : array();
-		?>
-		<?php if ( ! empty( $audiences ) ) : ?>
-			<h3 style="margin-top:1rem;"><?php esc_html_e( 'Synced GA4 audiences (use id in portable JSON)', 'reactwoo-geocore' ); ?></h3>
-			<table class="widefat striped" style="max-width:720px;">
-				<thead>
-					<tr>
-						<th><?php esc_html_e( 'Name', 'reactwoo-geocore' ); ?></th>
-						<th><?php esc_html_e( 'ID', 'reactwoo-geocore' ); ?></th>
-						<th><?php esc_html_e( 'Copy', 'reactwoo-geocore' ); ?></th>
-					</tr>
-				</thead>
-				<tbody>
-				<?php foreach ( $audiences as $row ) : ?>
-					<?php
-					if ( ! is_array( $row ) ) {
-						continue;
-					}
-					$aid = isset( $row['id'] ) ? (string) $row['id'] : '';
-					$anm = isset( $row['name'] ) ? (string) $row['name'] : $aid;
-					if ( '' === $aid ) {
-						continue;
-					}
-					?>
-					<tr>
-						<td><?php echo esc_html( $anm ); ?></td>
-						<td><code><?php echo esc_html( $aid ); ?></code></td>
-						<td><button type="button" class="button button-small rwgc-portable-copy-id" data-copy="<?php echo esc_attr( $aid ); ?>"><?php esc_html_e( 'Copy id', 'reactwoo-geocore' ); ?></button></td>
-					</tr>
-				<?php endforeach; ?>
-				</tbody>
-			</table>
-			<p class="description"><?php esc_html_e( 'Example condition: type "audience", operator "in", value [ "PASTE_ID_HERE" ]. Elementor and the Geo Content block can insert this via quick-insert when you edit JSON there.', 'reactwoo-geocore' ); ?></p>
-		<?php elseif ( ! empty( $rwgc_pro_enabled ) ) : ?>
-			<p class="description"><?php esc_html_e( 'No audiences in cache yet. Open GeoCore Pro → Integrations → Google Analytics → Sync audiences.', 'reactwoo-geocore' ); ?></p>
-		<?php endif; ?>
 
-		<?php if ( ! empty( $campaigns ) ) : ?>
-			<h3 style="margin-top:1rem;"><?php esc_html_e( 'Synced Google Ads campaigns (token for portable JSON)', 'reactwoo-geocore' ); ?></h3>
-			<table class="widefat striped" style="max-width:720px;">
-				<thead>
-					<tr>
-						<th><?php esc_html_e( 'Name', 'reactwoo-geocore' ); ?></th>
-						<th><?php esc_html_e( 'Copy token', 'reactwoo-geocore' ); ?></th>
-					</tr>
-				</thead>
-				<tbody>
-				<?php foreach ( $campaigns as $row ) : ?>
-					<?php
-					if ( ! is_array( $row ) ) {
-						continue;
-					}
-					$cid = isset( $row['id'] ) ? (string) $row['id'] : '';
-					$cnm = isset( $row['name'] ) ? (string) $row['name'] : $cid;
-					$tok = $cnm !== '' ? $cnm : $cid;
-					if ( '' === $tok ) {
-						continue;
-					}
-					?>
-					<tr>
-						<td><?php echo esc_html( $cnm !== '' ? $cnm : $cid ); ?></td>
-						<td><button type="button" class="button button-small rwgc-portable-copy-id" data-copy="<?php echo esc_attr( $tok ); ?>"><?php esc_html_e( 'Copy', 'reactwoo-geocore' ); ?></button></td>
-					</tr>
-				<?php endforeach; ?>
-				</tbody>
-			</table>
-		<?php endif; ?>
+		<div class="rwgc-rb-playground-wrap">
+			<textarea id="rwgc-targeting-playground-json" name="rwgc_targeting_playground_json" rows="4" class="large-text" aria-hidden="true"></textarea>
+		</div>
 	</div>
 
 	<div class="rwgc-card rwgc-card--full">
 		<h2><?php esc_html_e( 'Pro Targeting', 'reactwoo-geocore' ); ?></h2>
 		<?php if ( $rwgc_pro_enabled ) : ?>
-			<p><?php esc_html_e( 'GeoCore Pro is active: synced Google entities appear above and in Elementor / Geo Content quick-insert. Suite page versions and the target catalog below still use the registered target types (e.g. ga_audience) for routing experiments.', 'reactwoo-geocore' ); ?></p>
+			<p><?php esc_html_e( 'GeoCore Pro is active: synced Google lists feed the rule builder on this page and in Elementor, blocks, and geo rules.', 'reactwoo-geocore' ); ?></p>
 		<?php else : ?>
 			<p><?php esc_html_e( 'Unlock Google Ads/CPC, UTM attribution persistence, and experience profiles.', 'reactwoo-geocore' ); ?></p>
 			<p><a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ); ?>"><?php esc_html_e( 'Unlock with GeoCore Pro', 'reactwoo-geocore' ); ?></a></p>

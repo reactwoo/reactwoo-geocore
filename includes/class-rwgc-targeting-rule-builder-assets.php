@@ -26,6 +26,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 		add_action( 'init', array( __CLASS__, 'register_scripts' ), 6 );
 		add_action( 'elementor/editor/before_enqueue_scripts', array( __CLASS__, 'enqueue_elementor' ), 6 );
 		add_action( 'enqueue_block_editor_assets', array( __CLASS__, 'enqueue_block_editor' ), 4 );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_targeting_admin' ), 15 );
 	}
 
 	/**
@@ -119,7 +120,52 @@ class RWGC_Targeting_Rule_Builder_Assets {
 			'loggedInYes'          => __( 'Logged in', 'reactwoo-geocore' ),
 			'loggedInNo'           => __( 'Logged out', 'reactwoo-geocore' ),
 			'booleanHint'          => __( 'Applies to WordPress login state.', 'reactwoo-geocore' ),
+			'visibilityModeLabel'  => __( 'When rules match, this content should', 'reactwoo-geocore' ),
+			'visibilityShow'       => __( 'Be shown', 'reactwoo-geocore' ),
+			'visibilityHide'       => __( 'Be hidden', 'reactwoo-geocore' ),
+			'selectedLabel'        => __( 'Selected', 'reactwoo-geocore' ),
+			'playgroundIntro'      => __( 'Try the same rule builder used in Elementor and the Geo Content block. Changes here are for practice only until you paste them into a page, block, or geo rule.', 'reactwoo-geocore' ),
+			'syncedCount'          => __( '%1$d synced', 'reactwoo-geocore' ),
+			'enableAdvancedHint'   => __( 'Turn on “Use advanced visibility rules” above to edit multi-condition rules.', 'reactwoo-geocore' ),
+			'noConditionsYet'      => __( 'Add at least one condition to define who should see this content.', 'reactwoo-geocore' ),
+			'summaryPrefixShow'    => __( 'This content will be shown when', 'reactwoo-geocore' ),
+			'summaryPrefixHide'    => __( 'This content will be hidden when', 'reactwoo-geocore' ),
 		);
+	}
+
+	/**
+	 * Geo Core → Targeting admin playground.
+	 *
+	 * @param string $hook Hook suffix.
+	 * @return void
+	 */
+	public static function enqueue_targeting_admin( $hook ) {
+		if ( false === strpos( $hook, 'rwgc-target-types' ) ) {
+			return;
+		}
+		self::enqueue_admin();
+		wp_add_inline_script( self::SCRIPT_HANDLE, self::get_mount_playground_inline(), 'after' );
+	}
+
+	/**
+	 * Mount rule builder on a textarea selector (admin / third-party).
+	 *
+	 * @param string $selector   CSS selector for textarea.
+	 * @param string $get_mode_js Optional JS expression returning show|hide (default show).
+	 * @return string Inline script.
+	 */
+	public static function get_mount_inline( $selector, $get_mode_js = "'show'", $extra_options_js = '' ) {
+		$selector = esc_js( (string) $selector );
+		$get_mode = $get_mode_js ? $get_mode_js : "'show'";
+		$extra    = $extra_options_js ? ',' . $extra_options_js : '';
+		return "(function(){function rwgcRbTryMount(){var t=document.querySelector('{$selector}');if(!t||!window.ReactWooRuleBuilder||t.getAttribute('data-rwgc-rb-mounted')){return;}window.ReactWooRuleBuilder.mount({textarea:t,getMode:function(){return {$get_mode};}{$extra}});}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',rwgcRbTryMount);}else{rwgcRbTryMount();}})();";
+	}
+
+	/**
+	 * @return string
+	 */
+	public static function get_mount_playground_inline() {
+		return self::get_mount_inline( '#rwgc-targeting-playground-json', "'show'", 'showVisibilityMode:true,isPlayground:true' );
 	}
 
 	/**

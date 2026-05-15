@@ -302,9 +302,9 @@
 		return true;
 	}
 
-	function summarize(rows, ruleMatch, c) {
+	function summarize(rows, ruleMatch, c, mode) {
 		if (!rows.length) {
-			return { text: t('summaryIncomplete'), warn: true };
+			return { text: t('noConditionsYet'), warn: true };
 		}
 		var incomplete = !validateRows(rows);
 		if (incomplete) {
@@ -316,7 +316,56 @@
 		}
 		var joiner = ruleMatch === 'any' ? ' ' + t('matchAny').toLowerCase() + ' — ' : ' ' + t('matchAll').toLowerCase() + ' — ';
 		var body = parts.join(joiner);
-		return { text: body || t('summaryReady'), warn: false };
+		var prefix = mode === 'hide' ? t('summaryPrefixHide') : t('summaryPrefixShow');
+		return { text: (prefix + ' ' + body).trim(), warn: false };
+	}
+
+	function chipLabelForValue(field, value, c) {
+		if (field === 'country') {
+			return countryLabel(value, c);
+		}
+		if (field === 'ga4_audience') {
+			return audienceLabel(value, c);
+		}
+		if (field === 'ads_campaign') {
+			return campaignLabel(value, c);
+		}
+		if (field === 'device_type') {
+			for (var i = 0; i < DEVICE_OPTIONS.length; i++) {
+				if (DEVICE_OPTIONS[i].v === value) {
+					return DEVICE_OPTIONS[i].l;
+				}
+			}
+		}
+		return value;
+	}
+
+	function renderSelectedChips(row, c, onChange) {
+		var wrap = document.createElement('div');
+		wrap.className = 'rwgc-rb__chips';
+		if (!row.values || !row.values.length || row.uiOp === 'empty' || row.uiOp === 'not_empty') {
+			return wrap;
+		}
+		var lab = document.createElement('span');
+		lab.className = 'rwgc-rb__chips-label';
+		lab.textContent = t('selectedLabel') + ':';
+		wrap.appendChild(lab);
+		row.values.forEach(function (val) {
+			var chip = document.createElement('button');
+			chip.type = 'button';
+			chip.className = 'rwgc-rb__chip';
+			chip.textContent = chipLabelForValue(row.field, val, c) + ' ×';
+			chip.addEventListener('click', function () {
+				row.values = row.values.filter(function (x) {
+					return x !== val;
+				});
+				if (onChange) {
+					onChange();
+				}
+			});
+			wrap.appendChild(chip);
+		});
+		return wrap;
 	}
 
 	function humanizeRow(row, c) {
@@ -429,6 +478,7 @@
 			state.parseError = null;
 			state.docBase = p;
 			state.ruleMatch = p.rules && p.rules[0] ? p.rules[0].match || 'all' : 'all';
+			state.localMode = p.mode === 'hide' ? 'hide' : 'show';
 			state.rows = rowsFromDoc(p);
 			if (p.rules && p.rules.length > 1) {
 				state.multiRules = true;
@@ -438,7 +488,7 @@
 		}
 
 		function writeTextareaFromState() {
-			var mode = getMode();
+			var mode = state.localMode !== undefined ? state.localMode : getMode();
 			var d = docFromRows(state.docBase, state.rows, state.ruleMatch);
 			d.mode = mode === 'hide' ? 'hide' : 'show';
 			if (state.docBase && state.docBase.rules && state.docBase.rules.length > 1) {
@@ -452,6 +502,9 @@
 			if (setMode) {
 				setMode(mode);
 			}
+			if (typeof options.onChange === 'function') {
+				options.onChange(json);
+			}
 		}
 
 		function render() {
@@ -461,6 +514,37 @@
 			h.className = 'rwgc-rb__title';
 			h.textContent = t('whoHeading');
 			root.appendChild(h);
+
+			if (options.isPlayground) {
+				var intro = document.createElement('p');
+				intro.className = 'rwgc-rb__playground-intro description';
+				intro.textContent = t('playgroundIntro');
+				root.appendChild(intro);
+			}
+
+			if (options.showVisibilityMode) {
+				var vis = document.createElement('div');
+				vis.className = 'rwgc-rb__visibility';
+				var vl = document.createElement('label');
+				vl.textContent = t('visibilityModeLabel');
+				vis.appendChild(vl);
+				var vs = document.createElement('select');
+				vs.innerHTML =
+					'<option value="show">' +
+					escapeHtml(t('visibilityShow')) +
+					'</option><option value="hide">' +
+					escapeHtml(t('visibilityHide')) +
+					'</option>';
+				var curMode = state.localMode !== undefined ? state.localMode : getMode();
+				vs.value = curMode === 'hide' ? 'hide' : 'show';
+				vs.addEventListener('change', function () {
+					state.localMode = vs.value;
+					writeTextareaFromState();
+					render();
+				});
+				vis.appendChild(vs);
+				root.appendChild(vis);
+			}
 
 			if (state.parseError) {
 				var pe = document.createElement('div');
@@ -526,7 +610,8 @@
 			});
 			root.appendChild(clearBtn);
 
-			var sum = summarize(state.rows, state.ruleMatch, c);
+			var sumMode = state.localMode !== undefined ? state.localMode : getMode();
+			var sum = summarize(state.rows, state.ruleMatch, c, sumMode);
 			var sumEl = document.createElement('div');
 			sumEl.className = 'rwgc-rb__summary' + (sum.warn ? ' rwgc-rb__summary--warn' : '');
 			sumEl.textContent = sum.text;
@@ -708,6 +793,16 @@
 			head.appendChild(vWrap);
 
 			wrap.appendChild(head);
+
+			var rowMeta = fieldMeta(row.field);
+			if (row.field && row.field !== 'logged_in' && rowMeta && rowMeta.multi) {
+				wrap.appendChild(
+					renderSelectedChips(row, c, function () {
+						writeTextareaFromState();
+						render();
+					})
+				);
+			}
 
 			var actions = document.createElement('div');
 			actions.className = 'rwgc-rb__actions';
@@ -908,6 +1003,7 @@
 						});
 						row.values = acc;
 						writeTextareaFromState();
+						render();
 					});
 					lab.appendChild(cb);
 					lab.appendChild(document.createTextNode(co.label + ' (' + co.code + ')'));
@@ -961,6 +1057,7 @@
 						});
 						row.values = acc;
 						writeTextareaFromState();
+						render();
 					});
 					var line = (item.status ? nm + ' — ' + item.status : nm) || id;
 					lab.appendChild(cb);
@@ -996,8 +1093,29 @@
 		}
 	}
 
+	function elementorPortableEnabled() {
+		var $c = $('#elementor-panel-inner').find('.elementor-control-rwgc_use_portable_geo_targeting');
+		var $input = $c.find('input[type=checkbox]');
+		return $input.length && $input.prop('checked');
+	}
+
+	function setValue(textarea, json) {
+		if (!textarea) {
+			return;
+		}
+		var text = typeof json === 'string' ? json : stringifyDoc(json);
+		if (textarea.value === text) {
+			return;
+		}
+		textarea.value = text;
+		$(textarea).trigger('input.rwgcRb').trigger('change');
+	}
+
 	function mountElementor() {
 		function tryMount() {
+			if (!elementorPortableEnabled()) {
+				return;
+			}
 			var $ta = $('#elementor-panel-inner').find('.elementor-control-rwgc_portable_geo_targeting textarea');
 			if (!$ta.length) {
 				return;
@@ -1032,6 +1150,7 @@
 	window.ReactWooRuleBuilder = {
 		mount: mount,
 		mountElementor: mountElementor,
+		setValue: setValue,
 		parseDoc: parseDoc,
 		stringifyDoc: stringifyDoc,
 	};

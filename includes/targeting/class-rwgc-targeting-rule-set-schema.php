@@ -311,8 +311,9 @@ class RWGC_Targeting_Rule_Set_Schema {
 			'rule_condition_choices' => is_array( $choices ) ? $choices : array(),
 			'upgrade_message'     => __( 'Advanced targeting is available in GeoCore Pro.', 'reactwoo-geocore' ),
 			'ui_surfaces'         => array(
-				'elementor' => __( 'Elementor → page/post/popup settings → Advanced → Geo Visibility → enable geo, turn on “Use portable targeting rules”, edit JSON.', 'reactwoo-geocore' ),
-				'block'     => __( 'Block editor → Geo Content block → sidebar “Portable targeting (JSON)”.', 'reactwoo-geocore' ),
+				'elementor' => __( 'Elementor → page or popup → Advanced → Geo Visibility → enable geo → turn on “Use advanced visibility rules”.', 'reactwoo-geocore' ),
+				'block'     => __( 'Block editor → Geo Content block → sidebar → Advanced visibility rules.', 'reactwoo-geocore' ),
+				'geo_rule'  => __( 'Geo Elementor → Geo Rules → Advanced visibility (Geo Core).', 'reactwoo-geocore' ),
 			),
 		);
 		$base['help_urls'] = apply_filters( 'rwgc_rule_builder_help_urls', $base['help_urls'] );

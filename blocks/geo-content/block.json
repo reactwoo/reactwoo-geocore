@@ -24,6 +24,10 @@
     "portableTargeting": {
       "type": "string",
       "default": ""
+    },
+    "usePortableTargeting": {
+      "type": "boolean",
+      "default": false
     }
   },
   "editorScript": "rwgc-geo-content-editor",

@@ -70,15 +70,20 @@ class RWGC_Gutenberg {
 		$attrs = wp_parse_args(
 			is_array( $attributes ) ? $attributes : array(),
 			array(
-				'showCountries'      => array(),
-				'hideCountries'      => array(),
-				'mode'               => 'show',
-				'portableTargeting'  => '',
+				'showCountries'         => array(),
+				'hideCountries'         => array(),
+				'mode'                  => 'show',
+				'portableTargeting'     => '',
+				'usePortableTargeting'  => false,
 			)
 		);
 
-		$portable_raw = isset( $attrs['portableTargeting'] ) ? (string) $attrs['portableTargeting'] : '';
-		if ( is_string( $portable_raw ) && '' !== trim( $portable_raw )
+		$portable_raw  = isset( $attrs['portableTargeting'] ) ? (string) $attrs['portableTargeting'] : '';
+		$use_portable  = ! empty( $attrs['usePortableTargeting'] );
+		if ( ! $use_portable && '' !== trim( $portable_raw ) ) {
+			$use_portable = true;
+		}
+		if ( $use_portable && is_string( $portable_raw ) && '' !== trim( $portable_raw )
 			&& class_exists( 'RWGC_Targeting_Rule_Set_Schema' )
 			&& class_exists( 'RWGC_Rule_Evaluator' )
 			&& class_exists( 'RWGC_Context_Resolver' ) ) {

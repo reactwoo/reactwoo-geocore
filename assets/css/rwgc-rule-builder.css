@@ -181,6 +181,73 @@
 	width: 100%;
 	margin-bottom: 6px;
 }
+.rwgc-rb__visibility {
+	margin-bottom: 12px;
+}
+.rwgc-rb__visibility label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 4px;
+	font-size: 12px;
+}
+.rwgc-rb__visibility select {
+	width: 100%;
+	max-width: 100%;
+}
+.rwgc-rb__playground-intro {
+	margin: 0 0 12px;
+}
+.rwgc-rb__chips {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	margin-top: 8px;
+}
+.rwgc-rb__chips-label {
+	font-size: 12px;
+	font-weight: 600;
+	color: #50575e;
+}
+.rwgc-rb__chip {
+	cursor: pointer;
+	border: 1px solid #c3c4c7;
+	background: #fff;
+	border-radius: 999px;
+	padding: 2px 10px;
+	font-size: 12px;
+	line-height: 1.4;
+}
+.rwgc-rb__chip:hover {
+	background: #f6f7f7;
+	border-color: #8c8f94;
+}
+.rwgc-rb-playground-card .rwgc-rb-playground-wrap textarea {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	border: 0;
+}
+.rwgc-rb-sync-status {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 12px;
+	margin: 12px 0;
+}
+.rwgc-rb-sync-status__item {
+	padding: 10px;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	background: #fcfcfc;
+}
+.rwgc-rb-sync-status__item strong {
+	display: inline-block;
+	margin-right: 4px;
+}
 .elementor-control-rwgc_portable_geo_targeting.rwgc-rb-textarea-hidden textarea {
 	position: absolute !important;
 	width: 1px !important;

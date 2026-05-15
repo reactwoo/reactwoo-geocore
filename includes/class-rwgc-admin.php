@@ -174,24 +174,7 @@ class RWGC_Admin {
 			true
 		);
 
-		if ( false !== strpos( $hook, 'rwgc-target-types' ) ) {
-			wp_enqueue_script(
-				'rwgc-portable-targeting-admin',
-				RWGC_URL . 'admin/js/portable-targeting-admin.js',
-				array(),
-				RWGC_VERSION,
-				true
-			);
-			wp_localize_script(
-				'rwgc-portable-targeting-admin',
-				'rwgcPortableTargetingAdmin',
-				array(
-					'strings' => array(
-						'copied' => __( 'Copied', 'reactwoo-geocore' ),
-					),
-				)
-			);
-		}
+		// Rule builder + playground: RWGC_Targeting_Rule_Builder_Assets::enqueue_targeting_admin().
 	}
 
 	/**
