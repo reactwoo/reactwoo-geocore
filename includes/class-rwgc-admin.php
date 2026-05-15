@@ -426,43 +426,25 @@ class RWGC_Admin {
 	 */
 	public static function render_inner_nav( $current ) {
 		$items = array(
-			'rwgc-dashboard'     => __( 'Dashboard', 'reactwoo-geocore' ),
-			'rwgc-suite-variants'=> __( 'Rules / Page Versions', 'reactwoo-geocore' ),
-			'rwgc-target-types'  => __( 'Targeting', 'reactwoo-geocore' ),
-			'rwgc-usage'         => __( 'Reports', 'reactwoo-geocore' ),
-			'rwgc-tools'         => __( 'Tools', 'reactwoo-geocore' ),
-			'rwgc-settings'      => __( 'Settings', 'reactwoo-geocore' ),
-			'rwgc-addons'        => __( 'Add-ons', 'reactwoo-geocore' ),
+			'rwgc-dashboard'      => __( 'Dashboard', 'reactwoo-geocore' ),
+			'rwgc-suite-variants' => __( 'Rules / Page Versions', 'reactwoo-geocore' ),
+			'rwgc-target-types'   => __( 'Targeting', 'reactwoo-geocore' ),
+			'rwgc-usage'          => __( 'Reports', 'reactwoo-geocore' ),
+			'rwgc-tools'          => __( 'Tools', 'reactwoo-geocore' ),
+			'rwgc-settings'       => __( 'Settings', 'reactwoo-geocore' ),
+			'rwgc-addons'         => __( 'Add-ons', 'reactwoo-geocore' ),
 		);
 
-		/**
-		 * Extra Geo Core submenu pages (e.g. satellite plugins under the same menu).
-		 *
-		 * @param array<string, string|array{label:string,url?:string}> $items   Slug => label string, or slug => array with `label` and optional `url`.
-		 * @param string                                                  $current Current page slug (for context).
-		 */
-		$items = apply_filters( 'rwgc_inner_nav_items', $items, $current );
-
-		echo '<nav class="rwgc-inner-nav" aria-label="' . esc_attr__( 'Geo Core section navigation', 'reactwoo-geocore' ) . '">';
-		foreach ( $items as $slug => $entry ) {
-			$label = '';
-			$url   = '';
-			if ( is_array( $entry ) ) {
-				$label = isset( $entry['label'] ) ? (string) $entry['label'] : '';
-				$url   = isset( $entry['url'] ) && is_string( $entry['url'] ) && '' !== $entry['url']
-					? $entry['url']
-					: admin_url( 'admin.php?page=' . $slug );
-			} else {
-				$label = (string) $entry;
-				$url   = admin_url( 'admin.php?page=' . $slug );
-			}
-			if ( '' === $label ) {
-				continue;
-			}
-			$class = 'rwgc-inner-nav__link' . ( (string) $slug === (string) $current ? ' is-active' : '' );
-			echo '<a class="' . esc_attr( $class ) . '" href="' . esc_url( $url ) . '">' . esc_html( $label ) . '</a>';
+		if ( class_exists( 'RWGC_Admin_UI', false ) ) {
+			RWGC_Admin_UI::render_inner_nav(
+				$items,
+				(string) $current,
+				array(
+					'filter'     => 'rwgc_inner_nav_items',
+					'aria_label' => __( 'Geo Core section navigation', 'reactwoo-geocore' ),
+				)
+			);
 		}
-		echo '</nav>';
 
 		self::render_geocore_pro_status_card( (string) $current );
 	}

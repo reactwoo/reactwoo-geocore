@@ -34,6 +34,7 @@ Geo Core ships an **onboarding + workflow shell** (`RWGC_Suite_Admin`, Suite Hom
 | `rwgc_next_steps` | `( $steps, $context, $ctx )` | Recommended links after a workflow. Core defines `variant_created`; satellites can add steps for other contexts. |
 | `rwgc_routing_overview_rows` | `( $rows )` | Rows for **Page versions** (`RWGC_Variant_Manager::get_routing_overview_rows()`). |
 | `rwgc_inner_nav_items` | `( $items, $current )` | Geo Core inner nav (existing). Suite adds Suite Home + Getting Started. |
+| `rwgcm_inner_nav_items` | `( $items, $current )` | Geo Commerce inner nav (reference satellite pattern). |
 | `rwgc_context_attribution` | `( $attribution )` | Final normalized attribution payload (`source`, `medium`, `campaign`, `content`, `term`, `gclid`, first/session touch, audiences). |
 | `rwgc_profile_match_candidates` | `( $candidates, $context )` | Provide profile candidates before matching. Intended for GeoCore Pro/Cloud-synced profile bundles. |
 | `rwgc_matched_experience_profile` | `( $matched, $candidates, $context )` | Select a single matched profile for the active request context. |
@@ -48,8 +49,11 @@ Geo Core ships an **onboarding + workflow shell** (`RWGC_Suite_Admin`, Suite Hom
 - `rw_geo_register_module( $module )` — register/replace one module row (wraps `rwgc_register_modules`).
 - `rw_geo_register_dashboard_card( $callback )` — hook a summary card on the Geo Core dashboard (`rwgc_dashboard_satellite_panels`).
 - `rw_geo_register_admin_submenu( $args )` — `add_submenu_page` under the Geo Core hub (`RWGC_Admin_Platform::register_submenu`).
+- `rw_geo_render_inner_nav( $items, $current, $args )` — horizontal section nav + optional hub breadcrumb (`RWGC_Admin_UI::render_inner_nav`).
 - `rwgc_admin_menu_parent()` — parent slug for satellite `add_submenu_page` calls.
 - `RWGC_Admin_Platform::menu_parent()` / `::menu_label()` — hub slug and **Geo Core** sidebar label.
+
+**Reference satellite (Geo Commerce):** registers submenus via `rw_geo_register_admin_submenu`, renders nav with `rw_geo_render_inner_nav` + filter **`rwgcm_inner_nav_items`**, hides detail wp-admin submenu rows with CSS (inner nav only).
 - `RWGC_Workflows::get_launchers()` — task-first deep links.
 - `RWGC_Workflows::get_goal_guidance( $goal )` — short copy for the wizard goal.
 - `RWGC_Workflows::order_launchers_for_goal( $launchers, $goal )` — reorder launchers on Getting Started.

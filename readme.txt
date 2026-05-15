@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.3.39
+Stable tag: 1.3.40
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.3.40 =
+* **Satellite shell:** Shared **`RWGC_Admin_UI::render_inner_nav()`**, **`rw_geo_render_inner_nav()`**, and hub breadcrumb styles for extension screens under Geo Core.
 
 = 1.3.39 =
 * **Admin hub:** The free plugin keeps the wp-admin sidebar name **Geo Core** (not a generic “ReactWoo Geo” rebrand). New **`RWGC_Admin_Platform`** orders submenus: core screens first, **Geo extensions** heading, then extension home links (Elementor, Commerce, Optimise, AI). Helpers: **`rwgc_admin_menu_parent()`**, **`rw_geo_register_admin_submenu()`**.

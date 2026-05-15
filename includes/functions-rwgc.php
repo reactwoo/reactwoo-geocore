@@ -611,3 +611,37 @@ if ( ! function_exists( 'rwgc_admin_menu_parent' ) ) {
 	}
 }
 
+if ( ! function_exists( 'rw_geo_render_inner_nav' ) ) {
+	/**
+	 * Render horizontal section nav (shared Geo Core / satellite shell).
+	 *
+	 * @param array<string, string|array{label:string,url?:string}> $items   Slug => label or array with label + optional url.
+	 * @param string                                                  $current Active admin page slug.
+	 * @param array<string, mixed>                                      $args    Optional: filter, aria_label, show_hub_breadcrumb, hub_extension_label.
+	 * @return void
+	 */
+	function rw_geo_render_inner_nav( array $items, $current, $args = array() ) {
+		if ( class_exists( 'RWGC_Admin_UI', false ) ) {
+			RWGC_Admin_UI::render_inner_nav( $items, (string) $current, $args );
+			return;
+		}
+		$filter = isset( $args['filter'] ) ? (string) $args['filter'] : '';
+		if ( '' !== $filter ) {
+			$items = apply_filters( $filter, $items, $current );
+		}
+		$aria = isset( $args['aria_label'] ) ? (string) $args['aria_label'] : __( 'Section navigation', 'reactwoo-geocore' );
+		echo '<nav class="rwgc-inner-nav" aria-label="' . esc_attr( $aria ) . '">';
+		foreach ( $items as $slug => $label ) {
+			if ( is_array( $label ) ) {
+				$label = isset( $label['label'] ) ? (string) $label['label'] : '';
+			}
+			if ( '' === (string) $label ) {
+				continue;
+			}
+			$class = 'rwgc-inner-nav__link' . ( (string) $slug === (string) $current ? ' is-active' : '' );
+			echo '<a class="' . esc_attr( $class ) . '" href="' . esc_url( admin_url( 'admin.php?page=' . $slug ) ) . '">' . esc_html( (string) $label ) . '</a>';
+		}
+		echo '</nav>';
+	}
+}
+

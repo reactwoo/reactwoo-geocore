@@ -418,4 +418,90 @@ class RWGC_Admin_UI {
 		}
 		echo '</div>';
 	}
+
+	/**
+	 * Horizontal section nav (Geo Core and satellites).
+	 *
+	 * @param array<string, string|array{label:string,url?:string}> $items   Slug => label or array with label + optional url.
+	 * @param string                                                  $current Active page slug.
+	 * @param array<string, mixed>                                      $args    Optional: filter (hook name), aria_label, show_hub_breadcrumb, hub_extension_label.
+	 * @return void
+	 */
+	public static function render_inner_nav( array $items, $current, $args = array() ) {
+		$args = wp_parse_args(
+			$args,
+			array(
+				'filter'              => '',
+				'aria_label'          => __( 'Section navigation', 'reactwoo-geocore' ),
+				'show_hub_breadcrumb' => false,
+				'hub_extension_label' => '',
+			)
+		);
+
+		if ( ! empty( $args['show_hub_breadcrumb'] ) && is_string( $args['hub_extension_label'] ) && '' !== $args['hub_extension_label'] ) {
+			self::render_hub_breadcrumb( $args['hub_extension_label'] );
+		}
+
+		if ( is_string( $args['filter'] ) && '' !== $args['filter'] ) {
+			/**
+			 * Filter inner nav items before render.
+			 *
+			 * @param array<string, string|array{label:string,url?:string}> $items   Nav entries.
+			 * @param string                                                  $current Current page slug.
+			 */
+			$items = apply_filters( $args['filter'], $items, $current );
+		}
+
+		if ( ! is_array( $items ) || array() === $items ) {
+			return;
+		}
+
+		echo '<nav class="rwgc-inner-nav" aria-label="' . esc_attr( (string) $args['aria_label'] ) . '">';
+		foreach ( $items as $slug => $entry ) {
+			$label = '';
+			$url   = '';
+			if ( is_array( $entry ) ) {
+				$label = isset( $entry['label'] ) ? (string) $entry['label'] : '';
+				$url   = isset( $entry['url'] ) && is_string( $entry['url'] ) && '' !== $entry['url']
+					? $entry['url']
+					: admin_url( 'admin.php?page=' . $slug );
+			} else {
+				$label = (string) $entry;
+				$url   = admin_url( 'admin.php?page=' . $slug );
+			}
+			if ( '' === $label ) {
+				continue;
+			}
+			$class = 'rwgc-inner-nav__link' . ( (string) $slug === (string) $current ? ' is-active' : '' );
+			echo '<a class="' . esc_attr( $class ) . '" href="' . esc_url( $url ) . '">' . esc_html( $label ) . '</a>';
+		}
+		echo '</nav>';
+	}
+
+	/**
+	 * Breadcrumb back to the Geo Core hub from a satellite screen.
+	 *
+	 * @param string $extension_label Satellite product name (e.g. Geo Commerce).
+	 * @return void
+	 */
+	public static function render_hub_breadcrumb( $extension_label ) {
+		if ( ! is_admin() ) {
+			return;
+		}
+		$core_url = admin_url( 'admin.php?page=rwgc-dashboard' );
+		if ( function_exists( 'rwgc_admin_menu_parent' ) && 'rwgc-dashboard' !== rwgc_admin_menu_parent() ) {
+			$core_url = admin_url( 'admin.php?page=' . rwgc_admin_menu_parent() );
+		}
+		echo '<p class="rwgc-hub-breadcrumb">';
+		echo '<a class="rwgc-hub-breadcrumb__link" href="' . esc_url( $core_url ) . '">';
+		if ( class_exists( 'RWGC_Admin_Platform', false ) ) {
+			echo esc_html( RWGC_Admin_Platform::menu_label() );
+		} else {
+			esc_html_e( 'Geo Core', 'reactwoo-geocore' );
+		}
+		echo '</a>';
+		echo '<span class="rwgc-hub-breadcrumb__sep" aria-hidden="true">›</span>';
+		echo '<span class="rwgc-hub-breadcrumb__current">' . esc_html( (string) $extension_label ) . '</span>';
+		echo '</p>';
+	}
 }
