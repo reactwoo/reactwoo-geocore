@@ -248,6 +248,18 @@
 		return { type: meta.portableType, operator: op, value: valOut };
 	}
 
+	function setMembership(values, value, selected) {
+		var out = Array.isArray(values) ? values.slice() : [];
+		var v = String(value);
+		var idx = out.indexOf(v);
+		if (selected && idx === -1) {
+			out.push(v);
+		} else if (!selected && idx !== -1) {
+			out.splice(idx, 1);
+		}
+		return out;
+	}
+
 	function docFromRows(docBase, rows, ruleMatch) {
 		var d = JSON.parse(JSON.stringify(docBase || defaultDoc()));
 		d.schema_version = SCHEMA;
@@ -995,13 +1007,7 @@
 					cb.value = co.code;
 					cb.checked = row.values.indexOf(co.code) !== -1;
 					cb.addEventListener('change', function () {
-						var acc = [];
-						list.querySelectorAll('input[type=checkbox]').forEach(function (x) {
-							if (x.checked) {
-								acc.push(x.value);
-							}
-						});
-						row.values = acc;
+						row.values = setMembership(row.values, co.code, cb.checked);
 						writeTextareaFromState();
 						render();
 					});
@@ -1049,13 +1055,7 @@
 					cb.value = id;
 					cb.checked = row.values.indexOf(id) !== -1;
 					cb.addEventListener('change', function () {
-						var acc = [];
-						listEl.querySelectorAll('input[type=checkbox]').forEach(function (x) {
-							if (x.checked) {
-								acc.push(x.value);
-							}
-						});
-						row.values = acc;
+						row.values = setMembership(row.values, id, cb.checked);
 						writeTextareaFromState();
 						render();
 					});
@@ -1147,11 +1147,17 @@
 		setTimeout(tryMount, 400);
 	}
 
-	window.ReactWooRuleBuilder = {
+	var api = {
 		mount: mount,
 		mountElementor: mountElementor,
 		setValue: setValue,
 		parseDoc: parseDoc,
 		stringifyDoc: stringifyDoc,
 	};
+	if (window.RWGC_RULE_BUILDER_TESTS) {
+		api._test = {
+			setMembership: setMembership,
+		};
+	}
+	window.ReactWooRuleBuilder = api;
 })(window, document, jQuery);
