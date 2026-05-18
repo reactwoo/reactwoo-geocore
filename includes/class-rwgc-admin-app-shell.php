@@ -95,6 +95,9 @@ class RWGC_Admin_App_Shell {
 		if ( ! self::should_render() || self::$frame_open ) {
 			return;
 		}
+		if ( ! class_exists( 'RWGC_Admin_Route_Registry', false ) ) {
+			return;
+		}
 		self::$frame_open = true;
 
 		$ctx     = RWGC_Admin_Route_Registry::get_current_context();

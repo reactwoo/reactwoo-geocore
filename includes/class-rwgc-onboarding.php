@@ -176,7 +176,18 @@ class RWGC_Onboarding {
 		}
 
 		$pagenow = isset( $GLOBALS['pagenow'] ) ? (string) $GLOBALS['pagenow'] : '';
-		if ( 'plugins.php' !== $pagenow && 'index.php' !== $pagenow ) {
+
+		// Do not trap normal plugins.php visits (deactivate, bulk actions, etc.).
+		if ( 'plugins.php' === $pagenow ) {
+			$is_post_activate = isset( $_GET['activate'] ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				|| isset( $_GET['activated'] ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				|| isset( $_GET['activate-multi'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			if ( ! $is_post_activate ) {
+				delete_option( self::OPTION_REDIRECT );
+				return;
+			}
+		} elseif ( 'index.php' !== $pagenow ) {
+			delete_option( self::OPTION_REDIRECT );
 			return;
 		}
 

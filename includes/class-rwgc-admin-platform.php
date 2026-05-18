@@ -182,13 +182,26 @@ class RWGC_Admin_Platform {
 			return;
 		}
 
+		// WordPress requires at least one submenu row for a stable top-level menu link.
+		$entries = $submenu[ $parent ];
+		$visible = array();
+		foreach ( $entries as $entry ) {
+			if ( is_array( $entry ) && isset( $entry[2] ) && self::MENU_PARENT === (string) $entry[2] ) {
+				$visible[] = $entry;
+				break;
+			}
+		}
+		if ( empty( $visible ) && ! empty( $entries ) && is_array( $entries[0] ) ) {
+			$visible[] = $entries[0];
+		}
+
 		/**
-		 * Filter submenu rows kept visible under ReactWoo Geo (default: none).
+		 * Filter submenu rows kept visible under ReactWoo Geo (default: dashboard entry only).
 		 *
 		 * @param array<int, array> $visible_rows Submenu rows to keep.
 		 * @param string            $parent       Parent slug.
 		 */
-		$submenu[ $parent ] = apply_filters( 'rwgc_admin_visible_submenu', array(), $parent );
+		$submenu[ $parent ] = apply_filters( 'rwgc_admin_visible_submenu', $visible, $parent );
 	}
 
 	/**
@@ -203,7 +216,7 @@ class RWGC_Admin_Platform {
 		if ( self::is_sidebar_collapsed() ) {
 			$classes .= ' rwgc-admin-sidebar-collapsed ';
 		}
-		if ( class_exists( 'RWGC_Admin_App_Shell', false ) && RWGC_Admin_App_Shell::should_render() ) {
+		if ( class_exists( 'RWGC_Admin_App_Shell', false ) && class_exists( 'RWGC_Admin_Route_Registry', false ) && RWGC_Admin_App_Shell::should_render() ) {
 			$classes .= ' rwgc-app-shell-active ';
 		}
 		return $classes;
