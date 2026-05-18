@@ -2,7 +2,7 @@
 
 Geo Core ships an **onboarding + workflow shell** (`RWGC_Suite_Admin`, Suite Home, Getting Started, guided variant creation). Satellite plugins stay optional; integration is via filters/actions below.
 
-**Branding:** The free hub wp-admin menu stays **Geo Core** (`RWGC_Admin_Platform::MENU_LABEL`). Commercial extensions register under parent slug **`rwgc-dashboard`** via `rwgc_admin_menu_parent()` / `rw_geo_register_admin_submenu()` — not a separate top-level “platform” menu name.
+**Branding:** The wp-admin sidebar shows **ReactWoo Geo** (`RWGC_Admin_Platform::MENU_LABEL`). Satellite screens register under parent slug **`rwgc-dashboard`** as hidden submenus; navigation lives in **`RWGC_Admin_App_Shell`** (module + section nav), not the WordPress flyout.
 
 ## Actions
 
@@ -19,10 +19,12 @@ Geo Core ships an **onboarding + workflow shell** (`RWGC_Suite_Admin`, Suite Hom
 |--------|------|---------|
 | `rwgc_register_modules` | `( $modules )` | Add/replace rows in `RWGC_Module_Registry::get_registered_modules()`. Each row: `id`, `label`, `description`, optional `active`, `admin_url`, `install_url`, `is_active_callback`. |
 | `rwgc_admin_menu_parent` | `( $parent )` | Geo Core hub parent slug (default `rwgc-dashboard`). |
-| `rwgc_admin_menu_label` | `( $label )` | Sidebar title (default **Geo Core**). |
-| `rwgc_admin_core_submenu_order` | `( $slugs )` | Order of core submenu slugs before extensions. |
-| `rwgc_admin_extension_hub_submenu_order` | `( $slugs )` | Order of extension “home” submenu slugs after the heading. |
-| `rwgc_admin_submenu_ordered` | `( $ordered, $by_slug )` | Final submenu array under Geo Core. |
+| `rwgc_admin_menu_label` | `( $label )` | Sidebar title (default **ReactWoo Geo**). |
+| `rwgc_admin_sidebar_collapsed` | `( $collapsed )` | Hide wp-admin flyout under ReactWoo Geo (default true). |
+| `rwgc_admin_visible_submenu` | `( $rows, $parent )` | Rare: submenu rows to keep visible in wp-admin. |
+| `rwgc_app_modules` | `( $modules )` | App shell module switcher metadata. |
+| `rwgc_app_routes` | `( $routes )` | App shell section routes keyed by `menu_slug`. |
+| `rwgc_app_shell_render` | `( $render )` | Disable shared shell on a hub screen. |
 | `egp_admin_menu_parent` | `( $parent )` | Geo Elementor: parent slug (delegates to `rwgc_admin_menu_parent()` when available). |
 | `rwgc_dashboard_quick_actions` | `( $actions )` | Geo Core **Dashboard** quick-action row after Core appends satellite “Open …” links from `RWGC_Module_Registry`. Each item: `url`, `label`, `primary` (bool). |
 | `rwgc_readiness_rows` | `( $rows, $goal )` | Adjust computed readiness list for Suite Home / Getting Started. |
@@ -52,7 +54,9 @@ Geo Core ships an **onboarding + workflow shell** (`RWGC_Suite_Admin`, Suite Hom
 - `RWGC_Module_Registry::get_readiness_rows( $goal )` — environment checklist.
 - `rw_geo_register_module( $module )` — register/replace one module row (wraps `rwgc_register_modules`).
 - `rw_geo_register_dashboard_card( $callback )` — hook a summary card on the Geo Core dashboard (`rwgc_dashboard_satellite_panels`).
-- `rw_geo_register_admin_submenu( $args )` — `add_submenu_page` under the Geo Core hub (`RWGC_Admin_Platform::register_submenu`).
+- `rw_geo_register_app_route( $args )` — hidden hub submenu + app shell route (`module`, `route`, `menu_slug`, `label`, `callback`).
+- `rw_geo_app_url( $module_id, $menu_slug )` — admin URL for a module/section in the shell.
+- `rw_geo_register_admin_submenu( $args )` — `add_submenu_page` under the ReactWoo Geo hub (`RWGC_Admin_Platform::register_submenu`).
 - `rw_geo_render_inner_nav( $items, $current, $args )` — horizontal section nav + optional hub breadcrumb (`RWGC_Admin_UI::render_inner_nav`).
 - `rwgc_admin_menu_parent()` — parent slug for satellite `add_submenu_page` calls.
 - `RWGC_Admin_Platform::menu_parent()` / `::menu_label()` — hub slug and **Geo Core** sidebar label.

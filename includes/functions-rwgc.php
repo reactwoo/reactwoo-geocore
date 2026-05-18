@@ -570,9 +570,69 @@ if ( ! function_exists( 'rw_geo_register_dashboard_card' ) ) {
 	}
 }
 
+if ( ! function_exists( 'rw_geo_register_app_route' ) ) {
+	/**
+	 * Register an in-app route (hidden wp-admin submenu + app shell section nav).
+	 *
+	 * @param array<string, mixed> $args module, route, menu_slug, label, callback; optional capability, order, show_in_wp_sidebar.
+	 * @return string|false Hook suffix from submenu registration.
+	 */
+	function rw_geo_register_app_route( array $args ) {
+		if ( empty( $args['callback'] ) || ! is_callable( $args['callback'] ) ) {
+			return false;
+		}
+		$slug = isset( $args['menu_slug'] ) ? sanitize_key( (string) $args['menu_slug'] ) : '';
+		if ( '' === $slug ) {
+			return false;
+		}
+
+		if ( ! isset( $args['show_in_wp_sidebar'] ) ) {
+			$args['show_in_wp_sidebar'] = false;
+		}
+
+		if ( class_exists( 'RWGC_Admin_Route_Registry', false ) ) {
+			RWGC_Admin_Route_Registry::register_route( $args );
+		}
+
+		$page_title = isset( $args['page_title'] ) ? (string) $args['page_title'] : ( isset( $args['label'] ) ? (string) $args['label'] : $slug );
+		$menu_title = isset( $args['menu_title'] ) ? (string) $args['menu_title'] : ( isset( $args['label'] ) ? (string) $args['label'] : $slug );
+
+		return rw_geo_register_admin_submenu(
+			array_merge(
+				$args,
+				array(
+					'page_title' => $page_title,
+					'menu_title' => $menu_title,
+					'menu_slug'  => $slug,
+				)
+			)
+		);
+	}
+}
+
+if ( ! function_exists( 'rw_geo_app_url' ) ) {
+	/**
+	 * Admin URL for a module route in the ReactWoo Geo app shell.
+	 *
+	 * @param string $module_id Module id.
+	 * @param string $menu_slug Optional menu slug.
+	 * @return string
+	 */
+	function rw_geo_app_url( $module_id, $menu_slug = '' ) {
+		if ( class_exists( 'RWGC_Admin_Route_Registry', false ) ) {
+			return RWGC_Admin_Route_Registry::get_url( $module_id, $menu_slug );
+		}
+		$menu_slug = sanitize_key( (string) $menu_slug );
+		if ( '' === $menu_slug ) {
+			$menu_slug = 'rwgc-dashboard';
+		}
+		return admin_url( 'admin.php?page=' . rawurlencode( $menu_slug ) );
+	}
+}
+
 if ( ! function_exists( 'rw_geo_register_admin_submenu' ) ) {
 	/**
-	 * Register a wp-admin submenu under the Geo Core hub (free plugin sidebar: Geo Core).
+	 * Register a wp-admin submenu under the ReactWoo Geo hub (hidden from sidebar by default).
 	 *
 	 * @param array<string, mixed> $args page_title, menu_title, capability, menu_slug, callback; optional position.
 	 * @return string|false Hook suffix from add_submenu_page.

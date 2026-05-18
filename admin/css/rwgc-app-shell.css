@@ -1,0 +1,189 @@
+/* ReactWoo Geo — unified admin app shell */
+body.rwgc-app-shell-active #wpcontent {
+	padding-left: 0;
+}
+
+body.rwgc-app-shell-active #wpbody-content {
+	padding-bottom: 32px;
+}
+
+.rwgc-app-shell {
+	margin: 0 -20px 0 0;
+	font-size: 13px;
+	line-height: 1.45;
+	color: #1d2327;
+}
+
+.rwgc-app-shell__layout {
+	display: flex;
+	align-items: stretch;
+	min-height: calc(100vh - 32px);
+	background: #f0f4f8;
+}
+
+.rwgc-app-shell__module-nav {
+	flex: 0 0 200px;
+	background: #1d2327;
+	color: #f0f0f1;
+	padding: 16px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	position: sticky;
+	top: 32px;
+	align-self: flex-start;
+	min-height: calc(100vh - 32px);
+	z-index: 10;
+}
+
+.rwgc-app-shell__brand {
+	font-size: 15px;
+	font-weight: 600;
+	padding: 4px 8px 12px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+	margin-bottom: 4px;
+}
+
+.rwgc-app-shell__module-list {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.rwgc-app-shell__module-link {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 10px;
+	border-radius: 6px;
+	color: #f0f0f1;
+	text-decoration: none;
+	transition: background 0.15s ease;
+}
+
+.rwgc-app-shell__module-link:hover,
+.rwgc-app-shell__module-link:focus {
+	background: rgba(255, 255, 255, 0.08);
+	color: #fff;
+	box-shadow: none;
+}
+
+.rwgc-app-shell__module-link.is-active {
+	background: #2271b1;
+	color: #fff;
+}
+
+.rwgc-app-shell__module-link .dashicons {
+	font-size: 18px;
+	width: 18px;
+	height: 18px;
+}
+
+.rwgc-app-shell__workspace {
+	flex: 1 1 auto;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.rwgc-app-shell__section-nav {
+	background: #fff;
+	border-bottom: 1px solid #dcdcde;
+	padding: 0 16px;
+	position: sticky;
+	top: 32px;
+	z-index: 9;
+}
+
+.rwgc-app-shell__section-scroll {
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 4px;
+	overflow-x: auto;
+	padding: 10px 0;
+	-webkit-overflow-scrolling: touch;
+}
+
+.rwgc-app-shell__section-link {
+	flex: 0 0 auto;
+	padding: 6px 12px;
+	border-radius: 999px;
+	text-decoration: none;
+	color: #50575e;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+.rwgc-app-shell__section-link:hover,
+.rwgc-app-shell__section-link:focus {
+	background: #f0f0f1;
+	color: #1d2327;
+}
+
+.rwgc-app-shell__section-link.is-active {
+	background: #e7f5fe;
+	color: #135e96;
+}
+
+.rwgc-app-shell__content {
+	flex: 1 1 auto;
+	padding: 16px 20px 24px;
+}
+
+.rwgc-app-shell__content > .wrap {
+	margin: 0;
+	max-width: none;
+}
+
+.rwgc-app-shell__content .rwgc-wrap.rwgc-suite {
+	max-width: 1200px;
+}
+
+body.rwgc-app-shell-active .rwgc-inner-nav {
+	display: none;
+}
+
+/* Collapsed wp-admin flyout under ReactWoo Geo */
+body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard .wp-submenu {
+	display: none !important;
+}
+
+body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-has-current-submenu .wp-submenu,
+body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-menu-open .wp-submenu {
+	display: none !important;
+}
+
+@media (max-width: 960px) {
+	.rwgc-app-shell__layout {
+		flex-direction: column;
+	}
+
+	.rwgc-app-shell__module-nav {
+		flex: 0 0 auto;
+		width: 100%;
+		min-height: 0;
+		position: relative;
+		top: 0;
+		flex-direction: row;
+		flex-wrap: wrap;
+		align-items: center;
+		padding: 10px 12px;
+	}
+
+	.rwgc-app-shell__brand {
+		border-bottom: 0;
+		padding: 0 8px 0 0;
+		margin: 0;
+		flex: 1 1 auto;
+	}
+
+	.rwgc-app-shell__module-list {
+		flex-direction: row;
+		flex-wrap: wrap;
+		width: 100%;
+	}
+
+	.rwgc-app-shell__section-nav {
+		top: 0;
+	}
+}

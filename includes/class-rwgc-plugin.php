@@ -84,6 +84,8 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-satellite-updater.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-ai-orchestrator.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-platform.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-admin-route-registry.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-admin-app-shell.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-ui.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-module-registry.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-onboarding.php';
@@ -148,6 +150,9 @@ class RWGC_Plugin {
 
 		if ( is_admin() ) {
 			RWGC_Admin_Platform::init();
+			RWGC_Admin_Route_Registry::init();
+			RWGC_Admin_App_Shell::init();
+			RWGC_Suite_Admin::init();
 			RWGC_Admin::init();
 		}
 

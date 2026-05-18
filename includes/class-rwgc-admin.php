@@ -65,7 +65,7 @@ class RWGC_Admin {
 			: __( 'Geo Core', 'reactwoo-geocore' );
 
 		add_menu_page(
-			__( 'ReactWoo Geo Core', 'reactwoo-geocore' ),
+			__( 'ReactWoo Geo', 'reactwoo-geocore' ),
 			$menu_label,
 			$cap,
 			class_exists( 'RWGC_Admin_Platform', false ) ? RWGC_Admin_Platform::menu_parent() : 'rwgc-dashboard',
@@ -74,9 +74,27 @@ class RWGC_Admin {
 			58
 		);
 
+		$parent = RWGC_Admin_Platform::menu_parent();
+
 		if ( class_exists( 'RWGC_Suite_Admin', false ) ) {
 			add_submenu_page(
-				RWGC_Admin_Platform::menu_parent(),
+				$parent,
+				__( 'Setup', 'reactwoo-geocore' ),
+				__( 'Setup', 'reactwoo-geocore' ),
+				$cap,
+				'rwgc-getting-started',
+				array( 'RWGC_Suite_Admin', 'render_getting_started' )
+			);
+			add_submenu_page(
+				$parent,
+				__( 'Suite home', 'reactwoo-geocore' ),
+				__( 'Suite home', 'reactwoo-geocore' ),
+				$cap,
+				'rwgc-suite-home',
+				array( 'RWGC_Suite_Admin', 'render_suite_home' )
+			);
+			add_submenu_page(
+				$parent,
 				__( 'Rules / Page Versions', 'reactwoo-geocore' ),
 				__( 'Rules / Page Versions', 'reactwoo-geocore' ),
 				$cap,
@@ -84,8 +102,6 @@ class RWGC_Admin {
 				array( 'RWGC_Suite_Admin', 'render_suite_variants' )
 			);
 		}
-
-		$parent = RWGC_Admin_Platform::menu_parent();
 
 		add_submenu_page(
 			$parent,
@@ -149,7 +165,8 @@ class RWGC_Admin {
 	 * @return void
 	 */
 	public static function enqueue_assets( $hook ) {
-		if ( strpos( $hook, 'rwgc-' ) === false ) {
+		$is_hub = class_exists( 'RWGC_Admin_Platform', false ) && RWGC_Admin_Platform::is_hub_screen( $hook );
+		if ( ! $is_hub && strpos( $hook, 'rwgc-' ) === false ) {
 			return;
 		}
 		wp_enqueue_style(

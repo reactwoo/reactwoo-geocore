@@ -2,8 +2,8 @@
 /**
  * Geo Core admin platform shell (free hub) — menu parent, ordering, branding.
  *
- * The wp-admin top-level product name stays **Geo Core** (free plugin).
- * Commercial satellites register submenus under {@see RWGC_Admin_Platform::menu_parent()}.
+ * Unified wp-admin entry **ReactWoo Geo**; satellites register hidden hub pages.
+ * In-app navigation is handled by {@see RWGC_Admin_App_Shell}.
  *
  * @package ReactWooGeoCore
  */
@@ -25,13 +25,13 @@ class RWGC_Admin_Platform {
 	/**
 	 * Sidebar menu label for the free hub (not "ReactWoo Geo").
 	 */
-	const MENU_LABEL = 'Geo Core';
+	const MENU_LABEL = 'ReactWoo Geo';
 
 	/**
 	 * @return void
 	 */
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'reorder_submenu' ), 999 );
+		add_action( 'admin_menu', array( __CLASS__, 'collapse_hub_submenu' ), 9999 );
 		add_filter( 'admin_body_class', array( __CLASS__, 'admin_body_class' ) );
 	}
 
@@ -50,17 +50,29 @@ class RWGC_Admin_Platform {
 	}
 
 	/**
-	 * Top-level sidebar label (Geo Core).
+	 * Top-level sidebar label (ReactWoo Geo).
 	 *
 	 * @return string
 	 */
 	public static function menu_label() {
 		/**
-		 * Filter the Geo Core hub sidebar menu title.
+		 * Filter the Geo suite hub sidebar menu title.
 		 *
-		 * @param string $label Default "Geo Core".
+		 * @param string $label Default "ReactWoo Geo".
 		 */
 		return (string) apply_filters( 'rwgc_admin_menu_label', self::MENU_LABEL );
+	}
+
+	/**
+	 * Whether wp-admin should show only the top-level ReactWoo Geo item (no flyout).
+	 *
+	 * @return bool
+	 */
+	public static function is_sidebar_collapsed() {
+		/**
+		 * @param bool $collapsed Default true.
+		 */
+		return (bool) apply_filters( 'rwgc_admin_sidebar_collapsed', true );
 	}
 
 	/**
@@ -111,7 +123,7 @@ class RWGC_Admin_Platform {
 		if ( 0 === strpos( $page, 'rwgc-' ) ) {
 			return true;
 		}
-		$prefixes = array( 'rwgcm-', 'rwga-', 'rwgo-', 'geo-elementor', 'elementor-geo-popup', 'geo-content', 'egp-', 'geo-templates' );
+		$prefixes = array( 'rwgcm-', 'rwga-', 'rwgo-', 'rwgcp-', 'geo-elementor', 'elementor-geo-popup', 'geo-content', 'egp-', 'geo-templates' );
 		foreach ( $prefixes as $prefix ) {
 			if ( 0 === strpos( $page, $prefix ) ) {
 				return true;
@@ -154,11 +166,15 @@ class RWGC_Admin_Platform {
 	}
 
 	/**
-	 * Reorder Geo Core submenu: core screens first, separator, extension hub entries, then detail pages.
+	 * Hide hub flyout in wp-admin; pages remain registered for direct URLs and the app shell.
 	 *
 	 * @return void
 	 */
-	public static function reorder_submenu() {
+	public static function collapse_hub_submenu() {
+		if ( ! self::is_sidebar_collapsed() ) {
+			return;
+		}
+
 		global $submenu;
 
 		$parent = self::menu_parent();
@@ -166,121 +182,13 @@ class RWGC_Admin_Platform {
 			return;
 		}
 
-		$entries = $submenu[ $parent ];
-		$by_slug = array();
-		foreach ( $entries as $entry ) {
-			if ( ! is_array( $entry ) || ! isset( $entry[2] ) ) {
-				continue;
-			}
-			$by_slug[ (string) $entry[2] ] = $entry;
-		}
-
-		$core_slugs = array(
-			'rwgc-dashboard',
-			'rwgc-suite-variants',
-			'rwgc-getting-started',
-			'rwgc-suite-home',
-			'rwgc-settings',
-			'rwgc-tools',
-			'rwgc-usage',
-			'rwgc-target-types',
-			'rwgc-target-playground',
-			'rwgc-addons',
-		);
-
 		/**
-		 * Core submenu slugs ordered under the Geo Core hub (before extensions).
+		 * Filter submenu rows kept visible under ReactWoo Geo (default: none).
 		 *
-		 * @param array<int, string> $core_slugs Slugs.
+		 * @param array<int, array> $visible_rows Submenu rows to keep.
+		 * @param string            $parent       Parent slug.
 		 */
-		$core_slugs = apply_filters( 'rwgc_admin_core_submenu_order', $core_slugs );
-
-		$hub_slugs = array(
-			'geo-elementor',
-			'rwgcm-dashboard',
-			'rwgo-dashboard',
-			'rwga-dashboard',
-		);
-
-		/**
-		 * Extension “home” submenu slugs (first item per satellite product).
-		 *
-		 * @param array<int, string> $hub_slugs Slugs.
-		 */
-		$hub_slugs = apply_filters( 'rwgc_admin_extension_hub_submenu_order', $hub_slugs );
-
-		$ordered   = array();
-		$used      = array();
-
-		foreach ( $core_slugs as $slug ) {
-			if ( isset( $by_slug[ $slug ] ) ) {
-				$ordered[]    = $by_slug[ $slug ];
-				$used[ $slug ] = true;
-			}
-		}
-
-		$has_extensions = false;
-		foreach ( array_keys( $by_slug ) as $slug ) {
-			if ( isset( $used[ $slug ] ) || self::is_core_submenu_slug( $slug ) ) {
-				continue;
-			}
-			$has_extensions = true;
-			break;
-		}
-
-		if ( $has_extensions ) {
-			$ordered[] = array(
-				'<span class="rwgc-wp-submenu-heading">' . esc_html__( 'Geo extensions', 'reactwoo-geocore' ) . '</span>',
-				'read',
-				'rwgc-menu-heading-extensions',
-				'',
-				'rwgc-menu-heading',
-			);
-		}
-
-		foreach ( $hub_slugs as $slug ) {
-			if ( isset( $by_slug[ $slug ] ) && ! isset( $used[ $slug ] ) ) {
-				$ordered[]    = $by_slug[ $slug ];
-				$used[ $slug ] = true;
-			}
-		}
-
-		$remaining = array();
-		foreach ( $by_slug as $slug => $entry ) {
-			if ( isset( $used[ $slug ] ) || 'rwgc-menu-heading-extensions' === $slug ) {
-				continue;
-			}
-			$remaining[ $slug ] = $entry;
-		}
-
-		uasort(
-			$remaining,
-			static function ( $a, $b ) {
-				$ta = isset( $a[0] ) ? wp_strip_all_tags( (string) $a[0] ) : '';
-				$tb = isset( $b[0] ) ? wp_strip_all_tags( (string) $b[0] ) : '';
-				return strcasecmp( $ta, $tb );
-			}
-		);
-
-		foreach ( $remaining as $entry ) {
-			$ordered[] = $entry;
-		}
-
-		/**
-		 * Filter the final ordered submenu under Geo Core.
-		 *
-		 * @param array<int, array>  $ordered Submenu rows.
-		 * @param array<string, array> $by_slug All entries keyed by slug.
-		 */
-		$submenu[ $parent ] = apply_filters( 'rwgc_admin_submenu_ordered', $ordered, $by_slug );
-	}
-
-	/**
-	 * @param string $slug Menu slug.
-	 * @return bool
-	 */
-	private static function is_core_submenu_slug( $slug ) {
-		return 0 === strpos( (string) $slug, 'rwgc-' ) && 'rwgc-menu-heading-extensions' !== $slug;
+		$submenu[ $parent ] = apply_filters( 'rwgc_admin_visible_submenu', array(), $parent );
 	}
 
 	/**
@@ -291,6 +199,13 @@ class RWGC_Admin_Platform {
 		if ( ! is_admin() || ! self::is_hub_screen() ) {
 			return $classes;
 		}
-		return $classes . ' rwgc-geo-core-hub ';
+		$classes .= ' rwgc-geo-core-hub ';
+		if ( self::is_sidebar_collapsed() ) {
+			$classes .= ' rwgc-admin-sidebar-collapsed ';
+		}
+		if ( class_exists( 'RWGC_Admin_App_Shell', false ) && RWGC_Admin_App_Shell::should_render() ) {
+			$classes .= ' rwgc-app-shell-active ';
+		}
+		return $classes;
 	}
 }
