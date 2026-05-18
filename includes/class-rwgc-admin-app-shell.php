@@ -85,7 +85,8 @@ class RWGC_Admin_App_Shell {
 		/**
 		 * @param bool $render Default true on hub screens.
 		 */
-		return (bool) apply_filters( 'rwgc_app_shell_render', true );
+		// Off by default until shell layout is validated on all admin screens.
+		return (bool) apply_filters( 'rwgc_app_shell_render', false );
 	}
 
 	/**

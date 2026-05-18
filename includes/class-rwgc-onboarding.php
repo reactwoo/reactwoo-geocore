@@ -160,6 +160,27 @@ class RWGC_Onboarding {
 	}
 
 	/**
+	 * Clear stale activation redirect so plugins.php is never trapped.
+	 *
+	 * @return void
+	 */
+	public static function clear_stale_activation_redirect() {
+		if ( ! is_admin() ) {
+			return;
+		}
+		$pagenow = isset( $GLOBALS['pagenow'] ) ? (string) $GLOBALS['pagenow'] : '';
+		if ( 'plugins.php' !== $pagenow ) {
+			return;
+		}
+		$is_post_activate = isset( $_GET['activate'] ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			|| isset( $_GET['activated'] ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			|| isset( $_GET['activate-multi'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! $is_post_activate ) {
+			delete_option( self::OPTION_REDIRECT );
+		}
+	}
+
+	/**
 	 * One-time redirect after plugin activation (dashboard or plugins screen only).
 	 *
 	 * @return void

@@ -31,7 +31,7 @@ class RWGC_Admin_Platform {
 	 * @return void
 	 */
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'collapse_hub_submenu' ), 9999 );
+		add_action( 'admin_menu', array( __CLASS__, 'finalize_hub_submenu' ), 9999 );
 		add_filter( 'admin_body_class', array( __CLASS__, 'admin_body_class' ) );
 	}
 
@@ -72,7 +72,20 @@ class RWGC_Admin_Platform {
 		/**
 		 * @param bool $collapsed Default true.
 		 */
-		return (bool) apply_filters( 'rwgc_admin_sidebar_collapsed', true );
+		return (bool) apply_filters( 'rwgc_admin_sidebar_collapsed', false );
+	}
+
+	/**
+	 * Collapse flyout or restore ordered submenu depending on {@see is_sidebar_collapsed()}.
+	 *
+	 * @return void
+	 */
+	public static function finalize_hub_submenu() {
+		if ( self::is_sidebar_collapsed() ) {
+			self::collapse_hub_submenu();
+			return;
+		}
+		self::reorder_submenu();
 	}
 
 	/**
@@ -171,10 +184,6 @@ class RWGC_Admin_Platform {
 	 * @return void
 	 */
 	public static function collapse_hub_submenu() {
-		if ( ! self::is_sidebar_collapsed() ) {
-			return;
-		}
-
 		global $submenu;
 
 		$parent = self::menu_parent();
@@ -182,26 +191,139 @@ class RWGC_Admin_Platform {
 			return;
 		}
 
-		// WordPress requires at least one submenu row for a stable top-level menu link.
-		$entries = $submenu[ $parent ];
-		$visible = array();
-		foreach ( $entries as $entry ) {
-			if ( is_array( $entry ) && isset( $entry[2] ) && self::MENU_PARENT === (string) $entry[2] ) {
-				$visible[] = $entry;
-				break;
+		$slugs = array();
+		foreach ( $submenu[ $parent ] as $entry ) {
+			if ( is_array( $entry ) && isset( $entry[2] ) ) {
+				$slugs[] = (string) $entry[2];
 			}
-		}
-		if ( empty( $visible ) && ! empty( $entries ) && is_array( $entries[0] ) ) {
-			$visible[] = $entries[0];
 		}
 
 		/**
-		 * Filter submenu rows kept visible under ReactWoo Geo (default: dashboard entry only).
+		 * Slugs to keep in the wp-admin flyout when collapsed (default: hide all — top-level only).
 		 *
-		 * @param array<int, array> $visible_rows Submenu rows to keep.
-		 * @param string            $parent       Parent slug.
+		 * @param array<int, string> $keep_slugs Menu slugs to keep visible.
+		 * @param string             $parent   Parent slug.
 		 */
-		$submenu[ $parent ] = apply_filters( 'rwgc_admin_visible_submenu', $visible, $parent );
+		$keep_slugs = apply_filters( 'rwgc_admin_visible_submenu_slugs', array(), $parent );
+		$keep_map   = array_fill_keys( array_map( 'strval', (array) $keep_slugs ), true );
+
+		foreach ( $slugs as $slug ) {
+			if ( isset( $keep_map[ $slug ] ) ) {
+				continue;
+			}
+			remove_submenu_page( $parent, $slug );
+		}
+	}
+
+	/**
+	 * Order hub submenu: core screens, extension heading, extension homes, then the rest.
+	 *
+	 * @return void
+	 */
+	public static function reorder_submenu() {
+		global $submenu;
+
+		$parent = self::menu_parent();
+		if ( ! isset( $submenu[ $parent ] ) || ! is_array( $submenu[ $parent ] ) ) {
+			return;
+		}
+
+		$entries = $submenu[ $parent ];
+		$by_slug = array();
+		foreach ( $entries as $entry ) {
+			if ( ! is_array( $entry ) || ! isset( $entry[2] ) ) {
+				continue;
+			}
+			$by_slug[ (string) $entry[2] ] = $entry;
+		}
+
+		$core_slugs = array(
+			'rwgc-dashboard',
+			'rwgc-getting-started',
+			'rwgc-suite-home',
+			'rwgc-suite-variants',
+			'rwgc-target-types',
+			'rwgc-usage',
+			'rwgc-settings',
+			'rwgc-tools',
+			'rwgc-addons',
+		);
+		$core_slugs = apply_filters( 'rwgc_admin_core_submenu_order', $core_slugs );
+
+		$hub_slugs = array(
+			'geo-elementor',
+			'rwgcm-dashboard',
+			'rwgo-dashboard',
+			'rwga-dashboard',
+		);
+		$hub_slugs = apply_filters( 'rwgc_admin_extension_hub_submenu_order', $hub_slugs );
+
+		$ordered = array();
+		$used    = array();
+
+		foreach ( $core_slugs as $slug ) {
+			if ( isset( $by_slug[ $slug ] ) ) {
+				$ordered[]     = $by_slug[ $slug ];
+				$used[ $slug ] = true;
+			}
+		}
+
+		$has_extensions = false;
+		foreach ( array_keys( $by_slug ) as $slug ) {
+			if ( isset( $used[ $slug ] ) || self::is_core_submenu_slug( $slug ) ) {
+				continue;
+			}
+			$has_extensions = true;
+			break;
+		}
+
+		if ( $has_extensions ) {
+			$ordered[] = array(
+				'<span class="rwgc-wp-submenu-heading">' . esc_html__( 'Geo extensions', 'reactwoo-geocore' ) . '</span>',
+				'read',
+				'rwgc-menu-heading-extensions',
+				'',
+				'rwgc-menu-heading',
+			);
+		}
+
+		foreach ( $hub_slugs as $slug ) {
+			if ( isset( $by_slug[ $slug ] ) && ! isset( $used[ $slug ] ) ) {
+				$ordered[]     = $by_slug[ $slug ];
+				$used[ $slug ] = true;
+			}
+		}
+
+		$remaining = array();
+		foreach ( $by_slug as $slug => $entry ) {
+			if ( isset( $used[ $slug ] ) || 'rwgc-menu-heading-extensions' === $slug ) {
+				continue;
+			}
+			$remaining[ $slug ] = $entry;
+		}
+
+		uasort(
+			$remaining,
+			static function ( $a, $b ) {
+				$ta = isset( $a[0] ) ? wp_strip_all_tags( (string) $a[0] ) : '';
+				$tb = isset( $b[0] ) ? wp_strip_all_tags( (string) $b[0] ) : '';
+				return strcasecmp( $ta, $tb );
+			}
+		);
+
+		foreach ( $remaining as $entry ) {
+			$ordered[] = $entry;
+		}
+
+		$submenu[ $parent ] = apply_filters( 'rwgc_admin_submenu_ordered', $ordered, $by_slug );
+	}
+
+	/**
+	 * @param string $slug Menu slug.
+	 * @return bool
+	 */
+	private static function is_core_submenu_slug( $slug ) {
+		return 0 === strpos( (string) $slug, 'rwgc-' ) && 'rwgc-menu-heading-extensions' !== $slug;
 	}
 
 	/**

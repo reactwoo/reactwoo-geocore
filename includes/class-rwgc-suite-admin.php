@@ -18,7 +18,8 @@ class RWGC_Suite_Admin {
 	 * @return void
 	 */
 	public static function init() {
-		add_action( 'admin_init', array( 'RWGC_Onboarding', 'maybe_redirect_after_activation' ) );
+		add_action( 'admin_init', array( 'RWGC_Onboarding', 'clear_stale_activation_redirect' ), 0 );
+		add_action( 'admin_init', array( 'RWGC_Onboarding', 'maybe_redirect_after_activation' ), 20 );
 		add_action( 'admin_post_rwgc_save_wizard', array( __CLASS__, 'handle_save_wizard' ) );
 		add_action( 'admin_post_rwgc_create_variant_workflow', array( __CLASS__, 'handle_create_variant' ) );
 		add_action( 'admin_post_rwgc_dismiss_welcome', array( __CLASS__, 'handle_dismiss_welcome' ) );
