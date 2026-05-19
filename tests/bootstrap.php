@@ -78,6 +78,65 @@ if ( ! function_exists( 'do_action' ) ) {
 	}
 }
 
+if ( ! function_exists( '__' ) ) {
+	/**
+	 * @param string $text Text.
+	 * @param string $domain Text domain.
+	 * @return string
+	 */
+	function __( $text, $domain = 'default' ) {
+		unset( $domain );
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'current_user_can' ) ) {
+	/**
+	 * @param string $capability Capability.
+	 * @return bool
+	 */
+	function current_user_can( $capability ) {
+		$caps = isset( $GLOBALS['rwgc_test_user_caps'] ) && is_array( $GLOBALS['rwgc_test_user_caps'] )
+			? $GLOBALS['rwgc_test_user_caps']
+			: array();
+		return ! empty( $caps[ (string) $capability ] );
+	}
+}
+
+if ( ! function_exists( 'add_menu_page' ) ) {
+	/**
+	 * @param string   $page_title Page title.
+	 * @param string   $menu_title Menu title.
+	 * @param string   $capability Capability.
+	 * @param string   $menu_slug Menu slug.
+	 * @param callable $callback Callback.
+	 * @param string   $icon_url Icon URL.
+	 * @param int|null $position Position.
+	 * @return string
+	 */
+	function add_menu_page( $page_title, $menu_title, $capability, $menu_slug, $callback = '', $icon_url = '', $position = null ) {
+		$GLOBALS['rwgc_test_menu_pages'][] = compact( 'page_title', 'menu_title', 'capability', 'menu_slug', 'callback', 'icon_url', 'position' );
+		return 'toplevel_page_' . $menu_slug;
+	}
+}
+
+if ( ! function_exists( 'add_submenu_page' ) ) {
+	/**
+	 * @param string|null $parent_slug Parent slug.
+	 * @param string      $page_title Page title.
+	 * @param string      $menu_title Menu title.
+	 * @param string      $capability Capability.
+	 * @param string      $menu_slug Menu slug.
+	 * @param callable    $callback Callback.
+	 * @param int|null    $position Position.
+	 * @return string
+	 */
+	function add_submenu_page( $parent_slug, $page_title, $menu_title, $capability, $menu_slug, $callback = '', $position = null ) {
+		$GLOBALS['rwgc_test_submenu_pages'][] = compact( 'parent_slug', 'page_title', 'menu_title', 'capability', 'menu_slug', 'callback', 'position' );
+		return ( null === $parent_slug ? 'admin_page_' : $parent_slug . '_page_' ) . $menu_slug;
+	}
+}
+
 $base = dirname( __DIR__ ) . '/includes/';
 require_once $base . 'context/class-rwgc-context-attribution.php';
 require_once $base . 'engine/class-rwgc-context.php';
