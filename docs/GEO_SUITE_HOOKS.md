@@ -20,8 +20,8 @@ Geo Core ships an **onboarding + workflow shell** (`RWGC_Suite_Admin`, Suite Hom
 | `rwgc_register_modules` | `( $modules )` | Add/replace rows in `RWGC_Module_Registry::get_registered_modules()`. Each row: `id`, `label`, `description`, optional `active`, `admin_url`, `install_url`, `is_active_callback`. |
 | `rwgc_admin_menu_parent` | `( $parent )` | Geo Core hub parent slug (default `rwgc-dashboard`). |
 | `rwgc_admin_menu_label` | `( $label )` | Sidebar title (default **ReactWoo Geo**). |
-| `rwgc_admin_sidebar_collapsed` | `( $collapsed )` | Hide wp-admin flyout under ReactWoo Geo (default true). |
-| `rwgc_admin_visible_submenu` | `( $rows, $parent )` | Rare: submenu rows to keep visible in wp-admin. |
+| `rwgc_admin_sidebar_collapsed` | `( $collapsed )` | Hide wp-admin flyout under ReactWoo Geo (default false). |
+| `rwgc_admin_visible_submenu_slugs` | `( $slugs, $parent )` | Rare: submenu slugs to keep visible in wp-admin when collapsed (default keeps `rwgc-dashboard` for menu stability). |
 | `rwgc_app_modules` | `( $modules )` | App shell module switcher metadata. |
 | `rwgc_app_routes` | `( $routes )` | App shell section routes keyed by `menu_slug`. |
 | `rwgc_app_shell_render` | `( $render )` | Disable shared shell on a hub screen. |

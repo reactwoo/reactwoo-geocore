@@ -70,7 +70,7 @@ class RWGC_Admin_Platform {
 	 */
 	public static function is_sidebar_collapsed() {
 		/**
-		 * @param bool $collapsed Default true.
+		 * @param bool $collapsed Default false.
 		 */
 		return (bool) apply_filters( 'rwgc_admin_sidebar_collapsed', false );
 	}
@@ -199,12 +199,12 @@ class RWGC_Admin_Platform {
 		}
 
 		/**
-		 * Slugs to keep in the wp-admin flyout when collapsed (default: hide all — top-level only).
+		 * Slugs to keep in the wp-admin flyout when collapsed (default: dashboard row for WordPress menu stability).
 		 *
 		 * @param array<int, string> $keep_slugs Menu slugs to keep visible.
 		 * @param string             $parent   Parent slug.
 		 */
-		$keep_slugs = apply_filters( 'rwgc_admin_visible_submenu_slugs', array(), $parent );
+		$keep_slugs = apply_filters( 'rwgc_admin_visible_submenu_slugs', array( self::MENU_PARENT ), $parent );
 		$keep_map   = array_fill_keys( array_map( 'strval', (array) $keep_slugs ), true );
 
 		foreach ( $slugs as $slug ) {
