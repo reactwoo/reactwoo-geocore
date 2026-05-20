@@ -146,6 +146,12 @@ class RWGC_Admin_Route_Registry {
 				'order'     => 30,
 			),
 			array(
+				'menu_slug' => 'rwgc-workflow-variant',
+				'route'     => 'create-page-version',
+				'label'     => __( 'Create page version', 'reactwoo-geocore' ),
+				'order'     => 35,
+			),
+			array(
 				'menu_slug' => 'rwgc-usage',
 				'route'     => 'reports',
 				'label'     => __( 'Reports', 'reactwoo-geocore' ),

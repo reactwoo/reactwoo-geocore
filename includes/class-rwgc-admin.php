@@ -101,6 +101,14 @@ class RWGC_Admin {
 				'rwgc-suite-variants',
 				array( 'RWGC_Suite_Admin', 'render_suite_variants' )
 			);
+			add_submenu_page(
+				null,
+				__( 'Create page version', 'reactwoo-geocore' ),
+				__( 'Create page version', 'reactwoo-geocore' ),
+				'edit_pages',
+				'rwgc-workflow-variant',
+				array( 'RWGC_Suite_Admin', 'render_workflow_variant' )
+			);
 		}
 
 		add_submenu_page(
