@@ -1,6 +1,6 @@
 <?php
 /**
- * In-app admin routes for the ReactWoo Geo shell (module + section navigation).
+ * In-app admin routes for the ReactWoo Geo shell (goal sections + contextual tabs).
  *
  * @package ReactWooGeoCore
  */
@@ -20,6 +20,15 @@ class RWGC_Admin_Route_Registry {
 	private static $routes = array();
 
 	/**
+	 * Goal-based primary nav sections (UX platform model).
+	 *
+	 * @var array<string, array<string, mixed>>
+	 */
+	private static $sections = array();
+
+	/**
+	 * Legacy module ids (satellite grouping); aliased for backward compatibility.
+	 *
 	 * @var array<string, array<string, mixed>>
 	 */
 	private static $modules = array();
@@ -29,8 +38,51 @@ class RWGC_Admin_Route_Registry {
 	 */
 	public static function init() {
 		add_action( 'rwgc_admin_submenu_registered', array( __CLASS__, 'on_submenu_registered' ), 10, 3 );
+		add_action( 'rwgc_loaded', array( __CLASS__, 'register_default_sections' ), 5 );
 		add_action( 'rwgc_loaded', array( __CLASS__, 'register_default_modules' ), 5 );
 		add_action( 'rwgc_loaded', array( __CLASS__, 'register_core_routes' ), 8 );
+	}
+
+	/**
+	 * @return void
+	 */
+	public static function register_default_sections() {
+		$defaults = array(
+			'overview'       => array(
+				'label' => __( 'Overview', 'reactwoo-geocore' ),
+				'order' => 10,
+				'icon'  => 'dashicons-dashboard',
+			),
+			'targeting'      => array(
+				'label' => __( 'Targeting', 'reactwoo-geocore' ),
+				'order' => 20,
+				'icon'  => 'dashicons-admin-site-alt3',
+			),
+			'commerce'       => array(
+				'label' => __( 'Commerce', 'reactwoo-geocore' ),
+				'order' => 30,
+				'icon'  => 'dashicons-cart',
+			),
+			'insights'       => array(
+				'label' => __( 'Insights', 'reactwoo-geocore' ),
+				'order' => 40,
+				'icon'  => 'dashicons-chart-area',
+			),
+			'integrations'   => array(
+				'label' => __( 'Integrations', 'reactwoo-geocore' ),
+				'order' => 50,
+				'icon'  => 'dashicons-admin-links',
+			),
+			'settings'       => array(
+				'label' => __( 'Settings', 'reactwoo-geocore' ),
+				'order' => 60,
+				'icon'  => 'dashicons-admin-settings',
+			),
+		);
+
+		foreach ( $defaults as $id => $row ) {
+			self::register_section( $id, $row );
+		}
 	}
 
 	/**
@@ -76,6 +128,27 @@ class RWGC_Admin_Route_Registry {
 	}
 
 	/**
+	 * @param string               $section_id Section id.
+	 * @param array<string, mixed> $section    Section row.
+	 * @return void
+	 */
+	public static function register_section( $section_id, array $section ) {
+		$section_id = sanitize_key( (string) $section_id );
+		if ( '' === $section_id ) {
+			return;
+		}
+		self::$sections[ $section_id ] = array_merge(
+			array(
+				'id'    => $section_id,
+				'label' => $section_id,
+				'order' => 100,
+				'icon'  => 'dashicons-admin-generic',
+			),
+			$section
+		);
+	}
+
+	/**
 	 * @param string               $module_id Module id.
 	 * @param array<string, mixed> $module    Module row.
 	 * @return void
@@ -109,12 +182,25 @@ class RWGC_Admin_Route_Registry {
 		$module = isset( $args['module'] ) ? sanitize_key( (string) $args['module'] ) : self::infer_module_from_slug( $slug );
 		$route  = isset( $args['route'] ) ? sanitize_key( (string) $args['route'] ) : $slug;
 
+		$section = '';
+		if ( isset( $args['section'] ) ) {
+			$section = sanitize_key( (string) $args['section'] );
+		}
+		if ( '' === $section && isset( $args['module'] ) ) {
+			$section = self::module_to_section( sanitize_key( (string) $args['module'] ) );
+		}
+		if ( '' === $section ) {
+			$section = self::infer_section_from_slug( $slug );
+		}
+
 		self::$routes[ $slug ] = array(
+			'section'            => $section,
 			'module'             => $module,
 			'route'              => $route,
 			'menu_slug'          => $slug,
 			'label'              => isset( $args['label'] ) ? (string) $args['label'] : $slug,
 			'order'              => isset( $args['order'] ) ? (int) $args['order'] : 100,
+			'provider'           => isset( $args['provider'] ) ? sanitize_key( (string) $args['provider'] ) : '',
 			'show_in_wp_sidebar' => ! empty( $args['show_in_wp_sidebar'] ),
 			'is_section_nav'     => ! isset( $args['is_section_nav'] ) || ! empty( $args['is_section_nav'] ),
 		);
@@ -129,57 +215,80 @@ class RWGC_Admin_Route_Registry {
 		$core = array(
 			array(
 				'menu_slug' => 'rwgc-dashboard',
+				'section'   => 'overview',
 				'route'     => 'dashboard',
-				'label'     => __( 'Dashboard', 'reactwoo-geocore' ),
+				'label'     => __( 'Overview', 'reactwoo-geocore' ),
 				'order'     => 10,
 			),
 			array(
-				'menu_slug' => 'rwgc-target-types',
-				'route'     => 'targeting',
-				'label'     => __( 'Targeting', 'reactwoo-geocore' ),
+				'menu_slug' => 'rwgc-getting-started',
+				'section'   => 'overview',
+				'route'     => 'setup',
+				'label'     => __( 'Setup wizard', 'reactwoo-geocore' ),
+				'order'     => 15,
+			),
+			array(
+				'menu_slug' => 'rwgc-suite-home',
+				'section'   => 'overview',
+				'route'     => 'suite-home',
+				'label'     => __( 'Suite home', 'reactwoo-geocore' ),
 				'order'     => 20,
 			),
 			array(
 				'menu_slug' => 'rwgc-suite-variants',
-				'route'     => 'rules',
-				'label'     => __( 'Rules / Page versions', 'reactwoo-geocore' ),
-				'order'     => 30,
+				'section'   => 'targeting',
+				'route'     => 'page-versions',
+				'label'     => __( 'Page versions', 'reactwoo-geocore' ),
+				'order'     => 10,
+			),
+			array(
+				'menu_slug' => 'rwgc-target-types',
+				'section'   => 'targeting',
+				'route'     => 'rule-builder',
+				'label'     => __( 'Rule builder', 'reactwoo-geocore' ),
+				'order'     => 20,
+			),
+			array(
+				'menu_slug' => 'rwgc-insights-hub',
+				'section'   => 'insights',
+				'route'     => 'insights-home',
+				'label'     => __( 'Insights home', 'reactwoo-geocore' ),
+				'order'     => 5,
 			),
 			array(
 				'menu_slug' => 'rwgc-usage',
-				'route'     => 'reports',
-				'label'     => __( 'Reports', 'reactwoo-geocore' ),
-				'order'     => 40,
+				'section'   => 'insights',
+				'route'     => 'geo-reports',
+				'label'     => __( 'Geo reports', 'reactwoo-geocore' ),
+				'order'     => 15,
+			),
+			array(
+				'menu_slug' => 'rwgc-settings-hub',
+				'section'   => 'settings',
+				'route'     => 'settings-home',
+				'label'     => __( 'Settings home', 'reactwoo-geocore' ),
+				'order'     => 5,
 			),
 			array(
 				'menu_slug' => 'rwgc-settings',
+				'section'   => 'settings',
 				'route'     => 'settings',
-				'label'     => __( 'Settings', 'reactwoo-geocore' ),
-				'order'     => 50,
+				'label'     => __( 'General', 'reactwoo-geocore' ),
+				'order'     => 10,
 			),
 			array(
 				'menu_slug' => 'rwgc-tools',
+				'section'   => 'settings',
 				'route'     => 'tools',
 				'label'     => __( 'Tools', 'reactwoo-geocore' ),
-				'order'     => 60,
+				'order'     => 20,
 			),
 			array(
 				'menu_slug' => 'rwgc-addons',
+				'section'   => 'settings',
 				'route'     => 'addons',
 				'label'     => __( 'Add-ons', 'reactwoo-geocore' ),
-				'order'     => 70,
-			),
-			array(
-				'menu_slug' => 'rwgc-getting-started',
-				'route'     => 'setup',
-				'label'     => __( 'Setup', 'reactwoo-geocore' ),
-				'order'     => 80,
-			),
-			array(
-				'menu_slug' => 'rwgc-suite-home',
-				'route'     => 'suite-home',
-				'label'     => __( 'Suite home', 'reactwoo-geocore' ),
-				'order'     => 85,
+				'order'     => 30,
 			),
 		);
 
@@ -209,16 +318,103 @@ class RWGC_Admin_Route_Registry {
 			$label = $slug;
 		}
 
-		self::register_route(
-			array(
-				'module'             => self::infer_module_from_slug( $slug ),
-				'route'              => $slug,
-				'menu_slug'          => $slug,
-				'label'              => $label,
-				'order'              => isset( $args['position'] ) ? (int) $args['position'] : 100,
-				'show_in_wp_sidebar' => ! empty( $args['show_in_wp_sidebar'] ),
-			)
+		$row = array(
+			'module'             => self::infer_module_from_slug( $slug ),
+			'section'            => self::infer_section_from_slug( $slug ),
+			'route'              => $slug,
+			'menu_slug'          => $slug,
+			'label'              => $label,
+			'order'              => isset( $args['position'] ) ? (int) $args['position'] : 100,
+			'show_in_wp_sidebar' => ! empty( $args['show_in_wp_sidebar'] ),
 		);
+		if ( ! empty( $args['section'] ) ) {
+			$row['section'] = sanitize_key( (string) $args['section'] );
+		}
+		if ( ! empty( $args['provider'] ) ) {
+			$row['provider'] = sanitize_key( (string) $args['provider'] );
+		}
+
+		self::register_route( $row );
+	}
+
+	/**
+	 * Map legacy module id to default goal section (fallback only).
+	 *
+	 * @param string $module_id Module id.
+	 * @return string
+	 */
+	public static function module_to_section( $module_id ) {
+		$map = array(
+			'core'      => 'overview',
+			'pro'       => 'integrations',
+			'ai'        => 'insights',
+			'commerce'  => 'commerce',
+			'optimise'  => 'targeting',
+			'elementor' => 'targeting',
+		);
+		$module_id = sanitize_key( (string) $module_id );
+		return isset( $map[ $module_id ] ) ? $map[ $module_id ] : 'overview';
+	}
+
+	/**
+	 * @param string $slug Menu slug.
+	 * @return string
+	 */
+	public static function infer_section_from_slug( $slug ) {
+		$slug = sanitize_key( (string) $slug );
+
+		$settings_slugs = array(
+			'rwgc-settings',
+			'rwgc-tools',
+			'rwgc-addons',
+			'rwgcm-license',
+			'rwgcm-settings',
+			'rwgcm-help',
+			'rwga-license',
+			'rwga-advanced',
+			'rwgo-license',
+			'rwgo-settings',
+			'rwgo-help',
+			'rwgo-developer',
+			'rwgo-tracking-tools',
+			'geo-elementor-license',
+			'elementor-geo-popup',
+			'egp-city-settings',
+			'egp-time-settings',
+			'rwgcp-settings',
+		);
+		if ( in_array( $slug, $settings_slugs, true ) ) {
+			return 'settings';
+		}
+
+		if ( 0 === strpos( $slug, 'rwgcm-' ) ) {
+			return 'commerce';
+		}
+		if ( 0 === strpos( $slug, 'rwga-' ) ) {
+			return 'insights';
+		}
+		if ( 0 === strpos( $slug, 'rwgo-' ) ) {
+			return 'targeting';
+		}
+		if ( 0 === strpos( $slug, 'rwgcp-' ) ) {
+			return 'integrations';
+		}
+		if ( in_array( $slug, array( 'rwgc-usage' ), true ) ) {
+			return 'insights';
+		}
+		if ( in_array( $slug, array( 'rwgc-target-types', 'rwgc-suite-variants' ), true ) ) {
+			return 'targeting';
+		}
+		if ( in_array( $slug, array( 'rwgc-getting-started', 'rwgc-suite-home' ), true ) ) {
+			return 'overview';
+		}
+		if ( 0 === strpos( $slug, 'geo-elementor' ) || 0 === strpos( $slug, 'geo-content' ) || 0 === strpos( $slug, 'geo-templates' ) || 0 === strpos( $slug, 'elementor-geo-popup' ) || 0 === strpos( $slug, 'egp-' ) ) {
+			return 'targeting';
+		}
+		if ( 0 === strpos( $slug, 'rwgc-' ) ) {
+			return 'overview';
+		}
+		return 'overview';
 	}
 
 	/**
@@ -246,6 +442,27 @@ class RWGC_Admin_Route_Registry {
 			return 'elementor';
 		}
 		return 'core';
+	}
+
+	/**
+	 * @return array<string, array<string, mixed>>
+	 */
+	public static function get_sections() {
+		$sections = self::$sections;
+
+		/**
+		 * @param array<string, array<string, mixed>> $sections
+		 */
+		$sections = apply_filters( 'rwgc_app_sections', $sections );
+
+		uasort(
+			$sections,
+			static function ( $a, $b ) {
+				return ( (int) ( $a['order'] ?? 100 ) ) <=> ( (int) ( $b['order'] ?? 100 ) );
+			}
+		);
+
+		return $sections;
 	}
 
 	/**
@@ -282,15 +499,17 @@ class RWGC_Admin_Route_Registry {
 	}
 
 	/**
-	 * @param string $module_id Module id.
+	 * Routes for contextual tabs within a goal section.
+	 *
+	 * @param string $section_id Section id.
 	 * @return array<string, array<string, mixed>>
 	 */
-	public static function get_routes_for_module( $module_id ) {
-		$module_id = sanitize_key( (string) $module_id );
-		$out       = array();
+	public static function get_routes_for_section( $section_id ) {
+		$section_id = sanitize_key( (string) $section_id );
+		$out        = array();
 
 		foreach ( self::get_routes() as $slug => $route ) {
-			if ( ( $route['module'] ?? '' ) !== $module_id ) {
+			if ( ( $route['section'] ?? '' ) !== $section_id ) {
 				continue;
 			}
 			if ( empty( $route['is_section_nav'] ) ) {
@@ -315,7 +534,16 @@ class RWGC_Admin_Route_Registry {
 	}
 
 	/**
-	 * @return array{module:string,route:string,menu_slug:string,label:string}
+	 * @deprecated 0.5+ Use get_routes_for_section().
+	 * @param string $module_id Module id.
+	 * @return array<string, array<string, mixed>>
+	 */
+	public static function get_routes_for_module( $module_id ) {
+		return self::get_routes_for_section( self::module_to_section( $module_id ) );
+	}
+
+	/**
+	 * @return array{section:string,module:string,route:string,menu_slug:string,label:string,provider:string}
 	 */
 	public static function get_current_context() {
 		$page = '';
@@ -327,30 +555,49 @@ class RWGC_Admin_Route_Registry {
 		if ( isset( $routes[ $page ] ) ) {
 			$row = $routes[ $page ];
 			return array(
+				'section'   => (string) ( $row['section'] ?? 'overview' ),
 				'module'    => (string) ( $row['module'] ?? 'core' ),
 				'route'     => (string) ( $row['route'] ?? $page ),
 				'menu_slug' => $page,
 				'label'     => (string) ( $row['label'] ?? $page ),
+				'provider'  => (string) ( $row['provider'] ?? '' ),
 			);
 		}
 
 		return array(
+			'section'   => self::infer_section_from_slug( $page ),
 			'module'    => self::infer_module_from_slug( $page ),
 			'route'     => $page,
 			'menu_slug' => $page,
 			'label'     => $page,
+			'provider'  => '',
 		);
 	}
 
 	/**
-	 * @param string $module_id Module id.
-	 * @param string $menu_slug Menu slug.
+	 * @param string $section_id Section id.
+	 * @param string $menu_slug  Menu slug.
 	 * @return string
 	 */
-	public static function get_url( $module_id, $menu_slug = '' ) {
-		$menu_slug = sanitize_key( (string) $menu_slug );
+	public static function get_url( $section_id, $menu_slug = '' ) {
+		$section_id = sanitize_key( (string) $section_id );
+		$menu_slug  = sanitize_key( (string) $menu_slug );
+		$routes     = self::get_routes();
+
+		if ( '' !== $menu_slug && ! isset( $routes[ $menu_slug ] ) ) {
+			foreach ( $routes as $slug => $route ) {
+				if ( ( $route['section'] ?? '' ) !== $section_id ) {
+					continue;
+				}
+				if ( ( $route['route'] ?? '' ) === $menu_slug ) {
+					$menu_slug = $slug;
+					break;
+				}
+			}
+		}
+
 		if ( '' === $menu_slug ) {
-			foreach ( self::get_routes_for_module( $module_id ) as $slug => $route ) {
+			foreach ( self::get_routes_for_section( $section_id ) as $slug => $route ) {
 				unset( $route );
 				$menu_slug = $slug;
 				break;
@@ -363,6 +610,21 @@ class RWGC_Admin_Route_Registry {
 	}
 
 	/**
+	 * @param string               $section_id Section id.
+	 * @param array<string, mixed> $section    Section row.
+	 * @return bool
+	 */
+	public static function is_section_visible( $section_id, array $section ) {
+		if ( ! empty( $section['is_active_callback'] ) && is_callable( $section['is_active_callback'] ) ) {
+			return (bool) call_user_func( $section['is_active_callback'] );
+		}
+
+		$routes = self::get_routes_for_section( $section_id );
+		return ! empty( $routes );
+	}
+
+	/**
+	 * @deprecated 0.5+ Use is_section_visible().
 	 * @param string               $module_id Module id.
 	 * @param array<string, mixed> $module    Module row.
 	 * @return bool
@@ -376,7 +638,7 @@ class RWGC_Admin_Route_Registry {
 			return true;
 		}
 
-		$routes = self::get_routes_for_module( $module_id );
+		$routes = self::get_routes_for_section( self::module_to_section( $module_id ) );
 		if ( empty( $routes ) ) {
 			return false;
 		}

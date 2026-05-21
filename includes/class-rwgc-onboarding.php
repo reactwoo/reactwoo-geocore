@@ -216,4 +216,133 @@ class RWGC_Onboarding {
 		wp_safe_redirect( admin_url( 'admin.php?page=rwgc-getting-started&rwgc_welcome=1' ) );
 		exit;
 	}
+
+	/**
+	 * Whether the platform setup wizard is marked complete.
+	 *
+	 * @return bool
+	 */
+	public static function is_setup_complete() {
+		$state = self::get_state();
+		return ! empty( $state['wizard_completed'] );
+	}
+
+	/**
+	 * Platform onboarding checklist for Overview (filterable; satellites may append steps).
+	 *
+	 * Each step: id, label, done (bool), url (string), optional (bool), hint (string).
+	 *
+	 * @return array{steps: array<int, array<string, mixed>>, completed: int, total: int, percent: int}
+	 */
+	public static function get_setup_progress() {
+		$state = self::get_state();
+		$goal  = isset( $state['goal'] ) ? (string) $state['goal'] : '';
+
+		$db_ready   = false;
+		$maxmind_ok = false;
+		if ( class_exists( 'RWGC_MaxMind', false ) ) {
+			$status   = RWGC_MaxMind::get_status();
+			$db_ready = ! empty( $status['exists'] );
+		}
+		if ( class_exists( 'RWGC_Settings', false ) ) {
+			$maxmind_ok = '' !== trim( (string) RWGC_Settings::get( 'maxmind_license_key', '' ) );
+		}
+
+		$geo_enabled = class_exists( 'RWGC_Settings', false )
+			? (bool) RWGC_Settings::get( 'enabled', 1 )
+			: true;
+
+		$rules_count = 0;
+		if ( class_exists( 'RWGC_Variant_Manager', false ) ) {
+			$rows        = RWGC_Variant_Manager::get_routing_overview_rows();
+			$rules_count = is_array( $rows ) ? count( $rows ) : 0;
+		}
+
+		$pro_on = function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled();
+		$sync   = class_exists( 'RWGC_Platform_Sync_Status', false )
+			? RWGC_Platform_Sync_Status::get_snapshot()
+			: array();
+
+		$setup_url = admin_url( 'admin.php?page=rwgc-getting-started' );
+		$steps     = array(
+			array(
+				'id'       => 'setup_wizard',
+				'label'    => __( 'Complete setup wizard', 'reactwoo-geocore' ),
+				'done'     => self::is_setup_complete() || ( '' !== $goal && (int) ( $state['wizard_step'] ?? 1 ) >= 3 ),
+				'url'      => $setup_url,
+				'optional' => false,
+				'hint'     => __( 'Goal, environment, and detection check.', 'reactwoo-geocore' ),
+			),
+			array(
+				'id'       => 'geo_database',
+				'label'    => __( 'Geo database ready', 'reactwoo-geocore' ),
+				'done'     => $db_ready && $maxmind_ok,
+				'url'      => admin_url( 'admin.php?page=rwgc-settings' ),
+				'optional' => false,
+				'hint'     => __( 'MaxMind credentials and country database.', 'reactwoo-geocore' ),
+			),
+			array(
+				'id'       => 'detection',
+				'label'    => __( 'Visitor detection enabled', 'reactwoo-geocore' ),
+				'done'     => $geo_enabled && $db_ready,
+				'url'      => admin_url( 'admin.php?page=rwgc-tools' ),
+				'optional' => false,
+				'hint'     => __( 'Verify country preview in Tools.', 'reactwoo-geocore' ),
+			),
+			array(
+				'id'       => 'google_sync',
+				'label'    => __( 'Google audiences & campaigns synced', 'reactwoo-geocore' ),
+				'done'     => $pro_on && isset( $sync['variant'] ) && 'success' === $sync['variant'],
+				'url'      => isset( $sync['url'] ) && is_string( $sync['url'] ) && '' !== $sync['url']
+					? $sync['url']
+					: admin_url( 'admin.php?page=rwgcp-geocore-pro&rwgcp_tab=integrations' ),
+				'optional' => ! $pro_on,
+				'hint'     => $pro_on
+					? __( 'GeoCore Pro → Integrations.', 'reactwoo-geocore' )
+					: __( 'Optional — requires GeoCore Pro.', 'reactwoo-geocore' ),
+			),
+			array(
+				'id'       => 'first_experience',
+				'label'    => __( 'Create first page version or rule', 'reactwoo-geocore' ),
+				'done'     => $rules_count > 0,
+				'url'      => admin_url( 'admin.php?page=rwgc-suite-variants' ),
+				'optional' => false,
+				'hint'     => __( 'Page versions under Targeting.', 'reactwoo-geocore' ),
+			),
+		);
+
+		/**
+		 * Filter platform onboarding steps shown on Overview and setup surfaces.
+		 *
+		 * @param array<int, array<string, mixed>> $steps Checklist rows.
+		 * @param array<string, mixed>           $state Onboarding state option.
+		 */
+		$steps = apply_filters( 'rwgc_onboarding_platform_steps', $steps, $state );
+
+		$completed = 0;
+		$total     = 0;
+		if ( is_array( $steps ) ) {
+			foreach ( $steps as $step ) {
+				if ( empty( $step['label'] ) ) {
+					continue;
+				}
+				if ( ! empty( $step['optional'] ) ) {
+					continue;
+				}
+				++$total;
+				if ( ! empty( $step['done'] ) ) {
+					++$completed;
+				}
+			}
+		}
+
+		$percent = $total > 0 ? (int) round( ( $completed / $total ) * 100 ) : 0;
+
+		return array(
+			'steps'     => is_array( $steps ) ? $steps : array(),
+			'completed' => $completed,
+			'total'     => $total,
+			'percent'   => min( 100, max( 0, $percent ) ),
+		);
+	}
 }

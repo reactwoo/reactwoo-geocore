@@ -73,16 +73,32 @@ if ( class_exists( 'RWGC_Module_Registry', false ) ) {
  * @param array<int, array<string, mixed>> $quick_actions Each item: url, label, primary (bool).
  */
 $quick_actions = apply_filters( 'rwgc_dashboard_quick_actions', $quick_actions );
+
+$rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
+$rwgc_setup_progress   = class_exists( 'RWGC_Onboarding', false )
+	? RWGC_Onboarding::get_setup_progress()
+	: array();
 ?>
-<div class="wrap rwgc-wrap rwgc-suite">
+<div class="wrap rwgc-wrap rwgc-suite<?php echo $rwgc_platform_shell ? ' rwgc-wrap--platform-overview' : ''; ?>">
 	<?php
 	RWGC_Admin_UI::render_page_header(
-		__( 'Geo Core', 'reactwoo-geocore' ),
-		__( 'Control content and page versions by visitor location.', 'reactwoo-geocore' )
+		$rwgc_platform_shell
+			? __( 'Overview', 'reactwoo-geocore' )
+			: __( 'Geo Core', 'reactwoo-geocore' ),
+		$rwgc_platform_shell
+			? __( 'Health, setup progress, and shortcuts across ReactWoo Geo.', 'reactwoo-geocore' )
+			: __( 'Control content and page versions by visitor location.', 'reactwoo-geocore' )
 	);
 	?>
 	<?php RWGC_Admin::render_inner_nav( 'rwgc-dashboard' ); ?>
 
+	<?php
+	if ( $rwgc_platform_shell && class_exists( 'RWGC_Admin_UI', false ) ) {
+		RWGC_Admin_UI::render_platform_overview_panel( $rwgc_setup_progress );
+	}
+	?>
+
+	<?php if ( ! $rwgc_platform_shell ) : ?>
 	<section class="rwgc-suite-hero" aria-labelledby="rwgc-suite-hero-title">
 		<h2 id="rwgc-suite-hero-title"><?php esc_html_e( 'Ready to create visitor rules?', 'reactwoo-geocore' ); ?></h2>
 		<p><?php esc_html_e( 'Start with simple rules to show, hide, redirect, or route page versions by visitor conditions.', 'reactwoo-geocore' ); ?></p>
@@ -92,6 +108,7 @@ $quick_actions = apply_filters( 'rwgc_dashboard_quick_actions', $quick_actions )
 			<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-tools' ) ); ?>" class="button"><?php esc_html_e( 'Test Visitor Context', 'reactwoo-geocore' ); ?></a>
 		</div>
 	</section>
+	<?php endif; ?>
 
 	<?php
 	RWGC_Admin_UI::render_stat_grid_open();

@@ -31,7 +31,7 @@ $goal_label    = isset( $goal_labels[ $goal ] ) ? $goal_labels[ $goal ] : '';
 <div class="wrap rwgc-wrap rwgc-suite rwgc-suite-shell">
 	<?php
 	RWGC_Admin_UI::render_page_header(
-		__( 'Geo Core Setup', 'reactwoo-geocore' ),
+		__( 'ReactWoo Geo — Setup wizard', 'reactwoo-geocore' ),
 		__( 'Three short steps: choose your goal, confirm setup, then verify visitor detection.', 'reactwoo-geocore' )
 	);
 	?>
@@ -179,7 +179,7 @@ $goal_label    = isset( $goal_labels[ $goal ] ) ? $goal_labels[ $goal ] : '';
 		<?php endif; ?>
 
 		<h3><?php esc_html_e( 'Recommended next steps', 'reactwoo-geocore' ); ?></h3>
-		<p class="rwgc-suite-shell__intro"><?php esc_html_e( 'Open a workflow below. Satellite plugins stay in their own menus — these buttons deep-link with context for integrations.', 'reactwoo-geocore' ); ?></p>
+		<p class="rwgc-suite-shell__intro"><?php esc_html_e( 'Open a workflow below. Capabilities open inside ReactWoo Geo sections (Targeting, Commerce, Insights, Integrations).', 'reactwoo-geocore' ); ?></p>
 		<div class="rwgc-suite-launchers">
 			<?php foreach ( $launchers as $launcher ) : ?>
 				<?php

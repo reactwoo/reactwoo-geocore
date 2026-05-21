@@ -72,11 +72,22 @@ class RWGC_Target_Provider_Analytics implements RWGC_Target_Provider_Interface {
 				'is_available_callback' => array( __CLASS__, 'is_analytics_configured' ),
 			)
 		);
-		foreach ( array( 'source', 'medium', 'campaign' ) as $utm ) {
+		$field_labels = array(
+			'source'    => __( 'Source', 'reactwoo-geocore' ),
+			'medium'    => __( 'Medium', 'reactwoo-geocore' ),
+			'campaign'  => __( 'Campaign', 'reactwoo-geocore' ),
+			'content'   => __( 'Content', 'reactwoo-geocore' ),
+			'term'      => __( 'Term', 'reactwoo-geocore' ),
+			'gclid'     => __( 'GCLID', 'reactwoo-geocore' ),
+			'fbclid'    => __( 'FBCLID', 'reactwoo-geocore' ),
+			'li_fat_id' => __( 'LinkedIn FAT ID', 'reactwoo-geocore' ),
+			'msclkid'   => __( 'MSCLKID', 'reactwoo-geocore' ),
+		);
+		foreach ( $field_labels as $utm => $field_label ) {
 			$registry->register_target_type(
 				array(
 					'key'           => $utm,
-					'label'         => ucfirst( $utm ),
+					'label'         => $field_label,
 					'group'         => 'analytics',
 					'description'   => __( 'First-touch or session campaign fields when present on the request.', 'reactwoo-geocore' ),
 					'operators'     => array( 'is', 'is_not', 'contains', 'not_contains', 'in', 'not_in' ),
@@ -162,6 +173,12 @@ class RWGC_Target_Provider_Analytics implements RWGC_Target_Provider_Interface {
 			'source'                  => isset( $attribution['source'] ) ? (string) $attribution['source'] : '',
 			'medium'                  => isset( $attribution['medium'] ) ? (string) $attribution['medium'] : '',
 			'campaign'                => isset( $attribution['campaign'] ) ? (string) $attribution['campaign'] : '',
+			'content'                 => isset( $attribution['content'] ) ? (string) $attribution['content'] : '',
+			'term'                    => isset( $attribution['term'] ) ? (string) $attribution['term'] : '',
+			'gclid'                   => isset( $attribution['gclid'] ) ? (string) $attribution['gclid'] : '',
+			'fbclid'                  => isset( $attribution['fbclid'] ) ? (string) $attribution['fbclid'] : '',
+			'li_fat_id'               => isset( $attribution['li_fat_id'] ) ? (string) $attribution['li_fat_id'] : '',
+			'msclkid'                 => isset( $attribution['msclkid'] ) ? (string) $attribution['msclkid'] : '',
 			'profile_id'              => $profile_id,
 			'returning_visitor'       => $returning,
 			'new_visitor'             => ! $returning,

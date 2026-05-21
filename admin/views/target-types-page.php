@@ -12,14 +12,57 @@ $rwgc_portable_ctx  = isset( $rwgc_portable_ctx ) && is_array( $rwgc_portable_ct
 	'campaigns'   => array(),
 	'ui_surfaces' => array(),
 );
-$audiences          = isset( $rwgc_portable_ctx['audiences'] ) && is_array( $rwgc_portable_ctx['audiences'] ) ? $rwgc_portable_ctx['audiences'] : array();
-$campaigns          = isset( $rwgc_portable_ctx['campaigns'] ) && is_array( $rwgc_portable_ctx['campaigns'] ) ? $rwgc_portable_ctx['campaigns'] : array();
-$help               = isset( $rwgc_portable_ctx['help_urls'] ) && is_array( $rwgc_portable_ctx['help_urls'] ) ? $rwgc_portable_ctx['help_urls'] : array();
+$rwgc_use_platform_shell = ! empty( $rwgc_use_platform_shell );
+$audiences               = isset( $rwgc_portable_ctx['audiences'] ) && is_array( $rwgc_portable_ctx['audiences'] ) ? $rwgc_portable_ctx['audiences'] : array();
+$campaigns               = isset( $rwgc_portable_ctx['campaigns'] ) && is_array( $rwgc_portable_ctx['campaigns'] ) ? $rwgc_portable_ctx['campaigns'] : array();
+$help                    = isset( $rwgc_portable_ctx['help_urls'] ) && is_array( $rwgc_portable_ctx['help_urls'] ) ? $rwgc_portable_ctx['help_urls'] : array();
+
+$quick_actions = array(
+	array(
+		'url'     => admin_url( 'admin.php?page=rwgc-suite-variants' ),
+		'label'   => __( 'Page versions', 'reactwoo-geocore' ),
+		'primary' => true,
+	),
+);
+if ( class_exists( 'EGP_Admin_Menu', false ) ) {
+	$quick_actions[] = array(
+		'url'   => admin_url( 'admin.php?page=geo-elementor' ),
+		'label' => __( 'Geo Elementor', 'reactwoo-geocore' ),
+	);
+}
+if ( defined( 'RWGO_VERSION' ) ) {
+	$quick_actions[] = array(
+		'url'   => admin_url( 'admin.php?page=rwgo-dashboard' ),
+		'label' => __( 'Experiments', 'reactwoo-geocore' ),
+	);
+}
+if ( $rwgc_pro_enabled && ! empty( $help['integrations_ga'] ) ) {
+	$quick_actions[] = array(
+		'url'   => (string) $help['integrations_ga'],
+		'label' => __( 'Integrations', 'reactwoo-geocore' ),
+	);
+}
 ?>
-<div class="wrap rwgc-wrap">
-	<h1><?php esc_html_e( 'Targeting', 'reactwoo-geocore' ); ?></h1>
-	<p class="description"><?php esc_html_e( 'Choose the kinds of visitor conditions your rules can use.', 'reactwoo-geocore' ); ?></p>
-	<?php RWGC_Admin::render_inner_nav( 'rwgc-target-types' ); ?>
+<div class="wrap rwgc-wrap rwgc-suite">
+	<?php if ( class_exists( 'RWGC_Admin_UI', false ) ) : ?>
+		<?php
+		RWGC_Admin_UI::render_page_header(
+			__( 'Experience targeting', 'reactwoo-geocore' ),
+			__( 'Build who sees what using one rule engine — page versions, Elementor, blocks, and experiments share the same conditions.', 'reactwoo-geocore' )
+		);
+		?>
+	<?php else : ?>
+		<h1><?php esc_html_e( 'Experience targeting', 'reactwoo-geocore' ); ?></h1>
+		<p class="description"><?php esc_html_e( 'Build who sees what using one rule engine.', 'reactwoo-geocore' ); ?></p>
+	<?php endif; ?>
+
+	<?php if ( ! $rwgc_use_platform_shell ) : ?>
+		<?php RWGC_Admin::render_inner_nav( 'rwgc-target-types' ); ?>
+	<?php endif; ?>
+
+	<?php if ( class_exists( 'RWGC_Admin_UI', false ) ) : ?>
+		<?php RWGC_Admin_UI::render_quick_actions( $quick_actions ); ?>
+	<?php endif; ?>
 
 	<div class="rwgc-grid">
 		<div class="rwgc-card"><h2><?php esc_html_e( 'Location', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'Country and country groups.', 'reactwoo-geocore' ); ?></p></div>
@@ -27,12 +70,12 @@ $help               = isset( $rwgc_portable_ctx['help_urls'] ) && is_array( $rwg
 		<div class="rwgc-card"><h2><?php esc_html_e( 'Device', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'Desktop, mobile, or tablet.', 'reactwoo-geocore' ); ?></p></div>
 		<div class="rwgc-card"><h2><?php esc_html_e( 'Time', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'Day and time windows.', 'reactwoo-geocore' ); ?></p></div>
 		<div class="rwgc-card"><h2><?php esc_html_e( 'Commerce', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'Commerce-related targeting signals.', 'reactwoo-geocore' ); ?></p></div>
-		<div class="rwgc-card"><h2><?php esc_html_e( 'Analytics', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'Optional analytics signals.', 'reactwoo-geocore' ); ?></p></div>
+		<div class="rwgc-card"><h2><?php esc_html_e( 'Analytics', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'GA4 audiences and campaign signals with GeoCore Pro.', 'reactwoo-geocore' ); ?></p></div>
 	</div>
 
 	<div class="rwgc-card rwgc-card--full rwgc-rb-playground-card">
 		<h2><?php esc_html_e( 'Visibility rule builder', 'reactwoo-geocore' ); ?></h2>
-		<p class="description"><?php esc_html_e( 'Build who should see content using the same controls as Elementor, the Geo Content block, and Geo Elementor geo rules. Synced GA4 audiences and Google Ads campaigns appear by name when GeoCore Pro has finished a sync.', 'reactwoo-geocore' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Define who should see content with visual conditions (AND/OR). Raw JSON is available only under Advanced in Elementor, blocks, and geo rules — not the primary workflow.', 'reactwoo-geocore' ); ?></p>
 
 		<div class="rwgc-rb-sync-status">
 			<div class="rwgc-rb-sync-status__item">
@@ -42,7 +85,7 @@ $help               = isset( $rwgc_portable_ctx['help_urls'] ) && is_array( $rwg
 					<?php
 					if ( count( $audiences ) > 0 ) {
 						echo esc_html( sprintf( _n( '%d audience available', '%d audiences available', count( $audiences ), 'reactwoo-geocore' ), count( $audiences ) ) );
-					} elseif ( ! empty( $rwgc_pro_enabled ) ) {
+					} elseif ( $rwgc_pro_enabled ) {
 						esc_html_e( 'No audiences synced yet.', 'reactwoo-geocore' );
 					} else {
 						esc_html_e( 'Requires GeoCore Pro.', 'reactwoo-geocore' );
@@ -57,7 +100,7 @@ $help               = isset( $rwgc_portable_ctx['help_urls'] ) && is_array( $rwg
 					<?php
 					if ( count( $campaigns ) > 0 ) {
 						echo esc_html( sprintf( _n( '%d campaign available', '%d campaigns available', count( $campaigns ), 'reactwoo-geocore' ), count( $campaigns ) ) );
-					} elseif ( ! empty( $rwgc_pro_enabled ) ) {
+					} elseif ( $rwgc_pro_enabled ) {
 						esc_html_e( 'No campaigns synced yet.', 'reactwoo-geocore' );
 					} else {
 						esc_html_e( 'Requires GeoCore Pro.', 'reactwoo-geocore' );
@@ -67,7 +110,17 @@ $help               = isset( $rwgc_portable_ctx['help_urls'] ) && is_array( $rwg
 			</div>
 		</div>
 
-		<?php if ( ! empty( $rwgc_pro_enabled ) && ( empty( $audiences ) || empty( $campaigns ) ) && ! empty( $help['integrations_ga'] ) ) : ?>
+		<?php if ( ! $rwgc_pro_enabled && class_exists( 'RWGC_Admin_UI', false ) ) : ?>
+			<?php
+			RWGC_Admin_UI::render_upgrade_card(
+				__( 'Unlock GA4 audiences & Google Ads campaigns', 'reactwoo-geocore' ),
+				__( 'GeoCore Pro syncs Google lists into the rule builder across Elementor, blocks, and geo rules.', 'reactwoo-geocore' ),
+				admin_url( 'admin.php?page=rwgc-addons' ),
+				__( 'View GeoCore Pro', 'reactwoo-geocore' ),
+				'geocore_pro'
+			);
+			?>
+		<?php elseif ( ( empty( $audiences ) || empty( $campaigns ) ) && ! empty( $help['integrations_ga'] ) ) : ?>
 			<p>
 				<a class="button button-secondary" href="<?php echo esc_url( (string) $help['integrations_ga'] ); ?>"><?php esc_html_e( 'Open GeoCore Pro integrations', 'reactwoo-geocore' ); ?></a>
 			</p>
@@ -89,16 +142,6 @@ $help               = isset( $rwgc_portable_ctx['help_urls'] ) && is_array( $rwg
 		<div class="rwgc-rb-playground-wrap">
 			<textarea id="rwgc-targeting-playground-json" name="rwgc_targeting_playground_json" rows="4" class="large-text" aria-hidden="true"></textarea>
 		</div>
-	</div>
-
-	<div class="rwgc-card rwgc-card--full">
-		<h2><?php esc_html_e( 'Pro Targeting', 'reactwoo-geocore' ); ?></h2>
-		<?php if ( $rwgc_pro_enabled ) : ?>
-			<p><?php esc_html_e( 'GeoCore Pro is active: synced Google lists feed the rule builder on this page and in Elementor, blocks, and geo rules.', 'reactwoo-geocore' ); ?></p>
-		<?php else : ?>
-			<p><?php esc_html_e( 'Unlock Google Ads/CPC, UTM attribution persistence, and experience profiles.', 'reactwoo-geocore' ); ?></p>
-			<p><a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ); ?>"><?php esc_html_e( 'Unlock with GeoCore Pro', 'reactwoo-geocore' ); ?></a></p>
-		<?php endif; ?>
 	</div>
 
 	<details class="rwgc-tech-ref-details">

@@ -53,6 +53,47 @@ class RWGC_Admin {
 	}
 
 	/**
+	 * Register a Core admin screen in the unified ReactWoo Geo app.
+	 *
+	 * @param array<string, mixed> $args route, menu_slug, label, callback; optional section, order, page_title.
+	 * @return string|false
+	 */
+	private static function register_app_route( array $args ) {
+		$args = wp_parse_args(
+			$args,
+			array(
+				'module'     => 'core',
+				'capability' => self::required_capability(),
+			)
+		);
+		if ( empty( $args['page_title'] ) && ! empty( $args['label'] ) ) {
+			$args['page_title'] = (string) $args['label'];
+		}
+		if ( empty( $args['menu_title'] ) && ! empty( $args['label'] ) ) {
+			$args['menu_title'] = (string) $args['label'];
+		}
+		if ( function_exists( 'rw_geo_register_app_route' ) ) {
+			return rw_geo_register_app_route( $args );
+		}
+		if ( function_exists( 'rw_geo_register_admin_submenu' ) ) {
+			return rw_geo_register_admin_submenu( $args );
+		}
+		$parent = class_exists( 'RWGC_Admin_Platform', false ) ? RWGC_Admin_Platform::menu_parent() : 'rwgc-dashboard';
+		$slug   = isset( $args['menu_slug'] ) ? sanitize_key( (string) $args['menu_slug'] ) : '';
+		if ( '' === $slug || empty( $args['callback'] ) || ! is_callable( $args['callback'] ) ) {
+			return false;
+		}
+		return add_submenu_page(
+			$parent,
+			(string) $args['page_title'],
+			(string) $args['menu_title'],
+			(string) $args['capability'],
+			$slug,
+			$args['callback']
+		);
+	}
+
+	/**
 	 * Register top-level menu and submenus.
 	 *
 	 * @return void
@@ -74,87 +115,125 @@ class RWGC_Admin {
 			58
 		);
 
-		$parent = RWGC_Admin_Platform::menu_parent();
-
 		if ( class_exists( 'RWGC_Suite_Admin', false ) ) {
-			add_submenu_page(
-				$parent,
-				__( 'Setup', 'reactwoo-geocore' ),
-				__( 'Setup', 'reactwoo-geocore' ),
-				$cap,
-				'rwgc-getting-started',
-				array( 'RWGC_Suite_Admin', 'render_getting_started' )
+			self::register_app_route(
+				array(
+					'section'   => 'overview',
+					'route'     => 'setup',
+					'menu_slug' => 'rwgc-getting-started',
+					'label'     => __( 'Setup wizard', 'reactwoo-geocore' ),
+					'order'     => 5,
+					'callback'  => array( 'RWGC_Suite_Admin', 'render_getting_started' ),
+				)
 			);
-			add_submenu_page(
-				$parent,
-				__( 'Suite home', 'reactwoo-geocore' ),
-				__( 'Suite home', 'reactwoo-geocore' ),
-				$cap,
-				'rwgc-suite-home',
-				array( 'RWGC_Suite_Admin', 'render_suite_home' )
+			self::register_app_route(
+				array(
+					'section'   => 'overview',
+					'route'     => 'suite-home',
+					'menu_slug' => 'rwgc-suite-home',
+					'label'     => __( 'Suite home', 'reactwoo-geocore' ),
+					'order'     => 15,
+					'callback'  => array( 'RWGC_Suite_Admin', 'render_suite_home' ),
+				)
 			);
-			add_submenu_page(
-				$parent,
-				__( 'Rules / Page Versions', 'reactwoo-geocore' ),
-				__( 'Rules / Page Versions', 'reactwoo-geocore' ),
-				$cap,
-				'rwgc-suite-variants',
-				array( 'RWGC_Suite_Admin', 'render_suite_variants' )
+			self::register_app_route(
+				array(
+					'section'   => 'targeting',
+					'route'     => 'page-versions',
+					'menu_slug' => 'rwgc-suite-variants',
+					'label'     => __( 'Page versions', 'reactwoo-geocore' ),
+					'order'     => 10,
+					'callback'  => array( 'RWGC_Suite_Admin', 'render_suite_variants' ),
+				)
 			);
 		}
 
-		add_submenu_page(
-			$parent,
-			__( 'Dashboard', 'reactwoo-geocore' ),
-			__( 'Dashboard', 'reactwoo-geocore' ),
-			$cap,
-			'rwgc-dashboard',
-			array( __CLASS__, 'render_dashboard' )
+		self::register_app_route(
+			array(
+				'section'   => 'overview',
+				'route'     => 'dashboard',
+				'menu_slug' => 'rwgc-dashboard',
+				'label'     => __( 'Overview', 'reactwoo-geocore' ),
+				'order'     => 10,
+				'callback'  => array( __CLASS__, 'render_dashboard' ),
+			)
 		);
 
-		add_submenu_page(
-			$parent,
-			__( 'Settings', 'reactwoo-geocore' ),
-			__( 'Settings', 'reactwoo-geocore' ),
-			$cap,
-			'rwgc-settings',
-			array( __CLASS__, 'render_settings' )
+		self::register_app_route(
+			array(
+				'section'   => 'targeting',
+				'route'     => 'rule-builder',
+				'menu_slug' => 'rwgc-target-types',
+				'label'     => __( 'Rule builder', 'reactwoo-geocore' ),
+				'order'     => 20,
+				'callback'  => array( __CLASS__, 'render_target_types' ),
+			)
 		);
 
-		add_submenu_page(
-			$parent,
-			__( 'Tools', 'reactwoo-geocore' ),
-			__( 'Tools', 'reactwoo-geocore' ),
-			$cap,
-			'rwgc-tools',
-			array( __CLASS__, 'render_tools' )
+		self::register_app_route(
+			array(
+				'section'   => 'insights',
+				'route'     => 'insights-home',
+				'menu_slug' => 'rwgc-insights-hub',
+				'label'     => __( 'Insights home', 'reactwoo-geocore' ),
+				'order'     => 5,
+				'callback'  => array( 'RWGC_Admin_Section_Hubs', 'render_insights_hub' ),
+			)
 		);
 
-		add_submenu_page(
-			$parent,
-			__( 'Reports', 'reactwoo-geocore' ),
-			__( 'Reports', 'reactwoo-geocore' ),
-			$cap,
-			'rwgc-usage',
-			array( __CLASS__, 'render_usage' )
+		self::register_app_route(
+			array(
+				'section'   => 'insights',
+				'route'     => 'geo-reports',
+				'menu_slug' => 'rwgc-usage',
+				'label'     => __( 'Geo reports', 'reactwoo-geocore' ),
+				'order'     => 15,
+				'callback'  => array( __CLASS__, 'render_usage' ),
+			)
 		);
 
-		add_submenu_page(
-			$parent,
-			__( 'Targeting', 'reactwoo-geocore' ),
-			__( 'Targeting', 'reactwoo-geocore' ),
-			$cap,
-			'rwgc-target-types',
-			array( __CLASS__, 'render_target_types' )
+		self::register_app_route(
+			array(
+				'section'   => 'settings',
+				'route'     => 'settings-home',
+				'menu_slug' => 'rwgc-settings-hub',
+				'label'     => __( 'Settings home', 'reactwoo-geocore' ),
+				'order'     => 5,
+				'callback'  => array( 'RWGC_Admin_Section_Hubs', 'render_settings_hub' ),
+			)
 		);
 
-		add_submenu_page(
-			$parent,
-			__( 'Add-ons', 'reactwoo-geocore' ),
-			__( 'Add-ons', 'reactwoo-geocore' ),
-			$cap,
-			'rwgc-addons',
-			array( __CLASS__, 'render_addons' )
+		self::register_app_route(
+			array(
+				'section'   => 'settings',
+				'route'     => 'settings',
+				'menu_slug' => 'rwgc-settings',
+				'label'     => __( 'General', 'reactwoo-geocore' ),
+				'order'     => 10,
+				'callback'  => array( __CLASS__, 'render_settings' ),
+			)
+		);
+
+		self::register_app_route(
+			array(
+				'section'   => 'settings',
+				'route'     => 'tools',
+				'menu_slug' => 'rwgc-tools',
+				'label'     => __( 'Tools', 'reactwoo-geocore' ),
+				'order'     => 20,
+				'callback'  => array( __CLASS__, 'render_tools' ),
+			)
+		);
+
+		self::register_app_route(
+			array(
+				'section'   => 'settings',
+				'route'     => 'addons',
+				'menu_slug' => 'rwgc-addons',
+				'label'     => __( 'Add-ons', 'reactwoo-geocore' ),
+				'order'     => 30,
+				'callback'  => array( __CLASS__, 'render_addons' ),
+			)
 		);
 	}
 
@@ -170,15 +249,21 @@ class RWGC_Admin {
 			return;
 		}
 		wp_enqueue_style(
+			'rwgc-design-system',
+			RWGC_URL . 'admin/css/rwgc-design-system.css',
+			array(),
+			RWGC_VERSION
+		);
+		wp_enqueue_style(
 			'rwgc-admin',
 			RWGC_URL . 'admin/css/admin.css',
-			array(),
+			array( 'rwgc-design-system' ),
 			RWGC_VERSION
 		);
 		wp_enqueue_style(
 			'rwgc-suite',
 			RWGC_URL . 'admin/css/rwgc-suite.css',
-			array( 'rwgc-admin' ),
+			array( 'rwgc-design-system', 'rwgc-admin' ),
 			RWGC_VERSION
 		);
 		if ( preg_match( '/(rwgc-suite-home|rwgc-getting-started|rwgc-workflow-variant|rwgc-suite-variants)/', $hook ) ) {
@@ -349,8 +434,9 @@ class RWGC_Admin {
 				$obj->get_admin_status()
 			);
 		}
-		$rwgc_pro_enabled   = function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled();
-		$rwgc_portable_ctx  = function_exists( 'rwgc_get_portable_targeting_editor_context' ) ? rwgc_get_portable_targeting_editor_context() : array();
+		$rwgc_pro_enabled          = function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled();
+		$rwgc_portable_ctx         = function_exists( 'rwgc_get_portable_targeting_editor_context' ) ? rwgc_get_portable_targeting_editor_context() : array();
+		$rwgc_use_platform_shell   = class_exists( 'RWGC_Admin_App_Shell', false ) && RWGC_Admin_App_Shell::should_render();
 		include RWGC_PATH . 'admin/views/target-types-page.php';
 	}
 
@@ -442,11 +528,18 @@ class RWGC_Admin {
 	 * @return void
 	 */
 	public static function render_inner_nav( $current ) {
+		if ( function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell() ) {
+			if ( 'rwgc-dashboard' === (string) $current ) {
+				self::render_geocore_pro_status_card( (string) $current );
+			}
+			return;
+		}
+
 		$items = array(
-			'rwgc-dashboard'      => __( 'Dashboard', 'reactwoo-geocore' ),
-			'rwgc-suite-variants' => __( 'Rules / Page Versions', 'reactwoo-geocore' ),
-			'rwgc-target-types'   => __( 'Targeting', 'reactwoo-geocore' ),
-			'rwgc-usage'          => __( 'Reports', 'reactwoo-geocore' ),
+			'rwgc-dashboard'      => __( 'Overview', 'reactwoo-geocore' ),
+			'rwgc-suite-variants' => __( 'Page versions', 'reactwoo-geocore' ),
+			'rwgc-target-types'   => __( 'Rule builder', 'reactwoo-geocore' ),
+			'rwgc-usage'          => __( 'Geo reports', 'reactwoo-geocore' ),
 			'rwgc-tools'          => __( 'Tools', 'reactwoo-geocore' ),
 			'rwgc-settings'       => __( 'Settings', 'reactwoo-geocore' ),
 			'rwgc-addons'         => __( 'Add-ons', 'reactwoo-geocore' ),

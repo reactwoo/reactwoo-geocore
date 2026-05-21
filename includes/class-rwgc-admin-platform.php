@@ -33,6 +33,21 @@ class RWGC_Admin_Platform {
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'finalize_hub_submenu' ), 9999 );
 		add_filter( 'admin_body_class', array( __CLASS__, 'admin_body_class' ) );
+		add_filter( 'rwgc_admin_visible_submenu_slugs', array( __CLASS__, 'filter_visible_setup_wizard_slug' ), 10, 2 );
+	}
+
+	/**
+	 * Keep Setup wizard reachable from wp-admin when the hub flyout is collapsed.
+	 *
+	 * @param array<int, string> $keep_slugs Menu slugs to keep visible.
+	 * @param string             $parent   Parent slug.
+	 * @return array<int, string>
+	 */
+	public static function filter_visible_setup_wizard_slug( $keep_slugs, $parent ) {
+		unset( $parent );
+		$keep_slugs   = is_array( $keep_slugs ) ? $keep_slugs : array();
+		$keep_slugs[] = 'rwgc-getting-started';
+		return array_values( array_unique( array_map( 'strval', $keep_slugs ) ) );
 	}
 
 	/**
@@ -70,9 +85,9 @@ class RWGC_Admin_Platform {
 	 */
 	public static function is_sidebar_collapsed() {
 		/**
-		 * @param bool $collapsed Default true.
+		 * @param bool $collapsed Default true — wp-admin shows ReactWoo Geo entry only.
 		 */
-		return (bool) apply_filters( 'rwgc_admin_sidebar_collapsed', false );
+		return (bool) apply_filters( 'rwgc_admin_sidebar_collapsed', true );
 	}
 
 	/**

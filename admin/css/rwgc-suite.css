@@ -242,6 +242,169 @@
   margin-bottom: 18px;
 }
 
+.rwgc-addon-card--upgrade {
+  border-color: #bfdbfe;
+  background: linear-gradient(135deg, #fff 0%, #eff6ff 100%);
+}
+
+/* Platform Overview (app shell) */
+.rwgc-platform-overview {
+  margin: 0 0 var(--rwgc-space-5, 24px);
+}
+
+.rwgc-platform-overview__grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: var(--rwgc-space-4, 16px);
+  margin-bottom: var(--rwgc-space-4, 16px);
+}
+
+.rwgc-platform-overview__title {
+  margin: 0 0 var(--rwgc-space-2, 8px);
+  font-size: var(--rwgc-font-size-lg, 18px);
+  color: var(--rwgc-color-heading, #1f2937);
+}
+
+.rwgc-platform-overview__meta {
+  margin: 0 0 var(--rwgc-space-3, 12px);
+  color: var(--rwgc-color-muted, #6b7280);
+}
+
+.rwgc-platform-overview__percent {
+  font-weight: 700;
+  color: var(--rwgc-color-heading, #1f2937);
+}
+
+.rwgc-platform-overview__bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--rwgc-color-border, #e5e7eb);
+  overflow: hidden;
+  margin-bottom: var(--rwgc-space-4, 16px);
+}
+
+.rwgc-platform-overview__bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--rwgc-color-accent, #37b0d2);
+  border-radius: inherit;
+  transition: width 0.2s ease;
+}
+
+.rwgc-platform-overview__steps {
+  list-style: none;
+  margin: 0 0 var(--rwgc-space-3, 12px);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rwgc-space-2, 8px);
+}
+
+.rwgc-platform-overview__step {
+  display: flex;
+  gap: var(--rwgc-space-2, 8px);
+  align-items: flex-start;
+}
+
+.rwgc-platform-overview__step.is-done .rwgc-platform-overview__step-mark {
+  color: var(--rwgc-color-success, #059669);
+}
+
+.rwgc-platform-overview__step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rwgc-platform-overview__step-label {
+  font-weight: 600;
+  color: var(--rwgc-color-heading, #1f2937);
+  text-decoration: none;
+}
+
+a.rwgc-platform-overview__step-label:hover,
+a.rwgc-platform-overview__step-label:focus {
+  color: var(--rwgc-color-accent, #37b0d2);
+}
+
+.rwgc-platform-overview__step-hint {
+  font-size: var(--rwgc-font-size-sm, 12px);
+  color: var(--rwgc-color-muted, #6b7280);
+}
+
+.rwgc-platform-overview__step-tag {
+  font-size: var(--rwgc-font-size-sm, 12px);
+  color: var(--rwgc-color-muted, #6b7280);
+}
+
+.rwgc-platform-overview__sync-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  margin: 0 0 var(--rwgc-space-2, 8px);
+}
+
+.rwgc-platform-overview__sync-pill--success {
+  color: var(--rwgc-color-success, #059669);
+}
+
+.rwgc-platform-overview__sync-pill--warning {
+  color: var(--rwgc-color-warning, #d97706);
+}
+
+.rwgc-platform-overview__sections {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--rwgc-space-3, 12px);
+}
+
+.rwgc-platform-overview__section-link {
+  display: flex;
+  align-items: center;
+  gap: var(--rwgc-space-2, 8px);
+  padding: var(--rwgc-space-3, 12px) var(--rwgc-space-4, 16px);
+  border: 1px solid var(--rwgc-color-border, #e5e7eb);
+  border-radius: var(--rwgc-radius-md, 10px);
+  background: var(--rwgc-color-surface, #fff);
+  text-decoration: none;
+  color: var(--rwgc-color-heading, #1f2937);
+  font-weight: 600;
+  box-shadow: var(--rwgc-shadow-card, 0 1px 2px rgba(15, 23, 42, 0.06));
+}
+
+.rwgc-platform-overview__section-link:hover,
+.rwgc-platform-overview__section-link:focus {
+  border-color: var(--rwgc-color-accent, #37b0d2);
+  color: var(--rwgc-color-accent, #37b0d2);
+}
+
+.rwgc-platform-overview__section-link .dashicons {
+  color: var(--rwgc-color-muted, #6b7280);
+}
+
+@media (max-width: 960px) {
+  .rwgc-platform-overview__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rwgc-platform-overview__sections {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Section hubs (Insights / Settings home) */
+.rwgc-section-hub__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--rwgc-space-4, 16px);
+  margin: 0 0 var(--rwgc-space-5, 24px);
+}
+
+.rwgc-section-hub__card .rwgc-provider-badge {
+  margin: 0 var(--rwgc-space-4, 16px) var(--rwgc-space-2, 8px);
+}
+
 .rwgc-wrap.rwgc-suite .rwgc-addon-card--satellite {
   height: 100%;
   display: flex;
@@ -422,6 +585,17 @@
   color: #92400e;
   border-color: #fde68a;
   background: #fffbeb;
+}
+
+.rwgc-provider-badge {
+  margin: -8px 0 16px;
+  font-size: 12px;
+  color: var(--rw-suite-text-muted, #6b7280);
+}
+
+.rwgc-provider-badge__name {
+  font-weight: 600;
+  color: var(--rw-suite-text, #111827);
 }
 
 /* Current visitor — compact stats */

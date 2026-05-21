@@ -574,7 +574,7 @@ if ( ! function_exists( 'rw_geo_register_app_route' ) ) {
 	/**
 	 * Register an in-app route (hidden wp-admin submenu + app shell section nav).
 	 *
-	 * @param array<string, mixed> $args module, route, menu_slug, label, callback; optional capability, order, show_in_wp_sidebar.
+	 * @param array<string, mixed> $args section, route, menu_slug, label, callback; optional module, provider, capability, order, show_in_wp_sidebar.
 	 * @return string|false Hook suffix from submenu registration.
 	 */
 	function rw_geo_register_app_route( array $args ) {
@@ -612,15 +612,15 @@ if ( ! function_exists( 'rw_geo_register_app_route' ) ) {
 
 if ( ! function_exists( 'rw_geo_app_url' ) ) {
 	/**
-	 * Admin URL for a module route in the ReactWoo Geo app shell.
+	 * Admin URL for a goal section route in the ReactWoo Geo app shell.
 	 *
-	 * @param string $module_id Module id.
-	 * @param string $menu_slug Optional menu slug.
+	 * @param string $section_id Goal section id (overview, targeting, commerce, …).
+	 * @param string $menu_slug  Optional menu slug.
 	 * @return string
 	 */
-	function rw_geo_app_url( $module_id, $menu_slug = '' ) {
+	function rw_geo_app_url( $section_id, $menu_slug = '' ) {
 		if ( class_exists( 'RWGC_Admin_Route_Registry', false ) ) {
-			return RWGC_Admin_Route_Registry::get_url( $module_id, $menu_slug );
+			return RWGC_Admin_Route_Registry::get_url( $section_id, $menu_slug );
 		}
 		$menu_slug = sanitize_key( (string) $menu_slug );
 		if ( '' === $menu_slug ) {
@@ -655,6 +655,35 @@ if ( ! function_exists( 'rw_geo_register_admin_submenu' ) ) {
 			$args['callback'],
 			isset( $args['position'] ) ? $args['position'] : null
 		);
+	}
+}
+
+if ( ! function_exists( 'rwgc_get_setup_progress' ) ) {
+	/**
+	 * Platform onboarding checklist progress for Overview.
+	 *
+	 * @return array{steps: array<int, array<string, mixed>>, completed: int, total: int, percent: int}
+	 */
+	function rwgc_get_setup_progress() {
+		return class_exists( 'RWGC_Onboarding', false )
+			? RWGC_Onboarding::get_setup_progress()
+			: array(
+				'steps'     => array(),
+				'completed' => 0,
+				'total'     => 0,
+				'percent'   => 0,
+			);
+	}
+}
+
+if ( ! function_exists( 'rwgc_uses_platform_shell' ) ) {
+	/**
+	 * Whether the ReactWoo Geo unified admin app shell is active on this request.
+	 *
+	 * @return bool
+	 */
+	function rwgc_uses_platform_shell() {
+		return class_exists( 'RWGC_Admin_App_Shell', false ) && RWGC_Admin_App_Shell::should_render();
 	}
 }
 

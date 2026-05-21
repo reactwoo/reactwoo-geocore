@@ -2,10 +2,23 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+$rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
 ?>
-<div class="wrap rwgc-wrap">
-	<h1><?php esc_html_e( 'Reports', 'reactwoo-geocore' ); ?></h1>
-	<p class="description"><?php esc_html_e( 'See simple proof that your geo rules and page versions are being used.', 'reactwoo-geocore' ); ?></p>
+<div class="wrap rwgc-wrap rwgc-suite">
+	<?php
+	if ( $rwgc_platform_shell && class_exists( 'RWGC_Admin_UI', false ) ) {
+		RWGC_Admin_UI::render_page_header(
+			__( 'Geo reports', 'reactwoo-geocore' ),
+			__( 'Rule matches, routing activity, and developer reference for geo on this site.', 'reactwoo-geocore' )
+		);
+	} else {
+		?>
+		<h1><?php esc_html_e( 'Reports', 'reactwoo-geocore' ); ?></h1>
+		<p class="description"><?php esc_html_e( 'See simple proof that your geo rules and page versions are being used.', 'reactwoo-geocore' ); ?></p>
+		<?php
+	}
+	?>
 	<?php RWGC_Admin::render_inner_nav( 'rwgc-usage' ); ?>
 
 	<div class="rwgc-grid">
@@ -43,6 +56,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<li><?php esc_html_e( 'Top mediums', 'reactwoo-geocore' ); ?></li>
 				<li><?php esc_html_e( 'Profile matches', 'reactwoo-geocore' ); ?></li>
 			</ul>
+			<p><a class="rwgc-btn rwgc-btn--secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgcp-geocore-pro&rwgcp_tab=integrations' ) ); ?>"><?php esc_html_e( 'Open Integrations', 'reactwoo-geocore' ); ?></a></p>
 		</div>
 	<?php endif; ?>
 
@@ -50,6 +64,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<summary class="rwgc-tech-ref-details__summary"><?php esc_html_e( 'Developer details', 'reactwoo-geocore' ); ?></summary>
 		<div class="rwgc-card rwgc-card--full rwgc-tech-ref-details__inner">
 			<p class="description"><?php esc_html_e( 'Technical event and endpoint details have moved here to keep the main Reports screen simple.', 'reactwoo-geocore' ); ?></p>
+			<?php if ( ! empty( $rwgc_rest_enabled ) && ! empty( $rwgc_capabilities_url ) ) : ?>
+				<?php if ( ! empty( $rwgc_location_url ) ) : ?>
+					<p><code><?php echo esc_html( $rwgc_location_url ); ?></code></p>
+				<?php endif; ?>
+				<p><code><?php echo esc_html( $rwgc_capabilities_url ); ?></code></p>
+			<?php endif; ?>
 		</div>
 	</details>
 </div>

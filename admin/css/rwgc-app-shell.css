@@ -8,6 +8,8 @@ body.rwgc-app-shell-active #wpbody-content {
 }
 
 .rwgc-app-shell {
+	--rwgc-shell-nav-bg: var(--rwgc-color-surface-alt, #f7f9fb);
+	--rwgc-shell-accent: var(--rwgc-color-accent, #37b0d2);
 	margin: 0 -20px 0 0;
 	font-size: 13px;
 	line-height: 1.45;
@@ -69,6 +71,7 @@ body.rwgc-app-shell-active #wpbody-content {
 }
 
 .rwgc-app-shell__module-link.is-active {
+	border-left-color: var(--rwgc-shell-accent);
 	background: #2271b1;
 	color: #fff;
 }
@@ -86,13 +89,93 @@ body.rwgc-app-shell-active #wpbody-content {
 	flex-direction: column;
 }
 
+.rwgc-app-shell__topbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 10px 16px;
+	background: #fff;
+	border-bottom: 1px solid #dcdcde;
+	position: sticky;
+	top: 32px;
+	z-index: 9;
+}
+
+.rwgc-app-shell__topbar-context {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.rwgc-app-shell__topbar-kicker {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #646970;
+}
+
+.rwgc-app-shell__topbar-title {
+	font-size: 15px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.rwgc-app-shell__topbar-actions {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.rwgc-app-shell__topbar-pill--success {
+	background: #edfaef;
+	color: #1e4620;
+}
+
+.rwgc-app-shell__topbar-pill--warning {
+	background: #fff8e5;
+	color: #6a5500;
+}
+
+.rwgc-app-shell__topbar-pill,
+.rwgc-app-shell__topbar-link,
+.rwgc-app-shell__topbar-user {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 500;
+	color: #50575e;
+	text-decoration: none;
+	background: #f6f7f7;
+}
+
+.rwgc-app-shell__topbar-link:hover,
+.rwgc-app-shell__topbar-link:focus {
+	background: #f0f0f1;
+	color: #1d2327;
+	box-shadow: none;
+}
+
+.rwgc-app-shell__topbar-pill .dashicons,
+.rwgc-app-shell__topbar-link .dashicons,
+.rwgc-app-shell__topbar-user .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+}
+
 .rwgc-app-shell__section-nav {
 	background: #fff;
 	border-bottom: 1px solid #dcdcde;
 	padding: 0 16px;
-	position: sticky;
-	top: 32px;
-	z-index: 9;
+	position: relative;
+	z-index: 8;
 }
 
 .rwgc-app-shell__section-scroll {
@@ -183,6 +266,7 @@ body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-menu-open .wp
 		width: 100%;
 	}
 
+	.rwgc-app-shell__topbar,
 	.rwgc-app-shell__section-nav {
 		top: 0;
 	}

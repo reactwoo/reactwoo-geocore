@@ -1,0 +1,61 @@
+/**
+ * ReactWoo Geo — shared design tokens (aligned with GeoCore Pro admin).
+ *
+ * Scoped to platform wrappers so WordPress core admin is unaffected.
+ */
+
+.rwgc-wrap,
+.rwgc-app-shell,
+.rwgcp-wrap--platform-shell .rwgcp-app {
+	--rwgc-font-size-base: 14px;
+	--rwgc-font-size-sm: 12px;
+	--rwgc-font-size-lg: 18px;
+	--rwgc-line-height: 1.5;
+	--rwgc-color-text: #505050;
+	--rwgc-color-muted: #6b7280;
+	--rwgc-color-heading: #1f2937;
+	--rwgc-color-accent: #37b0d2;
+	--rwgc-color-accent-hover: #2a9ab8;
+	--rwgc-color-surface: #ffffff;
+	--rwgc-color-surface-alt: #f7f9fb;
+	--rwgc-color-border: #e5e7eb;
+	--rwgc-color-success: #059669;
+	--rwgc-color-warning: #d97706;
+	--rwgc-color-danger: #dc2626;
+	--rwgc-radius-sm: 6px;
+	--rwgc-radius-md: 10px;
+	--rwgc-radius-lg: 14px;
+	--rwgc-space-1: 4px;
+	--rwgc-space-2: 8px;
+	--rwgc-space-3: 12px;
+	--rwgc-space-4: 16px;
+	--rwgc-space-5: 24px;
+	--rwgc-space-6: 32px;
+	--rwgc-shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06);
+	--rwgc-shadow-elevated: 0 4px 14px rgba(15, 23, 42, 0.08);
+	font-size: var(--rwgc-font-size-base);
+	line-height: var(--rwgc-line-height);
+	color: var(--rwgc-color-text);
+}
+
+.rwgc-wrap .rwgc-card,
+.rwgc-app-shell__content .rwgc-card {
+	background: var(--rwgc-color-surface);
+	border: 1px solid var(--rwgc-color-border);
+	border-radius: var(--rwgc-radius-md);
+	box-shadow: var(--rwgc-shadow-card);
+}
+
+.rwgc-wrap .rwgc-btn--primary,
+.rwgc-app-shell__content .rwgc-btn--primary {
+	background: var(--rwgc-color-accent);
+	border-color: var(--rwgc-color-accent);
+}
+
+.rwgc-wrap .rwgc-btn--primary:hover,
+.rwgc-wrap .rwgc-btn--primary:focus,
+.rwgc-app-shell__content .rwgc-btn--primary:hover,
+.rwgc-app-shell__content .rwgc-btn--primary:focus {
+	background: var(--rwgc-color-accent-hover);
+	border-color: var(--rwgc-color-accent-hover);
+}

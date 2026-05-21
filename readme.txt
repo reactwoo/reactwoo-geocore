@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.4.2
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,14 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.5.0 =
+* **Platform UX (Phases 1–4):** ReactWoo Geo app shell enabled by default — six goal sections (Overview, Targeting, Commerce, Insights, Integrations, Settings), collapsed wp-admin flyout, live sync topbar, shared design tokens (`rwgc-design-system.css`).
+* **Routes:** Core and satellites register via `rw_geo_register_app_route()`; Insights home and Settings home hub screens; `rw_geo_app_url()` resolves route slugs.
+* **Overview:** Platform setup checklist, sync card, section shortcuts; upgrade cards for GeoCore Pro gaps.
+* **Targeting:** Experience targeting page, rule builder tab labels, portable targeting improvements.
+* **Hooks:** `rwgc_onboarding_platform_steps`, `rwgc_section_hub_cards`, `rwgc_platform_overview_section_links`, `rwgc_uses_platform_shell()`.
+* **Docs:** `docs/geo-platform-ux-architecture.md` (authoritative UX plan).
 
 = 1.4.2 =
 * **Fix:** Restore working wp-admin navigation — submenu ordering is back by default, app shell UI is off by default, menu collapse uses `remove_submenu_page`, and plugins.php redirect flags are cleared earlier.

@@ -19,6 +19,8 @@
   "scripts": {
     "test": "phpunit -c phpunit.xml.dist",
     "test:rules": "php tests/test-rule-condition-evaluator.php",
+    "test:rwgc-rule-evaluator": "php tests/test-rwgc-rule-evaluator.php",
+    "test:rwgc-rule-evaluator": "php tests/test-rwgc-rule-evaluator.php",
     "test:all": [
       "@test",
       "@test:rules"

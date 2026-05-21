@@ -43,6 +43,9 @@ class RWGC_Context_Attribution {
 			'content'             => (string) ( $merged_touch['content'] ?? '' ),
 			'term'                => (string) ( $merged_touch['term'] ?? '' ),
 			'gclid'               => (string) ( $merged_touch['gclid'] ?? '' ),
+			'fbclid'              => (string) ( $merged_touch['fbclid'] ?? '' ),
+			'li_fat_id'           => (string) ( $merged_touch['li_fat_id'] ?? '' ),
+			'msclkid'             => (string) ( $merged_touch['msclkid'] ?? '' ),
 			'returning_visitor'   => $returning,
 			'analytics_audiences' => $audiences,
 			'first_touch'         => $first_touch,
@@ -69,6 +72,9 @@ class RWGC_Context_Attribution {
 			'content'  => 'utm_content',
 			'term'     => 'utm_term',
 			'gclid'    => 'gclid',
+			'fbclid'   => 'fbclid',
+			'li_fat_id'=> 'li_fat_id',
+			'msclkid'  => 'msclkid',
 		);
 		$out = array(
 			'source'   => '',
@@ -77,6 +83,9 @@ class RWGC_Context_Attribution {
 			'content'  => '',
 			'term'     => '',
 			'gclid'    => '',
+			'fbclid'   => '',
+			'li_fat_id'=> '',
+			'msclkid'  => '',
 		);
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only context enrichment.
@@ -113,6 +122,9 @@ class RWGC_Context_Attribution {
 			'content'  => sanitize_text_field( (string) ( $val['content'] ?? '' ) ),
 			'term'     => sanitize_text_field( (string) ( $val['term'] ?? '' ) ),
 			'gclid'    => sanitize_text_field( (string) ( $val['gclid'] ?? '' ) ),
+			'fbclid'   => sanitize_text_field( (string) ( $val['fbclid'] ?? '' ) ),
+			'li_fat_id'=> sanitize_text_field( (string) ( $val['li_fat_id'] ?? '' ) ),
+			'msclkid'  => sanitize_text_field( (string) ( $val['msclkid'] ?? '' ) ),
 		);
 	}
 
@@ -130,6 +142,9 @@ class RWGC_Context_Attribution {
 				'content'  => (string) ( $snapshot['content'] ?? '' ),
 				'term'     => (string) ( $snapshot['term'] ?? '' ),
 				'gclid'    => (string) ( $snapshot['gclid'] ?? '' ),
+				'fbclid'   => (string) ( $snapshot['fbclid'] ?? '' ),
+				'li_fat_id'=> (string) ( $snapshot['li_fat_id'] ?? '' ),
+				'msclkid'  => (string) ( $snapshot['msclkid'] ?? '' ),
 			)
 		);
 		if ( ! is_string( $json ) || '' === $json ) {
@@ -198,6 +213,9 @@ class RWGC_Context_Attribution {
 			'content'  => '',
 			'term'     => '',
 			'gclid'    => '',
+			'fbclid'   => '',
+			'li_fat_id'=> '',
+			'msclkid'  => '',
 		);
 	}
 }

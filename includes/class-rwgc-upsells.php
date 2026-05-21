@@ -28,7 +28,8 @@ class RWGC_Upsells {
 			'geoelementor'  => array(
 				'title'       => __( 'GeoElementor', 'reactwoo-geocore' ),
 				'summary'     => __( 'Premium Elementor geo targeting with popups, sections, widgets, and analytics powered by ReactWoo Geo Core.', 'reactwoo-geocore' ),
-				'plugin_file' => 'GeoElementor/elementor-geo-popup.php',
+				'plugin_file' => 'geo-elementor/elementor-geo-popup.php',
+				'alt_files'   => array( 'GeoElementor/elementor-geo-popup.php' ),
 				'cta_label'   => __( 'Learn more', 'reactwoo-geocore' ),
 				'cta_url'     => 'https://reactwoo.com/',
 			),
@@ -42,7 +43,7 @@ class RWGC_Upsells {
 		);
 
 		foreach ( $addons as $slug => &$addon ) {
-			$status                 = self::get_addon_status( $addon['plugin_file'] );
+			$status                 = self::get_addon_status( $addon );
 			$addon['status']        = $status;
 			$addon['status_label']  = 'active' === $status ? __( 'Active', 'reactwoo-geocore' ) : ( 'installed' === $status ? __( 'Installed', 'reactwoo-geocore' ) : __( 'Not installed', 'reactwoo-geocore' ) );
 			$addon['image']         = self::resolve_addon_image( $slug, $addon );
@@ -131,44 +132,82 @@ class RWGC_Upsells {
 	/**
 	 * Determine addon status.
 	 *
-	 * @param string $plugin_file Plugin file relative to plugins dir.
+	 * @param array<string, mixed>|string $addon_or_plugin_file Add-on definition or plugin file.
 	 * @return string one of: active|installed|missing
 	 */
-	public static function get_addon_status( $plugin_file ) {
-		if ( self::is_plugin_active( $plugin_file ) ) {
+	public static function get_addon_status( $addon_or_plugin_file ) {
+		$plugin_paths = self::get_addon_plugin_paths( $addon_or_plugin_file );
+		if ( self::is_plugin_active( $plugin_paths ) ) {
 			return 'active';
 		}
-		if ( self::is_plugin_installed( $plugin_file ) ) {
+		if ( self::is_plugin_installed( $plugin_paths ) ) {
 			return 'installed';
 		}
 		return 'missing';
 	}
 
 	/**
+	 * Normalize add-on plugin paths (main file + alternate file candidates).
+	 *
+	 * @param array<string, mixed>|string $addon_or_plugin_file Add-on definition or plugin file.
+	 * @return array<int, string>
+	 */
+	private static function get_addon_plugin_paths( $addon_or_plugin_file ) {
+		$paths = array();
+		if ( is_string( $addon_or_plugin_file ) ) {
+			$paths[] = $addon_or_plugin_file;
+		} elseif ( is_array( $addon_or_plugin_file ) ) {
+			if ( ! empty( $addon_or_plugin_file['plugin_file'] ) && is_string( $addon_or_plugin_file['plugin_file'] ) ) {
+				$paths[] = $addon_or_plugin_file['plugin_file'];
+			}
+			if ( ! empty( $addon_or_plugin_file['alt_files'] ) && is_array( $addon_or_plugin_file['alt_files'] ) ) {
+				foreach ( $addon_or_plugin_file['alt_files'] as $alt_file ) {
+					if ( is_string( $alt_file ) && '' !== $alt_file ) {
+						$paths[] = $alt_file;
+					}
+				}
+			}
+		}
+		return array_values( array_unique( $paths ) );
+	}
+
+	/**
 	 * Whether plugin is installed.
 	 *
-	 * @param string $plugin_file Relative plugin file.
+	 * @param array<int, string>|string $plugin_files Relative plugin file(s).
 	 * @return bool
 	 */
-	public static function is_plugin_installed( $plugin_file ) {
+	public static function is_plugin_installed( $plugin_files ) {
 		if ( ! function_exists( 'get_plugins' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
 		$plugins = get_plugins();
-		return isset( $plugins[ $plugin_file ] );
+		$paths   = is_array( $plugin_files ) ? $plugin_files : array( $plugin_files );
+		foreach ( $paths as $plugin_file ) {
+			if ( is_string( $plugin_file ) && isset( $plugins[ $plugin_file ] ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
 	 * Whether plugin is active.
 	 *
-	 * @param string $plugin_file Relative plugin file.
+	 * @param array<int, string>|string $plugin_files Relative plugin file(s).
 	 * @return bool
 	 */
-	public static function is_plugin_active( $plugin_file ) {
+	public static function is_plugin_active( $plugin_files ) {
 		if ( ! function_exists( 'is_plugin_active' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
-		return is_plugin_active( $plugin_file );
+		$paths = is_array( $plugin_files ) ? $plugin_files : array( $plugin_files );
+		foreach ( $paths as $plugin_file ) {
+			if ( is_string( $plugin_file ) && is_plugin_active( $plugin_file ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
