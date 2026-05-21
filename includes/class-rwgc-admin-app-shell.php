@@ -82,6 +82,25 @@ class RWGC_Admin_App_Shell {
 		if ( isset( $_GET['page'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$page = sanitize_key( wp_unslash( (string) $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		}
+
+		return self::is_enabled_for_page( $page );
+	}
+
+	/**
+	 * Whether the shared shell is enabled for a specific hub page slug.
+	 *
+	 * Used by the wp-admin menu cleanup so pages keep sidebar navigation when
+	 * a site disables the shell through the documented render filters.
+	 *
+	 * @param string $page Hub page slug.
+	 * @return bool
+	 */
+	public static function is_enabled_for_page( $page = '' ) {
+		$page = sanitize_key( (string) $page );
+		if ( '' !== $page && class_exists( 'RWGC_Admin_Platform', false ) && ! RWGC_Admin_Platform::is_hub_page_slug( $page ) ) {
+			return false;
+		}
+
 		/**
 		 * @param bool $render Default true on hub screens (unified platform UX).
 		 */

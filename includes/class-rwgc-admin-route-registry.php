@@ -597,6 +597,9 @@ class RWGC_Admin_Route_Registry {
 		}
 
 		if ( '' === $menu_slug ) {
+			$menu_slug = self::get_default_menu_slug_for_section( $section_id, $routes );
+		}
+		if ( '' === $menu_slug ) {
 			foreach ( self::get_routes_for_section( $section_id ) as $slug => $route ) {
 				unset( $route );
 				$menu_slug = $slug;
@@ -607,6 +610,40 @@ class RWGC_Admin_Route_Registry {
 			$menu_slug = 'rwgc-dashboard';
 		}
 		return admin_url( 'admin.php?page=' . rawurlencode( $menu_slug ) );
+	}
+
+	/**
+	 * Return a stable landing route for section-level links before falling back
+	 * to route order. Setup/onboarding tabs can intentionally sort ahead of the
+	 * dashboard without hijacking the primary Overview navigation target.
+	 *
+	 * @param string                      $section_id Section id.
+	 * @param array<string, array<string, mixed>> $routes Registered routes.
+	 * @return string
+	 */
+	private static function get_default_menu_slug_for_section( $section_id, array $routes ) {
+		$defaults = array(
+			'overview' => 'rwgc-dashboard',
+		);
+		/**
+		 * @param array<string, string> $defaults Section id => menu slug.
+		 */
+		$defaults = apply_filters( 'rwgc_app_section_default_menu_slugs', $defaults );
+		if ( ! is_array( $defaults ) || empty( $defaults[ $section_id ] ) ) {
+			return '';
+		}
+
+		$slug = sanitize_key( (string) $defaults[ $section_id ] );
+		if ( '' === $slug || empty( $routes[ $slug ] ) ) {
+			return '';
+		}
+
+		$route = $routes[ $slug ];
+		if ( ( $route['section'] ?? '' ) !== $section_id || empty( $route['is_section_nav'] ) ) {
+			return '';
+		}
+
+		return $slug;
 	}
 
 	/**

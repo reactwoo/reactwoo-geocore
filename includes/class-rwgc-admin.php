@@ -122,7 +122,7 @@ class RWGC_Admin {
 					'route'     => 'setup',
 					'menu_slug' => 'rwgc-getting-started',
 					'label'     => __( 'Setup wizard', 'reactwoo-geocore' ),
-					'order'     => 5,
+					'order'     => 15,
 					'callback'  => array( 'RWGC_Suite_Admin', 'render_getting_started' ),
 				)
 			);
@@ -132,7 +132,7 @@ class RWGC_Admin {
 					'route'     => 'suite-home',
 					'menu_slug' => 'rwgc-suite-home',
 					'label'     => __( 'Suite home', 'reactwoo-geocore' ),
-					'order'     => 15,
+					'order'     => 20,
 					'callback'  => array( 'RWGC_Suite_Admin', 'render_suite_home' ),
 				)
 			);
