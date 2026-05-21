@@ -222,6 +222,14 @@ class RWGC_Admin_Platform {
 		$keep_slugs = apply_filters( 'rwgc_admin_visible_submenu_slugs', array(), $parent );
 		$keep_map   = array_fill_keys( array_map( 'strval', (array) $keep_slugs ), true );
 
+		if ( class_exists( 'RWGC_Admin_App_Shell', false ) ) {
+			foreach ( $slugs as $slug ) {
+				if ( ! RWGC_Admin_App_Shell::is_enabled_for_page( $slug ) ) {
+					$keep_map[ $slug ] = true;
+				}
+			}
+		}
+
 		foreach ( $slugs as $slug ) {
 			if ( isset( $keep_map[ $slug ] ) ) {
 				continue;
