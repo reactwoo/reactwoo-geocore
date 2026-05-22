@@ -1,0 +1,11 @@
+/**
+ * ReactWoo Geo — collapsed wp-admin hub flyout (loaded on all admin screens when collapsed).
+ */
+body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard .wp-submenu,
+body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-has-submenu .wp-submenu,
+body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-has-current-submenu .wp-submenu,
+body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-menu-open .wp-submenu,
+body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-has-submenu:hover .wp-submenu,
+body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-has-submenu.wp-menu-open .wp-submenu {
+	display: none !important;
+}

@@ -28,10 +28,20 @@ class RWGC_Admin_Platform {
 	const MENU_LABEL = 'ReactWoo Geo';
 
 	/**
+	 * Hub pages removed from the wp-admin flyout (capability + hook for direct URL access).
+	 *
+	 * @var array<string, array{capability:string,hook:string}>
+	 */
+	private static $collapsed_page_registry = array();
+
+	/**
 	 * @return void
 	 */
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'finalize_hub_submenu' ), 9999 );
+		add_action( 'admin_menu', array( __CLASS__, 'ensure_collapsed_hub_page_access' ), 10000 );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_collapsed_menu_styles' ) );
+		add_action( 'admin_head', array( __CLASS__, 'print_collapsed_submenu_fallback_css' ), 99 );
 		add_filter( 'admin_body_class', array( __CLASS__, 'admin_body_class' ) );
 		add_filter( 'rwgc_admin_visible_submenu_slugs', array( __CLASS__, 'filter_visible_setup_wizard_slug' ), 10, 2 );
 	}
@@ -194,15 +204,192 @@ class RWGC_Admin_Platform {
 	}
 
 	/**
-	 * Collapsed hub flyout: hide submenu in CSS only (do not remove_submenu_page).
+	 * Slugs that may remain in the wp-admin flyout when the hub is collapsed.
 	 *
-	 * WordPress denies direct ?page= access when submenu rows are removed; the app shell
-	 * still links to those slugs. Visual collapse is handled via admin_body_class + CSS.
+	 * @return array<int, string>
+	 */
+	public static function get_visible_submenu_slugs() {
+		$parent = self::menu_parent();
+		/**
+		 * Slugs to keep in the wp-admin flyout when collapsed (default: hide all detail screens).
+		 *
+		 * @param array<int, string> $keep_slugs Menu slugs to keep visible.
+		 * @param string             $parent   Parent slug.
+		 */
+		$keep_slugs = apply_filters( 'rwgc_admin_visible_submenu_slugs', array(), $parent );
+		$keep_map   = array();
+		foreach ( (array) $keep_slugs as $slug ) {
+			$slug = sanitize_key( (string) $slug );
+			if ( '' !== $slug ) {
+				$keep_map[ $slug ] = true;
+			}
+		}
+		return array_keys( $keep_map );
+	}
+
+	/**
+	 * Collapsed hub flyout: remove detail submenu rows; keep allowlisted slugs only.
+	 *
+	 * Direct ?page= URLs stay registered via $_registered_pages / $_parent_pages
+	 * ({@see ensure_collapsed_hub_page_access()}).
 	 *
 	 * @return void
 	 */
 	public static function collapse_hub_submenu() {
-		// Intentionally no remove_submenu_page() — see rwgc-admin-sidebar-collapsed styles.
+		global $submenu;
+
+		$parent = self::menu_parent();
+		if ( ! isset( $submenu[ $parent ] ) || ! is_array( $submenu[ $parent ] ) ) {
+			return;
+		}
+
+		$keep_map = array_fill_keys( self::get_visible_submenu_slugs(), true );
+
+		foreach ( $submenu[ $parent ] as $entry ) {
+			if ( ! is_array( $entry ) || ! isset( $entry[2] ) ) {
+				continue;
+			}
+			$slug = sanitize_key( (string) $entry[2] );
+			if ( '' === $slug || isset( $keep_map[ $slug ] ) ) {
+				continue;
+			}
+
+			$cap = isset( $entry[1] ) ? (string) $entry[1] : 'manage_options';
+			$hook = function_exists( 'get_plugin_page_hookname' )
+				? (string) get_plugin_page_hookname( $slug, $parent )
+				: $parent . '_page_' . $slug;
+
+			self::$collapsed_page_registry[ $slug ] = array(
+				'capability' => $cap,
+				'hook'       => $hook,
+			);
+
+			remove_submenu_page( $parent, $slug );
+		}
+	}
+
+	/**
+	 * Preserve direct admin.php?page= access for hub routes removed from the flyout.
+	 *
+	 * @return void
+	 */
+	public static function ensure_collapsed_hub_page_access() {
+		if ( ! is_admin() || ! self::is_sidebar_collapsed() ) {
+			return;
+		}
+
+		$page = '';
+		if ( isset( $_GET['page'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$page = sanitize_key( wp_unslash( (string) $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		}
+		if ( '' === $page || ! self::is_hub_page_slug( $page ) ) {
+			return;
+		}
+
+		$cap = 'manage_options';
+		if ( class_exists( 'RWGC_Admin', false ) ) {
+			$cap = RWGC_Admin::required_capability();
+		}
+		if ( isset( self::$collapsed_page_registry[ $page ]['capability'] ) ) {
+			$cap = (string) self::$collapsed_page_registry[ $page ]['capability'];
+		}
+
+		if ( ! current_user_can( $cap ) ) {
+			return;
+		}
+
+		global $_parent_pages, $_registered_pages;
+
+		$parent   = self::menu_parent();
+		$hookname = isset( self::$collapsed_page_registry[ $page ]['hook'] )
+			? (string) self::$collapsed_page_registry[ $page ]['hook']
+			: (string) get_plugin_page_hookname( $page, $parent );
+
+		$_parent_pages[ $page ]           = $parent;
+		$_registered_pages[ $hookname ] = true;
+	}
+
+	/**
+	 * Load collapsed-menu CSS on every wp-admin screen (not only hub screens).
+	 *
+	 * @param string $hook Hook suffix.
+	 * @return void
+	 */
+	public static function enqueue_collapsed_menu_styles( $hook ) {
+		unset( $hook );
+		if ( ! is_admin() || ! self::is_sidebar_collapsed() ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'rwgc-admin-menu',
+			RWGC_URL . 'admin/css/rwgc-admin-menu.css',
+			array(),
+			defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.0.0'
+		);
+	}
+
+	/**
+	 * Extra CSS hide for satellite detail slugs (backup if a plugin re-adds submenu rows).
+	 *
+	 * @return void
+	 */
+	public static function print_collapsed_submenu_fallback_css() {
+		if ( ! is_admin() || ! self::is_sidebar_collapsed() ) {
+			return;
+		}
+
+		$hide_slugs = self::get_collapsed_submenu_hide_slugs();
+		if ( empty( $hide_slugs ) ) {
+			return;
+		}
+
+		echo '<style id="rwgc-collapsed-hub-submenu-fallback">';
+		foreach ( $hide_slugs as $slug ) {
+			printf(
+				'#toplevel_page_rwgc-dashboard .wp-submenu li a[href*="page=%1$s"]{display:none!important;}',
+				esc_attr( $slug )
+			);
+		}
+		echo '</style>';
+	}
+
+	/**
+	 * Detail hub slugs to hide via CSS when they still appear in the flyout.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function get_collapsed_submenu_hide_slugs() {
+		$slugs = array_keys( self::$collapsed_page_registry );
+
+		$defaults = array(
+			'elementor-geo-popup',
+			'geo-elementor-rules',
+			'geo-content',
+			'geo-elementor-variants',
+			'egp-addons',
+			'geo-elementor-license',
+			'geo-templates',
+			'egp-city-settings',
+			'egp-time-settings',
+			'rwgo-edit-test',
+			'rwgo-promote-winner',
+		);
+
+		/**
+		 * @param array<int, string> $slugs Slugs to force-hide in the wp-admin flyout.
+		 */
+		$slugs = array_merge( $slugs, apply_filters( 'rwgc_collapsed_submenu_hide_slugs', $defaults ) );
+
+		$keep = array_fill_keys( self::get_visible_submenu_slugs(), true );
+		$out  = array();
+		foreach ( array_unique( array_map( 'sanitize_key', $slugs ) ) as $slug ) {
+			if ( '' === $slug || isset( $keep[ $slug ] ) ) {
+				continue;
+			}
+			$out[] = $slug;
+		}
+		return $out;
 	}
 
 	/**
@@ -321,13 +508,16 @@ class RWGC_Admin_Platform {
 	 * @return string
 	 */
 	public static function admin_body_class( $classes ) {
-		if ( ! is_admin() || ! self::is_hub_screen() ) {
+		if ( ! is_admin() ) {
 			return $classes;
 		}
-		$classes .= ' rwgc-geo-core-hub ';
 		if ( self::is_sidebar_collapsed() ) {
 			$classes .= ' rwgc-admin-sidebar-collapsed ';
 		}
+		if ( ! self::is_hub_screen() ) {
+			return $classes;
+		}
+		$classes .= ' rwgc-geo-core-hub ';
 		if ( class_exists( 'RWGC_Admin_App_Shell', false ) && class_exists( 'RWGC_Admin_Route_Registry', false ) && RWGC_Admin_App_Shell::should_render() ) {
 			$classes .= ' rwgc-app-shell-active ';
 		}
