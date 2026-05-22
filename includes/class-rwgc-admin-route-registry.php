@@ -242,6 +242,14 @@ class RWGC_Admin_Route_Registry {
 				'order'     => 10,
 			),
 			array(
+				'menu_slug'      => 'rwgc-workflow-variant',
+				'section'        => 'targeting',
+				'route'          => 'workflow-variant',
+				'label'          => __( 'Create Geo Rule', 'reactwoo-geocore' ),
+				'order'          => 12,
+				'is_section_nav' => false,
+			),
+			array(
 				'menu_slug' => 'rwgc-target-types',
 				'section'   => 'targeting',
 				'route'     => 'rule-builder',

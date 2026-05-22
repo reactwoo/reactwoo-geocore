@@ -146,6 +146,18 @@ class RWGC_Admin {
 					'callback'  => array( 'RWGC_Suite_Admin', 'render_suite_variants' ),
 				)
 			);
+			self::register_app_route(
+				array(
+					'section'        => 'targeting',
+					'route'          => 'workflow-variant',
+					'menu_slug'      => 'rwgc-workflow-variant',
+					'label'          => __( 'Create Geo Rule', 'reactwoo-geocore' ),
+					'capability'     => 'edit_pages',
+					'order'          => 12,
+					'is_section_nav' => false,
+					'callback'       => array( 'RWGC_Suite_Admin', 'render_workflow_variant' ),
+				)
+			);
 		}
 
 		self::register_app_route(
