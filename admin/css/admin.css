@@ -1,3 +1,14 @@
+/* Collapsed ReactWoo Geo hub: hide wp-admin flyout but keep submenu registered for ?page= access */
+body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard .wp-submenu,
+body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-has-submenu .wp-submenu {
+  display: none !important;
+}
+
+body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-has-submenu:hover .wp-submenu,
+body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-has-submenu.wp-menu-open .wp-submenu {
+  display: none !important;
+}
+
 .rwgc-wrap {
   max-width: 1240px;
   margin: 20px auto;

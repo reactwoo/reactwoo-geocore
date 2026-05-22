@@ -638,6 +638,13 @@ if ( ! function_exists( 'rw_geo_register_admin_submenu' ) ) {
 	 * @return string|false Hook suffix from add_submenu_page.
 	 */
 	function rw_geo_register_admin_submenu( array $args ) {
+		$default_cap = 'manage_options';
+		if ( class_exists( 'RWGC_Admin', false ) ) {
+			$default_cap = RWGC_Admin::required_capability();
+		}
+		if ( empty( $args['capability'] ) ) {
+			$args['capability'] = $default_cap;
+		}
 		if ( class_exists( 'RWGC_Admin_Platform', false ) ) {
 			return RWGC_Admin_Platform::register_submenu( $args );
 		}
@@ -650,7 +657,7 @@ if ( ! function_exists( 'rw_geo_register_admin_submenu' ) ) {
 			$parent,
 			isset( $args['page_title'] ) ? (string) $args['page_title'] : '',
 			isset( $args['menu_title'] ) ? (string) $args['menu_title'] : '',
-			isset( $args['capability'] ) ? (string) $args['capability'] : 'manage_options',
+			(string) $args['capability'],
 			$slug,
 			$args['callback'],
 			isset( $args['position'] ) ? $args['position'] : null

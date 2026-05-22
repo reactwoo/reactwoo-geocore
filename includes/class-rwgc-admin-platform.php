@@ -194,40 +194,15 @@ class RWGC_Admin_Platform {
 	}
 
 	/**
-	 * Hide hub flyout in wp-admin; pages remain registered for direct URLs and the app shell.
+	 * Collapsed hub flyout: hide submenu in CSS only (do not remove_submenu_page).
+	 *
+	 * WordPress denies direct ?page= access when submenu rows are removed; the app shell
+	 * still links to those slugs. Visual collapse is handled via admin_body_class + CSS.
 	 *
 	 * @return void
 	 */
 	public static function collapse_hub_submenu() {
-		global $submenu;
-
-		$parent = self::menu_parent();
-		if ( ! isset( $submenu[ $parent ] ) || ! is_array( $submenu[ $parent ] ) ) {
-			return;
-		}
-
-		$slugs = array();
-		foreach ( $submenu[ $parent ] as $entry ) {
-			if ( is_array( $entry ) && isset( $entry[2] ) ) {
-				$slugs[] = (string) $entry[2];
-			}
-		}
-
-		/**
-		 * Slugs to keep in the wp-admin flyout when collapsed (default: hide all — top-level only).
-		 *
-		 * @param array<int, string> $keep_slugs Menu slugs to keep visible.
-		 * @param string             $parent   Parent slug.
-		 */
-		$keep_slugs = apply_filters( 'rwgc_admin_visible_submenu_slugs', array(), $parent );
-		$keep_map   = array_fill_keys( array_map( 'strval', (array) $keep_slugs ), true );
-
-		foreach ( $slugs as $slug ) {
-			if ( isset( $keep_map[ $slug ] ) ) {
-				continue;
-			}
-			remove_submenu_page( $parent, $slug );
-		}
+		// Intentionally no remove_submenu_page() — see rwgc-admin-sidebar-collapsed styles.
 	}
 
 	/**
