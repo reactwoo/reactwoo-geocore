@@ -96,22 +96,8 @@ if ( ! function_exists( 'rw_geo_register_app_route' ) ) {
 	}
 }
 
-if ( ! class_exists( 'RWGC_Suite_Admin', false ) ) {
-	class RWGC_Suite_Admin {
-		public static function render_getting_started() {}
-		public static function render_suite_home() {}
-		public static function render_suite_variants() {}
-		public static function render_workflow_variant() {}
-	}
-}
-
-if ( ! class_exists( 'RWGC_Admin_Section_Hubs', false ) ) {
-	class RWGC_Admin_Section_Hubs {
-		public static function render_insights_hub() {}
-		public static function render_settings_hub() {}
-	}
-}
-
+require_once dirname( __DIR__, 2 ) . '/includes/class-rwgc-suite-admin.php';
+require_once dirname( __DIR__, 2 ) . '/includes/class-rwgc-admin-section-hubs.php';
 require_once dirname( __DIR__, 2 ) . '/includes/class-rwgc-admin.php';
 
 /**
