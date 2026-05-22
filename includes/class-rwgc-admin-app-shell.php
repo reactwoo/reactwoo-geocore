@@ -26,9 +26,32 @@ class RWGC_Admin_App_Shell {
 		if ( ! is_admin() ) {
 			return;
 		}
+		add_action( 'admin_init', array( __CLASS__, 'suppress_foreign_admin_notices' ), 9999 );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
 		add_action( 'in_admin_header', array( __CLASS__, 'render_frame_open' ), 5 );
 		add_action( 'admin_footer', array( __CLASS__, 'render_frame_close' ), 1 );
+	}
+
+	/**
+	 * Strip third-party admin_notices on ReactWoo Geo hub screens (Elementor licence, etc.).
+	 *
+	 * @return void
+	 */
+	public static function suppress_foreign_admin_notices() {
+		if ( ! class_exists( 'RWGC_Admin_Platform', false ) || ! RWGC_Admin_Platform::is_hub_screen() ) {
+			return;
+		}
+		if ( ! self::should_render() ) {
+			return;
+		}
+
+		remove_all_actions( 'admin_notices' );
+		remove_all_actions( 'all_admin_notices' );
+
+		/**
+		 * ReactWoo Geo platform notices inside the app shell (Geo Core diagnostics, etc.).
+		 */
+		do_action( 'rwgc_platform_admin_notices_register' );
 	}
 
 	/**
@@ -131,6 +154,10 @@ class RWGC_Admin_App_Shell {
 		echo '<div class="rwgc-app-shell__workspace">';
 		self::render_topbar( $ctx );
 		self::render_context_nav( $routes, $ctx );
+		self::render_settings_subnav( $ctx );
+		echo '<div class="rwgc-app-shell__platform-notices" role="complementary" aria-label="' . esc_attr__( 'Platform notices', 'reactwoo-geocore' ) . '">';
+		do_action( 'rwgc_platform_admin_notices' );
+		echo '</div>';
 		echo '<div class="rwgc-app-shell__content">';
 	}
 
@@ -274,6 +301,11 @@ class RWGC_Admin_App_Shell {
 	 * @return void
 	 */
 	private static function render_context_nav( array $routes, array $ctx ) {
+		if ( 'settings' === ( $ctx['section'] ?? '' ) && class_exists( 'RWGC_Admin_Settings_Nav', false ) ) {
+			self::render_settings_provider_nav( $ctx );
+			return;
+		}
+
 		/**
 		 * Extra horizontal links when a screen uses in-page tabs (e.g. GeoCore Pro).
 		 *
@@ -317,6 +349,87 @@ class RWGC_Admin_App_Shell {
 			echo '</a>';
 		}
 
+		echo '</div></nav>';
+	}
+
+	/**
+	 * Settings section: one top tab per satellite (Geo Core, Elementor, …).
+	 *
+	 * @param array<string, string> $ctx Current context.
+	 * @return void
+	 */
+	private static function render_settings_provider_nav( array $ctx ) {
+		$current_slug = isset( $ctx['menu_slug'] ) ? sanitize_key( (string) $ctx['menu_slug'] ) : '';
+		$tabs         = array(
+			array(
+				'url'    => admin_url( 'admin.php?page=rwgc-settings-hub' ),
+				'label'  => __( 'Settings home', 'reactwoo-geocore' ),
+				'active' => ( 'rwgc-settings-hub' === $current_slug ),
+			),
+		);
+
+		foreach ( RWGC_Admin_Settings_Nav::get_active_providers() as $pid => $row ) {
+			$slug = isset( $row['default_slug'] ) ? (string) $row['default_slug'] : '';
+			if ( '' === $slug ) {
+				continue;
+			}
+			$active = ( RWGC_Admin_Settings_Nav::get_current_provider( $ctx ) === $pid );
+			$tabs[] = array(
+				'url'    => admin_url( 'admin.php?page=' . rawurlencode( $slug ) ),
+				'label'  => (string) ( $row['label'] ?? $pid ),
+				'active' => $active,
+			);
+		}
+
+		if ( count( $tabs ) < 2 ) {
+			return;
+		}
+
+		echo '<nav class="rwgc-app-shell__section-nav" aria-label="' . esc_attr__( 'Settings providers', 'reactwoo-geocore' ) . '">';
+		echo '<div class="rwgc-app-shell__section-scroll">';
+		foreach ( $tabs as $tab ) {
+			$classes = 'rwgc-app-shell__section-link' . ( ! empty( $tab['active'] ) ? ' is-active' : '' );
+			echo '<a class="' . esc_attr( $classes ) . '" href="' . esc_url( (string) $tab['url'] ) . '">';
+			echo esc_html( (string) $tab['label'] );
+			echo '</a>';
+		}
+		echo '</div></nav>';
+	}
+
+	/**
+	 * Secondary tabs within the active settings provider (license first).
+	 *
+	 * @param array<string, string> $ctx Current context.
+	 * @return void
+	 */
+	private static function render_settings_subnav( array $ctx ) {
+		if ( 'settings' !== ( $ctx['section'] ?? '' ) || ! class_exists( 'RWGC_Admin_Settings_Nav', false ) ) {
+			return;
+		}
+
+		$current_slug = isset( $ctx['menu_slug'] ) ? sanitize_key( (string) $ctx['menu_slug'] ) : '';
+		if ( '' === $current_slug || 'rwgc-settings-hub' === $current_slug ) {
+			return;
+		}
+
+		$provider_id = RWGC_Admin_Settings_Nav::get_current_provider( $ctx );
+		if ( '' === $provider_id ) {
+			return;
+		}
+
+		$routes = RWGC_Admin_Settings_Nav::get_provider_routes( $provider_id );
+		if ( count( $routes ) < 2 ) {
+			return;
+		}
+
+		echo '<nav class="rwgc-app-shell__settings-subnav" aria-label="' . esc_attr__( 'Provider settings', 'reactwoo-geocore' ) . '">';
+		echo '<div class="rwgc-app-shell__settings-subnav-scroll">';
+		foreach ( $routes as $slug => $route ) {
+			$classes = 'rwgc-app-shell__settings-subnav-link' . ( $current_slug === $slug ? ' is-active' : '' );
+			echo '<a class="' . esc_attr( $classes ) . '" href="' . esc_url( admin_url( 'admin.php?page=' . rawurlencode( (string) $slug ) ) ) . '">';
+			echo esc_html( (string) ( $route['label'] ?? $slug ) );
+			echo '</a>';
+		}
 		echo '</div></nav>';
 	}
 }

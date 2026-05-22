@@ -43,7 +43,9 @@ class RWGC_Admin_Section_Hubs {
 		if ( ! class_exists( 'RWGC_Admin', false ) || ! RWGC_Admin::can_manage() ) {
 			return;
 		}
-		$cards = self::get_hub_cards( 'settings', 'rwgc-settings-hub' );
+		$cards = class_exists( 'RWGC_Admin_Settings_Nav', false )
+			? RWGC_Admin_Settings_Nav::get_provider_hub_cards()
+			: self::get_hub_cards( 'settings', 'rwgc-settings-hub' );
 		include RWGC_PATH . 'admin/views/settings-hub-page.php';
 	}
 

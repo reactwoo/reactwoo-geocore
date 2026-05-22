@@ -15,9 +15,9 @@ class RWGC_Admin {
 	 * @return void
 	 */
 	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'register_menu' ) );
+		add_action( 'admin_menu', array( __CLASS__, 'register_menu' ), 5 );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
-		add_action( 'admin_notices', array( __CLASS__, 'maybe_show_admin_notices' ) );
+		add_action( 'rwgc_platform_admin_notices', array( __CLASS__, 'maybe_show_admin_notices' ) );
 		add_action( 'admin_post_rwgc_upload_mmdb', array( __CLASS__, 'handle_upload_mmdb' ) );
 		add_action( 'add_meta_boxes_page', array( __CLASS__, 'register_page_meta_box' ) );
 		add_action( 'save_post_page', array( __CLASS__, 'save_page_meta_box' ) );
@@ -681,9 +681,13 @@ class RWGC_Admin {
 			return;
 		}
 
-		$screen = get_current_screen();
-		if ( ! $screen || strpos( $screen->id, 'rwgc-' ) === false ) {
-			return;
+		if ( class_exists( 'RWGC_Admin_Platform', false ) && RWGC_Admin_Platform::is_hub_screen() ) {
+			// Platform shell renders notices in rwgc_platform_admin_notices.
+		} elseif ( function_exists( 'get_current_screen' ) ) {
+			$screen = get_current_screen();
+			if ( ! $screen || strpos( (string) $screen->id, 'rwgc-' ) === false ) {
+				return;
+			}
 		}
 
 		$status   = RWGC_MaxMind::get_status();
@@ -691,25 +695,25 @@ class RWGC_Admin {
 
 		if ( empty( $settings['maxmind_license_key'] ) ) {
 			printf(
-				'<div class="notice notice-warning"><p>%s</p></div>',
+				'<div class="notice notice-warning rwgc-notice"><p>%s</p></div>',
 				esc_html__( 'ReactWoo Geo Core: MaxMind license key is not configured. GeoIP lookups will use fallback values.', 'reactwoo-geocore' )
 			);
 		} elseif ( ! $status['exists'] ) {
 			if ( ! empty( $status['last_error'] ) ) {
 				printf(
-					'<div class="notice notice-warning"><p>%s</p><p><code>%s</code></p></div>',
+					'<div class="notice notice-warning rwgc-notice"><p>%s</p><p><code>%s</code></p></div>',
 					esc_html__( 'ReactWoo Geo Core: MaxMind database not found. Last error:', 'reactwoo-geocore' ),
 					esc_html( $status['last_error'] )
 				);
 			} else {
 				printf(
-					'<div class="notice notice-warning"><p>%s</p></div>',
+					'<div class="notice notice-warning rwgc-notice"><p>%s</p></div>',
 					esc_html__( 'ReactWoo Geo Core: MaxMind database not found. Run a manual update from the Tools tab.', 'reactwoo-geocore' )
 				);
 			}
 		} elseif ( $status['is_stale'] ) {
 			printf(
-				'<div class="notice notice-info"><p>%s</p></div>',
+				'<div class="notice notice-info rwgc-notice"><p>%s</p></div>',
 				esc_html__( 'ReactWoo Geo Core: MaxMind database may be stale. Consider updating from the Tools tab.', 'reactwoo-geocore' )
 			);
 		}

@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.5.1
+Stable tag: 1.5.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,14 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.5.3 =
+* **Settings UX:** One top tab per satellite (Geo Core, Elementor, Optimise, Commerce, Geo AI) with license-first sub-tabs per provider; settings home shows one card per satellite.
+* **Admin shell:** Suppress third-party wp-admin notices on hub screens; Geo Core notices render inside the platform shell only.
+* **Integrations:** GeoCore Pro content uses the same centred max-width layout as other shell sections.
+
+= 1.5.2 =
+* **Fix:** Geo Core hub parent menu registers at `admin_menu` priority 5 so satellite pages (Geo Elementor, Commerce, etc.) register submenus after the parent exists.
 
 = 1.5.1 =
 * **Fix:** Collapsed hub sidebar no longer calls `remove_submenu_page()` — direct links (Commerce, Insights home, Settings home, GeoCore Pro) work again; flyout is hidden with CSS only.

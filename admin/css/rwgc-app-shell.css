@@ -218,8 +218,66 @@ body.rwgc-app-shell-active #wpbody-content {
 	max-width: none;
 }
 
-.rwgc-app-shell__content .rwgc-wrap.rwgc-suite {
+.rwgc-app-shell__content .rwgc-wrap.rwgc-suite,
+.rwgc-app-shell__content .wrap.rwgcp-wrap,
+.rwgc-app-shell__content .rwgcp-wrap--platform-shell {
 	max-width: 1200px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.rwgc-app-shell__platform-notices:empty {
+	display: none;
+}
+
+.rwgc-app-shell__platform-notices .notice {
+	margin: 0 0 12px;
+}
+
+.rwgc-app-shell__settings-subnav {
+	background: #f6f7f7;
+	border-bottom: 1px solid #dcdcde;
+	padding: 0 16px;
+}
+
+.rwgc-app-shell__settings-subnav-scroll {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	padding: 8px 0;
+}
+
+.rwgc-app-shell__settings-subnav-link {
+	padding: 5px 12px;
+	border-radius: 4px;
+	text-decoration: none;
+	color: #50575e;
+	font-weight: 500;
+	font-size: 12px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+}
+
+.rwgc-app-shell__settings-subnav-link:hover,
+.rwgc-app-shell__settings-subnav-link:focus {
+	color: #1d2327;
+	border-color: #8c8f94;
+}
+
+.rwgc-app-shell__settings-subnav-link.is-active {
+	background: #2271b1;
+	border-color: #2271b1;
+	color: #fff;
+}
+
+/* Hide WordPress / third-party notices above the shell (Elementor licence, etc.). */
+body.rwgc-app-shell-active #wpbody-content > .notice:not(.rwgc-notice),
+body.rwgc-app-shell-active #wpbody-content > .updated:not(.rwgc-notice),
+body.rwgc-app-shell-active #wpbody-content > .error:not(.rwgc-notice),
+body.rwgc-app-shell-active #wpbody-content > .update-nag,
+body.rwgc-app-shell-active #wpbody-content > .e-admin-message,
+body.rwgc-app-shell-active #wpbody-content > .elementor-message {
+	display: none !important;
 }
 
 body.rwgc-app-shell-active .rwgc-inner-nav {
