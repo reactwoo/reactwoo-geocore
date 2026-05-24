@@ -282,10 +282,6 @@ class RWGC_Elementor {
 			return $content;
 		}
 
-		if ( isset( $_GET['elementor-preview'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			return $content;
-		}
-
 		if ( ! is_singular() ) {
 			return $content;
 		}
@@ -317,6 +313,7 @@ class RWGC_Elementor {
 					return RWGC_Rule_Evaluator::should_render_content( $set, $snapshot ) ? $content : '';
 				}
 			}
+			return '';
 		}
 
 		$selected = array();

@@ -89,10 +89,15 @@ class RWGC_Gutenberg {
 			&& class_exists( 'RWGC_Context_Resolver' ) ) {
 			$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $portable_raw );
 			if ( is_array( $set ) ) {
+				$mode        = isset( $attrs['mode'] ) ? sanitize_key( (string) $attrs['mode'] ) : 'show';
+				$set['mode'] = 'hide' === $mode ? 'hide' : 'show';
 				$snapshot = RWGC_Context_Resolver::resolve_current();
 				$show     = RWGC_Rule_Evaluator::should_render_content( $set, $snapshot );
 				return $show ? '<div class="rwgc-geo-content">' . do_shortcode( $content ) . '</div>' : '';
 			}
+		}
+		if ( $use_portable ) {
+			return '';
 		}
 
 		$country = strtoupper( rwgc_get_visitor_country() );
