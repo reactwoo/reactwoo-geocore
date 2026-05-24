@@ -491,9 +491,6 @@
 			var mode = state.localMode !== undefined ? state.localMode : getMode();
 			var d = docFromRows(state.docBase, state.rows, state.ruleMatch);
 			d.mode = mode === 'hide' ? 'hide' : 'show';
-			if (state.docBase && state.docBase.rules && state.docBase.rules.length > 1) {
-				d.rules = d.rules.concat(state.docBase.rules.slice(1));
-			}
 			var json = stringifyDoc(d);
 			if (textarea.value !== json) {
 				textarea.value = json;
@@ -602,8 +599,18 @@
 			clearBtn.style.marginLeft = '6px';
 			clearBtn.textContent = t('clearRule');
 			clearBtn.addEventListener('click', function () {
+				var nextBase = JSON.parse(JSON.stringify(state.docBase || defaultDoc()));
+				if (!nextBase.rules || !nextBase.rules.length) {
+					nextBase.rules = defaultDoc().rules;
+				}
+				nextBase.rules[0] = {
+					id: nextBase.rules[0].id || 'rule_main',
+					label: nextBase.rules[0].label || '',
+					match: 'all',
+					conditions: [],
+				};
 				state.rows = [];
-				state.docBase = defaultDoc();
+				state.docBase = nextBase;
 				state.ruleMatch = 'all';
 				writeTextareaFromState();
 				render();

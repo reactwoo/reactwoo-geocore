@@ -82,6 +82,12 @@ if ( RWGC_Rule_Evaluator::should_render_content( $set_hide, $snap ) ) {
 	rwgc_test_fail( 'Hide mode should suppress when rule matches.' );
 }
 
+$set_disabled_hide = $set_hide;
+$set_disabled_hide['enabled'] = false;
+if ( ! RWGC_Rule_Evaluator::should_render_content( $set_disabled_hide, $snap ) ) {
+	rwgc_test_fail( 'Disabled targeting should render content even when hide mode rules match.' );
+}
+
 $set_top_all = array(
 	'enabled' => true,
 	'mode'    => 'show',
