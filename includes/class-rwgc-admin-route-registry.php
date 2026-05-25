@@ -242,6 +242,13 @@ class RWGC_Admin_Route_Registry {
 				'order'     => 10,
 			),
 			array(
+				'menu_slug' => 'rwgc-workflow-variant',
+				'section'   => 'targeting',
+				'route'     => 'create-variant',
+				'label'     => __( 'Create page version', 'reactwoo-geocore' ),
+				'order'     => 15,
+			),
+			array(
 				'menu_slug' => 'rwgc-target-types',
 				'section'   => 'targeting',
 				'route'     => 'rule-builder',
@@ -402,7 +409,7 @@ class RWGC_Admin_Route_Registry {
 		if ( in_array( $slug, array( 'rwgc-usage' ), true ) ) {
 			return 'insights';
 		}
-		if ( in_array( $slug, array( 'rwgc-target-types', 'rwgc-suite-variants' ), true ) ) {
+		if ( in_array( $slug, array( 'rwgc-target-types', 'rwgc-suite-variants', 'rwgc-workflow-variant' ), true ) ) {
 			return 'targeting';
 		}
 		if ( in_array( $slug, array( 'rwgc-getting-started', 'rwgc-suite-home' ), true ) ) {
