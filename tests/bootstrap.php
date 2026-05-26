@@ -148,9 +148,11 @@ if ( ! function_exists( 'admin_url' ) ) {
 if ( ! function_exists( '__' ) ) {
 	/**
 	 * @param string $text Text.
+	 * @param string $domain Text domain.
 	 * @return string
 	 */
-	function __( $text ) {
+	function __( $text, $domain = 'default' ) {
+		unset( $domain );
 		return $text;
 	}
 }
@@ -158,9 +160,11 @@ if ( ! function_exists( '__' ) ) {
 if ( ! function_exists( 'esc_html__' ) ) {
 	/**
 	 * @param string $text Text.
+	 * @param string $domain Text domain.
 	 * @return string
 	 */
-	function esc_html__( $text ) {
+	function esc_html__( $text, $domain = 'default' ) {
+		unset( $domain );
 		return $text;
 	}
 }
@@ -189,9 +193,13 @@ if ( ! function_exists( 'wp_parse_args' ) ) {
 
 if ( ! function_exists( 'wp_generate_password' ) ) {
 	/**
+	 * @param int  $length              Length.
+	 * @param bool $special_chars       Special chars.
+	 * @param bool $extra_special_chars Extra chars.
 	 * @return string
 	 */
-	function wp_generate_password() {
+	function wp_generate_password( $length = 12, $special_chars = true, $extra_special_chars = false ) {
+		unset( $length, $special_chars, $extra_special_chars );
 		return 'abcdefgh';
 	}
 }
@@ -278,9 +286,11 @@ if ( ! function_exists( 'rwgc_is_builder_edit_request' ) ) {
 if ( ! function_exists( 'current_user_can' ) ) {
 	/**
 	 * @param string $cap Capability.
+	 * @param mixed  ...$args Additional args.
 	 * @return bool
 	 */
-	function current_user_can( $cap ) {
+	function current_user_can( $cap, ...$args ) {
+		unset( $args );
 		$caps = isset( $GLOBALS['rwgc_test_current_user_caps'] ) && is_array( $GLOBALS['rwgc_test_current_user_caps'] )
 			? $GLOBALS['rwgc_test_current_user_caps']
 			: array();
