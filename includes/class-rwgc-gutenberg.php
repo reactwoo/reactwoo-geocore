@@ -80,9 +80,6 @@ class RWGC_Gutenberg {
 
 		$portable_raw  = isset( $attrs['portableTargeting'] ) ? (string) $attrs['portableTargeting'] : '';
 		$use_portable  = ! empty( $attrs['usePortableTargeting'] );
-		if ( ! $use_portable && '' !== trim( $portable_raw ) ) {
-			$use_portable = true;
-		}
 		if ( $use_portable && is_string( $portable_raw ) && '' !== trim( $portable_raw )
 			&& class_exists( 'RWGC_Targeting_Rule_Set_Schema' )
 			&& class_exists( 'RWGC_Rule_Evaluator' )
@@ -93,6 +90,9 @@ class RWGC_Gutenberg {
 				$show     = RWGC_Rule_Evaluator::should_render_content( $set, $snapshot );
 				return $show ? '<div class="rwgc-geo-content">' . do_shortcode( $content ) . '</div>' : '';
 			}
+		}
+		if ( $use_portable ) {
+			return '';
 		}
 
 		$country = strtoupper( rwgc_get_visitor_country() );

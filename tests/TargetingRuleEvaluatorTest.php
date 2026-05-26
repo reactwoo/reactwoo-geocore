@@ -77,6 +77,15 @@ class TargetingRuleEvaluatorTest extends TestCase {
 		);
 	}
 
+	public function test_disabled_hide_ruleset_renders_content() {
+		$set             = $this->uk_evening_rule_set();
+		$set['enabled']  = false;
+		$set['mode']     = 'hide';
+		$this->assertTrue(
+			RWGC_Rule_Evaluator::should_render_content( $set, $this->uk_evening_snapshot() )
+		);
+	}
+
 	public function test_empty_country_list_matches_all() {
 		$set = array(
 			'enabled' => true,

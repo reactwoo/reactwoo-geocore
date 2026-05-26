@@ -282,7 +282,7 @@ class RWGC_Elementor {
 			return $content;
 		}
 
-		if ( isset( $_GET['elementor-preview'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( function_exists( 'rwgc_is_builder_edit_request' ) && rwgc_is_builder_edit_request() ) {
 			return $content;
 		}
 
@@ -317,6 +317,7 @@ class RWGC_Elementor {
 					return RWGC_Rule_Evaluator::should_render_content( $set, $snapshot ) ? $content : '';
 				}
 			}
+			return '';
 		}
 
 		$selected = array();

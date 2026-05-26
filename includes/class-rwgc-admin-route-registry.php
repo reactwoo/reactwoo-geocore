@@ -286,6 +286,14 @@ class RWGC_Admin_Route_Registry {
 				'order'     => 15,
 			),
 			array(
+				'menu_slug'      => 'rwgc-workflow-variant',
+				'section'        => 'targeting',
+				'route'          => 'create-variant',
+				'label'          => __( 'Create page version', 'reactwoo-geocore' ),
+				'order'          => 12,
+				'is_section_nav' => false,
+			),
+			array(
 				'menu_slug' => 'rwgc-target-types',
 				'section'   => 'targeting',
 				'route'     => 'rule-builder',
@@ -642,10 +650,15 @@ class RWGC_Admin_Route_Registry {
 		}
 
 		if ( '' === $menu_slug ) {
-			foreach ( self::get_routes_for_section( $section_id ) as $slug => $route ) {
-				unset( $route );
-				$menu_slug = $slug;
-				break;
+			if ( 'overview' === $section_id && isset( $routes['rwgc-dashboard'] ) ) {
+				$menu_slug = 'rwgc-dashboard';
+			}
+			if ( '' === $menu_slug ) {
+				foreach ( self::get_routes_for_section( $section_id ) as $slug => $route ) {
+					unset( $route );
+					$menu_slug = $slug;
+					break;
+				}
 			}
 		}
 		if ( '' === $menu_slug ) {
