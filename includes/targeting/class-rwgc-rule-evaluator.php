@@ -131,6 +131,10 @@ class RWGC_Rule_Evaluator {
 	 * @return bool
 	 */
 	public static function should_render_content( array $set, RWGC_Context_Snapshot $snapshot ) {
+		if ( empty( $set['enabled'] ) ) {
+			return true;
+		}
+
 		$m = isset( $set['mode'] ) ? sanitize_key( (string) $set['mode'] ) : 'show';
 		$m = 'hide' === $m ? 'hide' : 'show';
 

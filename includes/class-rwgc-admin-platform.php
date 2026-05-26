@@ -422,11 +422,14 @@ class RWGC_Admin_Platform {
 	 * @return void
 	 */
 	public static function ensure_collapsed_hub_page_access() {
-		if ( ! is_admin() || ! self::is_sidebar_collapsed() ) {
+		if ( ! is_admin() ) {
 			return;
 		}
 
-		$access_registry = array_merge( self::$shell_only_page_registry, self::$collapsed_page_registry );
+		$access_registry = self::$shell_only_page_registry;
+		if ( self::is_sidebar_collapsed() ) {
+			$access_registry = array_merge( $access_registry, self::$collapsed_page_registry );
+		}
 		if ( empty( $access_registry ) ) {
 			return;
 		}
