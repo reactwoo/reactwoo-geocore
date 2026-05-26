@@ -26,7 +26,7 @@
 | Component | Location | Notes |
 |-----------|----------|-------|
 | Single hub parent | `RWGC_Admin_Platform` | Top-level **ReactWoo Geo** (`rwgc-dashboard`) |
-| Hidden flyout support | `collapse_hub_submenu()` | Filter `rwgc_admin_sidebar_collapsed` — **default `true`**; Setup wizard kept via `rwgc_admin_visible_submenu_slugs` |
+| Hidden flyout support | `collapse_hub_submenu()` + shell-only routes | Filter `rwgc_admin_sidebar_collapsed` — **default `true`**; routes use `register_wp_submenu` false (virtual pages); Setup wizard kept via `rwgc_admin_visible_submenu_slugs` |
 | App shell frame | `RWGC_Admin_App_Shell` | Six **goal sections** + contextual tabs; filter `rwgc_app_shell_render` — **default `true`** |
 | Route registry | `RWGC_Admin_Route_Registry` | `section` + `provider`; Core + satellites register via `rw_geo_register_app_route()` |
 | Public API | `rw_geo_register_app_route()`, `rw_geo_app_url()`, `rwgc_uses_platform_shell()` | `functions-rwgc.php` |
@@ -240,7 +240,7 @@ Implementation: extend `RWGC_Onboarding` state machine; satellites hook `rwgc_on
 | 1.3 | geocore | Refactor `RWGC_Admin_Route_Registry` → sections (6) |
 | 1.4 | geocore | Refactor `RWGC_Admin_App_Shell` → section nav + topbar stub |
 | 1.5 | geocore | Migrate Core menus to `rw_geo_register_app_route` |
-| 1.6 | satellites | Batch-register routes; remove inner nav CSS hacks |
+| 1.6 | satellites | Batch-register routes via `rw_geo_register_app_route()`; skip legacy inner nav when `rwgc_uses_platform_shell()` |
 | 1.7 | geocore-pro | Disable standalone Pro nav; register under integrations/settings |
 | 1.8 | geo-elementor | Confirm no top-level menu when Core active |
 
@@ -267,6 +267,10 @@ Implementation: extend `RWGC_Onboarding` state machine; satellites hook `rwgc_on
 - Provider badges + upgrade cards — `render_provider_badge()`, `render_upgrade_card()`, hub cards
 
 **Shipped in 1.5.0:** Phases 1–3 core deliverables (shell, route API, hubs, sync topbar, targeting labels, design tokens).
+
+**Shipped in 1.6.0–1.6.1 (Phase B):** `register_wp_submenu` default false on `rw_geo_register_app_route()`; shell-only virtual hub pages; flyout no longer accumulates satellite detail rows; satellites skip duplicate inner nav when shell is active; Geo Elementor routes explicitly shell-only.
+
+**Next (Phase 2):** Unified targeting / visual rule builder — see §7 and `docs/TARGETING-RULES-PLAN.md`.
 
 ---
 

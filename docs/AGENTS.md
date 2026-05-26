@@ -54,6 +54,7 @@ Each declares **`Requires Plugins: reactwoo-geocore`** (same slug as Core’s `w
 
 ## Geo Suite admin shell (Phase 1+)
 
+- **Route registration:** satellites use **`rw_geo_register_app_route()`**; default **`register_wp_submenu` false** (shell-only virtual pages, no wp-admin flyout rows). Set **`register_wp_submenu` true** only for optional wp-admin shortcuts (e.g. Setup wizard via filter **`rwgc_app_route_register_wp_submenu`**).
 - **`RWGC_Admin_UI`** (`includes/class-rwgc-admin-ui.php`): reusable stat cards, checklist rows, badges, quick-action row, satellite card grid; filter **`rwgc_suite_satellite_definitions`**.
 - **`admin/css/rwgc-suite.css`**: suite tokens + component classes; enqueued after **`admin/css/admin.css`** on all `rwgc-*` screens.
 - **Suite onboarding (MVP):** **`RWGC_Suite_Admin`**, **`RWGC_Module_Registry`**, **`RWGC_Onboarding`**, **`RWGC_Workflows`**, **`RWGC_Variant_Manager`** — *Suite Home*, 3-step *Getting Started*, *Create page version*, *Page versions* overview; first-activation redirect to Getting Started; hooks in **`docs/GEO_SUITE_HOOKS.md`**.

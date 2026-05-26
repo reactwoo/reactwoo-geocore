@@ -54,14 +54,15 @@ Geo Core ships an **onboarding + workflow shell** (`RWGC_Suite_Admin`, Suite Hom
 - `RWGC_Module_Registry::get_readiness_rows( $goal )` — environment checklist.
 - `rw_geo_register_module( $module )` — register/replace one module row (wraps `rwgc_register_modules`).
 - `rw_geo_register_dashboard_card( $callback )` — hook a summary card on the Geo Core dashboard (`rwgc_dashboard_satellite_panels`).
-- `rw_geo_register_app_route( $args )` — hidden hub submenu + app shell route (`module`, `route`, `menu_slug`, `label`, `callback`).
-- `rw_geo_app_url( $module_id, $menu_slug )` — admin URL for a module/section in the shell.
-- `rw_geo_register_admin_submenu( $args )` — `add_submenu_page` under the ReactWoo Geo hub (`RWGC_Admin_Platform::register_submenu`).
-- `rw_geo_render_inner_nav( $items, $current, $args )` — horizontal section nav + optional hub breadcrumb (`RWGC_Admin_UI::render_inner_nav`).
-- `rwgc_admin_menu_parent()` — parent slug for satellite `add_submenu_page` calls.
-- `RWGC_Admin_Platform::menu_parent()` / `::menu_label()` — hub slug and **Geo Core** sidebar label.
+- `rw_geo_register_app_route( $args )` — app shell route + optional wp-admin submenu (`section`, `route`, `menu_slug`, `label`, `callback`). Default **`register_wp_submenu` false** (shell-only virtual page; direct `?page=` URLs still work). Filter: **`rwgc_app_route_register_wp_submenu`**.
+- `rw_geo_app_url( $section_id, $menu_slug )` — admin URL for a goal section in the shell.
+- `rw_geo_register_admin_submenu( $args )` — `add_submenu_page` under the ReactWoo Geo hub (use only when `register_wp_submenu` true).
+- `rw_geo_render_inner_nav( $items, $current, $args )` — legacy horizontal nav; no-op when **`rwgc_uses_platform_shell()`** is true.
+- `rwgc_uses_platform_shell()` — whether the unified app shell is rendering.
+- `rwgc_admin_menu_parent()` — parent slug for hub routes.
+- `RWGC_Admin_Platform::menu_parent()` / `::menu_label()` — hub slug and **ReactWoo Geo** sidebar label.
 
-**Satellite hub pattern (Commerce, AI, Optimise, Elementor):** register submenus via `rw_geo_register_admin_submenu`, render nav with `rw_geo_render_inner_nav` + `{plugin}_inner_nav_items`, show hub breadcrumb when parent is `rwgc-dashboard`, hide detail wp-admin submenu rows with CSS (inner nav only; hub slug stays visible).
+**Satellite hub pattern (Commerce, AI, Optimise, Elementor):** register screens with **`rw_geo_register_app_route()`** (shell-only by default). Do not render duplicate inner nav when **`rwgc_uses_platform_shell()`** — section tabs come from the app shell.
 - `RWGC_Workflows::get_launchers()` — task-first deep links.
 - `RWGC_Workflows::get_goal_guidance( $goal )` — short copy for the wizard goal.
 - `RWGC_Workflows::order_launchers_for_goal( $launchers, $goal )` — reorder launchers on Getting Started.

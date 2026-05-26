@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.5.4
+Stable tag: 1.6.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,17 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.6.1 =
+* **Platform (Phase B):** Skip duplicate virtual bind for the top-level `rwgc-dashboard` slug (owned by `add_menu_page()`).
+* **Satellites:** Commerce, Geo AI, Geo Optimise, and Geo Elementor skip legacy inner nav when the platform shell is active.
+
+= 1.6.0 =
+* **Platform (Phase B):** `rw_geo_register_app_route()` registers shell-only hub pages by default (`register_wp_submenu` false) — no wp-admin flyout rows for satellite detail screens; virtual page binding preserves direct `?page=` access.
+* **Opt-in wp submenu:** Pass `register_wp_submenu` true (or legacy `show_in_wp_sidebar`) for routes that should appear under ReactWoo Geo in wp-admin (e.g. Setup wizard).
+
+= 1.5.5 =
+* **Fix:** Hub section links (Targeting, Commerce, Insights, Integrations, Settings) work again after flyout collapse — removed submenu rows are re-registered for WordPress access checks while staying hidden in the sidebar.
 
 = 1.5.4 =
 * **Fix:** Restore collapsed wp-admin hub flyout — detail submenu rows are removed again (Setup wizard optional via `rwgc_admin_visible_submenu_slugs`); direct `?page=` URLs stay allowed; collapse CSS loads on all admin screens.

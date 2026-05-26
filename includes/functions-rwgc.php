@@ -572,10 +572,10 @@ if ( ! function_exists( 'rw_geo_register_dashboard_card' ) ) {
 
 if ( ! function_exists( 'rw_geo_register_app_route' ) ) {
 	/**
-	 * Register an in-app route (hidden wp-admin submenu + app shell section nav).
+	 * Register an in-app route (app shell section nav; wp-admin submenu optional).
 	 *
-	 * @param array<string, mixed> $args section, route, menu_slug, label, callback; optional module, provider, capability, order, show_in_wp_sidebar.
-	 * @return string|false Hook suffix from submenu registration.
+	 * @param array<string, mixed> $args section, route, menu_slug, label, callback; optional register_wp_submenu (default false), show_in_wp_sidebar (legacy alias).
+	 * @return string|false Hook suffix.
 	 */
 	function rw_geo_register_app_route( array $args ) {
 		if ( empty( $args['callback'] ) || ! is_callable( $args['callback'] ) ) {
@@ -597,16 +597,33 @@ if ( ! function_exists( 'rw_geo_register_app_route' ) ) {
 		$page_title = isset( $args['page_title'] ) ? (string) $args['page_title'] : ( isset( $args['label'] ) ? (string) $args['label'] : $slug );
 		$menu_title = isset( $args['menu_title'] ) ? (string) $args['menu_title'] : ( isset( $args['label'] ) ? (string) $args['label'] : $slug );
 
-		return rw_geo_register_admin_submenu(
-			array_merge(
-				$args,
-				array(
-					'page_title' => $page_title,
-					'menu_title' => $menu_title,
-					'menu_slug'  => $slug,
-				)
+		$register_wp_submenu = class_exists( 'RWGC_Admin_Route_Registry', false )
+			? RWGC_Admin_Route_Registry::resolve_register_wp_submenu( $args )
+			: ! empty( $args['register_wp_submenu'] ) || ! empty( $args['show_in_wp_sidebar'] );
+
+		$merged = array_merge(
+			$args,
+			array(
+				'page_title' => $page_title,
+				'menu_title' => $menu_title,
+				'menu_slug'  => $slug,
 			)
 		);
+
+		if ( $register_wp_submenu ) {
+			return rw_geo_register_admin_submenu( $merged );
+		}
+
+		$parent_slug = function_exists( 'rwgc_admin_menu_parent' ) ? rwgc_admin_menu_parent() : 'rwgc-dashboard';
+		if ( $slug === $parent_slug ) {
+			return false;
+		}
+
+		if ( class_exists( 'RWGC_Admin_Platform', false ) ) {
+			return RWGC_Admin_Platform::register_shell_only_page( $merged );
+		}
+
+		return rw_geo_register_admin_submenu( $merged );
 	}
 }
 

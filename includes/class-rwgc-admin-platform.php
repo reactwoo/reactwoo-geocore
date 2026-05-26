@@ -30,20 +30,165 @@ class RWGC_Admin_Platform {
 	/**
 	 * Hub pages removed from the wp-admin flyout (capability + hook for direct URL access).
 	 *
-	 * @var array<string, array{capability:string,hook:string}>
+	 * @var array<string, array{menu_title:string,capability:string,hook:string}>
 	 */
 	private static $collapsed_page_registry = array();
+
+	/**
+	 * Shell-only hub pages (no wp-admin submenu row; bound via {@see bind_shell_only_hub_pages()}).
+	 *
+	 * @var array<string, array{menu_title:string,capability:string,hook:string,callback:callable}>
+	 */
+	private static $shell_only_page_registry = array();
 
 	/**
 	 * @return void
 	 */
 	public static function init() {
+		add_action( 'admin_menu', array( __CLASS__, 'bind_shell_only_hub_pages' ), 99 );
 		add_action( 'admin_menu', array( __CLASS__, 'finalize_hub_submenu' ), 9999 );
 		add_action( 'admin_menu', array( __CLASS__, 'ensure_collapsed_hub_page_access' ), 10000 );
+		add_filter( 'rwgc_app_route_register_wp_submenu', array( __CLASS__, 'filter_app_route_register_wp_submenu' ), 10, 2 );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_collapsed_menu_styles' ) );
 		add_action( 'admin_head', array( __CLASS__, 'print_collapsed_submenu_fallback_css' ), 99 );
 		add_filter( 'admin_body_class', array( __CLASS__, 'admin_body_class' ) );
 		add_filter( 'rwgc_admin_visible_submenu_slugs', array( __CLASS__, 'filter_visible_setup_wizard_slug' ), 10, 2 );
+	}
+
+	/**
+	 * Default shell-only registration; Setup wizard may stay in the wp-admin flyout.
+	 *
+	 * @param bool                 $register_wp_submenu Whether to call add_submenu_page.
+	 * @param array<string, mixed> $args                Route args.
+	 * @return bool
+	 */
+	public static function filter_app_route_register_wp_submenu( $register_wp_submenu, $args ) {
+		unset( $register_wp_submenu );
+		$slug = isset( $args['menu_slug'] ) ? sanitize_key( (string) $args['menu_slug'] ) : '';
+		if ( 'rwgc-getting-started' === $slug ) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Register a hub admin screen without adding a wp-admin submenu row (app shell only).
+	 *
+	 * @param array<string, mixed> $args page_title, menu_title, capability, menu_slug, callback.
+	 * @return string|false Hook suffix when bound; true when queued for bind.
+	 */
+	public static function register_shell_only_page( array $args ) {
+		$slug = isset( $args['menu_slug'] ) ? sanitize_key( (string) $args['menu_slug'] ) : '';
+		if ( '' === $slug || empty( $args['callback'] ) || ! is_callable( $args['callback'] ) ) {
+			return false;
+		}
+
+		// Top-level hub screen is registered via add_menu_page(); route metadata only.
+		if ( $slug === self::menu_parent() ) {
+			return false;
+		}
+
+		$default_cap = 'manage_options';
+		if ( class_exists( 'RWGC_Admin', false ) ) {
+			$default_cap = RWGC_Admin::required_capability();
+		}
+
+		$parent = self::menu_parent();
+		$cap    = isset( $args['capability'] ) ? (string) $args['capability'] : $default_cap;
+		$hook   = function_exists( 'get_plugin_page_hookname' )
+			? (string) get_plugin_page_hookname( $slug, $parent )
+			: $parent . '_page_' . $slug;
+
+		self::$shell_only_page_registry[ $slug ] = array(
+			'menu_title' => isset( $args['menu_title'] ) ? (string) $args['menu_title'] : ( isset( $args['label'] ) ? (string) $args['label'] : $slug ),
+			'capability' => $cap,
+			'hook'       => $hook,
+			'callback'   => $args['callback'],
+		);
+
+		if ( did_action( 'admin_menu' ) ) {
+			return self::bind_shell_only_page( $slug );
+		}
+
+		return $hook;
+	}
+
+	/**
+	 * Bind queued shell-only pages to WordPress admin hooks (before flyout collapse).
+	 *
+	 * @return void
+	 */
+	public static function bind_shell_only_hub_pages() {
+		foreach ( array_keys( self::$shell_only_page_registry ) as $slug ) {
+			self::bind_shell_only_page( $slug );
+		}
+	}
+
+	/**
+	 * @param string $slug Menu slug.
+	 * @return string|false Hook suffix.
+	 */
+	private static function bind_shell_only_page( $slug ) {
+		$slug = sanitize_key( (string) $slug );
+		if ( '' === $slug || ! isset( self::$shell_only_page_registry[ $slug ] ) ) {
+			return false;
+		}
+
+		$meta     = self::$shell_only_page_registry[ $slug ];
+		$callback = $meta['callback'];
+		if ( ! is_callable( $callback ) ) {
+			return false;
+		}
+
+		$parent = self::menu_parent();
+		$hook   = isset( $meta['hook'] ) ? (string) $meta['hook'] : '';
+		if ( '' === $hook && function_exists( 'get_plugin_page_hookname' ) ) {
+			$hook = (string) get_plugin_page_hookname( $slug, $parent );
+		}
+		if ( '' === $hook ) {
+			return false;
+		}
+
+		self::register_hub_page_globals( $slug, $parent, $hook );
+
+		if ( ! has_action( $hook, $callback ) ) {
+			add_action( $hook, $callback );
+		}
+
+		self::$shell_only_page_registry[ $slug ]['hook'] = $hook;
+
+		/**
+		 * Fires after a shell-only hub page is bound (no wp-admin submenu row).
+		 *
+		 * @param string               $hook     Admin page hook suffix.
+		 * @param string               $slug     Page slug.
+		 * @param array<string, mixed> $meta     Registration meta.
+		 */
+		do_action( 'rwgc_admin_shell_page_bound', $hook, $slug, self::$shell_only_page_registry[ $slug ] );
+
+		return $hook;
+	}
+
+	/**
+	 * @param string $slug   Page slug.
+	 * @param string $parent Parent menu slug.
+	 * @param string $hook   Primary hook suffix.
+	 * @return void
+	 */
+	private static function register_hub_page_globals( $slug, $parent, $hook ) {
+		global $_parent_pages, $_registered_pages;
+
+		$_parent_pages[ $slug ] = $parent;
+
+		$hooks = array( (string) $hook );
+		if ( function_exists( 'get_plugin_page_hookname' ) ) {
+			$hooks[] = (string) get_plugin_page_hookname( $slug, $parent );
+			$hooks[] = (string) get_plugin_page_hookname( $slug, '' );
+			$hooks[] = (string) get_plugin_page_hookname( $slug, 'admin.php' );
+		}
+		foreach ( array_unique( array_filter( $hooks ) ) as $hookname ) {
+			$_registered_pages[ $hookname ] = true;
+		}
 	}
 
 	/**
@@ -230,8 +375,8 @@ class RWGC_Admin_Platform {
 	/**
 	 * Collapsed hub flyout: remove detail submenu rows; keep allowlisted slugs only.
 	 *
-	 * Direct ?page= URLs stay registered via $_registered_pages / $_parent_pages
-	 * ({@see ensure_collapsed_hub_page_access()}).
+	 * Direct ?page= URLs stay accessible via restored submenu rows (hidden by CSS)
+	 * and {@see ensure_collapsed_hub_page_access()}.
 	 *
 	 * @return void
 	 */
@@ -254,12 +399,13 @@ class RWGC_Admin_Platform {
 				continue;
 			}
 
-			$cap = isset( $entry[1] ) ? (string) $entry[1] : 'manage_options';
+			$cap  = isset( $entry[1] ) ? (string) $entry[1] : 'manage_options';
 			$hook = function_exists( 'get_plugin_page_hookname' )
 				? (string) get_plugin_page_hookname( $slug, $parent )
 				: $parent . '_page_' . $slug;
 
 			self::$collapsed_page_registry[ $slug ] = array(
+				'menu_title' => isset( $entry[0] ) ? (string) $entry[0] : '',
 				'capability' => $cap,
 				'hook'       => $hook,
 			);
@@ -269,7 +415,9 @@ class RWGC_Admin_Platform {
 	}
 
 	/**
-	 * Preserve direct admin.php?page= access for hub routes removed from the flyout.
+	 * Restore hub submenu rows removed from the flyout so WordPress grants ?page= access.
+	 *
+	 * Rows stay hidden via {@see enqueue_collapsed_menu_styles()} (entire flyout is display:none).
 	 *
 	 * @return void
 	 */
@@ -278,35 +426,63 @@ class RWGC_Admin_Platform {
 			return;
 		}
 
+		$access_registry = array_merge( self::$shell_only_page_registry, self::$collapsed_page_registry );
+		if ( empty( $access_registry ) ) {
+			return;
+		}
+
+		global $submenu, $parent_file;
+
+		$parent = self::menu_parent();
+		if ( ! isset( $submenu[ $parent ] ) || ! is_array( $submenu[ $parent ] ) ) {
+			$submenu[ $parent ] = array();
+		}
+
+		$existing = array();
+		foreach ( $submenu[ $parent ] as $entry ) {
+			if ( is_array( $entry ) && isset( $entry[2] ) ) {
+				$existing[ sanitize_key( (string) $entry[2] ) ] = true;
+			}
+		}
+
+		foreach ( $access_registry as $slug => $meta ) {
+			$slug = sanitize_key( (string) $slug );
+			if ( '' === $slug ) {
+				continue;
+			}
+
+			$hook = isset( $meta['hook'] ) ? (string) $meta['hook'] : '';
+			if ( '' === $hook && function_exists( 'get_plugin_page_hookname' ) ) {
+				$hook = (string) get_plugin_page_hookname( $slug, $parent );
+			}
+			if ( '' !== $hook ) {
+				self::register_hub_page_globals( $slug, $parent, $hook );
+			}
+
+			if ( isset( $existing[ $slug ] ) ) {
+				continue;
+			}
+
+			$title = isset( $meta['menu_title'] ) ? (string) $meta['menu_title'] : '';
+			$cap   = isset( $meta['capability'] ) ? (string) $meta['capability'] : 'manage_options';
+
+			$submenu[ $parent ][] = array(
+				$title,
+				$cap,
+				$slug,
+				$title,
+				'rwgc-hub-access-screen',
+			);
+			$existing[ $slug ] = true;
+		}
+
 		$page = '';
 		if ( isset( $_GET['page'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$page = sanitize_key( wp_unslash( (string) $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		}
-		if ( '' === $page || ! self::is_hub_page_slug( $page ) ) {
-			return;
+		if ( '' !== $page && isset( $access_registry[ $page ] ) ) {
+			$parent_file = $parent;
 		}
-
-		$cap = 'manage_options';
-		if ( class_exists( 'RWGC_Admin', false ) ) {
-			$cap = RWGC_Admin::required_capability();
-		}
-		if ( isset( self::$collapsed_page_registry[ $page ]['capability'] ) ) {
-			$cap = (string) self::$collapsed_page_registry[ $page ]['capability'];
-		}
-
-		if ( ! current_user_can( $cap ) ) {
-			return;
-		}
-
-		global $_parent_pages, $_registered_pages;
-
-		$parent   = self::menu_parent();
-		$hookname = isset( self::$collapsed_page_registry[ $page ]['hook'] )
-			? (string) self::$collapsed_page_registry[ $page ]['hook']
-			: (string) get_plugin_page_hookname( $page, $parent );
-
-		$_parent_pages[ $page ]           = $parent;
-		$_registered_pages[ $hookname ] = true;
 	}
 
 	/**

@@ -194,18 +194,48 @@ class RWGC_Admin_Route_Registry {
 		}
 
 		self::$routes[ $slug ] = array(
-			'section'            => $section,
-			'module'             => $module,
-			'route'              => $route,
-			'menu_slug'          => $slug,
-			'label'              => isset( $args['label'] ) ? (string) $args['label'] : $slug,
-			'order'              => isset( $args['order'] ) ? (int) $args['order'] : 100,
-			'provider'           => isset( $args['provider'] ) ? sanitize_key( (string) $args['provider'] ) : '',
-			'show_in_wp_sidebar' => ! empty( $args['show_in_wp_sidebar'] ),
-			'is_section_nav'     => ! isset( $args['is_section_nav'] ) || ! empty( $args['is_section_nav'] ),
+			'section'              => $section,
+			'module'               => $module,
+			'route'                => $route,
+			'menu_slug'            => $slug,
+			'label'                => isset( $args['label'] ) ? (string) $args['label'] : $slug,
+			'order'                => isset( $args['order'] ) ? (int) $args['order'] : 100,
+			'provider'             => isset( $args['provider'] ) ? sanitize_key( (string) $args['provider'] ) : '',
+			'show_in_wp_sidebar'   => ! empty( $args['show_in_wp_sidebar'] ),
+			'register_wp_submenu'  => self::resolve_register_wp_submenu( $args ),
+			'is_section_nav'       => ! isset( $args['is_section_nav'] ) || ! empty( $args['is_section_nav'] ),
 		);
 
 		return true;
+	}
+
+	/**
+	 * Whether a route should register a visible wp-admin submenu row under the hub.
+	 *
+	 * @param array<string, mixed> $args Route registration args.
+	 * @return bool
+	 */
+	public static function resolve_register_wp_submenu( array $args ) {
+		if ( isset( $args['register_wp_submenu'] ) ) {
+			return ! empty( $args['register_wp_submenu'] );
+		}
+		if ( ! empty( $args['show_in_wp_sidebar'] ) ) {
+			return true;
+		}
+		/**
+		 * @param bool                 $register Default false — shell-only routes use virtual hub pages.
+		 * @param array<string, mixed> $args     Route args.
+		 */
+		return (bool) apply_filters( 'rwgc_app_route_register_wp_submenu', false, $args );
+	}
+
+	/**
+	 * @param string $slug Menu slug.
+	 * @return bool
+	 */
+	public static function route_registers_wp_submenu( $slug ) {
+		$slug = sanitize_key( (string) $slug );
+		return isset( self::$routes[ $slug ]['register_wp_submenu'] ) && ! empty( self::$routes[ $slug ]['register_wp_submenu'] );
 	}
 
 	/**
@@ -319,13 +349,14 @@ class RWGC_Admin_Route_Registry {
 		}
 
 		$row = array(
-			'module'             => self::infer_module_from_slug( $slug ),
-			'section'            => self::infer_section_from_slug( $slug ),
-			'route'              => $slug,
-			'menu_slug'          => $slug,
-			'label'              => $label,
-			'order'              => isset( $args['position'] ) ? (int) $args['position'] : 100,
-			'show_in_wp_sidebar' => ! empty( $args['show_in_wp_sidebar'] ),
+			'module'              => self::infer_module_from_slug( $slug ),
+			'section'             => self::infer_section_from_slug( $slug ),
+			'route'               => $slug,
+			'menu_slug'           => $slug,
+			'label'               => $label,
+			'order'               => isset( $args['position'] ) ? (int) $args['position'] : 100,
+			'show_in_wp_sidebar'  => ! empty( $args['show_in_wp_sidebar'] ),
+			'register_wp_submenu' => true,
 		);
 		if ( ! empty( $args['section'] ) ) {
 			$row['section'] = sanitize_key( (string) $args['section'] );
