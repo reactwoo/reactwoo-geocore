@@ -9,7 +9,7 @@
 >
 	<testsuites>
 		<testsuite name="Geo Core engine">
-			<directory>tests</directory>
+			<directory suffix="Test.php">tests</directory>
 		</testsuite>
 	</testsuites>
 </phpunit>

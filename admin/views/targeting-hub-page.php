@@ -23,6 +23,10 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 	?>
 	<?php if ( ! $rwgc_platform_shell ) : ?>
 		<?php RWGC_Admin::render_inner_nav( 'rwgc-targeting-hub' ); ?>
+	<?php else : ?>
+		<p class="description rwgc-targeting-hub__intro">
+			<?php esc_html_e( 'Choose an experience surface below — rules, page versions, Elementor, and experiments share the same visibility engine and rule builder.', 'reactwoo-geocore' ); ?>
+		</p>
 	<?php endif; ?>
 
 	<?php

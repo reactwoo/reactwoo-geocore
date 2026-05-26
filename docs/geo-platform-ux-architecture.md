@@ -270,7 +270,13 @@ Implementation: extend `RWGC_Onboarding` state machine; satellites hook `rwgc_on
 
 **Shipped in 1.6.0–1.6.1 (Phase B):** `register_wp_submenu` default false on `rw_geo_register_app_route()`; shell-only virtual hub pages; flyout no longer accumulates satellite detail rows; satellites skip duplicate inner nav when shell is active; Geo Elementor routes explicitly shell-only.
 
-**Next (Phase 2):** Unified targeting / visual rule builder — see §7 and `docs/TARGETING-RULES-PLAN.md`.
+**Shipped in 1.7.0 (Phase 2 start):** Targeting section hub (`rwgc-targeting-hub` / Experiences tab); Geo Optimise experiment reports under Targeting; hub screens skip legacy inner nav when the platform shell is active.
+
+**In progress (Phase 2):** Shell-aware Optimise/Elementor/Core/Commerce screens; shared rule builder on Elementor, geo rules, block editor, and playground (JSON under Advanced); section hubs (Targeting, Insights, Settings, Commerce); hub cards filter `is_section_nav`; CLI evaluator test in `composer test:all`.
+
+**Shipped in Phase 2 (continued):** Commerce hub; portable rule builder on generic commerce rule edit; PHPUnit + CI workflow (`test.yml`); block editor label parity.
+
+**Next (Phase 2):** Admin Rules CPT persistence screen (Core-owned rules library) — see §7 and `docs/TARGETING-RULES-PLAN.md`.
 
 ---
 

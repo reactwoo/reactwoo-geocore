@@ -78,12 +78,17 @@ if ( post_type_exists( 'geo_rule' ) ) {
 ?>
 <div class="wrap rwgc-wrap rwgc-suite rwgc-suite-shell">
 	<?php
+	$rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
 	RWGC_Admin_UI::render_page_header(
-		__( 'Rules / Page Versions', 'reactwoo-geocore' ),
+		$rwgc_platform_shell
+			? __( 'Page versions', 'reactwoo-geocore' )
+			: __( 'Rules / Page Versions', 'reactwoo-geocore' ),
 		__( 'Create and manage rules that show, hide, redirect, or route page versions for the right visitors.', 'reactwoo-geocore' )
 	);
 	?>
-	<?php RWGC_Admin::render_inner_nav( 'rwgc-suite-variants' ); ?>
+	<?php if ( ! $rwgc_platform_shell ) : ?>
+		<?php RWGC_Admin::render_inner_nav( 'rwgc-suite-variants' ); ?>
+	<?php endif; ?>
 
 	<p class="rwgc-suite-shell__intro">
 		<?php esc_html_e( 'Use plain-English rules: "When a visitor matches conditions, show an action on a target."', 'reactwoo-geocore' ); ?>

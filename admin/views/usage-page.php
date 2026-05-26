@@ -19,7 +19,9 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 		<?php
 	}
 	?>
-	<?php RWGC_Admin::render_inner_nav( 'rwgc-usage' ); ?>
+	<?php if ( ! $rwgc_platform_shell ) : ?>
+		<?php RWGC_Admin::render_inner_nav( 'rwgc-usage' ); ?>
+	<?php endif; ?>
 
 	<div class="rwgc-grid">
 		<div class="rwgc-card rwgc-card--highlight">

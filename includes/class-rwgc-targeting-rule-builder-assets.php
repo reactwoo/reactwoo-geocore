@@ -126,7 +126,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 			'selectedLabel'        => __( 'Selected', 'reactwoo-geocore' ),
 			'playgroundIntro'      => __( 'Try the same rule builder used in Elementor and the Geo Content block. Changes here are for practice only until you paste them into a page, block, or geo rule.', 'reactwoo-geocore' ),
 			'syncedCount'          => __( '%1$d synced', 'reactwoo-geocore' ),
-			'enableAdvancedHint'   => __( 'Turn on “Use advanced visibility rules” above to edit multi-condition rules.', 'reactwoo-geocore' ),
+			'enableAdvancedHint'   => __( 'Turn on “Use visibility rule builder” above to edit multi-condition rules.', 'reactwoo-geocore' ),
 			'noConditionsYet'      => __( 'Add at least one condition to define who should see this content.', 'reactwoo-geocore' ),
 			'summaryPrefixShow'    => __( 'This content will be shown when', 'reactwoo-geocore' ),
 			'summaryPrefixHide'    => __( 'This content will be hidden when', 'reactwoo-geocore' ),

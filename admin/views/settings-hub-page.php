@@ -23,6 +23,10 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 	?>
 	<?php if ( ! $rwgc_platform_shell ) : ?>
 		<?php RWGC_Admin::render_inner_nav( 'rwgc-settings-hub' ); ?>
+	<?php else : ?>
+		<p class="description rwgc-settings-hub__intro">
+			<?php esc_html_e( 'Core detection, tools, and satellite plugin settings are grouped below.', 'reactwoo-geocore' ); ?>
+		</p>
 	<?php endif; ?>
 
 	<?php

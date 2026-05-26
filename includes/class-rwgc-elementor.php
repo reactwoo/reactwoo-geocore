@@ -117,7 +117,7 @@ class RWGC_Elementor {
 		$element->add_control(
 			'rwgc_use_portable_geo_targeting',
 			array(
-				'label'        => __( 'Use advanced visibility rules', 'reactwoo-geocore' ),
+				'label'        => __( 'Use visibility rule builder', 'reactwoo-geocore' ),
 				'type'         => \Elementor\Controls_Manager::SWITCHER,
 				'label_on'     => __( 'Yes', 'reactwoo-geocore' ),
 				'label_off'    => __( 'No', 'reactwoo-geocore' ),

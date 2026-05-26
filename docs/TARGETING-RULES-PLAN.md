@@ -23,7 +23,8 @@ Portable JSON rule sets (`enabled`, `mode`, `match`, `rules[]` with nested `cond
 
 ### Follow-up (not in this PR)
 
-- [ ] Shared visual rule builder (React) replacing JSON textarea in Elementor/admin/block
+- [x] Shared visual rule builder (`rwgc-rule-builder.js`) on Elementor, geo rules, block editor, and Targeting playground (JSON under Advanced)
+- [x] Shared visual rule builder on Geo Commerce generic rule edit (portable JSON in rule meta; legacy rows when builder off)
 - [ ] Admin “Rules” screen persistence (post meta / CPT) using same schema
 - [ ] PHPUnit in CI (`composer.json` + `tests/`)
 - [ ] `google_ads_campaign` snapshot enrichment with numeric campaign id from gclid (if product requires id match without UTM name)

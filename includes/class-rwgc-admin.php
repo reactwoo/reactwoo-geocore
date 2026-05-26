@@ -161,6 +161,17 @@ class RWGC_Admin {
 
 		self::register_app_route(
 			array(
+				'section'   => 'commerce',
+				'route'     => 'commerce-home',
+				'menu_slug' => 'rwgc-commerce-hub',
+				'label'     => __( 'Commerce home', 'reactwoo-geocore' ),
+				'order'     => 5,
+				'callback'  => array( 'RWGC_Admin_Section_Hubs', 'render_commerce_hub' ),
+			)
+		);
+
+		self::register_app_route(
+			array(
 				'section'   => 'targeting',
 				'route'     => 'targeting-home',
 				'menu_slug' => 'rwgc-targeting-hub',

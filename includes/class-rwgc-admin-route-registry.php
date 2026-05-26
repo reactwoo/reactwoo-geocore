@@ -265,6 +265,13 @@ class RWGC_Admin_Route_Registry {
 				'order'     => 20,
 			),
 			array(
+				'menu_slug' => 'rwgc-commerce-hub',
+				'section'   => 'commerce',
+				'route'     => 'commerce-home',
+				'label'     => __( 'Commerce home', 'reactwoo-geocore' ),
+				'order'     => 5,
+			),
+			array(
 				'menu_slug' => 'rwgc-targeting-hub',
 				'section'   => 'targeting',
 				'route'     => 'targeting-home',

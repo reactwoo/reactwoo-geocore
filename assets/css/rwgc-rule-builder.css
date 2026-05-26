@@ -248,7 +248,9 @@
 	display: inline-block;
 	margin-right: 4px;
 }
-.elementor-control-rwgc_portable_geo_targeting.rwgc-rb-textarea-hidden textarea {
+.elementor-control-rwgc_portable_geo_targeting.rwgc-rb-textarea-hidden textarea,
+.rwgc-rb-mount-wrap.rwgc-rb-textarea-hidden textarea,
+.interface-complementary-area .rwgc-rb-mount-wrap.rwgc-rb-textarea-hidden textarea {
 	position: absolute !important;
 	width: 1px !important;
 	height: 1px !important;

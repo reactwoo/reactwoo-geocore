@@ -23,6 +23,10 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 	?>
 	<?php if ( ! $rwgc_platform_shell ) : ?>
 		<?php RWGC_Admin::render_inner_nav( 'rwgc-insights-hub' ); ?>
+	<?php else : ?>
+		<p class="description rwgc-insights-hub__intro">
+			<?php esc_html_e( 'Open usage reports, AI analyses, and optimisation outcomes from one place.', 'reactwoo-geocore' ); ?>
+		</p>
 	<?php endif; ?>
 
 	<?php

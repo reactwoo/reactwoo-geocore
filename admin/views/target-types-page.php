@@ -47,7 +47,9 @@ if ( $rwgc_pro_enabled && ! empty( $help['integrations_ga'] ) ) {
 	<?php if ( class_exists( 'RWGC_Admin_UI', false ) ) : ?>
 		<?php
 		RWGC_Admin_UI::render_page_header(
-			__( 'Experience targeting', 'reactwoo-geocore' ),
+			$rwgc_use_platform_shell
+				? __( 'Rule builder', 'reactwoo-geocore' )
+				: __( 'Experience targeting', 'reactwoo-geocore' ),
 			__( 'Build who sees what using one rule engine — page versions, Elementor, blocks, and experiments share the same conditions.', 'reactwoo-geocore' )
 		);
 		?>

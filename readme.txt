@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.7.0
+Stable tag: 1.7.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.7.1 =
+* **Phase 2:** Commerce section hub; unified visibility rule builder on block editor, Elementor, and geo rules; shell-aware hub pages; Geo Commerce portable rules integration; PHPUnit targeting tests and CI workflow.
 
 = 1.7.0 =
 * **Phase 2 (start):** Targeting section hub (`rwgc-targeting-hub`) with experience cards; Geo Optimise experiment reports under Targeting; hub pages skip legacy inner nav when the platform shell is active.

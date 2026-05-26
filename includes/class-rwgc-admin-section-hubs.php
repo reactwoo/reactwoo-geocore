@@ -22,6 +22,19 @@ class RWGC_Admin_Section_Hubs {
 	}
 
 	/**
+	 * Commerce section home — WooCommerce pricing, fees, overlays.
+	 *
+	 * @return void
+	 */
+	public static function render_commerce_hub() {
+		if ( ! class_exists( 'RWGC_Admin', false ) || ! RWGC_Admin::can_manage() ) {
+			return;
+		}
+		$cards = self::get_hub_cards( 'commerce', 'rwgc-commerce-hub' );
+		include RWGC_PATH . 'admin/views/commerce-hub-page.php';
+	}
+
+	/**
 	 * Targeting section home — rules, Elementor, variants, experiments.
 	 *
 	 * @return void
@@ -87,7 +100,10 @@ class RWGC_Admin_Section_Hubs {
 			if ( $slug === $exclude_slug ) {
 				continue;
 			}
-			if ( in_array( $slug, $skip_dashboard_slugs, true ) && 'insights' === $section_id ) {
+			if ( isset( $route['is_section_nav'] ) && empty( $route['is_section_nav'] ) ) {
+				continue;
+			}
+			if ( in_array( $slug, $skip_dashboard_slugs, true ) && in_array( $section_id, array( 'insights', 'commerce' ), true ) ) {
 				continue;
 			}
 			$route_id = isset( $route['route'] ) ? sanitize_key( (string) $route['route'] ) : '';
@@ -129,7 +145,10 @@ class RWGC_Admin_Section_Hubs {
 			'rwgc-target-types'       => __( 'Visual rule builder playground and condition reference.', 'reactwoo-geocore' ),
 			'rwgc-suite-variants'     => __( 'Master and secondary page versions by country.', 'reactwoo-geocore' ),
 			'geo-elementor'           => __( 'Elementor rules, geo content, and variant groups.', 'reactwoo-geocore' ),
+			'geo-elementor-rules'     => __( 'Geo rules list and assignments for Elementor experiences.', 'reactwoo-geocore' ),
 			'rwgo-dashboard'          => __( 'A/B tests, variants, and experiment workflows.', 'reactwoo-geocore' ),
+			'rwgo-create-test'        => __( 'Wizard to launch a new page or popup experiment.', 'reactwoo-geocore' ),
+			'rwgo-tests'              => __( 'Manage active tests, variants, and goals.', 'reactwoo-geocore' ),
 			'rwgo-reports'            => __( 'Experiment outcomes, winners, and conversion reporting.', 'reactwoo-geocore' ),
 			'rwgc-usage'              => __( 'REST usage, rule match counts, and geo API reference.', 'reactwoo-geocore' ),
 			'rwgc-insights-hub'       => '',
@@ -138,6 +157,12 @@ class RWGC_Admin_Section_Hubs {
 			'rwgc-settings'           => __( 'Detection, MaxMind, and core platform options.', 'reactwoo-geocore' ),
 			'rwgc-tools'              => __( 'Database upload, visitor preview, and diagnostics.', 'reactwoo-geocore' ),
 			'rwgc-addons'             => __( 'Install and manage ReactWoo geo add-ons.', 'reactwoo-geocore' ),
+			'rwgc-commerce-hub'       => '',
+			'rwgcm-dashboard'         => __( 'Commerce overview, stats, and quick links.', 'reactwoo-geocore' ),
+			'rwgcm-pricing'           => __( 'Regional pricing rules with Geo Core visitor conditions.', 'reactwoo-geocore' ),
+			'rwgcm-fees'              => __( 'Country-based cart fees and surcharges.', 'reactwoo-geocore' ),
+			'rwgcm-product-overlays'  => __( 'Per-product geo messaging and overlays.', 'reactwoo-geocore' ),
+			'rwgcm-attribution'       => __( 'UTM and campaign attribution for commerce reporting.', 'reactwoo-geocore' ),
 			'rwgcm-settings'          => __( 'WooCommerce geo commerce behaviour and defaults.', 'reactwoo-geocore' ),
 			'rwgcp-geocore-pro'       => __( 'Licence, cloud, and Google integrations (in-app tabs).', 'reactwoo-geocore' ),
 		);

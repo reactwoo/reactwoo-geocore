@@ -447,6 +447,10 @@
 		if (wrap && wrap.classList) {
 			wrap.closest('.elementor-control') && wrap.closest('.elementor-control').classList.add('rwgc-rb-textarea-hidden');
 		}
+		var mountWrap = textarea.closest('.rwgc-rb-mount-wrap');
+		if (mountWrap && mountWrap.classList) {
+			mountWrap.classList.add('rwgc-rb-textarea-hidden');
+		}
 
 		var root = document.createElement('div');
 		root.className = 'rwgc-rb';

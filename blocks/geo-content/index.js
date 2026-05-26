@@ -140,7 +140,7 @@
 						},
 					}),
 					wp.element.createElement(ToggleControl, {
-						label: __('Use advanced visibility rules', 'reactwoo-geocore'),
+						label: __('Use visibility rule builder', 'reactwoo-geocore'),
 						help: __(
 							'When enabled, the rule builder below replaces the country list for this block.',
 							'reactwoo-geocore'
@@ -153,11 +153,11 @@
 					usePortable
 						? wp.element.createElement(
 								'div',
-								{ ref: rbWrapRef },
+								{ ref: rbWrapRef, className: 'rwgc-rb-mount-wrap' },
 								wp.element.createElement(TextareaControl, {
 									label: __('Visibility rules', 'reactwoo-geocore'),
 									help: __(
-										'Build conditions with the rule builder, or open advanced view to edit stored data directly.',
+										'Build conditions with the rule builder. Open Advanced in the builder for raw JSON only.',
 										'reactwoo-geocore'
 									),
 									value: portable,
@@ -172,7 +172,7 @@
 								'p',
 								{ className: 'components-base-control__help' },
 								__(
-									'Turn on advanced visibility rules to target by GA4 audiences, campaigns, UTM, device, and more.',
+									'Turn on the visibility rule builder to target by GA4 audiences, campaigns, UTM, device, and more.',
 									'reactwoo-geocore'
 								)
 						  ),
@@ -247,7 +247,7 @@
 					null,
 					usePortable
 						? __(
-								'Geo Content — inner blocks render when advanced visibility rules match.',
+								'Geo Content — inner blocks render when visibility rules match.',
 								'reactwoo-geocore'
 						  )
 						: __(
