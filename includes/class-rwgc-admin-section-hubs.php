@@ -22,6 +22,19 @@ class RWGC_Admin_Section_Hubs {
 	}
 
 	/**
+	 * Targeting section home — rules, Elementor, variants, experiments.
+	 *
+	 * @return void
+	 */
+	public static function render_targeting_hub() {
+		if ( ! class_exists( 'RWGC_Admin', false ) || ! RWGC_Admin::can_manage() ) {
+			return;
+		}
+		$cards = self::get_hub_cards( 'targeting', 'rwgc-targeting-hub' );
+		include RWGC_PATH . 'admin/views/targeting-hub-page.php';
+	}
+
+	/**
 	 * Insights section home — links to Geo reports, AI, Optimise, etc.
 	 *
 	 * @return void
@@ -112,11 +125,16 @@ class RWGC_Admin_Section_Hubs {
 	 */
 	private static function default_card_description( $slug, array $route ) {
 		$map = array(
+			'rwgc-targeting-hub'      => '',
+			'rwgc-target-types'       => __( 'Visual rule builder playground and condition reference.', 'reactwoo-geocore' ),
+			'rwgc-suite-variants'     => __( 'Master and secondary page versions by country.', 'reactwoo-geocore' ),
+			'geo-elementor'           => __( 'Elementor rules, geo content, and variant groups.', 'reactwoo-geocore' ),
+			'rwgo-dashboard'          => __( 'A/B tests, variants, and experiment workflows.', 'reactwoo-geocore' ),
+			'rwgo-reports'            => __( 'Experiment outcomes, winners, and conversion reporting.', 'reactwoo-geocore' ),
 			'rwgc-usage'              => __( 'REST usage, rule match counts, and geo API reference.', 'reactwoo-geocore' ),
 			'rwgc-insights-hub'       => '',
 			'rwga-analyses'           => __( 'AI analysis runs and page intelligence reports.', 'reactwoo-geocore' ),
 			'rwga-recommendations'    => __( 'Actionable recommendations from Geo AI workflows.', 'reactwoo-geocore' ),
-			'rwgo-reports'            => __( 'Experiment outcomes, winners, and conversion reporting.', 'reactwoo-geocore' ),
 			'rwgc-settings'           => __( 'Detection, MaxMind, and core platform options.', 'reactwoo-geocore' ),
 			'rwgc-tools'              => __( 'Database upload, visitor preview, and diagnostics.', 'reactwoo-geocore' ),
 			'rwgc-addons'             => __( 'Install and manage ReactWoo geo add-ons.', 'reactwoo-geocore' ),

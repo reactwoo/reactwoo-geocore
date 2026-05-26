@@ -162,10 +162,21 @@ class RWGC_Admin {
 		self::register_app_route(
 			array(
 				'section'   => 'targeting',
+				'route'     => 'targeting-home',
+				'menu_slug' => 'rwgc-targeting-hub',
+				'label'     => __( 'Experiences', 'reactwoo-geocore' ),
+				'order'     => 5,
+				'callback'  => array( 'RWGC_Admin_Section_Hubs', 'render_targeting_hub' ),
+			)
+		);
+
+		self::register_app_route(
+			array(
+				'section'   => 'targeting',
 				'route'     => 'rule-builder',
 				'menu_slug' => 'rwgc-target-types',
 				'label'     => __( 'Rule builder', 'reactwoo-geocore' ),
-				'order'     => 20,
+				'order'     => 25,
 				'callback'  => array( __CLASS__, 'render_target_types' ),
 			)
 		);

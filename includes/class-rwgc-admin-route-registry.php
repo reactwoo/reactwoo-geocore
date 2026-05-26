@@ -265,18 +265,25 @@ class RWGC_Admin_Route_Registry {
 				'order'     => 20,
 			),
 			array(
+				'menu_slug' => 'rwgc-targeting-hub',
+				'section'   => 'targeting',
+				'route'     => 'targeting-home',
+				'label'     => __( 'Experiences', 'reactwoo-geocore' ),
+				'order'     => 5,
+			),
+			array(
 				'menu_slug' => 'rwgc-suite-variants',
 				'section'   => 'targeting',
 				'route'     => 'page-versions',
 				'label'     => __( 'Page versions', 'reactwoo-geocore' ),
-				'order'     => 10,
+				'order'     => 15,
 			),
 			array(
 				'menu_slug' => 'rwgc-target-types',
 				'section'   => 'targeting',
 				'route'     => 'rule-builder',
 				'label'     => __( 'Rule builder', 'reactwoo-geocore' ),
-				'order'     => 20,
+				'order'     => 25,
 			),
 			array(
 				'menu_slug' => 'rwgc-insights-hub',

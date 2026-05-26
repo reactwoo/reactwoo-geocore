@@ -21,7 +21,9 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 		__( 'General, tools, licences, and per-provider configuration.', 'reactwoo-geocore' )
 	);
 	?>
-	<?php RWGC_Admin::render_inner_nav( 'rwgc-settings-hub' ); ?>
+	<?php if ( ! $rwgc_platform_shell ) : ?>
+		<?php RWGC_Admin::render_inner_nav( 'rwgc-settings-hub' ); ?>
+	<?php endif; ?>
 
 	<?php
 	if ( class_exists( 'RWGC_Admin_UI', false ) ) {

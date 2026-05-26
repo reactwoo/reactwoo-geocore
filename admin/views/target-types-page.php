@@ -33,7 +33,7 @@ if ( class_exists( 'EGP_Admin_Menu', false ) ) {
 if ( defined( 'RWGO_VERSION' ) ) {
 	$quick_actions[] = array(
 		'url'   => admin_url( 'admin.php?page=rwgo-dashboard' ),
-		'label' => __( 'Experiments', 'reactwoo-geocore' ),
+		'label' => __( 'Geo Optimise experiments', 'reactwoo-geocore' ),
 	);
 }
 if ( $rwgc_pro_enabled && ! empty( $help['integrations_ga'] ) ) {

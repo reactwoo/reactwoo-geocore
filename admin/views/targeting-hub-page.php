@@ -1,6 +1,6 @@
 <?php
 /**
- * Insights section hub.
+ * Targeting section hub.
  *
  * @package ReactWooGeoCore
  */
@@ -16,13 +16,13 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 	<?php
 	RWGC_Admin_UI::render_page_header(
 		$rwgc_platform_shell
-			? __( 'Insights', 'reactwoo-geocore' )
-			: __( 'Geo insights', 'reactwoo-geocore' ),
-		__( 'Reports and recommendations from Geo Core and installed capability providers.', 'reactwoo-geocore' )
+			? __( 'Targeting', 'reactwoo-geocore' )
+			: __( 'Experience targeting', 'reactwoo-geocore' ),
+		__( 'Rules, page versions, Elementor experiences, and experiments share one visibility engine.', 'reactwoo-geocore' )
 	);
 	?>
 	<?php if ( ! $rwgc_platform_shell ) : ?>
-		<?php RWGC_Admin::render_inner_nav( 'rwgc-insights-hub' ); ?>
+		<?php RWGC_Admin::render_inner_nav( 'rwgc-targeting-hub' ); ?>
 	<?php endif; ?>
 
 	<?php
@@ -30,8 +30,8 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 		RWGC_Admin_UI::render_section_hub_cards(
 			$cards,
 			array(
-				'empty_title' => __( 'No insight reports yet', 'reactwoo-geocore' ),
-				'empty_body'  => __( 'Install Geo AI or Geo Optimise to add analysis and experiment reporting tabs here.', 'reactwoo-geocore' ),
+				'empty_title' => __( 'No targeting screens yet', 'reactwoo-geocore' ),
+				'empty_body'  => __( 'Install Geo Elementor or Geo Optimise to add rules, variants, and experiments.', 'reactwoo-geocore' ),
 			)
 		);
 	}
