@@ -83,16 +83,22 @@ class RWGC_Gutenberg {
 		if ( ! $use_portable && '' !== trim( $portable_raw ) ) {
 			$use_portable = true;
 		}
-		if ( $use_portable && is_string( $portable_raw ) && '' !== trim( $portable_raw )
-			&& class_exists( 'RWGC_Targeting_Rule_Set_Schema' )
-			&& class_exists( 'RWGC_Rule_Evaluator' )
-			&& class_exists( 'RWGC_Context_Resolver' ) ) {
-			$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $portable_raw );
-			if ( is_array( $set ) ) {
-				$snapshot = RWGC_Context_Resolver::resolve_current();
-				$show     = RWGC_Rule_Evaluator::should_render_content( $set, $snapshot );
-				return $show ? '<div class="rwgc-geo-content">' . do_shortcode( $content ) . '</div>' : '';
+		if ( $use_portable ) {
+			if ( ! is_string( $portable_raw ) || '' === trim( $portable_raw )
+				|| ! class_exists( 'RWGC_Targeting_Rule_Set_Schema' )
+				|| ! class_exists( 'RWGC_Rule_Evaluator' )
+				|| ! class_exists( 'RWGC_Context_Resolver' ) ) {
+				return '';
 			}
+
+			$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $portable_raw );
+			if ( ! is_array( $set ) ) {
+				return '';
+			}
+
+			$snapshot = RWGC_Context_Resolver::resolve_current();
+			$show     = RWGC_Rule_Evaluator::should_render_content( $set, $snapshot );
+			return $show ? '<div class="rwgc-geo-content">' . do_shortcode( $content ) . '</div>' : '';
 		}
 
 		$country = strtoupper( rwgc_get_visitor_country() );

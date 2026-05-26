@@ -310,13 +310,17 @@ class RWGC_Elementor {
 
 		if ( ! empty( $settings['rwgc_use_portable_geo_targeting'] ) && 'yes' === (string) $settings['rwgc_use_portable_geo_targeting'] ) {
 			$raw_json = isset( $settings['rwgc_portable_geo_targeting'] ) ? wp_unslash( (string) $settings['rwgc_portable_geo_targeting'] ) : '';
-			if ( is_string( $raw_json ) && '' !== trim( $raw_json ) && class_exists( 'RWGC_Targeting_Rule_Set_Schema' ) && class_exists( 'RWGC_Rule_Evaluator' ) && class_exists( 'RWGC_Context_Resolver' ) ) {
-				$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $raw_json );
-				if ( is_array( $set ) ) {
-					$snapshot = RWGC_Context_Resolver::resolve_current();
-					return RWGC_Rule_Evaluator::should_render_content( $set, $snapshot ) ? $content : '';
-				}
+			if ( ! is_string( $raw_json ) || '' === trim( $raw_json ) || ! class_exists( 'RWGC_Targeting_Rule_Set_Schema' ) || ! class_exists( 'RWGC_Rule_Evaluator' ) || ! class_exists( 'RWGC_Context_Resolver' ) ) {
+				return '';
 			}
+
+			$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $raw_json );
+			if ( ! is_array( $set ) ) {
+				return '';
+			}
+
+			$snapshot = RWGC_Context_Resolver::resolve_current();
+			return RWGC_Rule_Evaluator::should_render_content( $set, $snapshot ) ? $content : '';
 		}
 
 		$selected = array();
