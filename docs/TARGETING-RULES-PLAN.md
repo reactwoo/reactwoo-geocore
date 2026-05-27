@@ -25,9 +25,9 @@ Portable JSON rule sets (`enabled`, `mode`, `match`, `rules[]` with nested `cond
 
 - [x] Shared visual rule builder (`rwgc-rule-builder.js`) on Elementor, geo rules, block editor, and Targeting playground (JSON under Advanced)
 - [x] Shared visual rule builder on Geo Commerce generic rule edit (portable JSON in rule meta; legacy rows when builder off)
-- [ ] Admin “Rules” screen persistence (post meta / CPT) using same schema
-- [ ] PHPUnit in CI (`composer.json` + `tests/`)
-- [ ] `google_ads_campaign` snapshot enrichment with numeric campaign id from gclid (if product requires id match without UTM name)
+- [x] Admin “Rules” screen persistence (post meta / CPT) using same schema — `rwgc_visibility_rule` CPT, Targeting → Visibility rules (`rwgc-visibility-rules`)
+- [x] PHPUnit in CI (`composer.json` + `tests/TargetingRuleEvaluatorTest.php`, `.github/workflows/test.yml`)
+- [x] `google_ads_campaign` snapshot enrichment — `campaign_id` from `campaignid` / `gad_campaignid`; Pro resolves synced entity id for portable `campaign` rules
 
 ## Test checklist (manual)
 

@@ -58,24 +58,29 @@ class RWGC_Admin_Route_Registry {
 				'order' => 20,
 				'icon'  => 'dashicons-admin-site-alt3',
 			),
+			'experiences'    => array(
+				'label' => __( 'Experiences', 'reactwoo-geocore' ),
+				'order' => 30,
+				'icon'  => 'dashicons-format-gallery',
+			),
 			'commerce'       => array(
 				'label' => __( 'Commerce', 'reactwoo-geocore' ),
-				'order' => 30,
+				'order' => 40,
 				'icon'  => 'dashicons-cart',
 			),
 			'insights'       => array(
 				'label' => __( 'Insights', 'reactwoo-geocore' ),
-				'order' => 40,
+				'order' => 50,
 				'icon'  => 'dashicons-chart-area',
 			),
 			'integrations'   => array(
 				'label' => __( 'Integrations', 'reactwoo-geocore' ),
-				'order' => 50,
+				'order' => 60,
 				'icon'  => 'dashicons-admin-links',
 			),
 			'settings'       => array(
 				'label' => __( 'Settings', 'reactwoo-geocore' ),
-				'order' => 60,
+				'order' => 70,
 				'icon'  => 'dashicons-admin-settings',
 			),
 		);
@@ -268,49 +273,119 @@ class RWGC_Admin_Route_Registry {
 				'menu_slug' => 'rwgc-commerce-hub',
 				'section'   => 'commerce',
 				'route'     => 'commerce-home',
-				'label'     => __( 'Commerce home', 'reactwoo-geocore' ),
+				'label'     => __( 'Overview', 'reactwoo-geocore' ),
 				'order'     => 5,
 			),
 			array(
 				'menu_slug' => 'rwgc-targeting-hub',
 				'section'   => 'targeting',
 				'route'     => 'targeting-home',
-				'label'     => __( 'Experiences', 'reactwoo-geocore' ),
+				'label'     => __( 'Overview', 'reactwoo-geocore' ),
 				'order'     => 5,
 			),
 			array(
-				'menu_slug' => 'rwgc-suite-variants',
+				'menu_slug' => 'rwgc-visibility-rules',
 				'section'   => 'targeting',
-				'route'     => 'page-versions',
-				'label'     => __( 'Page versions', 'reactwoo-geocore' ),
-				'order'     => 15,
+				'route'     => 'rules',
+				'label'     => __( 'Rules', 'reactwoo-geocore' ),
+				'order'     => 10,
 			),
 			array(
 				'menu_slug' => 'rwgc-target-types',
 				'section'   => 'targeting',
-				'route'     => 'rule-builder',
-				'label'     => __( 'Rule builder', 'reactwoo-geocore' ),
+				'route'     => 'geo-conditions',
+				'label'     => __( 'Geo conditions', 'reactwoo-geocore' ),
+				'order'     => 30,
+			),
+			array(
+				'menu_slug' => 'rwgc-targeting-audiences',
+				'section'   => 'targeting',
+				'route'     => 'audiences',
+				'label'     => __( 'Audiences', 'reactwoo-geocore' ),
+				'order'     => 20,
+			),
+			array(
+				'menu_slug' => 'rwgc-targeting-campaigns',
+				'section'   => 'targeting',
+				'route'     => 'campaigns',
+				'label'     => __( 'Campaigns', 'reactwoo-geocore' ),
 				'order'     => 25,
+			),
+			array(
+				'menu_slug'      => 'rwgc-suite-variants',
+				'section'        => 'experiences',
+				'route'          => 'variants',
+				'label'          => __( 'Variants', 'reactwoo-geocore' ),
+				'order'          => 10,
+			),
+			array(
+				'menu_slug' => 'rwgc-experiences-hub',
+				'section'   => 'experiences',
+				'route'     => 'experiences-home',
+				'label'     => __( 'Overview', 'reactwoo-geocore' ),
+				'order'     => 5,
 			),
 			array(
 				'menu_slug' => 'rwgc-insights-hub',
 				'section'   => 'insights',
 				'route'     => 'insights-home',
-				'label'     => __( 'Insights home', 'reactwoo-geocore' ),
+				'label'     => __( 'Overview', 'reactwoo-geocore' ),
 				'order'     => 5,
 			),
 			array(
 				'menu_slug' => 'rwgc-usage',
 				'section'   => 'insights',
 				'route'     => 'geo-reports',
-				'label'     => __( 'Geo reports', 'reactwoo-geocore' ),
+				'label'     => __( 'Geo insights', 'reactwoo-geocore' ),
+				'order'     => 15,
+			),
+			array(
+				'menu_slug' => 'rwgc-usage-audience',
+				'section'   => 'insights',
+				'route'     => 'audience-insights',
+				'label'     => __( 'Audience insights', 'reactwoo-geocore' ),
+				'order'     => 20,
+			),
+			array(
+				'menu_slug' => 'rwgc-usage-campaign',
+				'section'   => 'insights',
+				'route'     => 'campaign-insights',
+				'label'     => __( 'Campaign insights', 'reactwoo-geocore' ),
+				'order'     => 25,
+			),
+			array(
+				'menu_slug' => 'rwgc-insights-experiments',
+				'section'   => 'insights',
+				'route'     => 'experience-performance',
+				'label'     => __( 'Experience performance', 'reactwoo-geocore' ),
+				'order'     => 30,
+			),
+			array(
+				'menu_slug' => 'rwgc-integrations-hub',
+				'section'   => 'integrations',
+				'route'     => 'integrations-home',
+				'label'     => __( 'Overview', 'reactwoo-geocore' ),
+				'order'     => 5,
+			),
+			array(
+				'menu_slug' => 'rwgc-integrations-gutenberg',
+				'section'   => 'integrations',
+				'route'     => 'gutenberg',
+				'label'     => __( 'Gutenberg', 'reactwoo-geocore' ),
+				'order'     => 10,
+			),
+			array(
+				'menu_slug' => 'rwgc-integrations-woocommerce',
+				'section'   => 'integrations',
+				'route'     => 'woocommerce',
+				'label'     => __( 'WooCommerce', 'reactwoo-geocore' ),
 				'order'     => 15,
 			),
 			array(
 				'menu_slug' => 'rwgc-settings-hub',
 				'section'   => 'settings',
 				'route'     => 'settings-home',
-				'label'     => __( 'Settings home', 'reactwoo-geocore' ),
+				'label'     => __( 'Overview', 'reactwoo-geocore' ),
 				'order'     => 5,
 			),
 			array(
@@ -394,8 +469,8 @@ class RWGC_Admin_Route_Registry {
 			'pro'       => 'integrations',
 			'ai'        => 'insights',
 			'commerce'  => 'commerce',
-			'optimise'  => 'targeting',
-			'elementor' => 'targeting',
+			'optimise'  => 'experiences',
+			'elementor' => 'integrations',
 		);
 		$module_id = sanitize_key( (string) $module_id );
 		return isset( $map[ $module_id ] ) ? $map[ $module_id ] : 'overview';
@@ -439,22 +514,34 @@ class RWGC_Admin_Route_Registry {
 			return 'insights';
 		}
 		if ( 0 === strpos( $slug, 'rwgo-' ) ) {
-			return 'targeting';
+			return 'experiences';
 		}
 		if ( 0 === strpos( $slug, 'rwgcp-' ) ) {
 			return 'integrations';
 		}
-		if ( in_array( $slug, array( 'rwgc-usage' ), true ) ) {
+		if ( in_array( $slug, array( 'rwgc-usage', 'rwgc-usage-audience', 'rwgc-usage-campaign', 'rwgc-insights-experiments' ), true ) ) {
 			return 'insights';
 		}
-		if ( in_array( $slug, array( 'rwgc-target-types', 'rwgc-suite-variants' ), true ) ) {
+		if ( in_array( $slug, array( 'rwgc-commerce-hub' ), true ) ) {
+			return 'commerce';
+		}
+		if ( in_array( $slug, array( 'rwgc-integrations-hub', 'rwgc-integrations-gutenberg', 'rwgc-integrations-woocommerce' ), true ) ) {
+			return 'integrations';
+		}
+		if ( in_array( $slug, array( 'rwgc-target-types', 'rwgc-visibility-rules', 'rwgc-targeting-hub', 'rwgc-targeting-audiences', 'rwgc-targeting-campaigns' ), true ) ) {
 			return 'targeting';
+		}
+		if ( in_array( $slug, array( 'rwgc-experiences-hub', 'rwgc-suite-variants' ), true ) ) {
+			return 'experiences';
 		}
 		if ( in_array( $slug, array( 'rwgc-getting-started', 'rwgc-suite-home' ), true ) ) {
 			return 'overview';
 		}
-		if ( 0 === strpos( $slug, 'geo-elementor' ) || 0 === strpos( $slug, 'geo-content' ) || 0 === strpos( $slug, 'geo-templates' ) || 0 === strpos( $slug, 'elementor-geo-popup' ) || 0 === strpos( $slug, 'egp-' ) ) {
-			return 'targeting';
+		if ( 0 === strpos( $slug, 'geo-content' ) ) {
+			return 'experiences';
+		}
+		if ( 0 === strpos( $slug, 'geo-elementor' ) || 0 === strpos( $slug, 'geo-templates' ) || 0 === strpos( $slug, 'elementor-geo-popup' ) || 0 === strpos( $slug, 'egp-' ) ) {
+			return 'integrations';
 		}
 		if ( 0 === strpos( $slug, 'rwgc-' ) ) {
 			return 'overview';

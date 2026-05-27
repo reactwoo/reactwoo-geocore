@@ -276,7 +276,21 @@ Implementation: extend `RWGC_Onboarding` state machine; satellites hook `rwgc_on
 
 **Shipped in Phase 2 (continued):** Commerce hub; portable rule builder on generic commerce rule edit; PHPUnit + CI workflow (`test.yml`); block editor label parity.
 
-**Next (Phase 2):** Admin Rules CPT persistence screen (Core-owned rules library) — see §7 and `docs/TARGETING-RULES-PLAN.md`.
+**Shipped in 1.7.2 (Phase 2):** Core visibility rules library (`rwgc_visibility_rule` CPT, `rwgc-visibility-rules` admin route, shared rule builder).
+
+**Shipped in 1.7.3 (Phase 2 close):** Google Ads `campaign_id` capture + Pro `google_ads_campaign` snapshot resolution against synced entities.
+
+**Shipped in 1.7.4 (Phase 3):** Integrations hub with sync snapshot + `rwgc_platform_integrations` registry; public settings/sync helpers; grouped Insights hub (1.7.3).
+
+**Shipped in 1.7.5 (Phase 4 start):** Platform onboarding checklist on Overview; Integrations section sub-nav; Settings hub core quick links; shell Overview deduplication.
+
+**Shipped in 1.7.6 (Phase 4 polish):** Responsive shell navigation polish (mobile horizontal module nav, active-tab centering for shell nav strips, reduced-motion support).
+
+**Shipped in 1.7.7 (Admin IA):** Intent-based section model: **Overview / Targeting / Experiences / Commerce / Insights / Integrations / Settings**. Satellites register into conceptual sections (Elementor → Integrations; Optimise → Experiences/Insights; Commerce outcomes → Commerce). Primary nav uses intent labels (Rules, Geo conditions, Variants, Reports, etc.). Internal routes use `is_section_nav = false`. Checklist: `docs/geo-admin-ia-checklist.md`.
+
+**City vs Weather note:** Elementor "City Settings" configures city geocoding/provider behavior (OpenWeatherMap in Geo Elementor addon). Weather targeting conditions are evaluated separately by GeoCore Pro weather providers; city lookup is not the same as visitor weather-condition evaluation.
+
+**Next:** Dedicated Audience/Campaign report UIs; optional unified onboarding wizard refresh.
 
 ---
 

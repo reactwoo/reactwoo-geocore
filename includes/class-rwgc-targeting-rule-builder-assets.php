@@ -140,11 +140,20 @@ class RWGC_Targeting_Rule_Builder_Assets {
 	 * @return void
 	 */
 	public static function enqueue_targeting_admin( $hook ) {
-		if ( false === strpos( $hook, 'rwgc-target-types' ) ) {
+		$is_playground = false !== strpos( $hook, 'rwgc-target-types' );
+		$is_library    = false !== strpos( $hook, 'rwgc-visibility-rules' );
+		if ( ! $is_playground && ! $is_library ) {
 			return;
 		}
 		self::enqueue_admin();
-		wp_add_inline_script( self::SCRIPT_HANDLE, self::get_mount_playground_inline(), 'after' );
+		if ( $is_playground ) {
+			wp_add_inline_script( self::SCRIPT_HANDLE, self::get_mount_playground_inline(), 'after' );
+			return;
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['rwgc_edit'] ) ) {
+			wp_add_inline_script( self::SCRIPT_HANDLE, self::get_mount_inline( '#rwgc_portable_targeting' ), 'after' );
+		}
 	}
 
 	/**

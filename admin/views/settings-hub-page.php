@@ -18,7 +18,7 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 		$rwgc_platform_shell
 			? __( 'Settings', 'reactwoo-geocore' )
 			: __( 'Geo settings', 'reactwoo-geocore' ),
-		__( 'General, tools, licences, and per-provider configuration.', 'reactwoo-geocore' )
+		__( 'Configure GeoCore and satellites.', 'reactwoo-geocore' )
 	);
 	?>
 	<?php if ( ! $rwgc_platform_shell ) : ?>
@@ -30,7 +30,29 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 	<?php endif; ?>
 
 	<?php
+	if ( $rwgc_platform_shell && class_exists( 'RWGC_Admin_Settings_Nav', false ) ) {
+		$core_links = RWGC_Admin_Settings_Nav::get_core_settings_quick_links();
+		if ( ! empty( $core_links ) ) {
+			echo '<div class="rwgc-card rwgc-settings-hub__core-links">';
+			echo '<h2 class="rwgc-settings-hub__core-title">' . esc_html__( 'Geo Core settings', 'reactwoo-geocore' ) . '</h2>';
+			echo '<p class="description">' . esc_html__( 'General detection, tools, and add-ons for the free engine.', 'reactwoo-geocore' ) . '</p>';
+			echo '<p class="rwgc-settings-hub__link-row">';
+			foreach ( $core_links as $i => $link ) {
+				if ( $i > 0 ) {
+					echo ' <span class="rwgc-settings-hub__sep" aria-hidden="true">·</span> ';
+				}
+				printf(
+					'<a href="%1$s">%2$s</a>',
+					esc_url( (string) $link['url'] ),
+					esc_html( (string) $link['label'] )
+				);
+			}
+			echo '</p></div>';
+		}
+	}
+
 	if ( class_exists( 'RWGC_Admin_UI', false ) ) {
+		echo '<h2 class="rwgc-settings-hub__providers-title">' . esc_html__( 'Provider settings', 'reactwoo-geocore' ) . '</h2>';
 		RWGC_Admin_UI::render_section_hub_cards(
 			$cards,
 			array(

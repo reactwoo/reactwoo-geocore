@@ -156,6 +156,7 @@ class RWGC_Context_Resolver {
 		$merged['source']       = isset( $attribution['source'] ) ? (string) $attribution['source'] : ( isset( $merged['source'] ) ? (string) $merged['source'] : '' );
 		$merged['medium']       = isset( $attribution['medium'] ) ? (string) $attribution['medium'] : ( isset( $merged['medium'] ) ? (string) $merged['medium'] : '' );
 		$merged['campaign']     = isset( $attribution['campaign'] ) ? (string) $attribution['campaign'] : ( isset( $merged['campaign'] ) ? (string) $merged['campaign'] : '' );
+		$merged['campaign_id']  = isset( $attribution['campaign_id'] ) ? (string) $attribution['campaign_id'] : ( isset( $merged['campaign_id'] ) ? (string) $merged['campaign_id'] : '' );
 		$merged['content']      = isset( $attribution['content'] ) ? (string) $attribution['content'] : ( isset( $merged['content'] ) ? (string) $merged['content'] : '' );
 		$merged['term']         = isset( $attribution['term'] ) ? (string) $attribution['term'] : ( isset( $merged['term'] ) ? (string) $merged['term'] : '' );
 		$merged['gclid']        = isset( $attribution['gclid'] ) ? (string) $attribution['gclid'] : ( isset( $merged['gclid'] ) ? (string) $merged['gclid'] : '' );

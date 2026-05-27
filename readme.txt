@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.7.1
+Stable tag: 1.7.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,25 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.7.7 =
+* **Admin IA:** Intent-based suite navigation (Overview, Targeting, Experiences, Commerce, Insights, Integrations, Settings). New section hubs and routes for Audiences, Campaigns, Gutenberg, WooCommerce, Merchandising, Availability, and Experience performance. Internal/detail screens hidden from primary section tabs via `is_section_nav`. See `docs/geo-admin-ia-checklist.md`.
+
+= 1.7.6 =
+* **Phase 4 polish:** Improved responsive app shell navigation (mobile horizontal module nav, active tab auto-centering for module/section/settings strips, reduced-motion support).
+
+= 1.7.5 =
+* **Phase 4:** Platform setup checklist on Overview (visibility library, commerce optional); shell Overview hides duplicate stats; Settings hub Geo Core quick links; Integrations section tabs.
+
+= 1.7.4 =
+* **Phase 3:** Integrations section hub (`rwgc-integrations-hub`) with sync health and connection cards; `rwgc_get_platform_integrations()` / `rwgc_get_settings_providers()` / `rwgc_get_platform_sync_status()` APIs; improved topbar sync hints.
+
+= 1.7.3 =
+* **Phase 2:** Google Ads `campaign_id` URL capture (`campaignid`, `gad_campaignid`); Insights hub groups reports by provider when platform shell is active.
+* **Phase 3 (start):** Grouped Insights section hub (Core, Geo AI, Geo Optimise cards).
+
+= 1.7.2 =
+* **Phase 2:** Core visibility rules library (`rwgc_visibility_rule` CPT) under Targeting → Visibility rules with shared rule builder; `rwgc_get_visibility_rule_set()` helper.
 
 = 1.7.1 =
 * **Phase 2:** Commerce section hub; unified visibility rule builder on block editor, Elementor, and geo rules; shell-aware hub pages; Geo Commerce portable rules integration; PHPUnit targeting tests and CI workflow.

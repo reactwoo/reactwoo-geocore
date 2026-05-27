@@ -45,6 +45,10 @@ Geo Core ships an **onboarding + workflow shell** (`RWGC_Suite_Admin`, Suite Hom
 | `rwgc_profile_match_candidates` | `( $candidates, $context )` | Provide profile candidates before matching. Intended for GeoCore Pro/Cloud-synced profile bundles. |
 | `rwgc_matched_experience_profile` | `( $matched, $candidates, $context )` | Select a single matched profile for the active request context. |
 | `rwgc_analytics_targets_configured` | `( $configured )` | Signals whether analytics-backed targets are operational; drives availability and admin status messaging. |
+| `rwgc_onboarding_platform_steps` | `( $steps, $state )` | Overview / setup checklist rows (`id`, `label`, `done`, `url`, optional `hint`). |
+| `rwgc_platform_integrations` | `( $items )` | Integrations hub connection rows (GeoCore Pro registers Google Ads / GA4). |
+| `rwgc_platform_overview_section_links` | `( $links )` | Overview shortcut tiles (Targeting, Commerce, Integrations, …). |
+| `rwgc_settings_providers` | `( $defs )` | Settings provider tab labels and order. |
 
 ## Services (PHP)
 
@@ -59,6 +63,10 @@ Geo Core ships an **onboarding + workflow shell** (`RWGC_Suite_Admin`, Suite Hom
 - `rw_geo_register_admin_submenu( $args )` — `add_submenu_page` under the ReactWoo Geo hub (use only when `register_wp_submenu` true).
 - `rw_geo_render_inner_nav( $items, $current, $args )` — legacy horizontal nav; no-op when **`rwgc_uses_platform_shell()`** is true.
 - `rwgc_uses_platform_shell()` — whether the unified app shell is rendering.
+- `rwgc_get_setup_progress()` — platform checklist for Overview (`RWGC_Onboarding::get_setup_progress()`).
+- `rwgc_get_platform_sync_status()` — topbar sync pill snapshot.
+- `rwgc_get_platform_integrations()` — Integrations hub rows.
+- `rwgc_get_settings_providers()` — active settings provider groups for the shell.
 - `rwgc_admin_menu_parent()` — parent slug for hub routes.
 - `RWGC_Admin_Platform::menu_parent()` / `::menu_label()` — hub slug and **ReactWoo Geo** sidebar label.
 

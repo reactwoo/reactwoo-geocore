@@ -45,23 +45,45 @@ $tone_mm    = $maxmind_ok ? 'success' : 'warning';
 $tone_db    = $db_ready ? 'success' : 'warning';
 $tone_rest  = $rule_matches_count > 0 ? 'success' : 'neutral';
 
-$quick_actions = array(
-	array(
-		'url'     => admin_url( 'admin.php?page=rwgc-settings' ),
-		'label'   => __( 'Configure Detection', 'reactwoo-geocore' ),
-		'primary' => true,
-	),
-	array(
-		'url'     => admin_url( 'admin.php?page=rwgc-tools' ),
-		'label'   => __( 'Test Visitor Context', 'reactwoo-geocore' ),
-		'primary' => false,
-	),
-	array(
-		'url'     => admin_url( 'admin.php?page=rwgc-usage' ),
-		'label'   => __( 'View Reports', 'reactwoo-geocore' ),
-		'primary' => false,
-	),
-);
+$rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
+
+if ( $rwgc_platform_shell ) {
+	$quick_actions = array(
+		array(
+			'url'     => admin_url( 'admin.php?page=rwgc-getting-started' ),
+			'label'   => __( 'Setup wizard', 'reactwoo-geocore' ),
+			'primary' => true,
+		),
+		array(
+			'url'     => admin_url( 'admin.php?page=rwgc-targeting-hub' ),
+			'label'   => __( 'Targeting', 'reactwoo-geocore' ),
+			'primary' => false,
+		),
+		array(
+			'url'     => admin_url( 'admin.php?page=rwgc-integrations-hub' ),
+			'label'   => __( 'Integrations', 'reactwoo-geocore' ),
+			'primary' => false,
+		),
+	);
+} else {
+	$quick_actions = array(
+		array(
+			'url'     => admin_url( 'admin.php?page=rwgc-settings' ),
+			'label'   => __( 'Configure Detection', 'reactwoo-geocore' ),
+			'primary' => true,
+		),
+		array(
+			'url'     => admin_url( 'admin.php?page=rwgc-tools' ),
+			'label'   => __( 'Test Visitor Context', 'reactwoo-geocore' ),
+			'primary' => false,
+		),
+		array(
+			'url'     => admin_url( 'admin.php?page=rwgc-usage' ),
+			'label'   => __( 'View Reports', 'reactwoo-geocore' ),
+			'primary' => false,
+		),
+	);
+}
 
 if ( class_exists( 'RWGC_Module_Registry', false ) ) {
 	$quick_actions = RWGC_Module_Registry::append_satellite_quick_actions( $quick_actions );
@@ -74,8 +96,7 @@ if ( class_exists( 'RWGC_Module_Registry', false ) ) {
  */
 $quick_actions = apply_filters( 'rwgc_dashboard_quick_actions', $quick_actions );
 
-$rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
-$rwgc_setup_progress   = class_exists( 'RWGC_Onboarding', false )
+$rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 	? RWGC_Onboarding::get_setup_progress()
 	: array();
 ?>
@@ -110,6 +131,7 @@ $rwgc_setup_progress   = class_exists( 'RWGC_Onboarding', false )
 	</section>
 	<?php endif; ?>
 
+	<?php if ( ! $rwgc_platform_shell ) : ?>
 	<?php
 	RWGC_Admin_UI::render_stat_grid_open();
 	RWGC_Admin_UI::render_stat_card( __( 'Location Detection', 'reactwoo-geocore' ), $stat_geo, array( 'hint' => $stat_geo_t, 'tone' => $tone_geo ) );
@@ -156,6 +178,7 @@ $rwgc_setup_progress   = class_exists( 'RWGC_Onboarding', false )
 			?>
 		</ul>
 	</div>
+	<?php endif; ?>
 
 	<h2 class="screen-reader-text"><?php esc_html_e( 'Quick actions', 'reactwoo-geocore' ); ?></h2>
 	<?php RWGC_Admin_UI::render_quick_actions( $quick_actions ); ?>

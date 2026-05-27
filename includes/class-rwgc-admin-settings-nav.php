@@ -366,6 +366,31 @@ class RWGC_Admin_Settings_Nav {
 	 * @param string $provider_id Provider id.
 	 * @return string
 	 */
+	/**
+	 * Quick links for Geo Core settings routes (shown on Settings hub).
+	 *
+	 * @return array<int, array{label:string,url:string}>
+	 */
+	public static function get_core_settings_quick_links() {
+		$links  = array();
+		$routes = self::get_provider_routes( 'core' );
+		foreach ( $routes as $slug => $route ) {
+			$label = isset( $route['label'] ) ? (string) $route['label'] : $slug;
+			if ( '' === $label ) {
+				continue;
+			}
+			$links[] = array(
+				'label' => $label,
+				'url'   => admin_url( 'admin.php?page=' . rawurlencode( (string) $slug ) ),
+			);
+		}
+		return $links;
+	}
+
+	/**
+	 * @param string $provider_id Provider id.
+	 * @return string
+	 */
 	private static function provider_hub_description( $provider_id ) {
 		$map = array(
 			'core'          => __( 'General options, MaxMind tools, and add-ons.', 'reactwoo-geocore' ),

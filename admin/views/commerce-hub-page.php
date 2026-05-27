@@ -18,7 +18,7 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 		$rwgc_platform_shell
 			? __( 'Commerce', 'reactwoo-geocore' )
 			: __( 'Geo commerce', 'reactwoo-geocore' ),
-		__( 'Regional pricing, cart fees, product overlays, and WooCommerce geo rules.', 'reactwoo-geocore' )
+		__( 'Adjust pricing, offers and product experiences.', 'reactwoo-geocore' )
 	);
 	?>
 	<?php if ( ! $rwgc_platform_shell ) : ?>

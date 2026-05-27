@@ -48,6 +48,32 @@ class RWGC_Admin_Section_Hubs {
 	}
 
 	/**
+	 * Experiences section home — variants, geo content, experiments, reports.
+	 *
+	 * @return void
+	 */
+	public static function render_experiences_hub() {
+		if ( ! class_exists( 'RWGC_Admin', false ) || ! RWGC_Admin::can_manage() ) {
+			return;
+		}
+		$cards = self::get_hub_cards( 'experiences', 'rwgc-experiences-hub' );
+		include RWGC_PATH . 'admin/views/experiences-hub-page.php';
+	}
+
+	/**
+	 * Integrations section home — Google, licences, sync status.
+	 *
+	 * @return void
+	 */
+	public static function render_integrations_hub() {
+		if ( ! class_exists( 'RWGC_Admin', false ) || ! RWGC_Admin::can_manage() ) {
+			return;
+		}
+		$cards = self::get_hub_cards( 'integrations', 'rwgc-integrations-hub' );
+		include RWGC_PATH . 'admin/views/integrations-hub-page.php';
+	}
+
+	/**
 	 * Insights section home — links to Geo reports, AI, Optimise, etc.
 	 *
 	 * @return void
@@ -142,16 +168,25 @@ class RWGC_Admin_Section_Hubs {
 	private static function default_card_description( $slug, array $route ) {
 		$map = array(
 			'rwgc-targeting-hub'      => '',
-			'rwgc-target-types'       => __( 'Visual rule builder playground and condition reference.', 'reactwoo-geocore' ),
-			'rwgc-suite-variants'     => __( 'Master and secondary page versions by country.', 'reactwoo-geocore' ),
-			'geo-elementor'           => __( 'Elementor rules, geo content, and variant groups.', 'reactwoo-geocore' ),
-			'geo-elementor-rules'     => __( 'Geo rules list and assignments for Elementor experiences.', 'reactwoo-geocore' ),
+			'rwgc-experiences-hub'    => '',
+			'rwgc-visibility-rules'   => __( 'Reusable eligibility rules used by experiences and commerce.', 'reactwoo-geocore' ),
+			'rwgc-targeting-audiences'=> __( 'Audience definitions for targeting eligibility and reporting.', 'reactwoo-geocore' ),
+			'rwgc-targeting-campaigns'=> __( 'Campaign references used by targeting and attribution workflows.', 'reactwoo-geocore' ),
+			'rwgc-target-types'       => __( 'Condition catalog and targeting simulation reference.', 'reactwoo-geocore' ),
+			'rwgc-suite-variants'     => __( 'Create and manage page/content variants.', 'reactwoo-geocore' ),
+			'geo-elementor'           => __( 'Elementor integration and compatibility status.', 'reactwoo-geocore' ),
+			'geo-elementor-rules'     => __( 'Dynamic content assignments powered by Elementor.', 'reactwoo-geocore' ),
+			'geo-content'             => __( 'Geo Content blocks and shortcode-driven experiences.', 'reactwoo-geocore' ),
+			'geo-elementor-variants'  => __( 'Variant groups for Elementor-managed experiences.', 'reactwoo-geocore' ),
 			'rwgo-dashboard'          => __( 'A/B tests, variants, and experiment workflows.', 'reactwoo-geocore' ),
 			'rwgo-create-test'        => __( 'Wizard to launch a new page or popup experiment.', 'reactwoo-geocore' ),
-			'rwgo-tests'              => __( 'Manage active tests, variants, and goals.', 'reactwoo-geocore' ),
+			'rwgo-tests'              => __( 'Manage active experiments, variants, and goals.', 'reactwoo-geocore' ),
 			'rwgo-reports'            => __( 'Experiment outcomes, winners, and conversion reporting.', 'reactwoo-geocore' ),
 			'rwgc-usage'              => __( 'REST usage, rule match counts, and geo API reference.', 'reactwoo-geocore' ),
 			'rwgc-insights-hub'       => '',
+			'rwgc-integrations-hub'   => '',
+			'rwgc-integrations-gutenberg' => __( 'Block editor integration for Geo Content and targeting-aware blocks.', 'reactwoo-geocore' ),
+			'rwgc-integrations-woocommerce' => __( 'WooCommerce connection status and commerce dependency guidance.', 'reactwoo-geocore' ),
 			'rwga-analyses'           => __( 'AI analysis runs and page intelligence reports.', 'reactwoo-geocore' ),
 			'rwga-recommendations'    => __( 'Actionable recommendations from Geo AI workflows.', 'reactwoo-geocore' ),
 			'rwgc-settings'           => __( 'Detection, MaxMind, and core platform options.', 'reactwoo-geocore' ),
@@ -160,11 +195,18 @@ class RWGC_Admin_Section_Hubs {
 			'rwgc-commerce-hub'       => '',
 			'rwgcm-dashboard'         => __( 'Commerce overview, stats, and quick links.', 'reactwoo-geocore' ),
 			'rwgcm-pricing'           => __( 'Regional pricing rules with Geo Core visitor conditions.', 'reactwoo-geocore' ),
-			'rwgcm-fees'              => __( 'Country-based cart fees and surcharges.', 'reactwoo-geocore' ),
+			'rwgcm-fees'              => __( 'Geo-based offers and fee outcomes at cart/checkout.', 'reactwoo-geocore' ),
 			'rwgcm-product-overlays'  => __( 'Per-product geo messaging and overlays.', 'reactwoo-geocore' ),
-			'rwgcm-attribution'       => __( 'UTM and campaign attribution for commerce reporting.', 'reactwoo-geocore' ),
+			'rwgcm-attribution'       => __( 'Commerce performance and attribution insights.', 'reactwoo-geocore' ),
+			'rwgcm-merchandising'     => __( 'Geo-based product messaging and merchandising outcomes.', 'reactwoo-geo-commerce' ),
+			'rwgcm-availability'      => __( 'Geo-based product visibility and purchase eligibility.', 'reactwoo-geo-commerce' ),
+			'rwgc-insights-experiments' => __( 'Experiment outcomes and conversion performance.', 'reactwoo-geocore' ),
 			'rwgcm-settings'          => __( 'WooCommerce geo commerce behaviour and defaults.', 'reactwoo-geocore' ),
 			'rwgcp-geocore-pro'       => __( 'Licence, cloud, and Google integrations (in-app tabs).', 'reactwoo-geocore' ),
+			'rwgcp-google'            => __( 'Google Ads and GA4 integration status and sync controls.', 'reactwoo-geocore' ),
+			'rwgcp-weather'           => __( 'Weather provider connections used by weather conditions.', 'reactwoo-geocore' ),
+			'rwgcp-meta'              => __( 'Meta integration surface (when enabled).', 'reactwoo-geocore' ),
+			'rwgcp-api-keys'          => __( 'Provider/API key configuration entry point.', 'reactwoo-geocore' ),
 		);
 
 		if ( isset( $map[ $slug ] ) && '' !== $map[ $slug ] ) {

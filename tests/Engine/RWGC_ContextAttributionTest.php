@@ -33,6 +33,18 @@ final class RWGC_ContextAttributionTest extends TestCase {
 		$this->assertFalse( empty( $payload['session_touch']['source'] ) );
 	}
 
+	public function test_resolve_reads_google_ads_campaign_id_from_request(): void {
+		$_GET['gclid']       = 'abc123';
+		$_GET['campaignid']  = '9876543210';
+		$_GET['utm_campaign'] = 'ignored_when_id_present';
+
+		$payload = RWGC_Context_Attribution::resolve();
+
+		$this->assertSame( 'abc123', $payload['gclid'] );
+		$this->assertSame( '9876543210', $payload['campaign_id'] );
+		$this->assertSame( 'ignored_when_id_present', $payload['campaign'] );
+	}
+
 	public function test_resolve_uses_cookie_snapshot_when_request_missing(): void {
 		$_COOKIE['rwgc_ft'] = rawurlencode(
 			wp_json_encode(

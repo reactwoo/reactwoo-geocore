@@ -258,6 +258,14 @@ class RWGC_Onboarding {
 			$rules_count = is_array( $rows ) ? count( $rows ) : 0;
 		}
 
+		$library_rules = 0;
+		if ( class_exists( 'RWGC_Visibility_Rule_CPT', false ) && post_type_exists( RWGC_Visibility_Rule_CPT::POST_TYPE ) ) {
+			$counts = wp_count_posts( RWGC_Visibility_Rule_CPT::POST_TYPE );
+			if ( $counts ) {
+				$library_rules = (int) ( $counts->publish ?? 0 ) + (int) ( $counts->draft ?? 0 );
+			}
+		}
+
 		$pro_on = function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled();
 		$sync   = class_exists( 'RWGC_Platform_Sync_Status', false )
 			? RWGC_Platform_Sync_Status::get_snapshot()
@@ -293,9 +301,7 @@ class RWGC_Onboarding {
 				'id'       => 'google_sync',
 				'label'    => __( 'Google audiences & campaigns synced', 'reactwoo-geocore' ),
 				'done'     => $pro_on && isset( $sync['variant'] ) && 'success' === $sync['variant'],
-				'url'      => isset( $sync['url'] ) && is_string( $sync['url'] ) && '' !== $sync['url']
-					? $sync['url']
-					: admin_url( 'admin.php?page=rwgcp-geocore-pro&rwgcp_tab=integrations' ),
+				'url'      => admin_url( 'admin.php?page=rwgc-integrations-hub' ),
 				'optional' => ! $pro_on,
 				'hint'     => $pro_on
 					? __( 'GeoCore Pro → Integrations.', 'reactwoo-geocore' )
@@ -304,12 +310,31 @@ class RWGC_Onboarding {
 			array(
 				'id'       => 'first_experience',
 				'label'    => __( 'Create first page version or rule', 'reactwoo-geocore' ),
-				'done'     => $rules_count > 0,
-				'url'      => admin_url( 'admin.php?page=rwgc-suite-variants' ),
+				'done'     => $rules_count > 0 || $library_rules > 0,
+				'url'      => admin_url( 'admin.php?page=rwgc-targeting-hub' ),
 				'optional' => false,
-				'hint'     => __( 'Page versions under Targeting.', 'reactwoo-geocore' ),
+				'hint'     => __( 'Page versions or a saved visibility rule under Targeting.', 'reactwoo-geocore' ),
+			),
+			array(
+				'id'       => 'visibility_library',
+				'label'    => __( 'Save a visibility rule set', 'reactwoo-geocore' ),
+				'done'     => $library_rules > 0,
+				'url'      => admin_url( 'admin.php?page=rwgc-visibility-rules' ),
+				'optional' => true,
+				'hint'     => __( 'Reusable portable rules you can copy into Elementor, blocks, or commerce.', 'reactwoo-geocore' ),
 			),
 		);
+
+		if ( function_exists( 'rwgc_is_woocommerce_active' ) && rwgc_is_woocommerce_active() ) {
+			$steps[] = array(
+				'id'       => 'commerce',
+				'label'    => __( 'Configure commerce geo rules', 'reactwoo-geocore' ),
+				'done'     => defined( 'RWGCM_VERSION' ),
+				'url'      => admin_url( 'admin.php?page=rwgc-commerce-hub' ),
+				'optional' => true,
+				'hint'     => __( 'Regional pricing and overlays when Geo Commerce is active.', 'reactwoo-geocore' ),
+			);
+		}
 
 		/**
 		 * Filter platform onboarding steps shown on Overview and setup surfaces.

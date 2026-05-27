@@ -40,6 +40,7 @@ class RWGC_Context_Attribution {
 			'source'              => (string) ( $merged_touch['source'] ?? '' ),
 			'medium'              => (string) ( $merged_touch['medium'] ?? '' ),
 			'campaign'            => (string) ( $merged_touch['campaign'] ?? '' ),
+			'campaign_id'         => (string) ( $merged_touch['campaign_id'] ?? '' ),
 			'content'             => (string) ( $merged_touch['content'] ?? '' ),
 			'term'                => (string) ( $merged_touch['term'] ?? '' ),
 			'gclid'               => (string) ( $merged_touch['gclid'] ?? '' ),
@@ -76,22 +77,32 @@ class RWGC_Context_Attribution {
 			'li_fat_id'=> 'li_fat_id',
 			'msclkid'  => 'msclkid',
 		);
-		$out = array(
-			'source'   => '',
-			'medium'   => '',
-			'campaign' => '',
-			'content'  => '',
-			'term'     => '',
-			'gclid'    => '',
-			'fbclid'   => '',
-			'li_fat_id'=> '',
-			'msclkid'  => '',
-		);
+		$out = self::empty_touch();
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only context enrichment.
 		foreach ( $map as $key => $request_key ) {
 			if ( isset( $_GET[ $request_key ] ) ) {
 				$out[ $key ] = sanitize_text_field( wp_unslash( (string) $_GET[ $request_key ] ) );
+			}
+		}
+
+		$campaign_id_keys = array( 'campaignid', 'gad_campaignid', 'utm_campaign_id' );
+		/**
+		 * Google Ads auto-tagging and custom trackers may pass a numeric campaign id separately from utm_campaign.
+		 *
+		 * @param string[] $campaign_id_keys Request parameter names (first non-empty wins).
+		 */
+		$campaign_id_keys = apply_filters( 'rwgc_attribution_campaign_id_keys', $campaign_id_keys );
+		if ( is_array( $campaign_id_keys ) ) {
+			foreach ( $campaign_id_keys as $request_key ) {
+				$request_key = sanitize_key( (string) $request_key );
+				if ( '' === $request_key || ! isset( $_GET[ $request_key ] ) ) {
+					continue;
+				}
+				$out['campaign_id'] = sanitize_text_field( wp_unslash( (string) $_GET[ $request_key ] ) );
+				if ( '' !== $out['campaign_id'] ) {
+					break;
+				}
 			}
 		}
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
@@ -116,15 +127,16 @@ class RWGC_Context_Attribution {
 		}
 
 		return array(
-			'source'   => sanitize_text_field( (string) ( $val['source'] ?? '' ) ),
-			'medium'   => sanitize_text_field( (string) ( $val['medium'] ?? '' ) ),
-			'campaign' => sanitize_text_field( (string) ( $val['campaign'] ?? '' ) ),
-			'content'  => sanitize_text_field( (string) ( $val['content'] ?? '' ) ),
-			'term'     => sanitize_text_field( (string) ( $val['term'] ?? '' ) ),
-			'gclid'    => sanitize_text_field( (string) ( $val['gclid'] ?? '' ) ),
-			'fbclid'   => sanitize_text_field( (string) ( $val['fbclid'] ?? '' ) ),
-			'li_fat_id'=> sanitize_text_field( (string) ( $val['li_fat_id'] ?? '' ) ),
-			'msclkid'  => sanitize_text_field( (string) ( $val['msclkid'] ?? '' ) ),
+			'source'      => sanitize_text_field( (string) ( $val['source'] ?? '' ) ),
+			'medium'      => sanitize_text_field( (string) ( $val['medium'] ?? '' ) ),
+			'campaign'    => sanitize_text_field( (string) ( $val['campaign'] ?? '' ) ),
+			'campaign_id' => sanitize_text_field( (string) ( $val['campaign_id'] ?? '' ) ),
+			'content'     => sanitize_text_field( (string) ( $val['content'] ?? '' ) ),
+			'term'        => sanitize_text_field( (string) ( $val['term'] ?? '' ) ),
+			'gclid'       => sanitize_text_field( (string) ( $val['gclid'] ?? '' ) ),
+			'fbclid'      => sanitize_text_field( (string) ( $val['fbclid'] ?? '' ) ),
+			'li_fat_id'   => sanitize_text_field( (string) ( $val['li_fat_id'] ?? '' ) ),
+			'msclkid'     => sanitize_text_field( (string) ( $val['msclkid'] ?? '' ) ),
 		);
 	}
 
@@ -136,15 +148,16 @@ class RWGC_Context_Attribution {
 	private static function write_cookie_snapshot( $cookie_key, array $snapshot ) {
 		$json = wp_json_encode(
 			array(
-				'source'   => (string) ( $snapshot['source'] ?? '' ),
-				'medium'   => (string) ( $snapshot['medium'] ?? '' ),
-				'campaign' => (string) ( $snapshot['campaign'] ?? '' ),
-				'content'  => (string) ( $snapshot['content'] ?? '' ),
-				'term'     => (string) ( $snapshot['term'] ?? '' ),
-				'gclid'    => (string) ( $snapshot['gclid'] ?? '' ),
-				'fbclid'   => (string) ( $snapshot['fbclid'] ?? '' ),
-				'li_fat_id'=> (string) ( $snapshot['li_fat_id'] ?? '' ),
-				'msclkid'  => (string) ( $snapshot['msclkid'] ?? '' ),
+				'source'      => (string) ( $snapshot['source'] ?? '' ),
+				'medium'      => (string) ( $snapshot['medium'] ?? '' ),
+				'campaign'    => (string) ( $snapshot['campaign'] ?? '' ),
+				'campaign_id' => (string) ( $snapshot['campaign_id'] ?? '' ),
+				'content'     => (string) ( $snapshot['content'] ?? '' ),
+				'term'        => (string) ( $snapshot['term'] ?? '' ),
+				'gclid'       => (string) ( $snapshot['gclid'] ?? '' ),
+				'fbclid'      => (string) ( $snapshot['fbclid'] ?? '' ),
+				'li_fat_id'   => (string) ( $snapshot['li_fat_id'] ?? '' ),
+				'msclkid'     => (string) ( $snapshot['msclkid'] ?? '' ),
 			)
 		);
 		if ( ! is_string( $json ) || '' === $json ) {
@@ -207,15 +220,16 @@ class RWGC_Context_Attribution {
 	 */
 	private static function empty_touch() {
 		return array(
-			'source'   => '',
-			'medium'   => '',
-			'campaign' => '',
-			'content'  => '',
-			'term'     => '',
-			'gclid'    => '',
-			'fbclid'   => '',
-			'li_fat_id'=> '',
-			'msclkid'  => '',
+			'source'      => '',
+			'medium'      => '',
+			'campaign'    => '',
+			'campaign_id' => '',
+			'content'     => '',
+			'term'        => '',
+			'gclid'       => '',
+			'fbclid'      => '',
+			'li_fat_id'   => '',
+			'msclkid'     => '',
 		);
 	}
 }

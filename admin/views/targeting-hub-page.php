@@ -18,14 +18,14 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 		$rwgc_platform_shell
 			? __( 'Targeting', 'reactwoo-geocore' )
 			: __( 'Experience targeting', 'reactwoo-geocore' ),
-		__( 'Rules, page versions, Elementor experiences, and experiments share one visibility engine.', 'reactwoo-geocore' )
+		__( 'Define who qualifies for a version, offer, or message.', 'reactwoo-geocore' )
 	);
 	?>
 	<?php if ( ! $rwgc_platform_shell ) : ?>
 		<?php RWGC_Admin::render_inner_nav( 'rwgc-targeting-hub' ); ?>
 	<?php else : ?>
 		<p class="description rwgc-targeting-hub__intro">
-			<?php esc_html_e( 'Choose an experience surface below — rules, page versions, Elementor, and experiments share the same visibility engine and rule builder.', 'reactwoo-geocore' ); ?>
+			<?php esc_html_e( 'Create and manage eligibility rules, campaign conditions, and reusable geo conditions.', 'reactwoo-geocore' ); ?>
 		</p>
 	<?php endif; ?>
 
@@ -35,7 +35,7 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 			$cards,
 			array(
 				'empty_title' => __( 'No targeting screens yet', 'reactwoo-geocore' ),
-				'empty_body'  => __( 'Install Geo Elementor or Geo Optimise to add rules, variants, and experiments.', 'reactwoo-geocore' ),
+				'empty_body'  => __( 'Targeting routes are not registered yet.', 'reactwoo-geocore' ),
 			)
 		);
 	}

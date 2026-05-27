@@ -138,10 +138,10 @@ class RWGC_Admin {
 			);
 			self::register_app_route(
 				array(
-					'section'   => 'targeting',
-					'route'     => 'page-versions',
+					'section'   => 'experiences',
+					'route'     => 'variants',
 					'menu_slug' => 'rwgc-suite-variants',
-					'label'     => __( 'Page versions', 'reactwoo-geocore' ),
+					'label'     => __( 'Variants', 'reactwoo-geocore' ),
 					'order'     => 10,
 					'callback'  => array( 'RWGC_Suite_Admin', 'render_suite_variants' ),
 				)
@@ -164,7 +164,7 @@ class RWGC_Admin {
 				'section'   => 'commerce',
 				'route'     => 'commerce-home',
 				'menu_slug' => 'rwgc-commerce-hub',
-				'label'     => __( 'Commerce home', 'reactwoo-geocore' ),
+				'label'     => __( 'Overview', 'reactwoo-geocore' ),
 				'order'     => 5,
 				'callback'  => array( 'RWGC_Admin_Section_Hubs', 'render_commerce_hub' ),
 			)
@@ -175,7 +175,7 @@ class RWGC_Admin {
 				'section'   => 'targeting',
 				'route'     => 'targeting-home',
 				'menu_slug' => 'rwgc-targeting-hub',
-				'label'     => __( 'Experiences', 'reactwoo-geocore' ),
+				'label'     => __( 'Overview', 'reactwoo-geocore' ),
 				'order'     => 5,
 				'callback'  => array( 'RWGC_Admin_Section_Hubs', 'render_targeting_hub' ),
 			)
@@ -183,12 +183,54 @@ class RWGC_Admin {
 
 		self::register_app_route(
 			array(
+				'section'   => 'experiences',
+				'route'     => 'experiences-home',
+				'menu_slug' => 'rwgc-experiences-hub',
+				'label'     => __( 'Overview', 'reactwoo-geocore' ),
+				'order'     => 5,
+				'callback'  => array( 'RWGC_Admin_Section_Hubs', 'render_experiences_hub' ),
+			)
+		);
+
+		self::register_app_route(
+			array(
 				'section'   => 'targeting',
-				'route'     => 'rule-builder',
+				'route'     => 'rules',
+				'menu_slug' => 'rwgc-visibility-rules',
+				'label'     => __( 'Rules', 'reactwoo-geocore' ),
+				'order'     => 10,
+				'callback'  => array( 'RWGC_Admin_Visibility_Rules', 'render' ),
+			)
+		);
+
+		self::register_app_route(
+			array(
+				'section'   => 'targeting',
+				'route'     => 'geo-conditions',
 				'menu_slug' => 'rwgc-target-types',
-				'label'     => __( 'Rule builder', 'reactwoo-geocore' ),
-				'order'     => 25,
+				'label'     => __( 'Geo conditions', 'reactwoo-geocore' ),
+				'order'     => 30,
 				'callback'  => array( __CLASS__, 'render_target_types' ),
+			)
+		);
+		self::register_app_route(
+			array(
+				'section'   => 'targeting',
+				'route'     => 'audiences',
+				'menu_slug' => 'rwgc-targeting-audiences',
+				'label'     => __( 'Audiences', 'reactwoo-geocore' ),
+				'order'     => 20,
+				'callback'  => array( __CLASS__, 'render_targeting_audiences' ),
+			)
+		);
+		self::register_app_route(
+			array(
+				'section'   => 'targeting',
+				'route'     => 'campaigns',
+				'menu_slug' => 'rwgc-targeting-campaigns',
+				'label'     => __( 'Campaigns', 'reactwoo-geocore' ),
+				'order'     => 25,
+				'callback'  => array( __CLASS__, 'render_targeting_campaigns' ),
 			)
 		);
 
@@ -197,7 +239,7 @@ class RWGC_Admin {
 				'section'   => 'insights',
 				'route'     => 'insights-home',
 				'menu_slug' => 'rwgc-insights-hub',
-				'label'     => __( 'Insights home', 'reactwoo-geocore' ),
+				'label'     => __( 'Overview', 'reactwoo-geocore' ),
 				'order'     => 5,
 				'callback'  => array( 'RWGC_Admin_Section_Hubs', 'render_insights_hub' ),
 			)
@@ -208,9 +250,70 @@ class RWGC_Admin {
 				'section'   => 'insights',
 				'route'     => 'geo-reports',
 				'menu_slug' => 'rwgc-usage',
-				'label'     => __( 'Geo reports', 'reactwoo-geocore' ),
+				'label'     => __( 'Geo insights', 'reactwoo-geocore' ),
 				'order'     => 15,
 				'callback'  => array( __CLASS__, 'render_usage' ),
+			)
+		);
+		self::register_app_route(
+			array(
+				'section'   => 'insights',
+				'route'     => 'audience-insights',
+				'menu_slug' => 'rwgc-usage-audience',
+				'label'     => __( 'Audience insights', 'reactwoo-geocore' ),
+				'order'     => 20,
+				'callback'  => array( __CLASS__, 'render_usage' ),
+			)
+		);
+		self::register_app_route(
+			array(
+				'section'   => 'insights',
+				'route'     => 'campaign-insights',
+				'menu_slug' => 'rwgc-usage-campaign',
+				'label'     => __( 'Campaign insights', 'reactwoo-geocore' ),
+				'order'     => 25,
+				'callback'  => array( __CLASS__, 'render_usage' ),
+			)
+		);
+		self::register_app_route(
+			array(
+				'section'   => 'insights',
+				'route'     => 'experience-performance',
+				'menu_slug' => 'rwgc-insights-experiments',
+				'label'     => __( 'Experience performance', 'reactwoo-geocore' ),
+				'order'     => 30,
+				'callback'  => array( __CLASS__, 'render_insights_experience_performance' ),
+			)
+		);
+
+		self::register_app_route(
+			array(
+				'section'   => 'integrations',
+				'route'     => 'integrations-home',
+				'menu_slug' => 'rwgc-integrations-hub',
+				'label'     => __( 'Overview', 'reactwoo-geocore' ),
+				'order'     => 5,
+				'callback'  => array( 'RWGC_Admin_Section_Hubs', 'render_integrations_hub' ),
+			)
+		);
+		self::register_app_route(
+			array(
+				'section'   => 'integrations',
+				'route'     => 'gutenberg',
+				'menu_slug' => 'rwgc-integrations-gutenberg',
+				'label'     => __( 'Gutenberg', 'reactwoo-geocore' ),
+				'order'     => 10,
+				'callback'  => array( __CLASS__, 'render_integrations_gutenberg' ),
+			)
+		);
+		self::register_app_route(
+			array(
+				'section'   => 'integrations',
+				'route'     => 'woocommerce',
+				'menu_slug' => 'rwgc-integrations-woocommerce',
+				'label'     => __( 'WooCommerce', 'reactwoo-geocore' ),
+				'order'     => 15,
+				'callback'  => array( __CLASS__, 'render_integrations_woocommerce' ),
 			)
 		);
 
@@ -219,7 +322,7 @@ class RWGC_Admin {
 				'section'   => 'settings',
 				'route'     => 'settings-home',
 				'menu_slug' => 'rwgc-settings-hub',
-				'label'     => __( 'Settings home', 'reactwoo-geocore' ),
+				'label'     => __( 'Overview', 'reactwoo-geocore' ),
 				'order'     => 5,
 				'callback'  => array( 'RWGC_Admin_Section_Hubs', 'render_settings_hub' ),
 			)
@@ -360,11 +463,31 @@ class RWGC_Admin {
 		if ( ! self::can_manage() ) {
 			return;
 		}
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( (string) $_GET['page'] ) ) : 'rwgc-usage'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$mode = 'geo';
+		if ( 'rwgc-usage-audience' === $page ) {
+			$mode = 'audience';
+		} elseif ( 'rwgc-usage-campaign' === $page ) {
+			$mode = 'campaign';
+		}
 		$status                = RWGC_MaxMind::get_status();
 		$rwgc_rest_enabled     = (bool) RWGC_Settings::get( 'rest_enabled', 1 );
 		$rwgc_location_url     = function_exists( 'rwgc_get_rest_location_url' ) ? rwgc_get_rest_location_url() : '';
 		$rwgc_capabilities_url = function_exists( 'rwgc_get_rest_capabilities_url' ) ? rwgc_get_rest_capabilities_url() : '';
+		$rwgc_insights_mode    = $mode;
 		include RWGC_PATH . 'admin/views/usage-page.php';
+	}
+
+	/**
+	 * Insights > Experience performance entry (Geo Optimise reports when installed).
+	 *
+	 * @return void
+	 */
+	public static function render_insights_experience_performance() {
+		if ( ! self::can_manage() ) {
+			return;
+		}
+		include RWGC_PATH . 'admin/views/insights-experience-performance-page.php';
 	}
 
 	/**
@@ -460,6 +583,54 @@ class RWGC_Admin {
 		$rwgc_portable_ctx         = function_exists( 'rwgc_get_portable_targeting_editor_context' ) ? rwgc_get_portable_targeting_editor_context() : array();
 		$rwgc_use_platform_shell   = class_exists( 'RWGC_Admin_App_Shell', false ) && RWGC_Admin_App_Shell::should_render();
 		include RWGC_PATH . 'admin/views/target-types-page.php';
+	}
+
+	/**
+	 * Render Targeting > Audiences entry screen.
+	 *
+	 * @return void
+	 */
+	public static function render_targeting_audiences() {
+		if ( ! self::can_manage() ) {
+			return;
+		}
+		include RWGC_PATH . 'admin/views/targeting-audiences-page.php';
+	}
+
+	/**
+	 * Render Targeting > Campaigns entry screen.
+	 *
+	 * @return void
+	 */
+	public static function render_targeting_campaigns() {
+		if ( ! self::can_manage() ) {
+			return;
+		}
+		include RWGC_PATH . 'admin/views/targeting-campaigns-page.php';
+	}
+
+	/**
+	 * Render Integrations > Gutenberg entry screen.
+	 *
+	 * @return void
+	 */
+	public static function render_integrations_gutenberg() {
+		if ( ! self::can_manage() ) {
+			return;
+		}
+		include RWGC_PATH . 'admin/views/integrations-gutenberg-page.php';
+	}
+
+	/**
+	 * Render Integrations > WooCommerce entry screen.
+	 *
+	 * @return void
+	 */
+	public static function render_integrations_woocommerce() {
+		if ( ! self::can_manage() ) {
+			return;
+		}
+		include RWGC_PATH . 'admin/views/integrations-woocommerce-page.php';
 	}
 
 	/**

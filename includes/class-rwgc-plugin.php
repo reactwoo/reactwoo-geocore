@@ -87,6 +87,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-route-registry.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-app-shell.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-platform-sync-status.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-platform-integrations.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-section-hubs.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-settings-nav.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-ui.php';
@@ -99,6 +100,9 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-shortcodes.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-gutenberg.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-targeting-rule-builder-assets.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-cpt.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-repository.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-admin-visibility-rules.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-elementor.php';
 		require_once RWGC_PATH . 'includes/context/class-rwgc-context-attribution.php';
 		require_once RWGC_PATH . 'includes/engine/class-rwgc-context.php';
@@ -150,13 +154,16 @@ class RWGC_Plugin {
 		RWGC_Migration::init();
 		RWGC_Country_Groups::init();
 		RWGC_Preview::init();
+		RWGC_Visibility_Rule_CPT::init();
 
 		if ( is_admin() ) {
+			RWGC_Admin_Visibility_Rules::init();
 			RWGC_Admin_Platform::init();
 			RWGC_Admin_Route_Registry::init();
 			RWGC_Admin_Settings_Nav::init();
 			RWGC_Admin_App_Shell::init();
 			RWGC_Platform_Sync_Status::init();
+			RWGC_Platform_Integrations::init();
 			RWGC_Suite_Admin::init();
 			RWGC_Admin::init();
 		}

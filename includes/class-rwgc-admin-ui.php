@@ -176,12 +176,17 @@ class RWGC_Admin_UI {
 		$section_links = array(
 			array(
 				'label' => __( 'Targeting', 'reactwoo-geocore' ),
-				'url'   => function_exists( 'rw_geo_app_url' ) ? rw_geo_app_url( 'targeting', 'page-versions' ) : admin_url( 'admin.php?page=rwgc-suite-variants' ),
+				'url'   => function_exists( 'rw_geo_app_url' ) ? rw_geo_app_url( 'targeting', 'rwgc-targeting-hub' ) : admin_url( 'admin.php?page=rwgc-targeting-hub' ),
 				'icon'  => 'dashicons-admin-site-alt3',
 			),
 			array(
+				'label' => __( 'Commerce', 'reactwoo-geocore' ),
+				'url'   => function_exists( 'rw_geo_app_url' ) ? rw_geo_app_url( 'commerce', 'rwgc-commerce-hub' ) : admin_url( 'admin.php?page=rwgc-commerce-hub' ),
+				'icon'  => 'dashicons-cart',
+			),
+			array(
 				'label' => __( 'Integrations', 'reactwoo-geocore' ),
-				'url'   => admin_url( 'admin.php?page=rwgcp-geocore-pro&rwgcp_tab=integrations' ),
+				'url'   => function_exists( 'rw_geo_app_url' ) ? rw_geo_app_url( 'integrations', 'rwgc-integrations-hub' ) : admin_url( 'admin.php?page=rwgc-integrations-hub' ),
 				'icon'  => 'dashicons-admin-plugins',
 			),
 			array(
@@ -310,6 +315,82 @@ class RWGC_Admin_UI {
 	}
 
 	/**
+	 * Platform sync snapshot card (Integrations hub / overview).
+	 *
+	 * @param array<string, mixed> $sync Snapshot from {@see RWGC_Platform_Sync_Status::get_snapshot()}.
+	 * @return void
+	 */
+	public static function render_sync_status_card( $sync ) {
+		if ( ! is_array( $sync ) || empty( $sync['label'] ) ) {
+			return;
+		}
+		$variant = isset( $sync['variant'] ) ? sanitize_key( (string) $sync['variant'] ) : 'neutral';
+		if ( ! in_array( $variant, array( 'success', 'warning', 'neutral' ), true ) ) {
+			$variant = 'neutral';
+		}
+		echo '<div class="rwgc-card rwgc-sync-status-card">';
+		echo '<h2 class="rwgc-sync-status-card__title">' . esc_html__( 'Platform sync', 'reactwoo-geocore' ) . '</h2>';
+		printf(
+			'<p class="rwgc-sync-status-card__pill rwgc-sync-status-card__pill--%1$s"><span class="dashicons dashicons-update" aria-hidden="true"></span> %2$s</p>',
+			esc_attr( $variant ),
+			esc_html( (string) $sync['label'] )
+		);
+		if ( ! empty( $sync['hint'] ) ) {
+			echo '<p class="description">' . esc_html( (string) $sync['hint'] ) . '</p>';
+		}
+		if ( ! empty( $sync['url'] ) ) {
+			printf(
+				'<p><a class="rwgc-btn rwgc-btn--secondary" href="%1$s">%2$s</a></p>',
+				esc_url( (string) $sync['url'] ),
+				esc_html__( 'Open integration settings', 'reactwoo-geocore' )
+			);
+		}
+		echo '</div>';
+	}
+
+	/**
+	 * Integration connection rows (Integrations hub).
+	 *
+	 * @param array<int, array<string, mixed>> $items Rows from {@see RWGC_Platform_Integrations::get_items()}.
+	 * @return void
+	 */
+	public static function render_integration_status_cards( $items ) {
+		if ( ! is_array( $items ) || empty( $items ) ) {
+			return;
+		}
+		echo '<div class="rwgc-integration-status__grid" role="list">';
+		foreach ( $items as $item ) {
+			if ( ! is_array( $item ) || empty( $item['label'] ) ) {
+				continue;
+			}
+			$status = isset( $item['status'] ) ? sanitize_key( (string) $item['status'] ) : 'neutral';
+			if ( ! in_array( $status, array( 'connected', 'warning', 'neutral' ), true ) ) {
+				$status = 'neutral';
+			}
+			$url = isset( $item['url'] ) ? (string) $item['url'] : '';
+			echo '<article class="rwgc-card rwgc-integration-status__card rwgc-integration-status__card--' . esc_attr( $status ) . '" role="listitem">';
+			echo '<div class="rwgc-integration-status__header">';
+			echo '<h3>' . esc_html( (string) $item['label'] ) . '</h3>';
+			if ( ! empty( $item['provider'] ) && class_exists( 'RWGC_Admin_UI', false ) ) {
+				self::render_provider_badge( (string) $item['provider'] );
+			}
+			echo '</div>';
+			if ( ! empty( $item['description'] ) ) {
+				echo '<p class="description">' . esc_html( (string) $item['description'] ) . '</p>';
+			}
+			if ( '' !== $url ) {
+				printf(
+					'<p><a class="rwgc-btn rwgc-btn--secondary" href="%1$s">%2$s</a></p>',
+					esc_url( $url ),
+					esc_html__( 'Configure', 'reactwoo-geocore' )
+				);
+			}
+			echo '</article>';
+		}
+		echo '</div>';
+	}
+
+	/**
 	 * Grid of links to routes within a goal section (Insights / Settings hubs).
 	 *
 	 * @param array<int, array<string, mixed>> $cards Hub card rows.
@@ -362,6 +443,79 @@ class RWGC_Admin_UI {
 				esc_html__( 'Open', 'reactwoo-geocore' )
 			);
 			echo '</div></article>';
+		}
+		echo '</div>';
+	}
+
+	/**
+	 * Hub cards grouped by capability provider (Insights consolidation).
+	 *
+	 * @param array<int, array<string, mixed>> $cards Hub card rows.
+	 * @param array<string, mixed>             $args  Optional empty_title, empty_body, class, group_order.
+	 * @return void
+	 */
+	public static function render_section_hub_cards_grouped( $cards, $args = array() ) {
+		$args = wp_parse_args(
+			$args,
+			array(
+				'class'       => 'rwgc-section-hub',
+				'empty_title' => __( 'Nothing to show', 'reactwoo-geocore' ),
+				'empty_body'  => '',
+				'group_order' => array( 'core', 'geo_ai', 'geo_optimise', 'geo_commerce', 'geocore_pro' ),
+			)
+		);
+
+		if ( ! is_array( $cards ) || empty( $cards ) ) {
+			self::render_empty_state(
+				(string) $args['empty_title'],
+				(string) $args['empty_body'],
+				array(),
+				array( 'dashicon' => 'dashicons-admin-generic' )
+			);
+			return;
+		}
+
+		$labels = array(
+			'core'         => __( 'Geo Core', 'reactwoo-geocore' ),
+			'geo_ai'       => __( 'Geo AI', 'reactwoo-geocore' ),
+			'geo_optimise' => __( 'Geo Optimise', 'reactwoo-geocore' ),
+			'geo_commerce' => __( 'Geo Commerce', 'reactwoo-geocore' ),
+			'geocore_pro'  => __( 'GeoCore Pro', 'reactwoo-geocore' ),
+		);
+		$labels = apply_filters( 'rwgc_insights_hub_group_labels', $labels );
+
+		$groups = array();
+		foreach ( $cards as $card ) {
+			$provider = isset( $card['provider'] ) ? sanitize_key( (string) $card['provider'] ) : '';
+			if ( '' === $provider ) {
+				$provider = 'core';
+			}
+			if ( ! isset( $groups[ $provider ] ) ) {
+				$groups[ $provider ] = array();
+			}
+			$groups[ $provider ][] = $card;
+		}
+
+		$order = isset( $args['group_order'] ) && is_array( $args['group_order'] ) ? $args['group_order'] : array();
+		$sorted = array();
+		foreach ( $order as $key ) {
+			$key = sanitize_key( (string) $key );
+			if ( isset( $groups[ $key ] ) ) {
+				$sorted[ $key ] = $groups[ $key ];
+				unset( $groups[ $key ] );
+			}
+		}
+		foreach ( $groups as $key => $group_cards ) {
+			$sorted[ $key ] = $group_cards;
+		}
+
+		echo '<div class="' . esc_attr( (string) $args['class'] ) . ' rwgc-section-hub--grouped">';
+		foreach ( $sorted as $provider => $group_cards ) {
+			$heading = isset( $labels[ $provider ] ) ? (string) $labels[ $provider ] : $provider;
+			echo '<section class="rwgc-section-hub__group" aria-labelledby="rwgc-insights-group-' . esc_attr( $provider ) . '">';
+			echo '<h2 class="rwgc-section-hub__group-title" id="rwgc-insights-group-' . esc_attr( $provider ) . '">' . esc_html( $heading ) . '</h2>';
+			self::render_section_hub_cards( $group_cards, array( 'class' => (string) $args['class'] ) );
+			echo '</section>';
 		}
 		echo '</div>';
 	}

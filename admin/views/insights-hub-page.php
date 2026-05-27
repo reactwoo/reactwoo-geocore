@@ -18,26 +18,28 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 		$rwgc_platform_shell
 			? __( 'Insights', 'reactwoo-geocore' )
 			: __( 'Geo insights', 'reactwoo-geocore' ),
-		__( 'Reports and recommendations from Geo Core and installed capability providers.', 'reactwoo-geocore' )
+		__( 'See what works.', 'reactwoo-geocore' )
 	);
 	?>
 	<?php if ( ! $rwgc_platform_shell ) : ?>
 		<?php RWGC_Admin::render_inner_nav( 'rwgc-insights-hub' ); ?>
 	<?php else : ?>
 		<p class="description rwgc-insights-hub__intro">
-			<?php esc_html_e( 'Open usage reports, AI analyses, and optimisation outcomes from one place.', 'reactwoo-geocore' ); ?>
+			<?php esc_html_e( 'Review targeting, experience, and commerce performance from one place.', 'reactwoo-geocore' ); ?>
 		</p>
 	<?php endif; ?>
 
 	<?php
 	if ( class_exists( 'RWGC_Admin_UI', false ) ) {
-		RWGC_Admin_UI::render_section_hub_cards(
-			$cards,
-			array(
-				'empty_title' => __( 'No insight reports yet', 'reactwoo-geocore' ),
-				'empty_body'  => __( 'Install Geo AI or Geo Optimise to add analysis and experiment reporting tabs here.', 'reactwoo-geocore' ),
-			)
+		$hub_args = array(
+			'empty_title' => __( 'No insight reports yet', 'reactwoo-geocore' ),
+			'empty_body'  => __( 'Install Geo AI or Geo Optimise to add analysis and experiment reporting tabs here.', 'reactwoo-geocore' ),
 		);
+		if ( $rwgc_platform_shell ) {
+			RWGC_Admin_UI::render_section_hub_cards_grouped( $cards, $hub_args );
+		} else {
+			RWGC_Admin_UI::render_section_hub_cards( $cards, $hub_args );
+		}
 	}
 	?>
 </div>

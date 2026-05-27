@@ -4,14 +4,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
+$rwgc_insights_mode  = isset( $rwgc_insights_mode ) ? sanitize_key( (string) $rwgc_insights_mode ) : 'geo';
+$rwgc_insights_title = __( 'Geo insights', 'reactwoo-geocore' );
+$rwgc_insights_sub   = __( 'Rule matches, routing activity, and developer reference for geo on this site.', 'reactwoo-geocore' );
+if ( 'audience' === $rwgc_insights_mode ) {
+	$rwgc_insights_title = __( 'Audience insights', 'reactwoo-geocore' );
+	$rwgc_insights_sub   = __( 'Audience-oriented performance signals from Geo Core and connected providers.', 'reactwoo-geocore' );
+} elseif ( 'campaign' === $rwgc_insights_mode ) {
+	$rwgc_insights_title = __( 'Campaign insights', 'reactwoo-geocore' );
+	$rwgc_insights_sub   = __( 'Campaign attribution and performance signals for geo-targeted experiences.', 'reactwoo-geocore' );
+}
 ?>
 <div class="wrap rwgc-wrap rwgc-suite">
 	<?php
 	if ( $rwgc_platform_shell && class_exists( 'RWGC_Admin_UI', false ) ) {
-		RWGC_Admin_UI::render_page_header(
-			__( 'Geo reports', 'reactwoo-geocore' ),
-			__( 'Rule matches, routing activity, and developer reference for geo on this site.', 'reactwoo-geocore' )
-		);
+		RWGC_Admin_UI::render_page_header( $rwgc_insights_title, $rwgc_insights_sub );
 	} else {
 		?>
 		<h1><?php esc_html_e( 'Reports', 'reactwoo-geocore' ); ?></h1>

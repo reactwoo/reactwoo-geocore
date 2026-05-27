@@ -63,6 +63,82 @@ if ( ! function_exists( 'rwgc_get_portable_targeting_editor_context' ) ) {
 	}
 }
 
+if ( ! function_exists( 'rwgc_get_visibility_rule_set' ) ) {
+	/**
+	 * Sanitized portable rule set from the Core visibility rules library CPT.
+	 *
+	 * @param int $post_id Library post ID ({@see RWGC_Visibility_Rule_CPT::POST_TYPE}).
+	 * @return array<string, mixed>|null
+	 */
+	function rwgc_get_visibility_rule_set( $post_id ) {
+		if ( ! class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
+			return null;
+		}
+		return RWGC_Visibility_Rule_Repository::get_rule_set( $post_id );
+	}
+}
+
+if ( ! function_exists( 'rwgc_get_settings_providers' ) ) {
+	/**
+	 * Active settings providers and their routes (platform shell).
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	function rwgc_get_settings_providers() {
+		if ( ! class_exists( 'RWGC_Admin_Settings_Nav', false ) ) {
+			return array();
+		}
+		return RWGC_Admin_Settings_Nav::get_active_providers();
+	}
+}
+
+if ( ! function_exists( 'rwgc_get_platform_sync_status' ) ) {
+	/**
+	 * Shell sync pill snapshot (label, hint, variant, url).
+	 *
+	 * @return array<string, string>
+	 */
+	function rwgc_get_platform_sync_status() {
+		if ( ! class_exists( 'RWGC_Platform_Sync_Status', false ) ) {
+			return array();
+		}
+		return RWGC_Platform_Sync_Status::get_snapshot();
+	}
+}
+
+if ( ! function_exists( 'rwgc_get_platform_integrations' ) ) {
+	/**
+	 * Integration connection rows for the Integrations hub.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	function rwgc_get_platform_integrations() {
+		if ( ! class_exists( 'RWGC_Platform_Integrations', false ) ) {
+			return array();
+		}
+		return RWGC_Platform_Integrations::get_items();
+	}
+}
+
+if ( ! function_exists( 'rwgc_get_setup_progress' ) ) {
+	/**
+	 * Platform onboarding checklist for Overview (steps, completed, total, percent).
+	 *
+	 * @return array{steps: array<int, array<string, mixed>>, completed: int, total: int, percent: int}
+	 */
+	function rwgc_get_setup_progress() {
+		if ( ! class_exists( 'RWGC_Onboarding', false ) ) {
+			return array(
+				'steps'     => array(),
+				'completed' => 0,
+				'total'     => 0,
+				'percent'   => 0,
+			);
+		}
+		return RWGC_Onboarding::get_setup_progress();
+	}
+}
+
 if ( ! function_exists( 'rwgc_get_visitor_data' ) ) {
 	/**
 	 * Get full visitor geo payload.

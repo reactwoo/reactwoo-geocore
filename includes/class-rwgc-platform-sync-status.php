@@ -40,7 +40,8 @@ class RWGC_Platform_Sync_Status {
 			$campaign_count = count( $ctx['campaigns'] );
 		}
 
-		$integrations_url = admin_url( 'admin.php?page=rwgcp-geocore-pro&rwgcp_tab=integrations' );
+		$integrations_url = admin_url( 'admin.php?page=rwgc-integrations-hub' );
+		$pro_integrations = admin_url( 'admin.php?page=rwgcp-geocore-pro&rwgcp_tab=integrations' );
 		if ( ! $pro ) {
 			return array(
 				'label'   => __( 'Core geo', 'reactwoo-geocore' ),
@@ -82,6 +83,9 @@ class RWGC_Platform_Sync_Status {
 			);
 		}
 
+		$ads_connected = (bool) get_option( 'rwgcp_google_ads_connected', false );
+		$ga_connected  = (bool) get_option( 'rwgcp_google_analytics_connected', false );
+
 		if ( $audience_count > 0 && $campaign_count > 0 ) {
 			$hint = sprintf(
 				/* translators: 1: audience count, 2: campaign count */
@@ -100,16 +104,31 @@ class RWGC_Platform_Sync_Status {
 				'label'   => __( 'Synced', 'reactwoo-geocore' ),
 				'hint'    => $hint,
 				'variant' => 'success',
-				'url'     => $integrations_url,
+				'url'     => $pro_integrations,
 			);
 		}
 
 		if ( $audience_count > 0 || $campaign_count > 0 ) {
+			$hint = __( 'Some Google lists are available. Run a full sync in Integrations.', 'reactwoo-geocore' );
+			if ( $ads_connected && $campaign_count <= 0 ) {
+				$hint = __( 'Google Ads is connected but no campaigns are synced yet.', 'reactwoo-geocore' );
+			} elseif ( $ga_connected && $audience_count <= 0 ) {
+				$hint = __( 'GA4 is connected but no audiences are synced yet.', 'reactwoo-geocore' );
+			}
 			return array(
 				'label'   => __( 'Partial sync', 'reactwoo-geocore' ),
-				'hint'    => __( 'Some Google lists are available. Run a full sync in Integrations.', 'reactwoo-geocore' ),
+				'hint'    => $hint,
 				'variant' => 'warning',
-				'url'     => $integrations_url,
+				'url'     => $pro_integrations,
+			);
+		}
+
+		if ( $ads_connected || $ga_connected ) {
+			return array(
+				'label'   => __( 'Sync needed', 'reactwoo-geocore' ),
+				'hint'    => __( 'Accounts are connected — run sync to load audiences and campaigns into the rule builder.', 'reactwoo-geocore' ),
+				'variant' => 'warning',
+				'url'     => $pro_integrations,
 			);
 		}
 

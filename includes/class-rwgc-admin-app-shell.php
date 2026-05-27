@@ -154,6 +154,7 @@ class RWGC_Admin_App_Shell {
 		echo '<div class="rwgc-app-shell__workspace">';
 		self::render_topbar( $ctx );
 		self::render_context_nav( $routes, $ctx );
+		self::render_integrations_subnav( $ctx );
 		self::render_settings_subnav( $ctx );
 		echo '<div class="rwgc-app-shell__platform-notices" role="complementary" aria-label="' . esc_attr__( 'Platform notices', 'reactwoo-geocore' ) . '">';
 		do_action( 'rwgc_platform_admin_notices' );
@@ -350,6 +351,50 @@ class RWGC_Admin_App_Shell {
 		}
 
 		echo '</div></nav>';
+	}
+
+	/**
+	 * Integrations section: hub home + GeoCore Pro.
+	 *
+	 * @param array<string, string> $ctx Current context.
+	 * @return void
+	 */
+	private static function render_integrations_provider_nav( array $ctx ) {
+		$current_slug = isset( $ctx['menu_slug'] ) ? sanitize_key( (string) $ctx['menu_slug'] ) : '';
+		$tabs         = array(
+			array(
+				'url'    => admin_url( 'admin.php?page=rwgc-integrations-hub' ),
+				'label'  => __( 'Integrations home', 'reactwoo-geocore' ),
+				'active' => ( 'rwgc-integrations-hub' === $current_slug ),
+			),
+		);
+		if ( function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled() ) {
+			$tabs[] = array(
+				'url'    => admin_url( 'admin.php?page=rwgcp-geocore-pro&rwgcp_tab=integrations' ),
+				'label'  => __( 'GeoCore Pro', 'reactwoo-geocore' ),
+				'active' => ( 'rwgcp-geocore-pro' === $current_slug ),
+			);
+		}
+		if ( count( $tabs ) < 2 ) {
+			return;
+		}
+		echo '<nav class="rwgc-app-shell__section-nav" aria-label="' . esc_attr__( 'Integrations', 'reactwoo-geocore' ) . '">';
+		echo '<div class="rwgc-app-shell__section-scroll">';
+		foreach ( $tabs as $tab ) {
+			$classes = 'rwgc-app-shell__section-link' . ( ! empty( $tab['active'] ) ? ' is-active' : '' );
+			echo '<a class="' . esc_attr( $classes ) . '" href="' . esc_url( (string) $tab['url'] ) . '">';
+			echo esc_html( (string) $tab['label'] );
+			echo '</a>';
+		}
+		echo '</div></nav>';
+	}
+
+	/**
+	 * @param array<string, string> $ctx Current context.
+	 * @return void
+	 */
+	private static function render_integrations_subnav( array $ctx ) {
+		unset( $ctx );
 	}
 
 	/**

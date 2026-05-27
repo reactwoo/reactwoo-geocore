@@ -52,6 +52,11 @@ body.rwgc-app-shell-active #wpbody-content {
 	gap: 4px;
 }
 
+.rwgc-scroll-fade {
+	-webkit-mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+	mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+}
+
 .rwgc-app-shell__module-link {
 	display: flex;
 	align-items: center;
@@ -306,9 +311,11 @@ body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-menu-open .wp
 		position: relative;
 		top: 0;
 		flex-direction: row;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
 		align-items: center;
 		padding: 10px 12px;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.rwgc-app-shell__brand {
@@ -320,12 +327,38 @@ body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-menu-open .wp
 
 	.rwgc-app-shell__module-list {
 		flex-direction: row;
-		flex-wrap: wrap;
-		width: 100%;
+		flex-wrap: nowrap;
+		width: auto;
+		overflow-x: auto;
+		gap: 6px;
+		white-space: nowrap;
+		padding: 2px 0;
+		scrollbar-width: thin;
+	}
+
+	.rwgc-app-shell__module-link {
+		flex: 0 0 auto;
+		white-space: nowrap;
 	}
 
 	.rwgc-app-shell__topbar,
 	.rwgc-app-shell__section-nav {
 		top: 0;
+	}
+}
+
+@media (max-width: 782px) {
+	.rwgc-app-shell__topbar {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 8px;
+	}
+
+	.rwgc-app-shell__topbar-actions {
+		width: 100%;
+	}
+
+	.rwgc-app-shell__content {
+		padding: 12px 14px 20px;
 	}
 }
