@@ -27,6 +27,9 @@ $rwgc_use_platform_shell  = function_exists( 'rwgc_uses_platform_shell' ) && rwg
 	<?php if ( isset( $_GET['updated'] ) && '1' === $_GET['updated'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 		<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Rule saved.', 'reactwoo-geocore' ); ?></p></div>
 	<?php endif; ?>
+	<?php if ( isset( $_GET['rwgc_error'] ) && 'invalid_rules' === $_GET['rwgc_error'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+		<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'The visibility rules JSON could not be saved because it no longer contains any valid rules.', 'reactwoo-geocore' ); ?></p></div>
+	<?php endif; ?>
 
 	<p><a href="<?php echo esc_url( $list_url ); ?>">&larr; <?php esc_html_e( 'Back to library', 'reactwoo-geocore' ); ?></a></p>
 
