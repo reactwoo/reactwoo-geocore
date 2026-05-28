@@ -20,30 +20,28 @@ $rwgc_integrations     = class_exists( 'RWGC_Platform_Integrations', false ) ? R
 		$rwgc_platform_shell
 			? __( 'Integrations', 'reactwoo-geocore' )
 			: __( 'Geo integrations', 'reactwoo-geocore' ),
-		__( 'Connect builders, platforms and external services.', 'reactwoo-geocore' )
+		__( 'Connect analytics, ads, APIs, commerce, and content builders.', 'reactwoo-geocore' )
 	);
 	?>
 	<?php if ( ! $rwgc_platform_shell ) : ?>
 		<?php RWGC_Admin::render_inner_nav( 'rwgc-integrations-hub' ); ?>
 	<?php else : ?>
 		<p class="description rwgc-integrations-hub__intro">
-			<?php esc_html_e( 'Manage Elementor, WooCommerce, weather providers, and external data connections used by suite features.', 'reactwoo-geocore' ); ?>
+			<?php esc_html_e( 'Choose an integration category. Each area only shows the providers and settings that belong there.', 'reactwoo-geocore' ); ?>
 		</p>
 	<?php endif; ?>
 
 	<?php if ( class_exists( 'RWGC_Admin_UI', false ) ) : ?>
 		<?php RWGC_Admin_UI::render_sync_status_card( $rwgc_sync_snapshot ); ?>
-		<?php RWGC_Admin_UI::render_integration_status_cards( $rwgc_integrations ); ?>
 	<?php endif; ?>
 
 	<?php if ( ! empty( $cards ) && class_exists( 'RWGC_Admin_UI', false ) ) : ?>
-		<h2 class="rwgc-integrations-hub__more"><?php esc_html_e( 'Integration screens', 'reactwoo-geocore' ); ?></h2>
 		<?php
 		RWGC_Admin_UI::render_section_hub_cards(
 			$cards,
 			array(
-				'empty_title' => '',
-				'empty_body'  => '',
+				'empty_title' => __( 'No integration categories', 'reactwoo-geocore' ),
+				'empty_body'  => __( 'Install GeoCore Pro or a builder plugin to add integrations.', 'reactwoo-geocore' ),
 			)
 		);
 		?>

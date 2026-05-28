@@ -99,9 +99,6 @@ class RWGC_Suite_Admin {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
-		$overview_rows = class_exists( 'RWGC_Variant_Manager', false )
-			? RWGC_Variant_Manager::get_routing_overview_rows()
-			: array();
 		include RWGC_PATH . 'admin/views/suite-variants.php';
 	}
 

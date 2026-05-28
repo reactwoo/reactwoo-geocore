@@ -198,17 +198,29 @@ class RWGC_Admin_Route_Registry {
 			$section = self::infer_section_from_slug( $slug );
 		}
 
+		$integration_category = '';
+		if ( isset( $args['integration_category'] ) ) {
+			$integration_category = sanitize_key( (string) $args['integration_category'] );
+		} elseif ( isset( $args['category'] ) ) {
+			$integration_category = sanitize_key( (string) $args['category'] );
+		}
+
+		$source_plugin = isset( $args['source_plugin'] ) ? sanitize_key( (string) $args['source_plugin'] ) : '';
+
 		self::$routes[ $slug ] = array(
-			'section'              => $section,
-			'module'               => $module,
-			'route'                => $route,
-			'menu_slug'            => $slug,
-			'label'                => isset( $args['label'] ) ? (string) $args['label'] : $slug,
-			'order'                => isset( $args['order'] ) ? (int) $args['order'] : 100,
-			'provider'             => isset( $args['provider'] ) ? sanitize_key( (string) $args['provider'] ) : '',
-			'show_in_wp_sidebar'   => ! empty( $args['show_in_wp_sidebar'] ),
-			'register_wp_submenu'  => self::resolve_register_wp_submenu( $args ),
-			'is_section_nav'       => ! isset( $args['is_section_nav'] ) || ! empty( $args['is_section_nav'] ),
+			'section'                => $section,
+			'module'                 => $module,
+			'route'                  => $route,
+			'menu_slug'              => $slug,
+			'label'                  => isset( $args['label'] ) ? (string) $args['label'] : $slug,
+			'order'                  => isset( $args['order'] ) ? (int) $args['order'] : 100,
+			'provider'               => isset( $args['provider'] ) ? sanitize_key( (string) $args['provider'] ) : '',
+			'integration_category'   => $integration_category,
+			'source_plugin'          => $source_plugin,
+			'capability_required'    => isset( $args['capability_required'] ) ? sanitize_key( (string) $args['capability_required'] ) : '',
+			'show_in_wp_sidebar'     => ! empty( $args['show_in_wp_sidebar'] ),
+			'register_wp_submenu'    => self::resolve_register_wp_submenu( $args ),
+			'is_section_nav'         => ! isset( $args['is_section_nav'] ) || ! empty( $args['is_section_nav'] ),
 		);
 
 		return true;
@@ -368,18 +380,20 @@ class RWGC_Admin_Route_Registry {
 				'order'     => 5,
 			),
 			array(
-				'menu_slug' => 'rwgc-integrations-gutenberg',
-				'section'   => 'integrations',
-				'route'     => 'gutenberg',
-				'label'     => __( 'Gutenberg', 'reactwoo-geocore' ),
-				'order'     => 10,
+				'menu_slug'            => 'rwgc-integrations-gutenberg',
+				'section'              => 'integrations',
+				'integration_category' => 'content_builders',
+				'route'                => 'gutenberg',
+				'label'                => __( 'Gutenberg', 'reactwoo-geocore' ),
+				'order'                => 20,
 			),
 			array(
-				'menu_slug' => 'rwgc-integrations-woocommerce',
-				'section'   => 'integrations',
-				'route'     => 'woocommerce',
-				'label'     => __( 'WooCommerce', 'reactwoo-geocore' ),
-				'order'     => 15,
+				'menu_slug'            => 'rwgc-integrations-woocommerce',
+				'section'              => 'integrations',
+				'integration_category' => 'ecommerce',
+				'route'                => 'woocommerce',
+				'label'                => __( 'WooCommerce', 'reactwoo-geocore' ),
+				'order'                => 10,
 			),
 			array(
 				'menu_slug' => 'rwgc-settings-hub',
@@ -452,6 +466,11 @@ class RWGC_Admin_Route_Registry {
 		}
 		if ( ! empty( $args['provider'] ) ) {
 			$row['provider'] = sanitize_key( (string) $args['provider'] );
+		}
+		if ( ! empty( $args['integration_category'] ) ) {
+			$row['integration_category'] = sanitize_key( (string) $args['integration_category'] );
+		} elseif ( ! empty( $args['category'] ) ) {
+			$row['integration_category'] = sanitize_key( (string) $args['category'] );
 		}
 
 		self::register_route( $row );
@@ -686,23 +705,31 @@ class RWGC_Admin_Route_Registry {
 		$routes = self::get_routes();
 		if ( isset( $routes[ $page ] ) ) {
 			$row = $routes[ $page ];
+			$integration_category = (string) ( $row['integration_category'] ?? '' );
+			if ( '' === $integration_category && class_exists( 'RWGC_Admin_Integrations_Nav', false ) ) {
+				$integration_category = RWGC_Admin_Integrations_Nav::resolve_category( $page, $row );
+			}
 			return array(
-				'section'   => (string) ( $row['section'] ?? 'overview' ),
-				'module'    => (string) ( $row['module'] ?? 'core' ),
-				'route'     => (string) ( $row['route'] ?? $page ),
-				'menu_slug' => $page,
-				'label'     => (string) ( $row['label'] ?? $page ),
-				'provider'  => (string) ( $row['provider'] ?? '' ),
+				'section'              => (string) ( $row['section'] ?? 'overview' ),
+				'module'               => (string) ( $row['module'] ?? 'core' ),
+				'route'                => (string) ( $row['route'] ?? $page ),
+				'menu_slug'            => $page,
+				'label'                => (string) ( $row['label'] ?? $page ),
+				'provider'             => (string) ( $row['provider'] ?? '' ),
+				'integration_category' => $integration_category,
+				'source_plugin'        => (string) ( $row['source_plugin'] ?? '' ),
 			);
 		}
 
 		return array(
-			'section'   => self::infer_section_from_slug( $page ),
-			'module'    => self::infer_module_from_slug( $page ),
-			'route'     => $page,
-			'menu_slug' => $page,
-			'label'     => $page,
-			'provider'  => '',
+			'section'              => self::infer_section_from_slug( $page ),
+			'module'               => self::infer_module_from_slug( $page ),
+			'route'                => $page,
+			'menu_slug'            => $page,
+			'label'                => $page,
+			'provider'             => '',
+			'integration_category' => '',
+			'source_plugin'        => '',
 		);
 	}
 

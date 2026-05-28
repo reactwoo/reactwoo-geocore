@@ -298,22 +298,24 @@ class RWGC_Admin {
 		);
 		self::register_app_route(
 			array(
-				'section'   => 'integrations',
-				'route'     => 'gutenberg',
-				'menu_slug' => 'rwgc-integrations-gutenberg',
-				'label'     => __( 'Gutenberg', 'reactwoo-geocore' ),
-				'order'     => 10,
-				'callback'  => array( __CLASS__, 'render_integrations_gutenberg' ),
+				'section'              => 'integrations',
+				'integration_category' => 'content_builders',
+				'route'                => 'gutenberg',
+				'menu_slug'            => 'rwgc-integrations-gutenberg',
+				'label'                => __( 'Gutenberg', 'reactwoo-geocore' ),
+				'order'                => 20,
+				'callback'             => array( __CLASS__, 'render_integrations_gutenberg' ),
 			)
 		);
 		self::register_app_route(
 			array(
-				'section'   => 'integrations',
-				'route'     => 'woocommerce',
-				'menu_slug' => 'rwgc-integrations-woocommerce',
-				'label'     => __( 'WooCommerce', 'reactwoo-geocore' ),
-				'order'     => 15,
-				'callback'  => array( __CLASS__, 'render_integrations_woocommerce' ),
+				'section'              => 'integrations',
+				'integration_category' => 'ecommerce',
+				'route'                => 'woocommerce',
+				'menu_slug'            => 'rwgc-integrations-woocommerce',
+				'label'                => __( 'WooCommerce', 'reactwoo-geocore' ),
+				'order'                => 10,
+				'callback'             => array( __CLASS__, 'render_integrations_woocommerce' ),
 			)
 		);
 

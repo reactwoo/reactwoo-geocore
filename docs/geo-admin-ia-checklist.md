@@ -67,17 +67,22 @@ Intent model: **Targeting = WHO**, **Experiences = WHAT + TEST**, **Commerce = S
 
 ## Integrations
 
+Categories (shell subnav): **Analytics · Advertising · APIs · Ecommerce · Content builders · System services** (`RWGC_Admin_Integrations_Nav`).
+
 | Item | Status | Slug / notes |
 |------|--------|--------------|
-| Overview | Done | `rwgc-integrations-hub` |
-| Elementor | Done | `geo-elementor` |
-| Gutenberg | Done (entry) | `rwgc-integrations-gutenberg` |
-| WooCommerce | Done (entry) | `rwgc-integrations-woocommerce` |
-| Weather | Done | `rwgcp-weather`, `egp-city-settings` (hidden nav) |
-| Google | Done | `rwgcp-google` |
-| Meta | Done (entry) | `rwgcp-meta` |
-| API providers | Done | `rwgcp-geocore-pro` |
-| API keys | Done (entry) | `rwgcp-api-keys` |
+| Overview | Done | `rwgc-integrations-hub` → category cards |
+| Google Analytics | Done | `rwgcp-google-analytics` (Analytics) |
+| Google Ads | Done | `rwgcp-google-ads` (Advertising) |
+| Google overview | Done | `rwgcp-google` (links only; hidden from provider tabs) |
+| Meta | Done | `rwgcp-meta` — placeholder only (Advertising) |
+| Weather | Done | `rwgcp-weather` (APIs) |
+| API keys | Done | `rwgcp-api-keys` (APIs; no setup wizard) |
+| Elementor | Done | `geo-elementor` (Content builders) |
+| Gutenberg | Done | `rwgc-integrations-gutenberg` (Content builders) |
+| WooCommerce | Done | `rwgc-integrations-woocommerce` (Ecommerce) |
+| GeoCore Pro platform | Done | `rwgcp-geocore-pro` (System services; `is_section_nav` false) |
+| City/time settings | Done | `egp-city-settings`, `egp-time-settings` (hidden nav) |
 
 ## Settings
 
@@ -101,10 +106,10 @@ Intent model: **Targeting = WHO**, **Experiences = WHAT + TEST**, **Commerce = S
 
 ## Future (optional depth, not blocking IA)
 
-- Split Audience/Campaign insights into dedicated report UIs (currently mode-aware `usage-page.php`).
+- Rich charts on Audience/Campaign insights (mode-aware `usage-page.php` has scoped empty states and CTAs as of 1.7.9).
 - Dedicated Merchandising/Availability rule engines (currently entry screens linking to overlays/rules).
 - Meta integration surface beyond Pro placeholder tab.
 
 ---
 
-**Release:** Geo Core **1.7.7** documents this IA pass. Satellite plugins with route-only changes should be released alongside for consistent shell tabs.
+**Release:** Geo Core **1.7.9** — contextual integration categories + scoped provider screens. GeoCore Pro **0.1.39** — split Google routes. Satellite plugins with route-only changes should be released alongside for consistent shell tabs.

@@ -307,6 +307,10 @@ class RWGC_Admin_App_Shell {
 			return;
 		}
 
+		if ( 'integrations' === ( $ctx['section'] ?? '' ) ) {
+			return;
+		}
+
 		/**
 		 * Extra horizontal links when a screen uses in-page tabs (e.g. GeoCore Pro).
 		 *
@@ -318,6 +322,9 @@ class RWGC_Admin_App_Shell {
 		$tabs = array();
 
 		foreach ( $routes as $slug => $route ) {
+			if ( isset( $route['is_section_nav'] ) && empty( $route['is_section_nav'] ) ) {
+				continue;
+			}
 			$tabs[] = array(
 				'url'    => admin_url( 'admin.php?page=' . rawurlencode( (string) $slug ) ),
 				'label'  => (string) ( $route['label'] ?? $slug ),
@@ -390,11 +397,57 @@ class RWGC_Admin_App_Shell {
 	}
 
 	/**
+	 * Integrations: category row + scoped provider tabs (no global route dump).
+	 *
 	 * @param array<string, string> $ctx Current context.
 	 * @return void
 	 */
 	private static function render_integrations_subnav( array $ctx ) {
-		unset( $ctx );
+		if ( 'integrations' !== ( $ctx['section'] ?? '' ) || ! class_exists( 'RWGC_Admin_Integrations_Nav', false ) ) {
+			return;
+		}
+
+		$current_category = RWGC_Admin_Integrations_Nav::get_current_category( $ctx );
+		$categories       = RWGC_Admin_Integrations_Nav::get_active_categories();
+		$current_slug     = isset( $ctx['menu_slug'] ) ? sanitize_key( (string) $ctx['menu_slug'] ) : '';
+
+		if ( count( $categories ) >= 1 ) {
+			echo '<nav class="rwgc-app-shell__section-nav rwgc-app-shell__section-nav--integrations-categories" aria-label="' . esc_attr__( 'Integration categories', 'reactwoo-geocore' ) . '">';
+			echo '<div class="rwgc-app-shell__section-scroll">';
+
+			$hub_active = ( 'rwgc-integrations-hub' === $current_slug );
+			echo '<a class="rwgc-app-shell__section-link' . ( $hub_active ? ' is-active' : '' ) . '" href="' . esc_url( admin_url( 'admin.php?page=rwgc-integrations-hub' ) ) . '">';
+			echo esc_html__( 'Overview', 'reactwoo-geocore' );
+			echo '</a>';
+
+			foreach ( $categories as $cat_id => $row ) {
+				$active = ( $current_category === $cat_id );
+				echo '<a class="rwgc-app-shell__section-link' . ( $active ? ' is-active' : '' ) . '" href="' . esc_url( RWGC_Admin_Integrations_Nav::get_category_url( $cat_id ) ) . '">';
+				echo esc_html( (string) ( $row['label'] ?? $cat_id ) );
+				echo '</a>';
+			}
+
+			echo '</div></nav>';
+		}
+
+		if ( '' === $current_category || 'rwgc-integrations-hub' === $current_slug ) {
+			return;
+		}
+
+		$provider_routes = RWGC_Admin_Integrations_Nav::get_category_routes( $current_category );
+		if ( count( $provider_routes ) < 2 ) {
+			return;
+		}
+
+		echo '<nav class="rwgc-app-shell__settings-subnav rwgc-app-shell__integrations-provider-subnav" aria-label="' . esc_attr__( 'Integration providers', 'reactwoo-geocore' ) . '">';
+		echo '<div class="rwgc-app-shell__settings-subnav-scroll">';
+		foreach ( $provider_routes as $slug => $route ) {
+			$classes = 'rwgc-app-shell__settings-subnav-link' . ( $current_slug === $slug ? ' is-active' : '' );
+			echo '<a class="' . esc_attr( $classes ) . '" href="' . esc_url( admin_url( 'admin.php?page=' . rawurlencode( (string) $slug ) ) ) . '">';
+			echo esc_html( (string) ( $route['label'] ?? $slug ) );
+			echo '</a>';
+		}
+		echo '</div></nav>';
 	}
 
 	/**

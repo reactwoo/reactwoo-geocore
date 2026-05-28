@@ -1,6 +1,6 @@
 <?php
 /**
- * Page versions — master / local version relationships (Geo Core free routing).
+ * Experiences → Variants (experiment / A-B variants only).
  *
  * @package ReactWooGeoCore
  */
@@ -9,137 +9,95 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$overview_rows = isset( $overview_rows ) && is_array( $overview_rows ) ? $overview_rows : array();
+$variant_rows = array();
 
-// Build a unified rules list so implemented popup/section/page rules are visible in one screen.
-$rule_rows = array();
-
-// 1) Geo Core page-version routing rules.
-foreach ( $overview_rows as $row ) {
-	$condition = ! empty( $row['variant']['country_iso2'] ) ? (string) $row['variant']['country_iso2'] : __( 'Default visitor', 'reactwoo-geocore' );
-	$target    = ! empty( $row['variant']['variant_title'] ) ? (string) $row['variant']['variant_title'] : __( 'Default page', 'reactwoo-geocore' );
-	$action_url = admin_url( 'admin.php?page=rwgc-workflow-variant&rwgc_master_page_id=' . (int) $row['master_id'] );
-
-	$rule_rows[] = array(
-		'rule'       => sprintf( __( 'Route %s', 'reactwoo-geocore' ), (string) $row['master_title'] ),
-		'condition'  => $condition,
-		'action'     => __( 'Route to page version', 'reactwoo-geocore' ),
-		'target'     => $target,
-		'status'     => __( 'Active', 'reactwoo-geocore' ),
-		'action_url' => $action_url,
-		'action_label' => __( 'Edit rule', 'reactwoo-geocore' ),
-	);
-}
-
-// 2) GeoElementor/Geo rules CPT (if available).
-if ( post_type_exists( 'geo_rule' ) ) {
-	$geo_rules = get_posts(
-		array(
-			'post_type'      => 'geo_rule',
-			'post_status'    => array( 'publish', 'draft', 'private', 'pending', 'future' ),
-			'posts_per_page' => 200,
-			'orderby'        => 'date',
-			'order'          => 'DESC',
-		)
-	);
-	foreach ( $geo_rules as $rule_post ) {
-		$target_type = (string) get_post_meta( (int) $rule_post->ID, 'egp_target_type', true );
-		$target_id   = (int) get_post_meta( (int) $rule_post->ID, 'egp_target_id', true );
-		$countries   = get_post_meta( (int) $rule_post->ID, 'egp_countries', true );
-		$is_active   = '1' === (string) get_post_meta( (int) $rule_post->ID, 'egp_active', true ) || 'publish' === $rule_post->post_status;
-
-		$country_label = __( 'Any visitor', 'reactwoo-geocore' );
-		if ( is_array( $countries ) && ! empty( $countries ) ) {
-			$country_label = implode( ', ', array_map( 'strval', $countries ) );
+if ( class_exists( 'RWGO_Experiment_Repository', false ) ) {
+	foreach ( RWGO_Experiment_Repository::query_experiments() as $experiment_post ) {
+		if ( ! $experiment_post instanceof WP_Post ) {
+			continue;
 		}
+		$config   = RWGO_Experiment_Repository::get_config( (int) $experiment_post->ID );
+		$variants = isset( $config['variants'] ) && is_array( $config['variants'] ) ? $config['variants'] : array();
+		$status   = isset( $config['status'] ) ? (string) $config['status'] : 'draft';
 
-		$target_label = '';
-		if ( $target_id > 0 ) {
-			$target_post = get_post( $target_id );
-			if ( $target_post ) {
-				$target_label = (string) $target_post->post_title;
+		foreach ( $variants as $variant ) {
+			if ( ! is_array( $variant ) ) {
+				continue;
 			}
-		}
-		if ( '' === $target_label ) {
-			$target_label = $target_type ? ucfirst( $target_type ) : __( 'Content target', 'reactwoo-geocore' );
-		}
+			$label = isset( $variant['label'] ) ? (string) $variant['label'] : __( 'Variant', 'reactwoo-geocore' );
+			$key   = isset( $variant['key'] ) ? (string) $variant['key'] : '';
+			$page_id = isset( $variant['page_id'] ) ? (int) $variant['page_id'] : 0;
+			$page_title = '';
+			if ( $page_id > 0 ) {
+				$p = get_post( $page_id );
+				if ( $p ) {
+					$page_title = $p->post_title;
+				}
+			}
 
-		$rule_rows[] = array(
-			'rule'         => (string) $rule_post->post_title,
-			'condition'    => $country_label,
-			'action'       => __( 'Show / Hide', 'reactwoo-geocore' ),
-			'target'       => $target_label,
-			'status'       => $is_active ? __( 'Active', 'reactwoo-geocore' ) : __( 'Draft', 'reactwoo-geocore' ),
-			'action_url'   => get_edit_post_link( (int) $rule_post->ID, 'raw' ),
-			'action_label' => __( 'Edit rule', 'reactwoo-geocore' ),
-		);
+			$variant_rows[] = array(
+				'experiment' => $experiment_post->post_title,
+				'variant'    => $label . ( '' !== $key ? ' (' . $key . ')' : '' ),
+				'content'    => $page_title ? $page_title : __( 'Linked page', 'reactwoo-geocore' ),
+				'status'     => $status ? ucfirst( $status ) : __( 'Draft', 'reactwoo-geocore' ),
+				'updated'    => get_the_modified_date( '', $experiment_post ),
+				'edit_url'   => admin_url( 'admin.php?page=rwgo-edit-test&rwgo_experiment_id=' . (int) $experiment_post->ID ),
+			);
+		}
 	}
 }
+
+/**
+ * @param array<int, array<string, mixed>> $variant_rows Variant rows.
+ */
+$variant_rows = apply_filters( 'rwgc_experience_variant_rows', $variant_rows );
 ?>
 <div class="wrap rwgc-wrap rwgc-suite rwgc-suite-shell">
 	<?php
 	$rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
 	RWGC_Admin_UI::render_page_header(
-		$rwgc_platform_shell
-			? __( 'Page versions', 'reactwoo-geocore' )
-			: __( 'Rules / Page Versions', 'reactwoo-geocore' ),
-		__( 'Create and manage rules that show, hide, redirect, or route page versions for the right visitors.', 'reactwoo-geocore' )
+		__( 'Variants', 'reactwoo-geocore' ),
+		__( 'Experiment and A/B test variants created through Geo Optimise.', 'reactwoo-geocore' )
 	);
 	?>
-	<?php if ( ! $rwgc_platform_shell ) : ?>
-		<?php RWGC_Admin::render_inner_nav( 'rwgc-suite-variants' ); ?>
-	<?php endif; ?>
 
 	<p class="rwgc-suite-shell__intro">
-		<?php esc_html_e( 'Use plain-English rules: "When a visitor matches conditions, show an action on a target."', 'reactwoo-geocore' ); ?>
+		<?php esc_html_e( 'Variants listed here are tied to experiments — not Elementor visibility rules or portable targeting libraries.', 'reactwoo-geocore' ); ?>
 	</p>
 
-	<div class="rwgc-grid">
-		<div class="rwgc-card rwgc-card--highlight">
-			<h2><?php esc_html_e( 'Create a geo rule', 'reactwoo-geocore' ); ?></h2>
-			<ol class="rwgc-steps">
-				<li><?php esc_html_e( 'Name the rule', 'reactwoo-geocore' ); ?></li>
-				<li><?php esc_html_e( 'Choose visitor conditions', 'reactwoo-geocore' ); ?></li>
-				<li><?php esc_html_e( 'Choose action: Show / Hide / Redirect / Route', 'reactwoo-geocore' ); ?></li>
-				<li><?php esc_html_e( 'Choose target', 'reactwoo-geocore' ); ?></li>
-				<li><?php esc_html_e( 'Review and activate', 'reactwoo-geocore' ); ?></li>
-			</ol>
-			<p><a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-workflow-variant' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Create Geo Rule', 'reactwoo-geocore' ); ?></a></p>
-		</div>
+	<?php if ( empty( $variant_rows ) ) : ?>
 		<div class="rwgc-card">
-			<h2><?php esc_html_e( 'Rule sentence preview', 'reactwoo-geocore' ); ?></h2>
-			<p><?php esc_html_e( 'When a visitor matches [condition], then [action] [target].', 'reactwoo-geocore' ); ?></p>
-			<p class="description"><?php esc_html_e( 'Example: When a visitor is in the UK, route to the UK homepage version.', 'reactwoo-geocore' ); ?></p>
+			<p><?php esc_html_e( 'No experiment variants have been created yet.', 'reactwoo-geocore' ); ?></p>
+			<p>
+				<?php if ( class_exists( 'RWGO_Admin', false ) ) : ?>
+					<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgo-create-test' ) ); ?>"><?php esc_html_e( 'Create experiment', 'reactwoo-geocore' ); ?></a>
+				<?php endif; ?>
+				<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgo-help' ) ); ?>" style="margin-left:8px;"><?php esc_html_e( 'Learn about variants', 'reactwoo-geocore' ); ?></a>
+			</p>
 		</div>
-	</div>
-
-	<?php if ( empty( $rule_rows ) ) : ?>
-		<div class="notice notice-info"><p><?php esc_html_e( 'No rules found yet. Create your first rule to control what visitors see.', 'reactwoo-geocore' ); ?></p></div>
 	<?php else : ?>
 		<table class="widefat striped rwgc-suite-variants-table">
 			<thead>
 				<tr>
-					<th scope="col"><?php esc_html_e( 'Rule', 'reactwoo-geocore' ); ?></th>
-					<th scope="col"><?php esc_html_e( 'Condition', 'reactwoo-geocore' ); ?></th>
-					<th scope="col"><?php esc_html_e( 'Action', 'reactwoo-geocore' ); ?></th>
-					<th scope="col"><?php esc_html_e( 'Target', 'reactwoo-geocore' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Experiment', 'reactwoo-geocore' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Variant', 'reactwoo-geocore' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Content', 'reactwoo-geocore' ); ?></th>
 					<th scope="col"><?php esc_html_e( 'Status', 'reactwoo-geocore' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Updated', 'reactwoo-geocore' ); ?></th>
 					<th scope="col"><?php esc_html_e( 'Actions', 'reactwoo-geocore' ); ?></th>
 				</tr>
 			</thead>
 			<tbody>
-				<?php foreach ( $rule_rows as $row ) : ?>
+				<?php foreach ( $variant_rows as $row ) : ?>
 					<tr>
-						<td><strong><?php echo esc_html( (string) $row['rule'] ); ?></strong></td>
-						<td><?php echo esc_html( (string) $row['condition'] ); ?></td>
-						<td><?php echo esc_html( (string) $row['action'] ); ?></td>
-						<td><?php echo esc_html( (string) $row['target'] ); ?></td>
+						<td><strong><?php echo esc_html( (string) $row['experiment'] ); ?></strong></td>
+						<td><?php echo esc_html( (string) $row['variant'] ); ?></td>
+						<td><?php echo esc_html( (string) $row['content'] ); ?></td>
 						<td><?php echo esc_html( (string) $row['status'] ); ?></td>
+						<td><?php echo esc_html( (string) $row['updated'] ); ?></td>
 						<td>
-							<?php if ( ! empty( $row['action_url'] ) ) : ?>
-								<a class="button button-small" href="<?php echo esc_url( (string) $row['action_url'] ); ?>"><?php echo esc_html( (string) $row['action_label'] ); ?></a>
-							<?php else : ?>
-								—
+							<?php if ( ! empty( $row['edit_url'] ) ) : ?>
+								<a class="button button-small" href="<?php echo esc_url( (string) $row['edit_url'] ); ?>"><?php esc_html_e( 'Edit experiment', 'reactwoo-geocore' ); ?></a>
 							<?php endif; ?>
 						</td>
 					</tr>

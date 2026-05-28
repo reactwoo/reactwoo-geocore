@@ -161,6 +161,11 @@ class RWGC_Plugin {
 			RWGC_Admin_Platform::init();
 			RWGC_Admin_Route_Registry::init();
 			RWGC_Admin_Settings_Nav::init();
+			require_once RWGC_PATH . 'includes/class-rwgc-admin-integrations-nav.php';
+			RWGC_Admin_Integrations_Nav::init();
+			require_once RWGC_PATH . 'includes/class-rwgc-admin-experiences-nav.php';
+			RWGC_Admin_Experiences_Nav::init();
+			require_once RWGC_PATH . 'includes/class-rwgc-admin-targeting-rules-index.php';
 			RWGC_Admin_App_Shell::init();
 			RWGC_Platform_Sync_Status::init();
 			RWGC_Platform_Integrations::init();
