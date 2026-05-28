@@ -35,6 +35,12 @@
 		return 'c_' + Math.random().toString(36).slice(2, 10);
 	}
 
+	function escapeHtml(s) {
+		var d = document.createElement('div');
+		d.textContent = s == null ? '' : String(s);
+		return d.innerHTML;
+	}
+
 	var PAGE_VERSION_PATTERN = /^[a-zA-Z0-9_-]{1,80}$/;
 
 	var FIELD_DEFS = [
@@ -931,12 +937,6 @@
 			});
 			adv.appendChild(det);
 			root.appendChild(adv);
-		}
-
-		function escapeHtml(s) {
-			var d = document.createElement('div');
-			d.textContent = s;
-			return d.innerHTML;
 		}
 
 		function emptyGaBlock(c) {
