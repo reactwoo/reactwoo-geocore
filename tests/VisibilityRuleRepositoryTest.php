@@ -39,19 +39,25 @@ if ( ! class_exists( 'WP_Post', false ) ) {
 
 if ( ! function_exists( '__' ) ) {
 	/**
-	 * @param string $text Text.
+	 * @param string $text   Text.
+	 * @param string $domain Text domain.
 	 * @return string
 	 */
-	function __( $text ) {
+	function __( $text, $domain = 'default' ) {
+		unset( $domain );
 		return $text;
 	}
 }
 
 if ( ! function_exists( 'wp_generate_password' ) ) {
 	/**
+	 * @param int  $length              Password length.
+	 * @param bool $special_chars       Include special characters.
+	 * @param bool $extra_special_chars Include extra special characters.
 	 * @return string
 	 */
-	function wp_generate_password() {
+	function wp_generate_password( $length = 12, $special_chars = true, $extra_special_chars = false ) {
+		unset( $length, $special_chars, $extra_special_chars );
 		return 'generated';
 	}
 }
@@ -79,9 +85,11 @@ if ( ! function_exists( 'get_post' ) ) {
 
 if ( ! function_exists( 'get_posts' ) ) {
 	/**
+	 * @param array<string, mixed> $args Query args.
 	 * @return array<int, WP_Post>
 	 */
-	function get_posts() {
+	function get_posts( $args = array() ) {
+		unset( $args );
 		return array_values( isset( $GLOBALS['rwgc_test_posts'] ) ? $GLOBALS['rwgc_test_posts'] : array() );
 	}
 }
@@ -90,9 +98,11 @@ if ( ! function_exists( 'get_post_meta' ) ) {
 	/**
 	 * @param int    $post_id Post ID.
 	 * @param string $key     Meta key.
+	 * @param bool   $single  Return single value.
 	 * @return string
 	 */
-	function get_post_meta( $post_id, $key ) {
+	function get_post_meta( $post_id, $key = '', $single = false ) {
+		unset( $single );
 		$post_id = (int) $post_id;
 		return isset( $GLOBALS['rwgc_test_post_meta'][ $post_id ][ $key ] ) ? $GLOBALS['rwgc_test_post_meta'][ $post_id ][ $key ] : '';
 	}
@@ -118,9 +128,11 @@ if ( ! function_exists( 'update_post_meta' ) ) {
 if ( ! function_exists( 'wp_insert_post' ) ) {
 	/**
 	 * @param array<string, mixed> $data Post data.
+	 * @param bool                 $wp_error Return WP_Error on failure.
 	 * @return int
 	 */
-	function wp_insert_post( $data ) {
+	function wp_insert_post( $data, $wp_error = false ) {
+		unset( $wp_error );
 		$id = isset( $GLOBALS['rwgc_test_next_post_id'] ) ? (int) $GLOBALS['rwgc_test_next_post_id'] : 1;
 		$GLOBALS['rwgc_test_next_post_id'] = $id + 1;
 		$data['ID'] = $id;
@@ -132,9 +144,11 @@ if ( ! function_exists( 'wp_insert_post' ) ) {
 if ( ! function_exists( 'wp_update_post' ) ) {
 	/**
 	 * @param array<string, mixed> $data Post data.
+	 * @param bool                 $wp_error Return WP_Error on failure.
 	 * @return int
 	 */
-	function wp_update_post( $data ) {
+	function wp_update_post( $data, $wp_error = false ) {
+		unset( $wp_error );
 		$id = isset( $data['ID'] ) ? (int) $data['ID'] : 0;
 		if ( $id <= 0 || empty( $GLOBALS['rwgc_test_posts'][ $id ] ) ) {
 			return 0;
