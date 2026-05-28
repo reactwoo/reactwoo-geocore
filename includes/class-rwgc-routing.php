@@ -53,6 +53,10 @@ class RWGC_Routing {
 	 * @return void
 	 */
 	public static function maybe_route_request() {
+		if ( class_exists( 'RWGC_Page_Version_Routing', false ) && RWGC_Page_Version_Routing::is_page_version_request() ) {
+			return;
+		}
+
 		if ( self::should_bypass_request() ) {
 			self::maybe_log_bypass_branch( 'maybe_route_request_skip', array( 'action' => 'skip_routing' ) );
 			return;

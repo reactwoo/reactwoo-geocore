@@ -130,6 +130,17 @@ class RWGC_Targeting_Rule_Builder_Assets {
 			'noConditionsYet'      => __( 'Add at least one condition to define who should see this content.', 'reactwoo-geocore' ),
 			'summaryPrefixShow'    => __( 'This content will be shown when', 'reactwoo-geocore' ),
 			'summaryPrefixHide'    => __( 'This content will be hidden when', 'reactwoo-geocore' ),
+			'fieldPageVersion'     => __( 'Page Version URL', 'reactwoo-geocore' ),
+			'pageVersionNameLabel' => __( 'Version name', 'reactwoo-geocore' ),
+			'pageVersionPageLabel' => __( 'Page', 'reactwoo-geocore' ),
+			'pageVersionPlaceholder' => __( 'campaign_name', 'reactwoo-geocore' ),
+			'pageVersionHelper'    => __( 'Visitors using this URL will see the targeted version of this page.', 'reactwoo-geocore' ),
+			'pageVersionPattern'   => __( 'Page Version URL:', 'reactwoo-geocore' ),
+			'pageVersionSummary'   => __( 'This content will show only on %s.', 'reactwoo-geocore' ),
+			'pageVersionInvalid'   => __( 'Enter only the version name, such as campaign_name.', 'reactwoo-geocore' ),
+			'pageVersionChars'     => __( 'Use letters, numbers, hyphens, and underscores only.', 'reactwoo-geocore' ),
+			'pageVersionLength'    => __( 'Keep the version name under 80 characters.', 'reactwoo-geocore' ),
+			'pageVersionPickPage'  => __( 'Choose a page first, then enter the version name.', 'reactwoo-geocore' ),
 		);
 	}
 

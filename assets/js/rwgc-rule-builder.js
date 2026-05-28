@@ -35,8 +35,11 @@
 		return 'c_' + Math.random().toString(36).slice(2, 10);
 	}
 
+	var PAGE_VERSION_PATTERN = /^[a-zA-Z0-9_-]{1,80}$/;
+
 	var FIELD_DEFS = [
 		{ key: 'country', portableType: 'country', pro: false, multi: true },
+		{ key: 'page_version_url', portableType: 'page_version_url', pro: false, multi: false },
 		{ key: 'ga4_audience', portableType: 'audience', pro: true, multi: true },
 		{ key: 'ads_campaign', portableType: 'campaign', pro: true, multi: true },
 		{ key: 'utm_campaign', portableType: 'utm_campaign', pro: true, multi: false },
@@ -79,6 +82,8 @@
 				return t('fieldDevice');
 			case 'logged_in':
 				return t('fieldLoggedIn');
+			case 'page_version_url':
+				return t('fieldPageVersion');
 			default:
 				return key;
 		}
@@ -95,8 +100,95 @@
 			device: 'device_type',
 			device_type: 'device_type',
 			logged_in: 'logged_in',
+			page_version_url: 'page_version_url',
 		};
 		return map[pt] || null;
+	}
+
+	function pageVersionCtx(c) {
+		var pv = c.page_version || {};
+		return {
+			document: pv.document || null,
+			pages: Array.isArray(pv.pages) ? pv.pages : [],
+		};
+	}
+
+	function defaultPageVersionPageId(c) {
+		var pvc = pageVersionCtx(c);
+		if (pvc.document && pvc.document.id) {
+			return parseInt(pvc.document.id, 10) || 0;
+		}
+		return 0;
+	}
+
+	function pagePathById(pageId, c) {
+		var id = parseInt(pageId, 10) || 0;
+		if (!id) {
+			return '';
+		}
+		var pvc = pageVersionCtx(c);
+		if (pvc.document && parseInt(pvc.document.id, 10) === id && pvc.document.path) {
+			return pvc.document.path;
+		}
+		var pages = pvc.pages || [];
+		for (var i = 0; i < pages.length; i++) {
+			if (parseInt(pages[i].id, 10) === id) {
+				return pages[i].path || '';
+			}
+		}
+		return '';
+	}
+
+	function sanitizePageVersionInput(raw, basePath) {
+		var s = String(raw || '').trim();
+		if (!s) {
+			return { version: '', error: t('pageVersionInvalid') };
+		}
+		if (s.indexOf('://') !== -1) {
+			try {
+				var u = document.createElement('a');
+				u.href = s;
+				s = (u.pathname || '').replace(/^\//, '');
+			} catch (e) {
+				/* keep s */
+			}
+		}
+		s = s.replace(/^\/+/, '');
+		var gc = '/_gc/';
+		var gcIdx = s.indexOf(gc);
+		if (gcIdx !== -1) {
+			s = s.slice(gcIdx + gc.length);
+		} else if (s.indexOf('_gc/') === 0) {
+			s = s.slice(4);
+		}
+		if (basePath) {
+			var bp = String(basePath).replace(/^\/+|\/+$/g, '');
+			if (bp && s.indexOf(bp + '/_gc/') === 0) {
+				s = s.slice((bp + '/_gc/').length);
+			} else if (bp && s.indexOf(bp + '/') === 0) {
+				s = s.slice(bp.length + 1);
+			}
+		}
+		s = s.split('/').pop() || s;
+		s = s.replace(/^\/+/, '').replace(/\/+$/, '');
+		if (!s) {
+			return { version: '', error: t('pageVersionInvalid') };
+		}
+		if (s.length > 80) {
+			return { version: '', error: t('pageVersionLength') };
+		}
+		if (!PAGE_VERSION_PATTERN.test(s)) {
+			return { version: '', error: t('pageVersionChars') };
+		}
+		return { version: s, error: '' };
+	}
+
+	function pageVersionPreviewPath(pageId, version, c) {
+		var base = pagePathById(pageId, c);
+		if (!base || !version) {
+			return '';
+		}
+		return base + '/_gc/' + version;
 	}
 
 	function opUiToPortable(ui) {
@@ -182,6 +274,17 @@
 		if (!c || typeof c !== 'object' || !c.type) {
 			return { uid: uid(), field: '', uiOp: 'includes', values: [], unknown: null };
 		}
+		if (String(c.type) === 'page_version_url') {
+			var pv = c.value && typeof c.value === 'object' ? c.value : {};
+			return {
+				uid: uid(),
+				field: 'page_version_url',
+				uiOp: 'is',
+				values: [String(pv.version || '')],
+				pageVersionPageId: parseInt(pv.page_id, 10) || 0,
+				unknown: null,
+			};
+		}
 		var f = portableTypeToField(String(c.type));
 		var op = String(c.operator || 'in');
 		if (!f) {
@@ -224,6 +327,20 @@
 		}
 		if (!row.field) {
 			return null;
+		}
+		if (row.field === 'page_version_url') {
+			var c = ctx();
+			var pageId = row.pageVersionPageId || defaultPageVersionPageId(c);
+			var ver = row.values[0] !== undefined ? String(row.values[0]) : '';
+			var san = sanitizePageVersionInput(ver, pagePathById(pageId, c));
+			if (!pageId || !san.version) {
+				return null;
+			}
+			return {
+				type: 'page_version_url',
+				operator: 'equals',
+				value: { page_id: pageId, version: san.version },
+			};
 		}
 		var meta = fieldMeta(row.field);
 		if (!meta) {
@@ -289,6 +406,15 @@
 		}
 		if (row.field === 'logged_in') {
 			return !row.values.length;
+		}
+		if (row.field === 'page_version_url') {
+			var c = ctx();
+			var pageId = row.pageVersionPageId || defaultPageVersionPageId(c);
+			if (!pageId) {
+				return true;
+			}
+			var san = sanitizePageVersionInput(row.values[0], pagePathById(pageId, c));
+			return !san.version;
 		}
 		return !String(row.values[0] || '').trim();
 	}
@@ -398,6 +524,15 @@
 		if (row.field === 'logged_in') {
 			return uiLabelForField(row.field) + ' ' + opw + ' ' + (row.values[0] === '1' ? t('loggedInYes') : t('loggedInNo'));
 		}
+		if (row.field === 'page_version_url') {
+			var pageId = row.pageVersionPageId || defaultPageVersionPageId(c);
+			var san = sanitizePageVersionInput(row.values[0], pagePathById(pageId, c));
+			var path = pageVersionPreviewPath(pageId, san.version, c);
+			if (path) {
+				return uiLabelForField(row.field) + ' ' + t('opIs') + ' ' + path;
+			}
+			return uiLabelForField(row.field);
+		}
 		if (row.field === 'device_type') {
 			return uiLabelForField(row.field) + ' ' + opw + ' ' + row.values.join(', ');
 		}
@@ -435,6 +570,139 @@
 			}
 		}
 		return id;
+	}
+
+	function renderPageVersionPanel(row, c, onChange) {
+		var panel = document.createElement('div');
+		panel.className = 'rwgc-rb__page-version';
+
+		var pageId = row.pageVersionPageId || defaultPageVersionPageId(c);
+		var pvc = pageVersionCtx(c);
+		var showPagePicker = !pvc.document || !pvc.document.id;
+
+		if (showPagePicker && pvc.pages.length) {
+			var pgWrap = document.createElement('div');
+			pgWrap.className = 'rwgc-rb__page-version-page';
+			var pgLab = document.createElement('label');
+			pgLab.textContent = t('pageVersionPageLabel');
+			var pgSel = document.createElement('select');
+			pgSel.innerHTML = '<option value="">' + escapeHtml('—') + '</option>';
+			pvc.pages.forEach(function (p) {
+				var o = document.createElement('option');
+				o.value = String(p.id);
+				o.textContent = (p.title || p.path) + ' (' + p.path + ')';
+				pgSel.appendChild(o);
+			});
+			pgSel.value = pageId ? String(pageId) : '';
+			pgSel.addEventListener('change', function () {
+				row.pageVersionPageId = parseInt(pgSel.value, 10) || 0;
+				if (onChange) {
+					onChange();
+				}
+			});
+			pgWrap.appendChild(pgLab);
+			pgWrap.appendChild(pgSel);
+			panel.appendChild(pgWrap);
+		} else if (pvc.document && pvc.document.path) {
+			var cur = document.createElement('p');
+			cur.className = 'rwgc-rb__page-version-current description';
+			cur.textContent = pvc.document.path;
+			panel.appendChild(cur);
+			row.pageVersionPageId = parseInt(pvc.document.id, 10) || row.pageVersionPageId;
+		}
+
+		pageId = row.pageVersionPageId || defaultPageVersionPageId(c);
+		var basePath = pagePathById(pageId, c);
+
+		var pattern = document.createElement('p');
+		pattern.className = 'rwgc-rb__page-version-pattern';
+		pattern.innerHTML =
+			'<strong>' +
+			escapeHtml(t('pageVersionPattern')) +
+			'</strong> <code class="rwgc-rb__page-version-code">' +
+			escapeHtml((basePath || '/') + '/_gc/[ version-name ]') +
+			'</code>';
+		panel.appendChild(pattern);
+
+		var nameWrap = document.createElement('div');
+		nameWrap.className = 'rwgc-rb__page-version-name';
+		var nameLab = document.createElement('label');
+		nameLab.textContent = t('pageVersionNameLabel');
+		var nameInp = document.createElement('input');
+		nameInp.type = 'text';
+		nameInp.className = 'rwgc-rb__page-version-input';
+		nameInp.placeholder = t('pageVersionPlaceholder');
+		nameInp.value = row.values[0] || '';
+		nameInp.maxLength = 80;
+		nameInp.addEventListener('input', function () {
+			row.values = [nameInp.value];
+			updatePageVersionFeedback();
+			if (onChange) {
+				onChange();
+			}
+		});
+		nameInp.addEventListener('blur', function () {
+			var san = sanitizePageVersionInput(nameInp.value, basePath);
+			if (san.version && san.version !== nameInp.value) {
+				nameInp.value = san.version;
+				row.values = [san.version];
+				updatePageVersionFeedback();
+				if (onChange) {
+					onChange();
+				}
+			}
+		});
+		nameWrap.appendChild(nameLab);
+		nameWrap.appendChild(nameInp);
+		panel.appendChild(nameWrap);
+
+		var helper = document.createElement('p');
+		helper.className = 'description rwgc-rb__page-version-helper';
+		helper.textContent = t('pageVersionHelper');
+		if (basePath) {
+			var ex = document.createElement('p');
+			ex.className = 'description rwgc-rb__page-version-example';
+			ex.textContent = 'Example: ' + basePath + '/_gc/campaign_name';
+			panel.appendChild(helper);
+			panel.appendChild(ex);
+		} else {
+			panel.appendChild(helper);
+		}
+
+		var err = document.createElement('p');
+		err.className = 'rwgc-rb__page-version-error';
+		err.hidden = true;
+
+		var summary = document.createElement('p');
+		summary.className = 'rwgc-rb__page-version-summary description';
+
+		panel.appendChild(err);
+		panel.appendChild(summary);
+
+		function updatePageVersionFeedback() {
+			if (!pageId) {
+				err.textContent = t('pageVersionPickPage');
+				err.hidden = false;
+				summary.textContent = '';
+				return;
+			}
+			var san = sanitizePageVersionInput(row.values[0], basePath);
+			if (san.error) {
+				err.textContent = san.error;
+				err.hidden = !String(row.values[0] || '').trim();
+			} else {
+				err.hidden = true;
+			}
+			var preview = pageVersionPreviewPath(pageId, san.version, c);
+			if (preview) {
+				summary.textContent = t('pageVersionSummary').replace('%s', preview);
+			} else {
+				summary.textContent = '';
+			}
+		}
+
+		updatePageVersionFeedback();
+		return panel;
 	}
 
 	function mount(options) {
@@ -764,7 +1032,11 @@
 			fs.addEventListener('change', function () {
 				row.field = fs.value;
 				row.values = [];
-				row.uiOp = 'includes';
+				row.uiOp = fs.value === 'page_version_url' ? 'is' : 'includes';
+				if (fs.value === 'page_version_url') {
+					row.pageVersionPageId = defaultPageVersionPageId(c);
+					row.values = [''];
+				}
 				writeTextareaFromState();
 				render();
 			});
@@ -786,17 +1058,31 @@
 			});
 			oWrap.appendChild(ol);
 			oWrap.appendChild(os);
+			if (row.field === 'page_version_url') {
+				oWrap.style.display = 'none';
+			}
 			head.appendChild(oWrap);
 
 			var vWrap = document.createElement('div');
 			vWrap.className = 'rwgc-rb__val';
-			var vl = document.createElement('label');
-			vl.textContent = t('valueLabel');
-			vWrap.appendChild(vl);
-			vWrap.appendChild(renderValueEditor(row, c));
-			head.appendChild(vWrap);
+			if (row.field !== 'page_version_url') {
+				var vl = document.createElement('label');
+				vl.textContent = t('valueLabel');
+				vWrap.appendChild(vl);
+				vWrap.appendChild(renderValueEditor(row, c));
+				head.appendChild(vWrap);
+			}
 
 			wrap.appendChild(head);
+
+			if (row.field === 'page_version_url') {
+				wrap.appendChild(
+					renderPageVersionPanel(row, c, function () {
+						writeTextareaFromState();
+						render();
+					})
+				);
+			}
 
 			var rowMeta = fieldMeta(row.field);
 			if (row.field && row.field !== 'logged_in' && rowMeta && rowMeta.multi) {
@@ -842,7 +1128,7 @@
 			if (!field) {
 				return '<option value="includes">' + escapeHtml(t('opIncludesAny')) + '</option>';
 			}
-			if (field === 'logged_in') {
+			if (field === 'logged_in' || field === 'page_version_url') {
 				html +=
 					'<option value="is">' +
 					escapeHtml(t('opIs')) +
@@ -947,6 +1233,13 @@
 					box.appendChild(lab);
 				});
 				frag.appendChild(box);
+				return frag;
+			}
+			if (row.field === 'page_version_url') {
+				var em = document.createElement('em');
+				em.style.opacity = '0.7';
+				em.textContent = '—';
+				frag.appendChild(em);
 				return frag;
 			}
 			if (row.field === 'logged_in') {

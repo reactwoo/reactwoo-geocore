@@ -260,3 +260,31 @@
 	clip: rect(0, 0, 0, 0) !important;
 	border: 0 !important;
 }
+.rwgc-rb__page-version {
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: 1px dashed #dcdcde;
+}
+.rwgc-rb__page-version-pattern {
+	margin: 0 0 8px;
+}
+.rwgc-rb__page-version-code {
+	background: #f6f7f7;
+	padding: 2px 6px;
+	border-radius: 4px;
+	font-size: 12px;
+}
+.rwgc-rb__page-version-name input,
+.rwgc-rb__page-version-page select {
+	width: 100%;
+	max-width: 100%;
+}
+.rwgc-rb__page-version-error {
+	color: #b32d2e;
+	margin: 6px 0 0;
+	font-size: 12px;
+}
+.rwgc-rb__page-version-summary {
+	margin: 6px 0 0;
+	font-weight: 500;
+}

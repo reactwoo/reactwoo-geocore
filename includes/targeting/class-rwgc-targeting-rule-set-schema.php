@@ -31,6 +31,7 @@ class RWGC_Targeting_Rule_Set_Schema {
 		'time_of_day',
 		'day_of_week',
 		'logged_in',
+		'page_version_url',
 	);
 
 	/** @var string[] */
@@ -123,6 +124,11 @@ class RWGC_Targeting_Rule_Set_Schema {
 				'label'       => __( 'Country group', 'reactwoo-geocore' ),
 				'pro'         => false,
 				'description' => __( 'Named country lists. Leave empty to match all visitors.', 'reactwoo-geocore' ),
+			),
+			'page_version_url' => array(
+				'label'       => __( 'Page Version URL', 'reactwoo-geocore' ),
+				'pro'         => false,
+				'description' => __( 'Show content only on a branded page version URL (`/page/_gc/version-name`).', 'reactwoo-geocore' ),
 			),
 			'campaign'      => array(
 				'label'       => __( 'Campaign', 'reactwoo-geocore' ),
@@ -262,6 +268,24 @@ class RWGC_Targeting_Rule_Set_Schema {
 				continue;
 			}
 			$op = isset( $c['operator'] ) ? sanitize_key( (string) $c['operator'] ) : 'in';
+			if ( 'page_version_url' === $type ) {
+				if ( ! in_array( $op, array( 'equals', 'is', 'is_not' ), true ) ) {
+					$op = 'equals';
+				}
+				if ( ! class_exists( 'RWGC_Page_Version', false ) ) {
+					continue;
+				}
+				$pv_val = RWGC_Page_Version::sanitize_condition_value( isset( $c['value'] ) ? $c['value'] : array() );
+				if ( null === $pv_val ) {
+					continue;
+				}
+				$conditions_out[] = array(
+					'type'     => $type,
+					'operator' => $op,
+					'value'    => $pv_val,
+				);
+				continue;
+			}
 			if ( ! RWGC_Target_Operators::is_valid( $op ) ) {
 				$op = 'in';
 			}

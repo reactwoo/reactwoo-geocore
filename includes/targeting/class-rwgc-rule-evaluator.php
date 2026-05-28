@@ -48,7 +48,8 @@ class RWGC_Rule_Evaluator {
 			'device_type'    => array( __CLASS__, 'eval_device_type' ),
 			'time_of_day'    => array( __CLASS__, 'eval_time_of_day' ),
 			'day_of_week'    => array( __CLASS__, 'eval_day_of_week' ),
-			'logged_in'      => array( __CLASS__, 'eval_logged_in' ),
+			'logged_in'        => array( __CLASS__, 'eval_logged_in' ),
+			'page_version_url' => array( __CLASS__, 'eval_page_version_url' ),
 		);
 	}
 
@@ -477,5 +478,42 @@ class RWGC_Rule_Evaluator {
 			return array( strtolower( trim( $val ) ) );
 		}
 		return array();
+	}
+
+	/**
+	 * Page Version URL: match active `/_gc/{version}` on the bound base page.
+	 *
+	 * @param string                $op       Operator (`equals`, `is`, `is_not`).
+	 * @param mixed                 $val      `{ page_id, version }`.
+	 * @param RWGC_Context_Snapshot $snapshot Snapshot.
+	 * @return bool
+	 */
+	public static function eval_page_version_url( $op, $val, RWGC_Context_Snapshot $snapshot ) {
+		if ( ! class_exists( 'RWGC_Page_Version', false ) ) {
+			return false;
+		}
+
+		$expected = RWGC_Page_Version::sanitize_condition_value( $val );
+		if ( null === $expected ) {
+			return false;
+		}
+
+		$active  = (bool) $snapshot->get( 'page_version_active', false );
+		$version = (string) $snapshot->get( 'page_version', '' );
+		$page_id = (int) $snapshot->get( 'page_version_page_id', 0 );
+
+		$match = $active
+			&& $page_id > 0
+			&& $page_id === (int) $expected['page_id']
+			&& $version === $expected['version'];
+
+		switch ( (string) $op ) {
+			case 'is_not':
+				return ! $match;
+			case 'equals':
+			case 'is':
+			default:
+				return $match;
+		}
 	}
 }

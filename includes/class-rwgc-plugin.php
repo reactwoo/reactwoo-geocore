@@ -132,6 +132,8 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-availability.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-simulator.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-registry.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-page-version.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-page-version-routing.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-context-resolver.php';
 		require_once RWGC_PATH . 'includes/targeting/providers/class-rwgc-target-provider-geo.php';
 		require_once RWGC_PATH . 'includes/targeting/providers/class-rwgc-target-provider-language.php';
@@ -179,6 +181,8 @@ class RWGC_Plugin {
 		RWGC_Targeting_Rule_Builder_Assets::init();
 		RWGC_Elementor::init();
 		RWGC_Routing::init();
+		RWGC_Page_Version_Routing::init();
+		add_filter( 'rwgc_portable_targeting_editor_context', array( 'RWGC_Page_Version_Routing', 'filter_editor_context' ), 20 );
 		RWGC_REST::init();
 		RWGC_Upsells::init();
 
@@ -212,6 +216,9 @@ class RWGC_Plugin {
 			add_option( 'rwgc_country_groups', array(), '', 'no' );
 		}
 		RWGC_Onboarding::flag_activation_redirect();
+		if ( class_exists( 'RWGC_Page_Version_Routing', false ) ) {
+			RWGC_Page_Version_Routing::activation_flush();
+		}
 	}
 
 	/**
