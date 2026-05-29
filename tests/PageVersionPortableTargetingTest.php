@@ -134,9 +134,11 @@ if ( ! function_exists( 'get_post_type' ) ) {
 
 if ( ! function_exists( 'current_user_can' ) ) {
 	/**
+	 * @param mixed ...$args Capability args.
 	 * @return bool
 	 */
-	function current_user_can() {
+	function current_user_can( ...$args ) {
+		unset( $args );
 		return false;
 	}
 }
@@ -162,6 +164,26 @@ if ( ! function_exists( 'get_query_var' ) ) {
 	 */
 	function get_query_var( $var ) {
 		return isset( $GLOBALS['rwgc_test_query_vars'][ $var ] ) ? $GLOBALS['rwgc_test_query_vars'][ $var ] : '';
+	}
+}
+
+if ( ! function_exists( 'home_url' ) ) {
+	/**
+	 * @param string $path Path.
+	 * @return string
+	 */
+	function home_url( $path = '' ) {
+		return 'https://example.test' . ( is_string( $path ) ? $path : '' );
+	}
+}
+
+if ( ! function_exists( 'url_to_postid' ) ) {
+	/**
+	 * @param string $url URL.
+	 * @return int
+	 */
+	function url_to_postid( $url ) {
+		return isset( $GLOBALS['rwgc_test_url_post_ids'][ $url ] ) ? (int) $GLOBALS['rwgc_test_url_post_ids'][ $url ] : 0;
 	}
 }
 
@@ -298,6 +320,7 @@ class PageVersionPortableTargetingTest extends TestCase {
 		$GLOBALS['rwgc_test_posts']             = array();
 		$GLOBALS['rwgc_test_path_posts']        = array();
 		$GLOBALS['rwgc_test_query_vars']        = array();
+		$GLOBALS['rwgc_test_url_post_ids']      = array();
 	}
 
 	public function test_elementor_hides_when_enabled_portable_rule_is_unusable() {
@@ -330,9 +353,9 @@ class PageVersionPortableTargetingTest extends TestCase {
 				'post_status' => 'publish',
 			)
 		);
-		$GLOBALS['rwgc_test_posts'][22]               = $post;
-		$GLOBALS['rwgc_test_path_posts']['hello']     = $post;
-		$GLOBALS['rwgc_test_query_vars']['pagename']  = 'hello';
+		$GLOBALS['rwgc_test_posts'][22] = $post;
+		$GLOBALS['rwgc_test_path_posts']['hello'] = $post;
+		$GLOBALS['rwgc_test_query_vars']['pagename'] = 'hello';
 		$GLOBALS['rwgc_test_query_vars']['rwgc_page_version'] = 'campaign';
 
 		$query = new WP_Query();
@@ -347,6 +370,28 @@ class PageVersionPortableTargetingTest extends TestCase {
 		$this->assertFalse( $query->is_404 );
 	}
 
+	public function test_page_version_resolves_nested_post_permalinks() {
+		$post = new WP_Post(
+			array(
+				'ID'          => 44,
+				'post_type'   => 'post',
+				'post_status' => 'publish',
+			)
+		);
+		$GLOBALS['rwgc_test_posts'][44] = $post;
+		$GLOBALS['rwgc_test_url_post_ids']['https://example.test/news/hello/'] = 44;
+		$GLOBALS['rwgc_test_query_vars']['pagename'] = 'news/hello';
+		$GLOBALS['rwgc_test_query_vars']['rwgc_page_version'] = 'campaign';
+
+		$query = new WP_Query();
+		RWGC_Page_Version_Routing::pre_get_posts( $query );
+
+		$this->assertSame( 44, $query->query_vars['p'] );
+		$this->assertFalse( $query->is_page );
+		$this->assertTrue( $query->is_single );
+		$this->assertFalse( $query->is_404 );
+	}
+
 	public function test_page_version_routes_pages_as_pages() {
 		$page = new WP_Post(
 			array(
@@ -355,9 +400,9 @@ class PageVersionPortableTargetingTest extends TestCase {
 				'post_status' => 'publish',
 			)
 		);
-		$GLOBALS['rwgc_test_posts'][33]               = $page;
-		$GLOBALS['rwgc_test_path_posts']['landing']   = $page;
-		$GLOBALS['rwgc_test_query_vars']['pagename']  = 'landing';
+		$GLOBALS['rwgc_test_posts'][33] = $page;
+		$GLOBALS['rwgc_test_path_posts']['landing'] = $page;
+		$GLOBALS['rwgc_test_query_vars']['pagename'] = 'landing';
 		$GLOBALS['rwgc_test_query_vars']['rwgc_page_version'] = 'campaign';
 
 		$query = new WP_Query();
