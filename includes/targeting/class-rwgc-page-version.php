@@ -222,6 +222,14 @@ class RWGC_Page_Version {
 			return (int) $page->ID;
 		}
 
+		if ( function_exists( 'url_to_postid' ) ) {
+			$post_id = absint( url_to_postid( home_url( '/' . $pagename . '/' ) ) );
+			$post    = $post_id > 0 ? get_post( $post_id ) : null;
+			if ( $post instanceof WP_Post && in_array( $post->post_type, array( 'page', 'post' ), true ) ) {
+				return (int) $post->ID;
+			}
+		}
+
 		return 0;
 	}
 
