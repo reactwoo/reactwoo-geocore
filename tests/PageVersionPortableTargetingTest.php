@@ -7,6 +7,10 @@
 
 use PHPUnit\Framework\TestCase;
 
+if ( ! defined( 'OBJECT' ) ) {
+	define( 'OBJECT', 'OBJECT' );
+}
+
 if ( ! function_exists( '__' ) ) {
 	/**
 	 * @param string $text Text.
