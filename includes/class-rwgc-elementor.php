@@ -317,6 +317,8 @@ class RWGC_Elementor {
 					return RWGC_Rule_Evaluator::should_render_content( $set, $snapshot ) ? $content : '';
 				}
 			}
+
+			return '';
 		}
 
 		$selected = array();

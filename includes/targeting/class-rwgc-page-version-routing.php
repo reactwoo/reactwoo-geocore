@@ -135,10 +135,25 @@ class RWGC_Page_Version_Routing {
 			return;
 		}
 
-		$query->set( 'page_id', $post_id );
+		$post_type = get_post_type( $post_id );
+		if ( ! in_array( $post_type, array( 'page', 'post' ), true ) ) {
+			$query->set_404();
+			return;
+		}
+
+		if ( 'post' === $post_type ) {
+			$query->set( 'p', $post_id );
+			$query->set( 'page_id', 0 );
+			$query->is_single = true;
+			$query->is_page   = false;
+		} else {
+			$query->set( 'page_id', $post_id );
+			$query->set( 'p', 0 );
+			$query->is_page   = true;
+			$query->is_single = false;
+		}
 		$query->set( 'pagename', '' );
 		$query->set( 'name', '' );
-		$query->is_page     = true;
 		$query->is_singular = true;
 		$query->is_404      = false;
 		$query->is_home     = false;

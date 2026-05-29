@@ -94,6 +94,9 @@ class RWGC_Gutenberg {
 				return $show ? '<div class="rwgc-geo-content">' . do_shortcode( $content ) . '</div>' : '';
 			}
 		}
+		if ( $use_portable ) {
+			return '';
+		}
 
 		$country = strtoupper( rwgc_get_visitor_country() );
 
