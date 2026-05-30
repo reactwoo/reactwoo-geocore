@@ -19,10 +19,14 @@
   "scripts": {
     "test": "phpunit -c phpunit.xml.dist",
     "test:rules": "php tests/test-rule-condition-evaluator.php",
+    "test:page-version-routing": "php tests/test-page-version-routing.php",
+    "test:portable-render-fail-closed": "php tests/test-portable-render-fail-closed.php",
     "test:rwgc-rule-evaluator": "php tests/test-rwgc-rule-evaluator.php",
     "test:all": [
       "@test",
       "@test:rules",
+      "@test:page-version-routing",
+      "@test:portable-render-fail-closed",
       "@test:rwgc-rule-evaluator"
     ]
   },

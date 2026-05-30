@@ -111,20 +111,20 @@ class RWGC_Page_Version_Routing {
 			return;
 		}
 
-		$version = get_query_var( self::QUERY_VAR );
-		if ( '' === $version || null === $version ) {
+		$parsed = self::parse_request_path();
+		if ( null === $parsed ) {
 			return;
 		}
 
 		$error = '';
-		$version = RWGC_Page_Version::sanitize_version_name( $version, $error );
+		$version = RWGC_Page_Version::sanitize_version_name( $parsed['version'], $error );
 		if ( '' === $version ) {
 			$query->set_404();
 			return;
 		}
 
-		$pagename = get_query_var( 'pagename' );
-		if ( ! is_string( $pagename ) || '' === trim( $pagename ) ) {
+		$pagename = isset( $parsed['pagename'] ) ? (string) $parsed['pagename'] : '';
+		if ( '' === trim( $pagename ) ) {
 			$query->set_404();
 			return;
 		}
@@ -138,6 +138,7 @@ class RWGC_Page_Version_Routing {
 		$query->set( 'page_id', $post_id );
 		$query->set( 'pagename', '' );
 		$query->set( 'name', '' );
+		$query->set( self::QUERY_VAR, $version );
 		$query->is_page     = true;
 		$query->is_singular = true;
 		$query->is_404      = false;
@@ -153,16 +154,16 @@ class RWGC_Page_Version_Routing {
 			$merged = array();
 		}
 
-		$version = get_query_var( self::QUERY_VAR );
+		$parsed  = self::parse_request_path();
+		$version = '';
 		$error   = '';
-		$version = RWGC_Page_Version::sanitize_version_name( is_string( $version ) ? $version : '', $error );
+		if ( null !== $parsed ) {
+			$version = RWGC_Page_Version::sanitize_version_name( $parsed['version'], $error );
+		}
 
 		$page_id = 0;
-		if ( '' !== $version ) {
-			$pagename = get_query_var( 'pagename' );
-			if ( is_string( $pagename ) && '' !== trim( $pagename ) ) {
-				$page_id = RWGC_Page_Version::resolve_post_id_from_path( $pagename );
-			}
+		if ( '' !== $version && null !== $parsed ) {
+			$page_id = RWGC_Page_Version::resolve_post_id_from_path( $parsed['pagename'] );
 			if ( $page_id <= 0 && function_exists( 'get_queried_object_id' ) ) {
 				$page_id = (int) get_queried_object_id();
 			}
@@ -199,15 +200,19 @@ class RWGC_Page_Version_Routing {
 			return;
 		}
 
-		$version = (string) get_query_var( self::QUERY_VAR );
-		$error   = '';
-		$version = RWGC_Page_Version::sanitize_version_name( $version, $error );
-		$pagename = get_query_var( 'pagename' );
-		if ( ! is_string( $pagename ) || '' === $version ) {
+		$parsed = self::parse_request_path();
+		if ( null === $parsed ) {
 			return;
 		}
 
-		$post_id = RWGC_Page_Version::resolve_post_id_from_path( $pagename );
+		$version = (string) $parsed['version'];
+		$error   = '';
+		$version = RWGC_Page_Version::sanitize_version_name( $version, $error );
+		if ( '' === $version ) {
+			return;
+		}
+
+		$post_id = RWGC_Page_Version::resolve_post_id_from_path( $parsed['pagename'] );
 		if ( $post_id <= 0 ) {
 			return;
 		}
@@ -226,10 +231,6 @@ class RWGC_Page_Version_Routing {
 	 * @return bool
 	 */
 	public static function is_page_version_request() {
-		$version = get_query_var( self::QUERY_VAR );
-		if ( is_string( $version ) && '' !== trim( $version ) ) {
-			return true;
-		}
 		return null !== self::parse_request_path();
 	}
 
@@ -239,9 +240,10 @@ class RWGC_Page_Version_Routing {
 	 * @return string
 	 */
 	public static function get_active_version() {
-		$version = get_query_var( self::QUERY_VAR );
+		$parsed  = self::parse_request_path();
+		$version = null !== $parsed ? $parsed['version'] : '';
 		$error   = '';
-		return RWGC_Page_Version::sanitize_version_name( is_string( $version ) ? $version : '', $error );
+		return RWGC_Page_Version::sanitize_version_name( $version, $error );
 	}
 
 	/**
