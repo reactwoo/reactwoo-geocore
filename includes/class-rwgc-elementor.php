@@ -316,6 +316,9 @@ class RWGC_Elementor {
 					$snapshot = RWGC_Context_Resolver::resolve_current();
 					return RWGC_Rule_Evaluator::should_render_content( $set, $snapshot ) ? $content : '';
 				}
+				return '';
+			} elseif ( is_string( $raw_json ) && '' !== trim( $raw_json ) ) {
+				return '';
 			}
 		}
 

@@ -93,6 +93,9 @@ class RWGC_Gutenberg {
 				$show     = RWGC_Rule_Evaluator::should_render_content( $set, $snapshot );
 				return $show ? '<div class="rwgc-geo-content">' . do_shortcode( $content ) . '</div>' : '';
 			}
+			return '';
+		} elseif ( $use_portable && is_string( $portable_raw ) && '' !== trim( $portable_raw ) ) {
+			return '';
 		}
 
 		$country = strtoupper( rwgc_get_visitor_country() );
