@@ -1523,9 +1523,11 @@
 			if (el.getAttribute('data-rwgc-rb-mounted')) {
 				return;
 			}
+			var c = ctx();
 			mount({
 				textarea: el,
 				observeMode: true,
+				allowAllConditionTypes: !!(c.advanced_targeting || c.pro),
 				getMode: function () {
 					if (pair.modeSel && pair.modeSel.length) {
 						return pair.modeSel.val() || 'show';

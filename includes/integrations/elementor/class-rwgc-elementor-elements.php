@@ -36,6 +36,56 @@ class RWGC_Elementor_Elements {
 		if ( class_exists( 'RWGC_Elementor', false ) ) {
 			RWGC_Elementor::enqueue_editor_portable_assist();
 		}
+		self::enqueue_visibility_library_bridge();
+	}
+
+	/**
+	 * Library picker + rule builder mount for element-level portable controls.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_visibility_library_bridge() {
+		wp_register_script(
+			'rwgc-elementor-library-bridge',
+			RWGC_URL . 'assets/js/rwgc-elementor-library-bridge.js',
+			array( 'jquery', 'elementor-editor' ),
+			RWGC_VERSION,
+			true
+		);
+		wp_localize_script(
+			'rwgc-elementor-library-bridge',
+			'rwgcElementorLibrary',
+			array(
+				'library' => self::get_visibility_library_rows(),
+			)
+		);
+		wp_enqueue_script( 'rwgc-elementor-library-bridge' );
+	}
+
+	/**
+	 * @return array<int, array{id:int,title:string,json:string}>
+	 */
+	public static function get_visibility_library_rows() {
+		if ( ! class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
+			return array();
+		}
+		return RWGC_Visibility_Rule_Repository::get_library_picker_rows();
+	}
+
+	/**
+	 * @return array<string, string>
+	 */
+	public static function get_visibility_library_select_options() {
+		$options = array(
+			'' => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ),
+		);
+		foreach ( self::get_visibility_library_rows() as $row ) {
+			if ( empty( $row['id'] ) ) {
+				continue;
+			}
+			$options[ (string) (int) $row['id'] ] = isset( $row['title'] ) ? (string) $row['title'] : ( '#' . (int) $row['id'] );
+		}
+		return $options;
 	}
 
 	/**
@@ -145,8 +195,23 @@ class RWGC_Elementor_Elements {
 					'label_off'    => __( 'No', 'reactwoo-geocore' ),
 					'return_value' => 'yes',
 					'default'      => '',
-					'description'  => __( 'Advanced targeting via GeoCore Pro. Apply a saved rule from Targeting → Visibility rules or build conditions here.', 'reactwoo-geocore' ),
+					'description'  => __( 'Advanced targeting via GeoCore Pro. Pick a saved rule below or build conditions in the rule builder.', 'reactwoo-geocore' ),
 					'condition'    => array( 'egp_geo_enabled' => 'yes' ),
+				)
+			);
+
+			$element->add_control(
+				'rwgc_visibility_rule_library',
+				array(
+					'label'       => __( 'Apply saved visibility rule', 'reactwoo-geocore' ),
+					'type'        => \Elementor\Controls_Manager::SELECT,
+					'options'     => self::get_visibility_library_select_options(),
+					'label_block' => true,
+					'description' => __( 'Loads a rule from Targeting → Visibility rules. You can still edit conditions after applying.', 'reactwoo-geocore' ),
+					'condition'   => array(
+						'egp_geo_enabled'                => 'yes',
+						'egp_use_portable_geo_targeting' => 'yes',
+					),
 				)
 			);
 

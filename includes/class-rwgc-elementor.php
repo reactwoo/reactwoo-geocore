@@ -124,12 +124,29 @@ class RWGC_Elementor {
 					'label_off'    => __( 'No', 'reactwoo-geocore' ),
 					'return_value' => 'yes',
 					'default'      => '',
-					'description'  => __( 'When enabled, the rule builder below replaces the country list for this document. Leave off to keep country-only behaviour.', 'reactwoo-geocore' ),
+					'description'  => __( 'Pick a saved rule below or build conditions in the rule builder. When enabled, this replaces the country list for this document.', 'reactwoo-geocore' ),
 					'condition'    => array(
 						'egp_enable_geo_targeting' => 'yes',
 					),
 				)
 			);
+
+			if ( class_exists( 'RWGC_Elementor_Elements', false ) ) {
+				$element->add_control(
+					'rwgc_visibility_rule_library',
+					array(
+						'label'       => __( 'Apply saved visibility rule', 'reactwoo-geocore' ),
+						'type'        => \Elementor\Controls_Manager::SELECT,
+						'options'     => RWGC_Elementor_Elements::get_visibility_library_select_options(),
+						'label_block' => true,
+						'description' => __( 'Loads a rule from Targeting → Visibility rules.', 'reactwoo-geocore' ),
+						'condition'   => array(
+							'egp_enable_geo_targeting'        => 'yes',
+							'rwgc_use_portable_geo_targeting' => 'yes',
+						),
+					)
+				);
+			}
 
 			$element->add_control(
 				'rwgc_portable_geo_targeting',
@@ -376,6 +393,9 @@ class RWGC_Elementor {
 			rwgc_get_portable_targeting_editor_context()
 		);
 		wp_enqueue_script( 'rwgc-portable-elementor' );
+		if ( class_exists( 'RWGC_Elementor_Elements', false ) ) {
+			RWGC_Elementor_Elements::enqueue_visibility_library_bridge();
+		}
 	}
 
 	/**
