@@ -61,7 +61,11 @@ class RWGC_Elementor_Popups {
 			return (bool) $should_show;
 		}
 
-		return self::visitor_matches_countries( $settings['countries'] );
+		if ( null !== $settings['portable_decision'] ) {
+			return (bool) $settings['portable_decision'];
+		}
+
+		return self::visitor_matches_countries( $settings['countries'], $settings['mode'] );
 	}
 
 	/**
@@ -79,21 +83,18 @@ class RWGC_Elementor_Popups {
 			return;
 		}
 
-		$country = strtoupper( (string) rwgc_get_visitor_country() );
 		$fallback_popup_id = (string) get_option( 'egp_default_popup_id', '' );
 		$fallback_behavior = (string) get_option( 'egp_fallback_behavior', 'show_to_all' );
 
 		wp_print_inline_script_tag(
 			'(function(){'
-			. 'var userCountry=' . wp_json_encode( $country ) . ';'
 			. 'var popupData=' . wp_json_encode( $popup_data ) . ';'
 			. 'var fallbackPopupId=' . wp_json_encode( $fallback_popup_id ) . ';'
 			. 'var fallbackBehavior=' . wp_json_encode( $fallback_behavior ) . ';'
 			. 'function meta(pid){if(pid==null)return null;var k=String(pid);return popupData[pid]||popupData[k]||null;}'
 			. 'function norm(v){if(v==null)return null;if(typeof v==="number")return v;if(typeof v==="string"){var n=parseInt(v,10);return isNaN(n)?v:n;}if(typeof v==="object"){if(v.id!=null)return norm(v.id);if(v.popup&&v.popup.id!=null)return norm(v.popup.id);}return v;}'
-			. 'function apply(orig,scope,args){var pid=norm(args.length?args[0]:null);var m=meta(pid);if(!m||!m.countries||!m.countries.length){return orig.apply(scope,args);}'
-			. 'var allowed=m.countries.map(function(c){return String(c).toUpperCase();});'
-			. 'if(allowed.indexOf(String(userCountry).toUpperCase())!==-1){return orig.apply(scope,args);}'
+			. 'function apply(orig,scope,args){var pid=norm(args.length?args[0]:null);var m=meta(pid);if(!m||typeof m.allowed==="undefined"){return orig.apply(scope,args);}'
+			. 'if(m.allowed){return orig.apply(scope,args);}'
 			. 'if(fallbackPopupId&&fallbackBehavior==="show_fallback"){var fb=parseInt(fallbackPopupId,10);var raw=args[0];if(typeof raw==="object"&&raw!==null){var next=Object.assign({},raw);if("id" in next)next.id=fb;if(raw.popup&&typeof raw.popup==="object"){next.popup=Object.assign({},raw.popup);next.popup.id=fb;}return orig.call(scope,next);}return orig.call(scope,fb);}'
 			. 'return false;}'
 			. 'function patch(){if(window.__rwgcPopupGeoPatched)return true;var mod=window.elementorProFrontend&&elementorProFrontend.modules&&elementorProFrontend.modules.popup;'
@@ -199,7 +200,7 @@ class RWGC_Elementor_Popups {
 
 	/**
 	 * @param int $popup_id Popup template ID.
-	 * @return array{enabled:bool,countries:array<int,string>}|false
+	 * @return array{enabled:bool,countries:array<int,string>,mode:string,portable_decision:bool|null}|false
 	 */
 	private static function get_popup_page_geo_settings( $popup_id ) {
 		$page_settings = get_post_meta( $popup_id, '_elementor_page_settings', true );
@@ -218,19 +219,18 @@ class RWGC_Elementor_Popups {
 			return false;
 		}
 
-		$countries = array();
-		if ( ! empty( $page_settings['egp_countries'] ) && is_array( $page_settings['egp_countries'] ) ) {
-			$countries = $page_settings['egp_countries'];
-		}
+		$countries = self::parse_countries_from_settings( $page_settings );
 
 		return array(
-			'enabled'   => true,
-			'countries' => $countries,
+			'enabled'           => true,
+			'countries'         => $countries,
+			'mode'              => self::normalize_mode( isset( $page_settings['rwgc_geo_mode'] ) ? $page_settings['rwgc_geo_mode'] : 'show' ),
+			'portable_decision' => self::page_settings_portable_should_show( $page_settings ),
 		);
 	}
 
 	/**
-	 * @return array<int|string, array{id:int,title:string,countries:array<int,string>}>
+	 * @return array<int|string, array{id:int,title:string,countries:array<int,string>,mode:string,allowed:bool}>
 	 */
 	private static function collect_popup_page_settings_map() {
 		$popups = get_posts(
@@ -255,17 +255,16 @@ class RWGC_Elementor_Popups {
 			if ( ! $settings || empty( $settings['enabled'] ) ) {
 				continue;
 			}
-			$countries = array();
-			foreach ( $settings['countries'] as $code ) {
-				$code = strtoupper( sanitize_text_field( (string) $code ) );
-				if ( 2 === strlen( $code ) ) {
-					$countries[] = $code;
-				}
-			}
+			$allowed = null !== $settings['portable_decision']
+				? (bool) $settings['portable_decision']
+				: self::visitor_matches_countries( $settings['countries'], $settings['mode'] );
+
 			$out[ $popup_id ] = array(
 				'id'        => $popup_id,
 				'title'     => get_the_title( $popup_id ),
-				'countries' => $countries,
+				'countries' => $settings['countries'],
+				'mode'      => $settings['mode'],
+				'allowed'   => $allowed,
 			);
 		}
 
@@ -274,9 +273,10 @@ class RWGC_Elementor_Popups {
 
 	/**
 	 * @param array<int, string> $countries Country codes.
+	 * @param string             $mode      show|hide.
 	 * @return bool
 	 */
-	private static function visitor_matches_countries( array $countries ) {
+	private static function visitor_matches_countries( array $countries, $mode = 'show' ) {
 		$visitor = strtoupper( (string) rwgc_get_visitor_country() );
 		if ( '' === $visitor ) {
 			return false;
@@ -289,8 +289,80 @@ class RWGC_Elementor_Popups {
 			}
 		}
 		if ( empty( $normalized ) ) {
-			return false;
+			return 'hide' === self::normalize_mode( $mode );
 		}
-		return in_array( $visitor, $normalized, true );
+		$matches = in_array( $visitor, $normalized, true );
+		return 'hide' === self::normalize_mode( $mode ) ? ! $matches : $matches;
+	}
+
+	/**
+	 * @param array<string, mixed> $settings Elementor page settings.
+	 * @return array<int, string>
+	 */
+	private static function parse_countries_from_settings( array $settings ) {
+		$raw = isset( $settings['egp_countries'] ) ? $settings['egp_countries'] : '';
+		if ( is_array( $raw ) ) {
+			$list = $raw;
+		} elseif ( is_string( $raw ) && '' !== trim( $raw ) ) {
+			$list = preg_split( '/[\s,]+/', $raw, -1, PREG_SPLIT_NO_EMPTY );
+			$list = is_array( $list ) ? $list : array();
+		} else {
+			$list = array();
+		}
+
+		$out = array();
+		foreach ( $list as $code ) {
+			$code = strtoupper( sanitize_text_field( (string) $code ) );
+			if ( 2 === strlen( $code ) ) {
+				$out[] = $code;
+			}
+		}
+		return array_values( array_unique( $out ) );
+	}
+
+	/**
+	 * @param array<string, mixed> $settings Elementor page settings.
+	 * @return bool|null
+	 */
+	private static function page_settings_portable_should_show( array $settings ) {
+		$enabled = false;
+		if ( ! empty( $settings['rwgc_use_portable_geo_targeting'] ) && 'yes' === (string) $settings['rwgc_use_portable_geo_targeting'] ) {
+			$enabled = true;
+		} elseif ( ! empty( $settings['egp_use_portable_geo_targeting'] ) && 'yes' === (string) $settings['egp_use_portable_geo_targeting'] ) {
+			$enabled = true;
+		}
+		if ( ! $enabled ) {
+			return null;
+		}
+
+		$raw = '';
+		if ( isset( $settings['rwgc_portable_geo_targeting'] ) ) {
+			$raw = wp_unslash( (string) $settings['rwgc_portable_geo_targeting'] );
+		} elseif ( isset( $settings['egp_portable_geo_targeting'] ) ) {
+			$raw = wp_unslash( (string) $settings['egp_portable_geo_targeting'] );
+		}
+
+		if ( '' === trim( (string) $raw )
+			|| ! class_exists( 'RWGC_Targeting_Rule_Set_Schema', false )
+			|| ! class_exists( 'RWGC_Rule_Evaluator', false )
+			|| ! class_exists( 'RWGC_Context_Resolver', false ) ) {
+			return null;
+		}
+
+		$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $raw );
+		if ( ! is_array( $set ) ) {
+			return null;
+		}
+
+		$snapshot = RWGC_Context_Resolver::resolve_current();
+		return RWGC_Rule_Evaluator::should_render_content( $set, $snapshot );
+	}
+
+	/**
+	 * @param mixed $mode Raw mode.
+	 * @return string
+	 */
+	private static function normalize_mode( $mode ) {
+		return 'hide' === sanitize_key( (string) $mode ) ? 'hide' : 'show';
 	}
 }

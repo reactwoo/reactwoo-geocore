@@ -212,6 +212,11 @@ class RWGC_Gutenberg_Post_Geo {
 			return $content;
 		}
 
+		$portable_decision = self::portable_settings_should_render( $settings );
+		if ( null !== $portable_decision ) {
+			return $portable_decision ? $content : '';
+		}
+
 		$mode = isset( $settings['rwgc_geo_mode'] ) ? (string) $settings['rwgc_geo_mode'] : 'show';
 		if ( 'hide' === $mode ) {
 			$countries = is_array( $settings['egp_countries'] ) ? $settings['egp_countries'] : array();
@@ -223,5 +228,31 @@ class RWGC_Gutenberg_Post_Geo {
 		}
 
 		return RWGC_Elementor_Frontend::settings_match_visitor( $settings ) ? $content : '';
+	}
+
+	/**
+	 * @param array<string, mixed> $settings Post geo settings.
+	 * @return bool|null
+	 */
+	private static function portable_settings_should_render( array $settings ) {
+		if ( empty( $settings['egp_use_portable_geo_targeting'] ) || 'yes' !== (string) $settings['egp_use_portable_geo_targeting'] ) {
+			return null;
+		}
+
+		$raw = isset( $settings['egp_portable_geo_targeting'] ) ? (string) $settings['egp_portable_geo_targeting'] : '';
+		if ( '' === trim( $raw )
+			|| ! class_exists( 'RWGC_Targeting_Rule_Set_Schema', false )
+			|| ! class_exists( 'RWGC_Rule_Evaluator', false )
+			|| ! class_exists( 'RWGC_Context_Resolver', false ) ) {
+			return null;
+		}
+
+		$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $raw );
+		if ( ! is_array( $set ) ) {
+			return null;
+		}
+
+		$snapshot = RWGC_Context_Resolver::resolve_current();
+		return RWGC_Rule_Evaluator::should_render_content( $set, $snapshot );
 	}
 }

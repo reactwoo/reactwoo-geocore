@@ -20,10 +20,12 @@
     "test": "phpunit -c phpunit.xml.dist",
     "test:rules": "php tests/test-rule-condition-evaluator.php",
     "test:rwgc-rule-evaluator": "php tests/test-rwgc-rule-evaluator.php",
+    "test:targeting-integrations": "php tests/test-targeting-integration-regressions.php",
     "test:all": [
       "@test",
       "@test:rules",
-      "@test:rwgc-rule-evaluator"
+      "@test:rwgc-rule-evaluator",
+      "@test:targeting-integrations"
     ]
   },
   "config": {
