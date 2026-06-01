@@ -344,7 +344,7 @@ class RWGC_Targeting_Rule_Set_Schema {
 			'ui_surfaces'         => array(
 				'elementor' => __( 'Elementor → page or popup → Advanced → Geo Visibility → enable geo → turn on “Use advanced visibility rules”.', 'reactwoo-geocore' ),
 				'block'     => __( 'Block editor → Geo Content block → sidebar → Advanced visibility rules.', 'reactwoo-geocore' ),
-				'geo_rule'  => __( 'Elementor → Geo Rules (Geo Elementor integration) or Targeting → Visibility rules library.', 'reactwoo-geocore' ),
+				'geo_rule'  => __( 'Targeting → Visibility rules library, or legacy Geo Elementor → Geo Rules while migrating.', 'reactwoo-geocore' ),
 			),
 		);
 		$base['help_urls'] = apply_filters( 'rwgc_rule_builder_help_urls', $base['help_urls'] );

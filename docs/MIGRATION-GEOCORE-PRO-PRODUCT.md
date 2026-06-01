@@ -1,6 +1,6 @@
 # Migration plan: retire Geo Elementor, keep GeoCore + GeoCore Pro
 
-**Status:** Phase 1 complete. **Phase 2 / 4 / 5 (partial)** shipped in GeoCore **1.8.3**, GeoCore Pro **0.1.41**, Geo Elementor shim **1.0.5.55**. Phases 3, 6–7 remain.  
+**Status:** Phase 1 complete. **Phases 2–6 (partial)** shipped in GeoCore **1.8.3**, GeoCore Pro **0.1.42**, Geo Elementor **1.0.5.55**, react-license + reactwoo-api slug aliases. Phase 7 (folder-only) and full geo_rule/variant migration remain.  
 **Last updated:** 2026-05-29
 
 ---
@@ -176,11 +176,13 @@ Legend: **P** = primary owner today, **S** = secondary/partial, **L** = legacy/d
 
 | Move from `geo-elementor` | To `reactwoo-geocore-pro` |
 |---------------------------|---------------------------|
-| Portable rule builder mount on elements | `includes/integrations/elementor/` |
-| `geo_rule` admin (or migrate to `rwgc_visibility_rule`) | Pro admin routes under app shell |
-| Variant groups UI + routing extension | `includes/integrations/elementor/variants/` |
-| GA4/Ads condition pickers in Elementor | Wire to existing `RWGCP_Google_Integration` entities |
-| City/time addons (if still sold) | Pro or Free add-on modules — product decision per addon |
+| Portable rule builder mount on elements | Core `RWGC_Elementor_Elements` + Pro licence gate (0.1.3) |
+| `geo_rule` admin (or migrate to `rwgc_visibility_rule`) | `RWGCP_Elementor_Admin` legacy submenu + inner nav (0.1.42) — **importer not yet** |
+| Variant groups UI + routing extension | `includes/integrations/elementor/variants/` — **not yet** |
+| GA4/Ads condition pickers in Elementor | Existing `RWGCP_Google_Integration` + rule builder context — **done** |
+| City/time addons (if still sold) | Still in EGP addons — **not moved** |
+
+**Shipped (0.1.42):** `includes/integrations/` loader, Elementor admin bridges, `RWGCP_License_Migration` (copy `egp_license_key` when Pro empty).
 
 **Acceptance**
 
@@ -234,11 +236,13 @@ Legend: **P** = primary owner today, **S** = secondary/partial, **L** = legacy/d
 |------|--------|
 | New sales | SKU / slug `reactwoo-geocore-pro` only |
 | Advanced targeting | `rwgc_pro_enabled` + `rwgc_advanced_targeting_enabled` from Pro bootstrap only |
-| Legacy `geo-elementor` keys | Map server-side to Pro entitlement; keep `EGP_Geocore_Bridge` for 2–3 releases |
+| Legacy `geo-elementor` keys | `EGP_Geocore_Bridge` + `RWGCP_License_Migration` (WP option copy) + licence-server slug aliases |
 | Customer UI | Settings → GeoCore Pro (done in 0.1.40); no “Geo Elementor Pro” |
 | New code | **Must not** call `egp_is_pro_user` or `geo-elementor` licence for gating |
 
-**react-license / reactwoo-api / WHMCS:** map package `geo-elementor` → `reactwoo-geocore-pro` (see `reactwoo-api` env and publish endpoints).
+**Shipped:** `react-license/utils/productSlugAliases.js` (activate normalizes slug; refresh accepts legacy), `reactwoo-api/src/config/productSlugAliases.ts` (updates JWT slug check), GeoCore Pro copies `egp_license_key` when empty.
+
+**react-license / reactwoo-api / WHMCS:** WHMCS product mapping in billing DB still manual; API accepts both slugs for JWT/refresh during migration window.
 
 ---
 
