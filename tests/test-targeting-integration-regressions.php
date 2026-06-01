@@ -190,6 +190,12 @@ rwgc_test_assert(
 	rwgc_private_static( 'RWGC_Elementor_Popups', 'visitor_matches_countries', array( array( 'CA' ), 'hide' ) ),
 	'popup hide mode allows unselected visitor country'
 );
+$GLOBALS['rwgc_test_country'] = '';
+rwgc_test_assert(
+	rwgc_private_static( 'RWGC_Elementor_Popups', 'visitor_matches_countries', array( array( 'US' ), 'hide' ) ),
+	'popup hide mode allows unresolved visitor country'
+);
+$GLOBALS['rwgc_test_country'] = 'US';
 
 $GLOBALS['rwgc_test_post_meta'][42]['_elementor_page_settings'] = array(
 	'egp_enable_geo_targeting' => 'yes',
@@ -220,6 +226,17 @@ $hide_rule = wp_json_encode(
 			),
 		),
 	)
+);
+
+$GLOBALS['rwgc_test_post_meta'][43]['_elementor_page_settings'] = array(
+	'egp_enable_geo_targeting'        => 'yes',
+	'rwgc_use_portable_geo_targeting' => 'yes',
+	'rwgc_portable_geo_targeting'     => $hide_rule,
+);
+$portable_settings = rwgc_private_static( 'RWGC_Elementor_Popups', 'get_popup_page_geo_settings', array( 43 ) );
+rwgc_test_assert(
+	is_array( $portable_settings ) && false === $portable_settings['portable_decision'],
+	'popup page settings evaluate portable hide rules before country fallback'
 );
 
 rwgc_test_assert(

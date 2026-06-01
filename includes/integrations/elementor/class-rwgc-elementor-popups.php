@@ -277,9 +277,10 @@ class RWGC_Elementor_Popups {
 	 * @return bool
 	 */
 	private static function visitor_matches_countries( array $countries, $mode = 'show' ) {
+		$mode    = self::normalize_mode( $mode );
 		$visitor = strtoupper( (string) rwgc_get_visitor_country() );
 		if ( '' === $visitor ) {
-			return false;
+			return 'hide' === $mode;
 		}
 		$normalized = array();
 		foreach ( $countries as $code ) {
@@ -289,10 +290,10 @@ class RWGC_Elementor_Popups {
 			}
 		}
 		if ( empty( $normalized ) ) {
-			return 'hide' === self::normalize_mode( $mode );
+			return 'hide' === $mode;
 		}
 		$matches = in_array( $visitor, $normalized, true );
-		return 'hide' === self::normalize_mode( $mode ) ? ! $matches : $matches;
+		return 'hide' === $mode ? ! $matches : $matches;
 	}
 
 	/**
