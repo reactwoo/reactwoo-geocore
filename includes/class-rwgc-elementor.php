@@ -234,7 +234,7 @@ class RWGC_Elementor {
 			array(
 				'type'      => \Elementor\Controls_Manager::RAW_HTML,
 				'raw'       => '<div style="margin-top:8px;color:#6b7280;">'
-					. esc_html__( 'Free limit: one variant per master page. Use GeoElementor for multiple variants and advanced rules.', 'reactwoo-geocore' )
+					. esc_html__( 'Free limit: one variant per master page. Use GeoCore Pro for multiple variants and advanced rules.', 'reactwoo-geocore' )
 					. '</div>',
 				'condition' => array(
 					'rwgc_route_enabled' => 'yes',

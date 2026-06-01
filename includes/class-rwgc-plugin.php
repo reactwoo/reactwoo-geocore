@@ -104,6 +104,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-repository.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-visibility-rules.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-elementor.php';
+		require_once RWGC_PATH . 'includes/integrations/class-rwgc-integrations-loader.php';
 		require_once RWGC_PATH . 'includes/context/class-rwgc-context-attribution.php';
 		require_once RWGC_PATH . 'includes/engine/class-rwgc-context.php';
 		require_once RWGC_PATH . 'includes/engine/class-rwgc-country-groups.php';
@@ -180,6 +181,7 @@ class RWGC_Plugin {
 		RWGC_Gutenberg::init();
 		RWGC_Targeting_Rule_Builder_Assets::init();
 		RWGC_Elementor::init();
+		RWGC_Integrations_Loader::init();
 		RWGC_Routing::init();
 		RWGC_Page_Version_Routing::init();
 		add_filter( 'rwgc_portable_targeting_editor_context', array( 'RWGC_Page_Version_Routing', 'filter_editor_context' ), 20 );
