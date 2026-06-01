@@ -174,7 +174,7 @@ class RWGC_Gutenberg_Post_Geo {
 			'rwgcPostGeoEditor',
 			array(
 				'advancedTargeting' => function_exists( 'rwgc_advanced_targeting_enabled' ) && rwgc_advanced_targeting_enabled(),
-				'countries'         => class_exists( 'RWGC_Countries', false ) ? RWGC_Countries::get_countries() : array(),
+				'countries'         => class_exists( 'RWGC_Countries', false ) ? RWGC_Countries::get_options() : array(),
 				'meta'              => array(
 					'enabled'   => self::META_ENABLED,
 					'mode'      => self::META_MODE,

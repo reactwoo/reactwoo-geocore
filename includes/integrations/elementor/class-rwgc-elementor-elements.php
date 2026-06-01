@@ -227,7 +227,7 @@ class RWGC_Elementor_Elements {
 	 */
 	private static function get_country_options() {
 		if ( class_exists( 'RWGC_Countries', false ) ) {
-			$list = RWGC_Countries::get_countries();
+			$list = RWGC_Countries::get_options();
 			if ( is_array( $list ) && ! empty( $list ) ) {
 				return $list;
 			}
