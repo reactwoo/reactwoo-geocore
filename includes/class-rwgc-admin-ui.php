@@ -90,7 +90,7 @@ class RWGC_Admin_UI {
 			'geo_commerce'  => __( 'Geo Commerce', 'reactwoo-geocore' ),
 			'geo_ai'        => __( 'Geo AI', 'reactwoo-geocore' ),
 			'geo_optimise'  => __( 'Geo Optimise', 'reactwoo-geocore' ),
-			'geo_elementor' => __( 'Geo Elementor', 'reactwoo-geocore' ),
+			'geo_elementor' => __( 'Elementor integration', 'reactwoo-geocore' ),
 			'geocore_pro'   => __( 'GeoCore Pro', 'reactwoo-geocore' ),
 		);
 

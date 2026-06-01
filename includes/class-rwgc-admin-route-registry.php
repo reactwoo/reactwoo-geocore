@@ -516,7 +516,7 @@ class RWGC_Admin_Route_Registry {
 			'rwgo-help',
 			'rwgo-developer',
 			'rwgo-tracking-tools',
-			'geo-elementor-license',
+			'rwgcp-geocore-pro',
 			'elementor-geo-popup',
 			'egp-city-settings',
 			'egp-time-settings',

@@ -141,6 +141,10 @@ class RWGC_Targeting_Rule_Builder_Assets {
 			'pageVersionChars'     => __( 'Use letters, numbers, hyphens, and underscores only.', 'reactwoo-geocore' ),
 			'pageVersionLength'    => __( 'Keep the version name under 80 characters.', 'reactwoo-geocore' ),
 			'pageVersionPickPage'  => __( 'Choose a page first, then enter the version name.', 'reactwoo-geocore' ),
+			'libraryLabel'         => __( 'Apply saved visibility rule', 'reactwoo-geocore' ),
+			'libraryNone'          => __( '— Choose from library —', 'reactwoo-geocore' ),
+			'libraryHelp'          => __( 'Loads a published rule from Targeting → Visibility rules. You can still edit conditions after applying.', 'reactwoo-geocore' ),
+			'advancedTargetingNotice' => __( 'Additional condition types require GeoCore Pro. Country targeting is always available.', 'reactwoo-geocore' ),
 		);
 	}
 
@@ -163,7 +167,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['rwgc_edit'] ) ) {
-			wp_add_inline_script( self::SCRIPT_HANDLE, self::get_mount_inline( '#rwgc_portable_targeting' ), 'after' );
+			wp_add_inline_script( self::SCRIPT_HANDLE, self::get_mount_inline( '#rwgc_portable_targeting', "'show'", 'allowAllConditionTypes:true' ), 'after' );
 		}
 	}
 
@@ -185,7 +189,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 	 * @return string
 	 */
 	public static function get_mount_playground_inline() {
-		return self::get_mount_inline( '#rwgc-targeting-playground-json', "'show'", 'showVisibilityMode:true,isPlayground:true' );
+		return self::get_mount_inline( '#rwgc-targeting-playground-json', "'show'", 'showVisibilityMode:true,isPlayground:true,allowAllConditionTypes:true' );
 	}
 
 	/**

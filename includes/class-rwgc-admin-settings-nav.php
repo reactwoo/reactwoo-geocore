@@ -32,9 +32,13 @@ class RWGC_Admin_Settings_Nav {
 				'label' => __( 'Geo Core', 'reactwoo-geocore' ),
 				'order' => 10,
 			),
+			'geocore_pro'   => array(
+				'label' => __( 'GeoCore Pro', 'reactwoo-geocore' ),
+				'order' => 15,
+			),
 			'geo_elementor' => array(
-				'label' => __( 'Geo Elementor', 'reactwoo-geocore' ),
-				'order' => 20,
+				'label' => __( 'Elementor integration', 'reactwoo-geocore' ),
+				'order' => 25,
 			),
 			'geo_optimise'  => array(
 				'label' => __( 'Geo Optimise', 'reactwoo-geocore' ),
@@ -103,7 +107,7 @@ class RWGC_Admin_Settings_Nav {
 			'geo_optimise'  => 'geo_optimise',
 			'geo_commerce'  => 'geo_commerce',
 			'geo_ai'        => 'geo_ai',
-			'geocore_pro'   => 'core',
+			'geocore_pro'   => 'geocore_pro',
 		);
 		if ( isset( $map[ $provider ] ) ) {
 			return $map[ $provider ];
@@ -116,6 +120,7 @@ class RWGC_Admin_Settings_Nav {
 			'commerce'  => 'geo_commerce',
 			'ai'        => 'geo_ai',
 			'core'      => 'core',
+			'pro'       => 'geocore_pro',
 		);
 		if ( isset( $mod_map[ $module ] ) ) {
 			return $mod_map[ $module ];
@@ -130,6 +135,9 @@ class RWGC_Admin_Settings_Nav {
 		}
 		if ( 0 === strpos( $slug, 'rwga-' ) ) {
 			return 'geo_ai';
+		}
+		if ( 0 === strpos( $slug, 'rwgcp-' ) ) {
+			return 'geocore_pro';
 		}
 		if ( 0 === strpos( $slug, 'geo-elementor' ) || 0 === strpos( $slug, 'egp-' ) || 0 === strpos( $slug, 'elementor-geo-popup' ) ) {
 			return 'geo_elementor';
@@ -196,7 +204,7 @@ class RWGC_Admin_Settings_Nav {
 			'rwgo-help'               => __( 'Help', 'reactwoo-geocore' ),
 			'rwga-license'            => __( 'License', 'reactwoo-geocore' ),
 			'rwga-advanced'           => __( 'Advanced', 'reactwoo-geocore' ),
-			'geo-elementor-license'   => __( 'License', 'reactwoo-geocore' ),
+			'rwgcp-geocore-pro'       => __( 'License', 'reactwoo-geocore' ),
 			'elementor-geo-popup'     => __( 'Plugin settings', 'reactwoo-geocore' ),
 		);
 
@@ -227,6 +235,10 @@ class RWGC_Admin_Settings_Nav {
 
 		foreach ( RWGC_Admin_Route_Registry::get_routes() as $slug => $route ) {
 			if ( ( $route['section'] ?? '' ) !== 'settings' || 'rwgc-settings-hub' === $slug ) {
+				continue;
+			}
+			// Legacy Geo Elementor licence screen — Pro licence lives under GeoCore Pro.
+			if ( 'geo-elementor-license' === $slug ) {
 				continue;
 			}
 			$pid = self::resolve_provider( $slug, $route );
@@ -394,7 +406,8 @@ class RWGC_Admin_Settings_Nav {
 	private static function provider_hub_description( $provider_id ) {
 		$map = array(
 			'core'          => __( 'General options, MaxMind tools, and add-ons.', 'reactwoo-geocore' ),
-			'geo_elementor' => __( 'Elementor licence and plugin settings.', 'reactwoo-geocore' ),
+			'geocore_pro'   => __( 'GeoCore Pro licence, React Cloud, and advanced targeting.', 'reactwoo-geocore' ),
+			'geo_elementor' => __( 'Elementor adapter settings and add-ons (free integration).', 'reactwoo-geocore' ),
 			'geo_optimise'  => __( 'Licence, experiment settings, tracking, and developer tools.', 'reactwoo-geocore' ),
 			'geo_commerce'  => __( 'Licence, WooCommerce geo settings, and help.', 'reactwoo-geocore' ),
 			'geo_ai'        => __( 'Licence and advanced Geo AI options.', 'reactwoo-geocore' ),

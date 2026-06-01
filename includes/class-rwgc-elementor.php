@@ -114,51 +114,53 @@ class RWGC_Elementor {
 			)
 		);
 
-		$element->add_control(
-			'rwgc_use_portable_geo_targeting',
-			array(
-				'label'        => __( 'Use visibility rule builder', 'reactwoo-geocore' ),
-				'type'         => \Elementor\Controls_Manager::SWITCHER,
-				'label_on'     => __( 'Yes', 'reactwoo-geocore' ),
-				'label_off'    => __( 'No', 'reactwoo-geocore' ),
-				'return_value' => 'yes',
-				'default'      => '',
-				'description'  => __( 'When enabled, the rule builder below replaces the country list for this document. Leave off to keep country-only behaviour.', 'reactwoo-geocore' ),
-				'condition'    => array(
-					'egp_enable_geo_targeting' => 'yes',
-				),
-			)
-		);
+		if ( function_exists( 'rwgc_advanced_targeting_enabled' ) && rwgc_advanced_targeting_enabled() ) {
+			$element->add_control(
+				'rwgc_use_portable_geo_targeting',
+				array(
+					'label'        => __( 'Use visibility rule builder', 'reactwoo-geocore' ),
+					'type'         => \Elementor\Controls_Manager::SWITCHER,
+					'label_on'     => __( 'Yes', 'reactwoo-geocore' ),
+					'label_off'    => __( 'No', 'reactwoo-geocore' ),
+					'return_value' => 'yes',
+					'default'      => '',
+					'description'  => __( 'When enabled, the rule builder below replaces the country list for this document. Leave off to keep country-only behaviour.', 'reactwoo-geocore' ),
+					'condition'    => array(
+						'egp_enable_geo_targeting' => 'yes',
+					),
+				)
+			);
 
-		$element->add_control(
-			'rwgc_portable_geo_targeting',
-			array(
-				'label'       => __( 'Visibility rules', 'reactwoo-geocore' ),
-				'type'        => \Elementor\Controls_Manager::TEXTAREA,
-				'rows'        => 6,
-				'label_block' => true,
-				'description' => self::portable_targeting_control_description(),
-				'classes'     => 'rwgc-portable-geo-targeting-textarea rwgc-rb-textarea-hidden',
-				'condition'   => array(
-					'egp_enable_geo_targeting'       => 'yes',
-					'rwgc_use_portable_geo_targeting' => 'yes',
-				),
-			)
-		);
-
-		$element->add_control(
-			'rwgc_geo_upgrade_note',
-			array(
-				'type'            => \Elementor\Controls_Manager::RAW_HTML,
-				'raw'             => '<div style="margin-top:8px;color:#6b7280;">'
-					. esc_html__( 'Advanced targeting is available in GeoCore Pro.', 'reactwoo-geocore' )
-					. '</div>',
-				'content_classes' => 'rwgc-geo-upgrade-note',
-				'condition'       => array(
-					'egp_enable_geo_targeting' => 'yes',
-				),
-			)
-		);
+			$element->add_control(
+				'rwgc_portable_geo_targeting',
+				array(
+					'label'       => __( 'Visibility rules', 'reactwoo-geocore' ),
+					'type'        => \Elementor\Controls_Manager::TEXTAREA,
+					'rows'        => 6,
+					'label_block' => true,
+					'description' => self::portable_targeting_control_description(),
+					'classes'     => 'rwgc-portable-geo-targeting-textarea rwgc-rb-textarea-hidden',
+					'condition'   => array(
+						'egp_enable_geo_targeting'        => 'yes',
+						'rwgc_use_portable_geo_targeting' => 'yes',
+					),
+				)
+			);
+		} elseif ( function_exists( 'rwgc_advanced_targeting_enabled' ) && ! rwgc_advanced_targeting_enabled() ) {
+			$element->add_control(
+				'rwgc_geo_upgrade_note',
+				array(
+					'type'            => \Elementor\Controls_Manager::RAW_HTML,
+					'raw'             => '<div style="margin-top:8px;color:#6b7280;">'
+						. esc_html__( 'Multi-condition visibility (device, UTM, audiences, and more) is available with GeoCore Pro across Elementor, Gutenberg, and supported builders. Country targeting above is included in GeoCore Free.', 'reactwoo-geocore' )
+						. '</div>',
+					'content_classes' => 'rwgc-geo-upgrade-note',
+					'condition'       => array(
+						'egp_enable_geo_targeting' => 'yes',
+					),
+				)
+			);
+		}
 
 		$element->add_control(
 			'rwgc_route_heading',
@@ -347,9 +349,9 @@ class RWGC_Elementor {
 	 */
 	private static function portable_targeting_control_description() {
 		if ( (bool) apply_filters( 'rwgc_pro_enabled', false ) ) {
-			return __( 'Pick countries, GA4 audiences, campaigns, and traffic signals with the rule builder. GeoCore Pro supplies synced Google lists after you connect in Integrations.', 'reactwoo-geocore' );
+			return __( 'Pick countries, GA4 audiences, campaigns, and traffic signals with the rule builder, or apply a saved rule from Targeting → Visibility rules. GeoCore Pro supplies synced Google lists after you connect in Integrations.', 'reactwoo-geocore' );
 		}
-		return __( 'Pick countries and built-in visitor signals with the rule builder. GeoCore Pro unlocks synced GA4 audiences, Google Ads campaigns, schedules, and weather.', 'reactwoo-geocore' );
+		return __( 'Pick countries and built-in visitor signals with the rule builder, or apply a saved visibility rule from the library. GeoCore Pro unlocks synced GA4 audiences and Google Ads campaigns.', 'reactwoo-geocore' );
 	}
 
 	/**

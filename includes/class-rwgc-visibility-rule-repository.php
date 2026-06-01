@@ -45,6 +45,47 @@ class RWGC_Visibility_Rule_Repository {
 	}
 
 	/**
+	 * Published library rules for the shared rule-builder picker.
+	 *
+	 * @return array<int, array{id:int,title:string,json:string}>
+	 */
+	public static function get_library_picker_rows() {
+		$posts = self::query(
+			array(
+				'post_status'    => 'publish',
+				'posts_per_page' => 100,
+			)
+		);
+		$rows  = array();
+		foreach ( $posts as $post ) {
+			if ( ! $post instanceof WP_Post ) {
+				continue;
+			}
+			$raw = get_post_meta( $post->ID, RWGC_Visibility_Rule_CPT::META_PORTABLE, true );
+			if ( ! is_string( $raw ) || '' === trim( $raw ) ) {
+				continue;
+			}
+			$json = $raw;
+			if ( class_exists( 'RWGC_Targeting_Rule_Set_Schema', false ) ) {
+				$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $raw );
+				if ( ! is_array( $set ) ) {
+					continue;
+				}
+				$encoded = wp_json_encode( $set );
+				if ( is_string( $encoded ) && '' !== $encoded ) {
+					$json = $encoded;
+				}
+			}
+			$rows[] = array(
+				'id'    => (int) $post->ID,
+				'title' => $post->post_title ? $post->post_title : __( 'Untitled visibility rule', 'reactwoo-geocore' ),
+				'json'  => $json,
+			);
+		}
+		return $rows;
+	}
+
+	/**
 	 * @param int $post_id Post ID.
 	 * @return array<string, mixed>|null Sanitized portable rule set.
 	 */

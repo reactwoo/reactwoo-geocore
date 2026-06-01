@@ -9,6 +9,17 @@
 .rwgc-rb * {
 	box-sizing: border-box;
 }
+.rwgc-rb__library {
+	margin-bottom: 12px;
+}
+.rwgc-rb__library select {
+	width: 100%;
+	max-width: 420px;
+}
+.rwgc-rb__advanced-notice {
+	margin: 0 0 12px;
+	color: #6b7280;
+}
 .rwgc-rb__title {
 	font-weight: 600;
 	margin: 0 0 10px;

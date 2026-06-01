@@ -603,7 +603,7 @@
 			pgSel.addEventListener('change', function () {
 				row.pageVersionPageId = parseInt(pgSel.value, 10) || 0;
 				if (onChange) {
-					onChange();
+					onChange(true);
 				}
 			});
 			pgWrap.appendChild(pgLab);
@@ -644,7 +644,7 @@
 			row.values = [nameInp.value];
 			updatePageVersionFeedback();
 			if (onChange) {
-				onChange();
+				onChange(false);
 			}
 		});
 		nameInp.addEventListener('blur', function () {
@@ -652,10 +652,10 @@
 			if (san.version && san.version !== nameInp.value) {
 				nameInp.value = san.version;
 				row.values = [san.version];
-				updatePageVersionFeedback();
-				if (onChange) {
-					onChange();
-				}
+			}
+			updatePageVersionFeedback();
+			if (onChange) {
+				onChange(false);
 			}
 		});
 		nameWrap.appendChild(nameLab);
@@ -785,6 +785,67 @@
 			}
 		}
 
+		function applyLibraryRule(json) {
+			if (!json) {
+				return;
+			}
+			var p = parseDoc(json);
+			if (p.error) {
+				return;
+			}
+			state.parseError = null;
+			state.docBase = p;
+			state.ruleMatch = p.rules && p.rules[0] ? p.rules[0].match || 'all' : 'all';
+			state.localMode = p.mode === 'hide' ? 'hide' : 'show';
+			state.rows = rowsFromDoc(p);
+			state.multiRules = !!(p.rules && p.rules.length > 1);
+			writeTextareaFromState();
+			render();
+		}
+
+		function renderLibraryPicker(c) {
+			var lib = c.visibility_library || [];
+			if (!lib.length) {
+				return null;
+			}
+			var wrap = document.createElement('div');
+			wrap.className = 'rwgc-rb__library';
+			var lab = document.createElement('label');
+			lab.textContent = t('libraryLabel');
+			var sel = document.createElement('select');
+			sel.className = 'rwgc-rb__library-select';
+			sel.innerHTML = '<option value="">' + escapeHtml(t('libraryNone')) + '</option>';
+			lib.forEach(function (item) {
+				var o = document.createElement('option');
+				o.value = String(item.id);
+				o.textContent = item.title || 'Rule #' + item.id;
+				sel.appendChild(o);
+			});
+			sel.addEventListener('change', function () {
+				var id = parseInt(sel.value, 10);
+				sel.value = '';
+				if (!id) {
+					return;
+				}
+				var hit = null;
+				lib.forEach(function (item) {
+					if (parseInt(item.id, 10) === id) {
+						hit = item;
+					}
+				});
+				if (hit && hit.json) {
+					applyLibraryRule(hit.json);
+				}
+			});
+			var help = document.createElement('p');
+			help.className = 'description rwgc-rb__library-help';
+			help.textContent = t('libraryHelp');
+			wrap.appendChild(lab);
+			wrap.appendChild(sel);
+			wrap.appendChild(help);
+			return wrap;
+		}
+
 		function render() {
 			var c = ctx();
 			root.innerHTML = '';
@@ -792,6 +853,18 @@
 			h.className = 'rwgc-rb__title';
 			h.textContent = t('whoHeading');
 			root.appendChild(h);
+
+			var libPicker = renderLibraryPicker(c);
+			if (libPicker) {
+				root.appendChild(libPicker);
+			}
+
+			if (!c.advanced_targeting && !options.isPlayground && !options.allowAllConditionTypes) {
+				var advNote = document.createElement('p');
+				advNote.className = 'description rwgc-rb__advanced-notice';
+				advNote.textContent = t('advancedTargetingNotice');
+				root.appendChild(advNote);
+			}
 
 			if (options.isPlayground) {
 				var intro = document.createElement('p');
@@ -1020,6 +1093,14 @@
 			var fs = document.createElement('select');
 			fs.innerHTML = '<option value="">' + escapeHtml('—') + '</option>';
 			FIELD_DEFS.forEach(function (fd) {
+				if (
+					fd.key !== 'country' &&
+					!c.advanced_targeting &&
+					!options.isPlayground &&
+					!options.allowAllConditionTypes
+				) {
+					return;
+				}
 				if (fd.pro && !c.pro) {
 					return;
 				}
@@ -1077,9 +1158,11 @@
 
 			if (row.field === 'page_version_url') {
 				wrap.appendChild(
-					renderPageVersionPanel(row, c, function () {
+					renderPageVersionPanel(row, c, function (rebuildUi) {
 						writeTextareaFromState();
-						render();
+						if (rebuildUi !== false) {
+							render();
+						}
 					})
 				);
 			}
@@ -1390,10 +1473,32 @@
 		}
 	}
 
-	function elementorPortableEnabled() {
-		var $c = $('#elementor-panel-inner').find('.elementor-control-rwgc_use_portable_geo_targeting');
-		var $input = $c.find('input[type=checkbox]');
-		return $input.length && $input.prop('checked');
+	function elementorPortableControlPair() {
+		var $panel = $('#elementor-panel-inner');
+		var pairs = [
+			{
+				toggle: '.elementor-control-rwgc_use_portable_geo_targeting',
+				textarea: '.elementor-control-rwgc_portable_geo_targeting textarea',
+				mode: '.elementor-control-rwgc_geo_mode select',
+			},
+			{
+				toggle: '.elementor-control-egp_use_portable_geo_targeting',
+				textarea: '.elementor-control-egp_portable_geo_targeting textarea',
+				mode: null,
+			},
+		];
+		for (var i = 0; i < pairs.length; i++) {
+			var p = pairs[i];
+			var $toggle = $panel.find(p.toggle);
+			var $input = $toggle.find('input[type=checkbox]');
+			if ($input.length && $input.prop('checked')) {
+				var $ta = $panel.find(p.textarea);
+				if ($ta.length) {
+					return { textarea: $ta, modeSel: p.mode ? $panel.find(p.mode) : null };
+				}
+			}
+		}
+		return null;
 	}
 
 	function setValue(textarea, json) {
@@ -1410,14 +1515,11 @@
 
 	function mountElementor() {
 		function tryMount() {
-			if (!elementorPortableEnabled()) {
+			var pair = elementorPortableControlPair();
+			if (!pair || !pair.textarea.length) {
 				return;
 			}
-			var $ta = $('#elementor-panel-inner').find('.elementor-control-rwgc_portable_geo_targeting textarea');
-			if (!$ta.length) {
-				return;
-			}
-			var el = $ta.get(0);
+			var el = pair.textarea.get(0);
 			if (el.getAttribute('data-rwgc-rb-mounted')) {
 				return;
 			}
@@ -1425,8 +1527,10 @@
 				textarea: el,
 				observeMode: true,
 				getMode: function () {
-					var $m = $('#elementor-panel-inner').find('.elementor-control-rwgc_geo_mode select');
-					return $m.length ? $m.val() || 'show' : 'show';
+					if (pair.modeSel && pair.modeSel.length) {
+						return pair.modeSel.val() || 'show';
+					}
+					return 'show';
 				},
 			});
 		}

@@ -323,11 +323,18 @@ class RWGC_Targeting_Rule_Set_Schema {
 		 */
 		$choices = apply_filters( 'rwgc_rule_condition_choices', array() );
 
+		$library = array();
+		if ( class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
+			$library = RWGC_Visibility_Rule_Repository::get_library_picker_rows();
+		}
+
 		$base = array(
-			'pro'                 => self::is_pro_active(),
-			'audiences'           => array(),
-			'campaigns'           => array(),
-			'countries'           => self::build_country_choice_rows(),
+			'pro'                  => self::is_pro_active(),
+			'advanced_targeting'   => function_exists( 'rwgc_advanced_targeting_enabled' ) && rwgc_advanced_targeting_enabled(),
+			'visibility_library'   => $library,
+			'audiences'            => array(),
+			'campaigns'            => array(),
+			'countries'            => self::build_country_choice_rows(),
 			'help_urls'           => array(
 				'geocore_targeting' => admin_url( 'admin.php?page=rwgc-target-types' ),
 			),
@@ -337,7 +344,7 @@ class RWGC_Targeting_Rule_Set_Schema {
 			'ui_surfaces'         => array(
 				'elementor' => __( 'Elementor → page or popup → Advanced → Geo Visibility → enable geo → turn on “Use advanced visibility rules”.', 'reactwoo-geocore' ),
 				'block'     => __( 'Block editor → Geo Content block → sidebar → Advanced visibility rules.', 'reactwoo-geocore' ),
-				'geo_rule'  => __( 'Geo Elementor → Geo Rules → Advanced visibility (Geo Core).', 'reactwoo-geocore' ),
+				'geo_rule'  => __( 'Elementor → Geo Rules (Geo Elementor integration) or Targeting → Visibility rules library.', 'reactwoo-geocore' ),
 			),
 		);
 		$base['help_urls'] = apply_filters( 'rwgc_rule_builder_help_urls', $base['help_urls'] );

@@ -45,6 +45,19 @@ if ( ! function_exists( 'rwgc_is_pro_enabled' ) ) {
 	}
 }
 
+if ( ! function_exists( 'rwgc_advanced_targeting_enabled' ) ) {
+	/**
+	 * Whether multi-condition portable targeting UI is available (GeoCore Pro).
+	 *
+	 * GeoCore Free surfaces country-only in builders; GeoCore Pro enables the full selector set in Elementor, Gutenberg, and admin.
+	 *
+	 * @return bool
+	 */
+	function rwgc_advanced_targeting_enabled() {
+		return (bool) apply_filters( 'rwgc_advanced_targeting_enabled', false );
+	}
+}
+
 if ( ! function_exists( 'rwgc_get_portable_targeting_editor_context' ) ) {
 	/**
 	 * Portable JSON authoring context (audiences, campaigns, Pro flag) for admin and editors.
