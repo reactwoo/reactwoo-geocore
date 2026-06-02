@@ -241,7 +241,7 @@
 		return {
 			schema_version: SCHEMA,
 			enabled: true,
-			mode: 'show',
+			mode: 'show_if',
 			match: 'all',
 			rules: [
 				{
@@ -257,7 +257,7 @@
 	function normalizeDocShape(d) {
 		var out = defaultDoc();
 		out.enabled = !!d.enabled;
-		out.mode = d.mode === 'hide' ? 'hide' : 'show';
+		out.mode = d.mode === 'hide_if' || d.mode === 'hide' ? 'hide_if' : 'show_if';
 		out.match = d.match === 'any' ? 'any' : 'all';
 		out.schema_version = typeof d.schema_version === 'number' ? d.schema_version : SCHEMA;
 		if (Array.isArray(d.rules) && d.rules.length) {
@@ -731,7 +731,7 @@
 		textarea.parentNode.insertBefore(root, textarea);
 
 		var getMode = options.getMode || function () {
-			return 'show';
+			return 'show_if';
 		};
 		var setMode = options.setMode;
 
@@ -756,7 +756,7 @@
 			state.parseError = null;
 			state.docBase = p;
 			state.ruleMatch = p.rules && p.rules[0] ? p.rules[0].match || 'all' : 'all';
-			state.localMode = p.mode === 'hide' ? 'hide' : 'show';
+			state.localMode = p.mode === 'hide_if' || p.mode === 'hide' ? 'hide_if' : 'show_if';
 			state.rows = rowsFromDoc(p);
 			if (p.rules && p.rules.length > 1) {
 				state.multiRules = true;
@@ -768,7 +768,7 @@
 		function writeTextareaFromState() {
 			var mode = state.localMode !== undefined ? state.localMode : getMode();
 			var d = docFromRows(state.docBase, state.rows, state.ruleMatch);
-			d.mode = mode === 'hide' ? 'hide' : 'show';
+			d.mode = mode === 'hide_if' || mode === 'hide' ? 'hide_if' : 'show_if';
 			if (state.docBase && state.docBase.rules && state.docBase.rules.length > 1) {
 				d.rules = d.rules.concat(state.docBase.rules.slice(1));
 			}
@@ -796,7 +796,7 @@
 			state.parseError = null;
 			state.docBase = p;
 			state.ruleMatch = p.rules && p.rules[0] ? p.rules[0].match || 'all' : 'all';
-			state.localMode = p.mode === 'hide' ? 'hide' : 'show';
+			state.localMode = p.mode === 'hide_if' || p.mode === 'hide' ? 'hide_if' : 'show_if';
 			state.rows = rowsFromDoc(p);
 			state.multiRules = !!(p.rules && p.rules.length > 1);
 			writeTextareaFromState();
@@ -881,13 +881,13 @@
 				vis.appendChild(vl);
 				var vs = document.createElement('select');
 				vs.innerHTML =
-					'<option value="show">' +
+					'<option value="show_if">' +
 					escapeHtml(t('visibilityShow')) +
-					'</option><option value="hide">' +
+					'</option><option value="hide_if">' +
 					escapeHtml(t('visibilityHide')) +
 					'</option>';
 				var curMode = state.localMode !== undefined ? state.localMode : getMode();
-				vs.value = curMode === 'hide' ? 'hide' : 'show';
+				vs.value = curMode === 'hide_if' || curMode === 'hide' ? 'hide_if' : 'show_if';
 				vs.addEventListener('change', function () {
 					state.localMode = vs.value;
 					writeTextareaFromState();
@@ -1479,12 +1479,12 @@
 			{
 				toggle: '.elementor-control-rwgc_use_portable_geo_targeting',
 				textarea: '.elementor-control-rwgc_portable_geo_targeting textarea',
-				mode: '.elementor-control-rwgc_geo_mode select',
+				mode: '.elementor-control-rwgc_visibility_mode select, .elementor-control-rwgc_geo_mode select',
 			},
 			{
 				toggle: '.elementor-control-egp_use_portable_geo_targeting',
 				textarea: '.elementor-control-egp_portable_geo_targeting textarea',
-				mode: null,
+				mode: '.elementor-control-rwgc_visibility_mode select, .elementor-control-rwgc_geo_mode select',
 			},
 		];
 		for (var i = 0; i < pairs.length; i++) {

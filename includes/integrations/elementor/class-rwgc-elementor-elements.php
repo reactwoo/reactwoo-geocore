@@ -160,6 +160,23 @@ class RWGC_Elementor_Elements {
 			)
 		);
 
+		$element->add_control(
+			'rwgc_visibility_mode',
+			array(
+				'label'       => __( 'Visibility mode', 'reactwoo-geocore' ),
+				'type'        => \Elementor\Controls_Manager::SELECT,
+				'default'     => 'show_if',
+				'options'     => array(
+					'show_if' => __( 'Show only when rules match', 'reactwoo-geocore' ),
+					'hide_if' => __( 'Hide when rules match', 'reactwoo-geocore' ),
+				),
+				'description' => __( 'Show mode: visible only to matching visitors. Hide mode: hidden from matching visitors (useful for replacement content).', 'reactwoo-geocore' ),
+				'condition'   => array(
+					'egp_geo_enabled' => 'yes',
+				),
+			)
+		);
+
 		$countries_html = self::get_countries_select_html();
 		$element->add_control(
 			'egp_countries_html',

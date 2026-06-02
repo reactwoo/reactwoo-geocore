@@ -85,15 +85,16 @@ class RWGC_Elementor {
 		);
 
 		$element->add_control(
-			'rwgc_geo_mode',
+			'rwgc_visibility_mode',
 			array(
-				'label'     => __( 'Mode', 'reactwoo-geocore' ),
+				'label'     => __( 'Visibility mode', 'reactwoo-geocore' ),
 				'type'      => \Elementor\Controls_Manager::SELECT,
-				'default'   => 'show',
+				'default'   => 'show_if',
 				'options'   => array(
-					'show' => __( 'Show for selected countries', 'reactwoo-geocore' ),
-					'hide' => __( 'Hide for selected countries', 'reactwoo-geocore' ),
+					'show_if' => __( 'Show only when rules match', 'reactwoo-geocore' ),
+					'hide_if' => __( 'Hide when rules match', 'reactwoo-geocore' ),
 				),
+				'description' => __( 'Show mode: visible only to matching visitors. Hide mode: hidden from matching visitors.', 'reactwoo-geocore' ),
 				'condition' => array(
 					'egp_enable_geo_targeting' => 'yes',
 				),
@@ -333,7 +334,12 @@ class RWGC_Elementor {
 				$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $raw_json );
 				if ( is_array( $set ) ) {
 					$snapshot = RWGC_Context_Resolver::resolve_current();
-					return RWGC_Rule_Evaluator::should_render_content( $set, $snapshot ) ? $content : '';
+					$matched  = RWGC_Rule_Evaluator::matches( $set, $snapshot );
+					$mode     = isset( $settings['rwgc_visibility_mode'] ) ? $settings['rwgc_visibility_mode'] : ( isset( $settings['rwgc_geo_mode'] ) ? $settings['rwgc_geo_mode'] : 'show_if' );
+					if ( function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
+						return rwgc_visibility_mode_allows_render( $mode, $matched ) ? $content : '';
+					}
+					return $matched ? $content : '';
 				}
 			}
 		}
@@ -346,17 +352,18 @@ class RWGC_Elementor {
 			return $content;
 		}
 
-		$mode    = isset( $settings['rwgc_geo_mode'] ) ? sanitize_key( (string) $settings['rwgc_geo_mode'] ) : 'show';
+		$mode    = isset( $settings['rwgc_visibility_mode'] ) ? (string) $settings['rwgc_visibility_mode'] : ( isset( $settings['rwgc_geo_mode'] ) ? (string) $settings['rwgc_geo_mode'] : 'show_if' );
 		$country = strtoupper( rwgc_get_visitor_country() );
 
 		if ( '' === $country ) {
 			return $content;
 		}
 
-		$match       = in_array( $country, $selected, true );
-		$should_hide = ( 'show' === $mode && ! $match ) || ( 'hide' === $mode && $match );
-
-		return $should_hide ? '' : $content;
+		$match = in_array( $country, $selected, true );
+		if ( function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
+			return rwgc_visibility_mode_allows_render( $mode, $match ) ? $content : '';
+		}
+		return $match ? $content : '';
 	}
 
 	/**

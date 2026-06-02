@@ -132,13 +132,10 @@ class RWGC_Rule_Evaluator {
 	 * @return bool
 	 */
 	public static function should_render_content( array $set, RWGC_Context_Snapshot $snapshot ) {
-		$m = isset( $set['mode'] ) ? sanitize_key( (string) $set['mode'] ) : 'show';
-		$m = 'hide' === $m ? 'hide' : 'show';
-
 		$matched = self::matches( $set, $snapshot );
-
-		if ( 'hide' === $m ) {
-			return ! $matched;
+		if ( function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
+			$mode = isset( $set['mode'] ) ? $set['mode'] : 'show_if';
+			return rwgc_visibility_mode_allows_render( $mode, $matched );
 		}
 		return $matched;
 	}

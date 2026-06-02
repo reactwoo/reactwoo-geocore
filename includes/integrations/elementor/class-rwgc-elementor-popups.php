@@ -61,7 +61,11 @@ class RWGC_Elementor_Popups {
 			return (bool) $should_show;
 		}
 
-		return self::visitor_matches_countries( $settings['countries'] );
+		$matched = self::visitor_matches_countries( $settings['countries'] );
+		if ( function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
+			return rwgc_visibility_mode_allows_render( isset( $settings['visibility_mode'] ) ? $settings['visibility_mode'] : 'show_if', $matched );
+		}
+		return $matched;
 	}
 
 	/**
@@ -93,7 +97,10 @@ class RWGC_Elementor_Popups {
 			. 'function norm(v){if(v==null)return null;if(typeof v==="number")return v;if(typeof v==="string"){var n=parseInt(v,10);return isNaN(n)?v:n;}if(typeof v==="object"){if(v.id!=null)return norm(v.id);if(v.popup&&v.popup.id!=null)return norm(v.popup.id);}return v;}'
 			. 'function apply(orig,scope,args){var pid=norm(args.length?args[0]:null);var m=meta(pid);if(!m||!m.countries||!m.countries.length){return orig.apply(scope,args);}'
 			. 'var allowed=m.countries.map(function(c){return String(c).toUpperCase();});'
-			. 'if(allowed.indexOf(String(userCountry).toUpperCase())!==-1){return orig.apply(scope,args);}'
+			. 'var matched=allowed.indexOf(String(userCountry).toUpperCase())!==-1;'
+			. 'var mode=(m.visibility_mode==="hide_if"||m.visibility_mode==="hide")?"hide_if":"show_if";'
+			. 'var shouldShow=(mode==="hide_if")?!matched:matched;'
+			. 'if(shouldShow){return orig.apply(scope,args);}'
 			. 'if(fallbackPopupId&&fallbackBehavior==="show_fallback"){var fb=parseInt(fallbackPopupId,10);var raw=args[0];if(typeof raw==="object"&&raw!==null){var next=Object.assign({},raw);if("id" in next)next.id=fb;if(raw.popup&&typeof raw.popup==="object"){next.popup=Object.assign({},raw.popup);next.popup.id=fb;}return orig.call(scope,next);}return orig.call(scope,fb);}'
 			. 'return false;}'
 			. 'function patch(){if(window.__rwgcPopupGeoPatched)return true;var mod=window.elementorProFrontend&&elementorProFrontend.modules&&elementorProFrontend.modules.popup;'
@@ -199,7 +206,7 @@ class RWGC_Elementor_Popups {
 
 	/**
 	 * @param int $popup_id Popup template ID.
-	 * @return array{enabled:bool,countries:array<int,string>}|false
+	 * @return array{enabled:bool,countries:array<int,string>,visibility_mode:string}|false
 	 */
 	private static function get_popup_page_geo_settings( $popup_id ) {
 		$page_settings = get_post_meta( $popup_id, '_elementor_page_settings', true );
@@ -226,6 +233,9 @@ class RWGC_Elementor_Popups {
 		return array(
 			'enabled'   => true,
 			'countries' => $countries,
+			'visibility_mode' => function_exists( 'rwgc_normalize_visibility_mode' )
+				? rwgc_normalize_visibility_mode( isset( $page_settings['rwgc_visibility_mode'] ) ? $page_settings['rwgc_visibility_mode'] : ( isset( $page_settings['rwgc_geo_mode'] ) ? $page_settings['rwgc_geo_mode'] : 'show_if' ) )
+				: 'show_if',
 		);
 	}
 
@@ -266,6 +276,7 @@ class RWGC_Elementor_Popups {
 				'id'        => $popup_id,
 				'title'     => get_the_title( $popup_id ),
 				'countries' => $countries,
+				'visibility_mode' => isset( $settings['visibility_mode'] ) ? (string) $settings['visibility_mode'] : 'show_if',
 			);
 		}
 

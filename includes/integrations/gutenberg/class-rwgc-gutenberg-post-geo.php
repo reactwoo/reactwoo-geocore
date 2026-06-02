@@ -60,7 +60,9 @@ class RWGC_Gutenberg_Post_Geo {
 					'single'            => true,
 					'show_in_rest'      => true,
 					'auth_callback'     => array( __CLASS__, 'can_edit_meta' ),
-					'sanitize_callback' => 'sanitize_key',
+					'sanitize_callback' => static function ( $value ) {
+						return function_exists( 'rwgc_normalize_visibility_mode' ) ? rwgc_normalize_visibility_mode( $value ) : sanitize_key( (string) $value );
+					},
 				)
 			);
 			register_post_meta(
@@ -205,6 +207,7 @@ class RWGC_Gutenberg_Post_Geo {
 			'egp_use_portable_geo_targeting' => (string) get_post_meta( $post_id, self::META_USE_PORTABLE, true ),
 			'egp_portable_geo_targeting'     => (string) get_post_meta( $post_id, self::META_PORTABLE, true ),
 			'egp_countries'                  => get_post_meta( $post_id, self::META_COUNTRIES, true ),
+			'rwgc_visibility_mode'           => (string) get_post_meta( $post_id, self::META_MODE, true ),
 			'rwgc_geo_mode'                  => (string) get_post_meta( $post_id, self::META_MODE, true ),
 		);
 
@@ -212,16 +215,6 @@ class RWGC_Gutenberg_Post_Geo {
 			return $content;
 		}
 
-		$mode = isset( $settings['rwgc_geo_mode'] ) ? (string) $settings['rwgc_geo_mode'] : 'show';
-		if ( 'hide' === $mode ) {
-			$countries = is_array( $settings['egp_countries'] ) ? $settings['egp_countries'] : array();
-			$country   = function_exists( 'rwgc_get_visitor_country' ) ? strtoupper( (string) rwgc_get_visitor_country() ) : '';
-			if ( '' !== $country && in_array( $country, $countries, true ) ) {
-				return '';
-			}
-			return $content;
-		}
-
-		return RWGC_Elementor_Frontend::settings_match_visitor( $settings ) ? $content : '';
+		return RWGC_Elementor_Frontend::settings_should_render( $settings ) ? $content : '';
 	}
 }

@@ -46,7 +46,7 @@ class RWGC_Elementor_Frontend {
 			return;
 		}
 
-		if ( self::settings_match_visitor( $settings ) ) {
+		if ( self::settings_should_render( $settings ) ) {
 			return;
 		}
 
@@ -72,7 +72,7 @@ class RWGC_Elementor_Frontend {
 				$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $raw );
 				if ( is_array( $set ) ) {
 					$snapshot = RWGC_Context_Resolver::resolve_current();
-					return RWGC_Rule_Evaluator::should_render_content( $set, $snapshot );
+					return RWGC_Rule_Evaluator::matches( $set, $snapshot );
 				}
 			}
 		}
@@ -88,6 +88,19 @@ class RWGC_Elementor_Frontend {
 		}
 
 		return in_array( $country, $countries, true );
+	}
+
+	/**
+	 * @param array<string, mixed> $settings Settings.
+	 * @return bool
+	 */
+	public static function settings_should_render( array $settings ) {
+		$matched = self::settings_match_visitor( $settings );
+		if ( function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
+			$mode = isset( $settings['rwgc_visibility_mode'] ) ? $settings['rwgc_visibility_mode'] : ( isset( $settings['rwgc_geo_mode'] ) ? $settings['rwgc_geo_mode'] : 'show_if' );
+			return rwgc_visibility_mode_allows_render( $mode, $matched );
+		}
+		return $matched;
 	}
 
 	/**

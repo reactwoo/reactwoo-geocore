@@ -28,7 +28,8 @@
 		var editPost = useDispatch( 'core/editor' ).editPost;
 
 		var enabled = metaValues[ meta.enabled ] === 'yes';
-		var mode = metaValues[ meta.mode ] || 'show';
+		var rawMode = metaValues[ meta.mode ] || 'show_if';
+		var mode = rawMode === 'hide' || rawMode === 'hide_if' ? 'hide_if' : 'show_if';
 		var countries = Array.isArray( metaValues[ meta.countries ] ) ? metaValues[ meta.countries ] : [];
 		var usePortable = metaValues[ meta.usePortable ] === 'yes';
 		var portable = metaValues[ meta.portable ] || '';
@@ -49,7 +50,7 @@
 				window.ReactWooRuleBuilder.mount( {
 					textarea: textarea,
 					getMode: function () {
-						return mode === 'hide' ? 'hide' : 'show';
+						return mode === 'hide_if' || mode === 'hide' ? 'hide_if' : 'show_if';
 					},
 					allowAllConditionTypes: true,
 				} );
@@ -79,11 +80,11 @@
 			} ),
 			enabled &&
 				el( SelectControl, {
-					label: 'Mode',
+					label: 'Visibility mode',
 					value: mode,
 					options: [
-						{ label: 'Show for selected countries', value: 'show' },
-						{ label: 'Hide for selected countries', value: 'hide' },
+						{ label: 'Show only when rules match', value: 'show_if' },
+						{ label: 'Hide when rules match', value: 'hide_if' },
 					],
 					onChange: function ( val ) {
 						updateMeta( meta.mode, val );
@@ -100,6 +101,14 @@
 						updateMeta( meta.countries, val || [] );
 					},
 				} ),
+			enabled &&
+				el(
+					'p',
+					{ className: 'description', style: { marginTop: '8px' } },
+					mode === 'hide_if'
+						? 'This content will be hidden from visitors who match the selected targeting rules. Example: hide the default form when a South Africa-specific form is shown.'
+						: 'This content will only be visible to visitors who match the selected targeting rules. Example: show a South Africa form only to visitors from South Africa.'
+				),
 			enabled &&
 				config.advancedTargeting &&
 				el( ToggleControl, {

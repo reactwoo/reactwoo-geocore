@@ -194,7 +194,7 @@ class RWGC_Targeting_Rule_Set_Schema {
 		$out = array(
 			'schema_version' => self::VERSION,
 			'enabled'        => ! empty( $data['enabled'] ),
-			'mode'           => self::sanitize_mode( isset( $data['mode'] ) ? $data['mode'] : 'show' ),
+			'mode'           => self::sanitize_mode( isset( $data['mode'] ) ? $data['mode'] : 'show_if' ),
 			'match'          => self::sanitize_rule_match( isset( $data['match'] ) ? $data['match'] : 'any' ),
 			'rules'          => array(),
 		);
@@ -223,7 +223,10 @@ class RWGC_Targeting_Rule_Set_Schema {
 	 */
 	public static function sanitize_mode( $mode ) {
 		$m = sanitize_key( (string) $mode );
-		return 'hide' === $m ? 'hide' : 'show';
+		if ( in_array( $m, array( 'hide_if', 'hide' ), true ) ) {
+			return 'hide_if';
+		}
+		return 'show_if';
 	}
 
 	/**

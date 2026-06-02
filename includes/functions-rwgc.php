@@ -58,6 +58,43 @@ if ( ! function_exists( 'rwgc_advanced_targeting_enabled' ) ) {
 	}
 }
 
+if ( ! function_exists( 'rwgc_normalize_visibility_mode' ) ) {
+	/**
+	 * Normalize visibility mode to canonical values.
+	 *
+	 * Backward compatible aliases:
+	 * - show => show_if
+	 * - hide => hide_if
+	 *
+	 * @param mixed $mode Raw mode.
+	 * @return string
+	 */
+	function rwgc_normalize_visibility_mode( $mode ) {
+		$raw = sanitize_key( (string) $mode );
+		if ( in_array( $raw, array( 'hide_if', 'hide', 'restrict', 'suppress' ), true ) ) {
+			return 'hide_if';
+		}
+		return 'show_if';
+	}
+}
+
+if ( ! function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
+	/**
+	 * Determine whether content should render for a mode + match result.
+	 *
+	 * @param mixed $mode    Raw visibility mode.
+	 * @param bool  $matched Whether rules matched.
+	 * @return bool
+	 */
+	function rwgc_visibility_mode_allows_render( $mode, $matched ) {
+		$normalized = rwgc_normalize_visibility_mode( $mode );
+		if ( 'hide_if' === $normalized ) {
+			return ! $matched;
+		}
+		return (bool) $matched;
+	}
+}
+
 if ( ! function_exists( 'rwgc_get_portable_targeting_editor_context' ) ) {
 	/**
 	 * Portable JSON authoring context (audiences, campaigns, Pro flag) for admin and editors.

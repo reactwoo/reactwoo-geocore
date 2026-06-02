@@ -120,16 +120,16 @@ class RWGC_Targeting_Rule_Builder_Assets {
 			'loggedInYes'          => __( 'Logged in', 'reactwoo-geocore' ),
 			'loggedInNo'           => __( 'Logged out', 'reactwoo-geocore' ),
 			'booleanHint'          => __( 'Applies to WordPress login state.', 'reactwoo-geocore' ),
-			'visibilityModeLabel'  => __( 'When rules match, this content should', 'reactwoo-geocore' ),
-			'visibilityShow'       => __( 'Be shown', 'reactwoo-geocore' ),
-			'visibilityHide'       => __( 'Be hidden', 'reactwoo-geocore' ),
+			'visibilityModeLabel'  => __( 'Visibility mode', 'reactwoo-geocore' ),
+			'visibilityShow'       => __( 'Show only when rules match', 'reactwoo-geocore' ),
+			'visibilityHide'       => __( 'Hide when rules match', 'reactwoo-geocore' ),
 			'selectedLabel'        => __( 'Selected', 'reactwoo-geocore' ),
 			'playgroundIntro'      => __( 'Try the same rule builder used in Elementor and the Geo Content block. Changes here are for practice only until you paste them into a page, block, or geo rule.', 'reactwoo-geocore' ),
 			'syncedCount'          => __( '%1$d synced', 'reactwoo-geocore' ),
 			'enableAdvancedHint'   => __( 'Turn on “Use visibility rule builder” above to edit multi-condition rules.', 'reactwoo-geocore' ),
 			'noConditionsYet'      => __( 'Add at least one condition to define who should see this content.', 'reactwoo-geocore' ),
-			'summaryPrefixShow'    => __( 'This content will be shown when', 'reactwoo-geocore' ),
-			'summaryPrefixHide'    => __( 'This content will be hidden when', 'reactwoo-geocore' ),
+			'summaryPrefixShow'    => __( 'This content will only be visible to visitors who match these targeting rules:', 'reactwoo-geocore' ),
+			'summaryPrefixHide'    => __( 'This content will be hidden from visitors who match these targeting rules:', 'reactwoo-geocore' ),
 			'fieldPageVersion'     => __( 'Page Version URL', 'reactwoo-geocore' ),
 			'pageVersionNameLabel' => __( 'Version name', 'reactwoo-geocore' ),
 			'pageVersionPageLabel' => __( 'Page', 'reactwoo-geocore' ),
@@ -143,7 +143,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 			'pageVersionPickPage'  => __( 'Choose a page first, then enter the version name.', 'reactwoo-geocore' ),
 			'libraryLabel'         => __( 'Apply saved visibility rule', 'reactwoo-geocore' ),
 			'libraryNone'          => __( '— Choose from library —', 'reactwoo-geocore' ),
-			'libraryHelp'          => __( 'Loads a published rule from Targeting → Visibility rules. You can still edit conditions after applying.', 'reactwoo-geocore' ),
+			'libraryHelp'          => __( 'Loads a published rule from Targeting → Visibility rules. You can still edit conditions after applying. Example: hide a default form when the South Africa form is shown.', 'reactwoo-geocore' ),
 			'advancedTargetingNotice' => __( 'Additional condition types require GeoCore Pro. Country targeting is always available.', 'reactwoo-geocore' ),
 		);
 	}
@@ -167,7 +167,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['rwgc_edit'] ) ) {
-			wp_add_inline_script( self::SCRIPT_HANDLE, self::get_mount_inline( '#rwgc_portable_targeting', "'show'", 'allowAllConditionTypes:true' ), 'after' );
+			wp_add_inline_script( self::SCRIPT_HANDLE, self::get_mount_inline( '#rwgc_portable_targeting', "'show_if'", 'allowAllConditionTypes:true' ), 'after' );
 		}
 	}
 
@@ -175,12 +175,12 @@ class RWGC_Targeting_Rule_Builder_Assets {
 	 * Mount rule builder on a textarea selector (admin / third-party).
 	 *
 	 * @param string $selector   CSS selector for textarea.
-	 * @param string $get_mode_js Optional JS expression returning show|hide (default show).
+	 * @param string $get_mode_js Optional JS expression returning show_if|hide_if (default show_if).
 	 * @return string Inline script.
 	 */
-	public static function get_mount_inline( $selector, $get_mode_js = "'show'", $extra_options_js = '' ) {
+	public static function get_mount_inline( $selector, $get_mode_js = "'show_if'", $extra_options_js = '' ) {
 		$selector = esc_js( (string) $selector );
-		$get_mode = $get_mode_js ? $get_mode_js : "'show'";
+		$get_mode = $get_mode_js ? $get_mode_js : "'show_if'";
 		$extra    = $extra_options_js ? ',' . $extra_options_js : '';
 		return "(function(){function rwgcRbTryMount(){var t=document.querySelector('{$selector}');if(!t||!window.ReactWooRuleBuilder||t.getAttribute('data-rwgc-rb-mounted')){return;}window.ReactWooRuleBuilder.mount({textarea:t,getMode:function(){return {$get_mode};}{$extra}});}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',rwgcRbTryMount);}else{rwgcRbTryMount();}})();";
 	}
@@ -189,7 +189,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 	 * @return string
 	 */
 	public static function get_mount_playground_inline() {
-		return self::get_mount_inline( '#rwgc-targeting-playground-json', "'show'", 'showVisibilityMode:true,isPlayground:true,allowAllConditionTypes:true' );
+		return self::get_mount_inline( '#rwgc-targeting-playground-json', "'show_if'", 'showVisibilityMode:true,isPlayground:true,allowAllConditionTypes:true' );
 	}
 
 	/**
