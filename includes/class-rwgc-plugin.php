@@ -128,6 +128,9 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-operators.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-targeting-rule-set-schema.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-rule-evaluator.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-rule-registry.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-targeting-surface-evaluator.php';
+		require_once RWGC_PATH . 'includes/compat/class-rwgc-legacy-geo-rule-cpt.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-context-snapshot-formatter.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-targeting-rule-set-evaluator.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-availability.php';
@@ -158,6 +161,7 @@ class RWGC_Plugin {
 		RWGC_Country_Groups::init();
 		RWGC_Preview::init();
 		RWGC_Visibility_Rule_CPT::init();
+		RWGC_Legacy_Geo_Rule_CPT::init();
 
 		if ( is_admin() ) {
 			RWGC_Admin_Visibility_Rules::init();

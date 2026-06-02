@@ -50,39 +50,10 @@ class RWGC_Visibility_Rule_Repository {
 	 * @return array<int, array{id:int,title:string,json:string}>
 	 */
 	public static function get_library_picker_rows() {
-		$posts = self::query(
-			array(
-				'post_status'    => 'publish',
-				'posts_per_page' => 100,
-			)
-		);
-		$rows  = array();
-		foreach ( $posts as $post ) {
-			if ( ! $post instanceof WP_Post ) {
-				continue;
-			}
-			$raw = get_post_meta( $post->ID, RWGC_Visibility_Rule_CPT::META_PORTABLE, true );
-			if ( ! is_string( $raw ) || '' === trim( $raw ) ) {
-				continue;
-			}
-			$json = $raw;
-			if ( class_exists( 'RWGC_Targeting_Rule_Set_Schema', false ) ) {
-				$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $raw );
-				if ( ! is_array( $set ) ) {
-					continue;
-				}
-				$encoded = wp_json_encode( $set );
-				if ( is_string( $encoded ) && '' !== $encoded ) {
-					$json = $encoded;
-				}
-			}
-			$rows[] = array(
-				'id'    => (int) $post->ID,
-				'title' => $post->post_title ? $post->post_title : __( 'Untitled visibility rule', 'reactwoo-geocore' ),
-				'json'  => $json,
-			);
+		if ( class_exists( 'RWGC_Rule_Registry', false ) ) {
+			return RWGC_Rule_Registry::get_library_picker_rows();
 		}
-		return $rows;
+		return array();
 	}
 
 	/**
@@ -90,6 +61,13 @@ class RWGC_Visibility_Rule_Repository {
 	 * @return array<string, mixed>|null Sanitized portable rule set.
 	 */
 	public static function get_rule_set( $post_id ) {
+		if ( class_exists( 'RWGC_Rule_Registry', false ) ) {
+			$from_registry = RWGC_Rule_Registry::get_rule_set_by_id( $post_id );
+			if ( is_array( $from_registry ) ) {
+				return $from_registry;
+			}
+		}
+
 		$post_id = absint( $post_id );
 		if ( $post_id <= 0 ) {
 			return null;

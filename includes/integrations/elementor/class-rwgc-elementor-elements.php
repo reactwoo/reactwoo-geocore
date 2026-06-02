@@ -72,10 +72,13 @@ class RWGC_Elementor_Elements {
 	 * @return array<int, array{id:int,title:string,json:string}>
 	 */
 	public static function get_visibility_library_rows() {
-		if ( ! class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
-			return array();
+		if ( class_exists( 'RWGC_Rule_Registry', false ) ) {
+			return RWGC_Rule_Registry::get_library_picker_rows();
 		}
-		return RWGC_Visibility_Rule_Repository::get_library_picker_rows();
+		if ( class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
+			return RWGC_Visibility_Rule_Repository::get_library_picker_rows();
+		}
+		return array();
 	}
 
 	/**
@@ -89,7 +92,8 @@ class RWGC_Elementor_Elements {
 			if ( empty( $row['id'] ) ) {
 				continue;
 			}
-			$options[ (string) (int) $row['id'] ] = isset( $row['title'] ) ? (string) $row['title'] : ( '#' . (int) $row['id'] );
+			$key = (string) $row['id'];
+			$options[ $key ] = isset( $row['title'] ) ? (string) $row['title'] : $key;
 		}
 		return $options;
 	}
@@ -254,9 +258,8 @@ class RWGC_Elementor_Elements {
 			$element->add_control(
 				'egp_portable_geo_targeting',
 				array(
-					'label'       => __( 'Visibility rules', 'reactwoo-geocore' ),
 					'type'        => \Elementor\Controls_Manager::TEXTAREA,
-					'rows'        => 6,
+					'rows'        => 2,
 					'label_block' => true,
 					'classes'     => 'egp-portable-geo-targeting-textarea rwgc-rb-textarea-hidden',
 					'condition'   => array(

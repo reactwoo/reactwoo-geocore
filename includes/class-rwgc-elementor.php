@@ -152,11 +152,9 @@ class RWGC_Elementor {
 			$element->add_control(
 				'rwgc_portable_geo_targeting',
 				array(
-					'label'       => __( 'Visibility rules', 'reactwoo-geocore' ),
 					'type'        => \Elementor\Controls_Manager::TEXTAREA,
-					'rows'        => 6,
+					'rows'        => 2,
 					'label_block' => true,
-					'description' => self::portable_targeting_control_description(),
 					'classes'     => 'rwgc-portable-geo-targeting-textarea rwgc-rb-textarea-hidden',
 					'condition'   => array(
 						'egp_enable_geo_targeting'        => 'yes',
@@ -328,20 +326,19 @@ class RWGC_Elementor {
 			return $content;
 		}
 
-		if ( ! empty( $settings['rwgc_use_portable_geo_targeting'] ) && 'yes' === (string) $settings['rwgc_use_portable_geo_targeting'] ) {
-			$raw_json = isset( $settings['rwgc_portable_geo_targeting'] ) ? wp_unslash( (string) $settings['rwgc_portable_geo_targeting'] ) : '';
-			if ( is_string( $raw_json ) && '' !== trim( $raw_json ) && class_exists( 'RWGC_Targeting_Rule_Set_Schema' ) && class_exists( 'RWGC_Rule_Evaluator' ) && class_exists( 'RWGC_Context_Resolver' ) ) {
-				$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $raw_json );
-				if ( is_array( $set ) ) {
-					$snapshot = RWGC_Context_Resolver::resolve_current();
-					$matched  = RWGC_Rule_Evaluator::matches( $set, $snapshot );
-					$mode     = isset( $settings['rwgc_visibility_mode'] ) ? $settings['rwgc_visibility_mode'] : ( isset( $settings['rwgc_geo_mode'] ) ? $settings['rwgc_geo_mode'] : 'show_if' );
-					if ( function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
-						return rwgc_visibility_mode_allows_render( $mode, $matched ) ? $content : '';
-					}
-					return $matched ? $content : '';
-				}
-			}
+		if ( class_exists( 'RWGC_Elementor_Frontend', false ) ) {
+			$eval_settings = array(
+				'egp_enable_geo_targeting'        => 'yes',
+				'egp_geo_enabled'                => 'yes',
+				'rwgc_use_portable_geo_targeting' => isset( $settings['rwgc_use_portable_geo_targeting'] ) ? (string) $settings['rwgc_use_portable_geo_targeting'] : '',
+				'egp_use_portable_geo_targeting'  => isset( $settings['egp_use_portable_geo_targeting'] ) ? (string) $settings['egp_use_portable_geo_targeting'] : '',
+				'rwgc_portable_geo_targeting'     => isset( $settings['rwgc_portable_geo_targeting'] ) ? wp_unslash( (string) $settings['rwgc_portable_geo_targeting'] ) : '',
+				'egp_portable_geo_targeting'      => isset( $settings['egp_portable_geo_targeting'] ) ? wp_unslash( (string) $settings['egp_portable_geo_targeting'] ) : '',
+				'rwgc_visibility_rule_library'  => isset( $settings['rwgc_visibility_rule_library'] ) ? (string) $settings['rwgc_visibility_rule_library'] : '',
+				'egp_countries'                  => isset( $settings['egp_countries'] ) ? $settings['egp_countries'] : array(),
+				'rwgc_visibility_mode'           => isset( $settings['rwgc_visibility_mode'] ) ? $settings['rwgc_visibility_mode'] : ( isset( $settings['rwgc_geo_mode'] ) ? $settings['rwgc_geo_mode'] : 'show_if' ),
+			);
+			return RWGC_Elementor_Frontend::settings_should_render( $eval_settings ) ? $content : '';
 		}
 
 		$selected = array();

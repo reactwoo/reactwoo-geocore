@@ -65,54 +65,51 @@ class RWGC_Elementor_Popups {
 			return null;
 		}
 
-		$config = self::get_popup_geo_config( $popup_id );
-		if ( null === $config ) {
+		$settings = self::get_popup_targeting_settings( $popup_id );
+		if ( null === $settings || ! class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
 			return null;
 		}
 
-		$visitor = strtoupper( (string) rwgc_get_visitor_country() );
-		if ( '' === $visitor ) {
-			$fallback_decision = self::resolve_unknown_country_fallback( isset( $config['fallback_behavior'] ) ? (string) $config['fallback_behavior'] : 'inherit' );
-			self::debug_log_popup_decision(
-				$popup_id,
-				array(
-					'visitor_country' => '',
-					'match'           => false,
-					'decision'        => $fallback_decision ? 'show' : 'hide',
-					'mode'            => isset( $config['visibility_mode'] ) ? (string) $config['visibility_mode'] : 'show_if',
-					'fallback'        => isset( $config['fallback_behavior'] ) ? (string) $config['fallback_behavior'] : 'inherit',
-					'countries'       => isset( $config['countries'] ) ? $config['countries'] : array(),
-					'source'          => isset( $config['source'] ) ? (string) $config['source'] : '',
-					'reason'          => 'unknown_country_fallback',
-				)
+		if ( ! RWGC_Targeting_Surface_Evaluator::is_targeting_enabled( $settings ) ) {
+			return null;
+		}
+
+		$visitor = function_exists( 'rwgc_get_visitor_data' ) ? rwgc_get_visitor_data() : array();
+		$cc      = isset( $visitor['country_code'] ) ? strtoupper( (string) $visitor['country_code'] ) : strtoupper( (string) rwgc_get_visitor_country() );
+
+		if ( '' === $cc && 'country_list' === self::peek_evaluation_reason( $settings ) ) {
+			$fallback_decision = self::resolve_unknown_country_fallback(
+				isset( $settings['egp_fallback_behavior'] ) ? (string) $settings['egp_fallback_behavior'] : 'inherit'
 			);
+			self::debug_log_popup_decision( $popup_id, $settings, array(
+				'rules_match'   => false,
+				'should_render' => $fallback_decision,
+				'reason'        => 'unknown_country_fallback',
+			) );
 			return $fallback_decision;
 		}
 
-		$matched = self::countries_match_visitor( $config['countries'], $visitor );
-		$decision = false;
+		$result  = RWGC_Targeting_Surface_Evaluator::evaluate( $settings );
+		$decision = (bool) $result['should_render'];
 
-		if ( function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
-			$decision = (bool) rwgc_visibility_mode_allows_render( $config['visibility_mode'], $matched );
-		} else {
-			$decision = (bool) $matched;
-		}
-
-		self::debug_log_popup_decision(
-			$popup_id,
-			array(
-				'visitor_country' => $visitor,
-				'match'           => (bool) $matched,
-				'decision'        => $decision ? 'show' : 'hide',
-				'mode'            => isset( $config['visibility_mode'] ) ? (string) $config['visibility_mode'] : 'show_if',
-				'fallback'        => isset( $config['fallback_behavior'] ) ? (string) $config['fallback_behavior'] : 'inherit',
-				'countries'       => isset( $config['countries'] ) ? $config['countries'] : array(),
-				'source'          => isset( $config['source'] ) ? (string) $config['source'] : '',
-				'reason'          => 'country_match',
-			)
-		);
+		self::debug_log_popup_decision( $popup_id, $settings, $result );
 
 		return $decision;
+	}
+
+	/**
+	 * @param array<string, mixed> $settings Popup targeting settings.
+	 * @return string
+	 */
+	private static function peek_evaluation_reason( array $settings ) {
+		if ( ! class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
+			return '';
+		}
+		if ( RWGC_Targeting_Surface_Evaluator::uses_portable_rules( $settings ) ) {
+			return 'portable_rules';
+		}
+		$countries = RWGC_Targeting_Surface_Evaluator::parse_countries( $settings );
+		return empty( $countries ) ? 'targeting_enabled_empty_rules' : 'country_list';
 	}
 
 	/**
@@ -129,10 +126,11 @@ class RWGC_Elementor_Popups {
 		}
 
 		$visitor = strtoupper( (string) rwgc_get_visitor_country() );
-		$blocked   = array();
+		$blocked = array();
 
 		foreach ( $config_map as $popup_id => $config ) {
 			$decision = self::popup_should_display( (int) $popup_id );
+			$config_map[ $popup_id ]['rwgc_show'] = null === $decision ? true : (bool) $decision;
 			if ( false === $decision ) {
 				$blocked[] = (int) $popup_id;
 			}
@@ -278,7 +276,7 @@ class RWGC_Elementor_Popups {
 			. 'var blocked=' . $blocked_data . ";\n"
 			. "function meta(pid){if(pid==null){return null;}var k=String(pid);return popupData[k]||popupData[pid]||null;}\n"
 			. "function norm(v){if(v==null){return null;}if(typeof v==='number'){return v;}if(typeof v==='string'){var n=parseInt(v,10);return isNaN(n)?v:n;}if(typeof v==='object'){if(v.id!=null){return norm(v.id);}if(v.popup&&v.popup.id!=null){return norm(v.popup.id);}}return v;}\n"
-			. "function popupShouldDisplay(m){var allowed=(m.countries||[]).map(function(c){return String(c).toUpperCase();});var matched=allowed.length>0&&allowed.indexOf(String(userCountry).toUpperCase())!==-1;var mode=(m.visibility_mode==='hide_if'||m.visibility_mode==='hide')?'hide_if':'show_if';return (mode==='hide_if')?!matched:matched;}\n"
+			. "function popupShouldDisplay(m){if(typeof m.rwgc_show==='boolean'){return m.rwgc_show;}var allowed=(m.countries||[]).map(function(c){return String(c).toUpperCase();});if(allowed.length===0){return true;}var matched=allowed.indexOf(String(userCountry).toUpperCase())!==-1;var mode=(m.visibility_mode==='hide_if'||m.visibility_mode==='hide')?'hide_if':'show_if';return (mode==='hide_if')?!matched:matched;}\n"
 			. "function shouldShowForPopup(pid){var m=meta(pid);if(!m){return true;}return popupShouldDisplay(m);}\n"
 			. "function suppressPopup(pid){try{if(window.elementorProFrontend&&elementorProFrontend.modules&&elementorProFrontend.modules.popup){var mod=elementorProFrontend.modules.popup;if(typeof mod.closePopup==='function'){mod.closePopup({id:pid});return;}}}catch(e){}try{if(window.elementorFrontend&&elementorFrontend.documents&&elementorFrontend.documents.manager&&elementorFrontend.documents.manager.documents){var docs=elementorFrontend.documents.manager.documents;for(var dk in docs){if(!Object.prototype.hasOwnProperty.call(docs,dk)){continue;}var d=docs[dk];if(d&&typeof d.closePopup==='function'){d.closePopup({id:pid});}}}}catch(e2){}}\n"
 			. "function apply(orig,scope,args){var pid=norm(args.length?args[0]:null);if(!pid||shouldShowForPopup(pid)){return orig.apply(scope,args);}return false;}\n"
@@ -292,20 +290,21 @@ class RWGC_Elementor_Popups {
 	}
 
 	/**
+	 * Merged Elementor popup page settings + linked legacy geo_rule for surface evaluation.
+	 *
 	 * @param int $popup_id Popup template ID.
 	 * @return array<string, mixed>|null
 	 */
-	private static function get_popup_geo_config( $popup_id ) {
-		$config = null;
+	private static function get_popup_targeting_settings( $popup_id ) {
+		$popup_id = absint( $popup_id );
+		if ( ! $popup_id ) {
+			return null;
+		}
 
-		$settings = self::get_popup_page_geo_settings( $popup_id );
-		if ( $settings && ! empty( $settings['enabled'] ) ) {
-			$config = array(
-				'countries'       => self::normalize_country_list( $settings['countries'] ),
-				'visibility_mode' => isset( $settings['visibility_mode'] ) ? (string) $settings['visibility_mode'] : 'show_if',
-				'source'          => 'page_settings',
-				'fallback_behavior' => isset( $settings['fallback_behavior'] ) ? (string) $settings['fallback_behavior'] : 'inherit',
-			);
+		$settings = array();
+		$page     = self::get_popup_page_geo_settings( $popup_id );
+		if ( is_array( $page ) && ! empty( $page['enabled'] ) ) {
+			$settings = $page;
 		}
 
 		if ( post_type_exists( 'geo_rule' ) ) {
@@ -333,27 +332,32 @@ class RWGC_Elementor_Popups {
 			);
 
 			if ( ! empty( $rules ) && ( $rules[0] instanceof WP_Post ) ) {
-				$rule_id       = (int) $rules[0]->ID;
-				$rule_mode     = 'show_if';
-				$rule_countries = self::normalize_country_list( get_post_meta( $rule_id, self::META_PREFIX . 'countries', true ) );
-				$portable_mode = self::rule_portable_visibility_mode( $rule_id );
-				if ( null !== $portable_mode ) {
-					$rule_mode = $portable_mode;
-				}
-
-				if ( null === $config ) {
-					$config = array(
-						'countries'       => $rule_countries,
-						'visibility_mode' => $rule_mode,
-						'source'          => 'geo_rule',
-					);
+				$rule_id = (int) $rules[0]->ID;
+				$portable = get_post_meta( $rule_id, self::META_PREFIX . 'portable_targeting', true );
+				if ( is_string( $portable ) && '' !== trim( $portable ) ) {
+					$settings['egp_enable_geo_targeting']        = 'yes';
+					$settings['egp_use_portable_geo_targeting']  = 'yes';
+					$settings['egp_portable_geo_targeting']        = $portable;
+					$portable_mode = self::rule_portable_visibility_mode( $rule_id );
+					if ( null !== $portable_mode ) {
+						$settings['rwgc_visibility_mode'] = $portable_mode;
+					}
 				} else {
-					$config['countries'] = array_values( array_unique( array_merge( $config['countries'], $rule_countries ) ) );
+					$rule_countries = get_post_meta( $rule_id, self::META_PREFIX . 'countries', true );
+					if ( is_array( $rule_countries ) && ! empty( $rule_countries ) ) {
+						$settings['egp_enable_geo_targeting'] = 'yes';
+						$existing                         = isset( $settings['egp_countries'] ) && is_array( $settings['egp_countries'] ) ? $settings['egp_countries'] : array();
+						$settings['egp_countries']        = array_values( array_unique( array_merge( $existing, $rule_countries ) ) );
+					}
 				}
 			}
 		}
 
-		return $config;
+		if ( empty( $settings ) || empty( $settings['egp_enable_geo_targeting'] ) ) {
+			return null;
+		}
+
+		return $settings;
 	}
 
 	/**
@@ -434,13 +438,33 @@ class RWGC_Elementor_Popups {
 			$countries = $page_settings['egp_countries'];
 		}
 
+		$use_portable = '';
+		if ( ! empty( $page_settings['rwgc_use_portable_geo_targeting'] ) && 'yes' === (string) $page_settings['rwgc_use_portable_geo_targeting'] ) {
+			$use_portable = 'yes';
+		} elseif ( ! empty( $page_settings['egp_use_portable_geo_targeting'] ) && 'yes' === (string) $page_settings['egp_use_portable_geo_targeting'] ) {
+			$use_portable = 'yes';
+		}
+
+		$portable_raw = '';
+		if ( ! empty( $page_settings['rwgc_portable_geo_targeting'] ) ) {
+			$portable_raw = (string) $page_settings['rwgc_portable_geo_targeting'];
+		} elseif ( ! empty( $page_settings['egp_portable_geo_targeting'] ) ) {
+			$portable_raw = (string) $page_settings['egp_portable_geo_targeting'];
+		}
+
 		return array(
-			'enabled'        => true,
-			'countries'      => $countries,
-			'visibility_mode' => function_exists( 'rwgc_normalize_visibility_mode' )
+			'enabled'                       => true,
+			'egp_enable_geo_targeting'        => 'yes',
+			'egp_countries'                   => $countries,
+			'rwgc_visibility_mode'            => function_exists( 'rwgc_normalize_visibility_mode' )
 				? rwgc_normalize_visibility_mode( isset( $page_settings['rwgc_visibility_mode'] ) ? $page_settings['rwgc_visibility_mode'] : ( isset( $page_settings['rwgc_geo_mode'] ) ? $page_settings['rwgc_geo_mode'] : 'show_if' ) )
 				: 'show_if',
-			'fallback_behavior' => isset( $page_settings['egp_fallback_behavior'] ) ? sanitize_key( (string) $page_settings['egp_fallback_behavior'] ) : 'inherit',
+			'egp_fallback_behavior'           => isset( $page_settings['egp_fallback_behavior'] ) ? sanitize_key( (string) $page_settings['egp_fallback_behavior'] ) : 'inherit',
+			'rwgc_use_portable_geo_targeting' => $use_portable,
+			'egp_use_portable_geo_targeting'  => $use_portable,
+			'rwgc_portable_geo_targeting'     => $portable_raw,
+			'egp_portable_geo_targeting'      => $portable_raw,
+			'rwgc_visibility_rule_library'  => isset( $page_settings['rwgc_visibility_rule_library'] ) ? (string) $page_settings['rwgc_visibility_rule_library'] : '',
 		);
 	}
 
@@ -470,12 +494,18 @@ class RWGC_Elementor_Popups {
 			if ( ! $settings || empty( $settings['enabled'] ) ) {
 				continue;
 			}
+			$countries = isset( $settings['egp_countries'] ) && is_array( $settings['egp_countries'] )
+				? self::normalize_country_list( $settings['egp_countries'] )
+				: array();
+			$mode      = isset( $settings['rwgc_visibility_mode'] ) ? (string) $settings['rwgc_visibility_mode'] : 'show_if';
+
 			$out[ $popup_id ] = array(
 				'id'                => $popup_id,
 				'title'             => get_the_title( $popup_id ),
-				'countries'         => $settings['countries'],
-				'visibility_mode' => $settings['visibility_mode'],
+				'countries'         => $countries,
+				'visibility_mode'   => $mode,
 				'source'            => 'page_settings',
+				'uses_portable'     => ! empty( $settings['rwgc_use_portable_geo_targeting'] ) && 'yes' === (string) $settings['rwgc_use_portable_geo_targeting'],
 			);
 		}
 
@@ -553,19 +583,48 @@ class RWGC_Elementor_Popups {
 	 * @return bool
 	 */
 	private static function is_debug_enabled() {
-		return class_exists( 'RWGC_Settings', false ) && (bool) RWGC_Settings::get( 'debug_mode', 0 );
+		return function_exists( 'rwgc_debug_targeting_enabled' ) && rwgc_debug_targeting_enabled();
 	}
 
 	/**
 	 * @param int                  $popup_id Popup template ID.
-	 * @param array<string, mixed> $line     Structured payload.
+	 * @param array<string, mixed> $settings Targeting settings.
+	 * @param array<string, mixed> $result   Evaluation result from surface evaluator.
 	 * @return void
 	 */
-	private static function debug_log_popup_decision( $popup_id, array $line ) {
+	private static function debug_log_popup_decision( $popup_id, array $settings, array $result ) {
 		if ( ! self::is_debug_enabled() || ! function_exists( 'error_log' ) ) {
 			return;
 		}
-		$line['popup_id'] = (int) $popup_id;
-		error_log( '[RWGC Popup Geo] ' . wp_json_encode( $line ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+
+		$visitor = function_exists( 'rwgc_get_visitor_data' ) ? rwgc_get_visitor_data() : array();
+		$cc      = isset( $visitor['country_code'] ) ? strtoupper( (string) $visitor['country_code'] ) : '';
+		$cn      = isset( $visitor['country_name'] ) ? (string) $visitor['country_name'] : '';
+		$city    = isset( $visitor['city'] ) ? (string) $visitor['city'] : '';
+		$region  = isset( $visitor['region'] ) ? (string) $visitor['region'] : '';
+		$ip      = isset( $visitor['ip'] ) ? (string) $visitor['ip'] : '';
+
+		$should_render = isset( $result['should_render'] ) ? (bool) $result['should_render'] : true;
+		$rules_match   = isset( $result['rules_match'] ) ? (bool) $result['rules_match'] : true;
+
+		$payload = array(
+			'popup_id'           => (int) $popup_id,
+			'popup_title'        => get_the_title( $popup_id ),
+			'current_url'        => function_exists( 'home_url' ) ? (string) wp_unslash( isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '' ) : '',
+			'detected_country'   => $cc . ( $cn ? ' (' . $cn . ')' : '' ),
+			'detected_city'      => $city,
+			'detected_region'    => $region,
+			'detected_ip'        => $ip,
+			'visibility_mode'    => isset( $result['visibility_mode'] ) ? (string) $result['visibility_mode'] : 'show_if',
+			'applied_rule_id'    => isset( $settings['rwgc_visibility_rule_library'] ) ? (string) $settings['rwgc_visibility_rule_library'] : '',
+			'applied_rule_source'=> isset( $result['rule_source'] ) ? (string) $result['rule_source'] : '',
+			'rule_json'          => isset( $result['rule_json'] ) ? (string) $result['rule_json'] : '',
+			'rule_match_result'  => $rules_match,
+			'popup_trigger_result' => $should_render ? 'allow' : 'block',
+			'final_decision'     => $should_render ? 'show' : 'suppress',
+			'reason'             => isset( $result['reason'] ) ? (string) $result['reason'] : '',
+		);
+
+		error_log( 'RWGC Popup Targeting Debug ' . wp_json_encode( $payload ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 	}
 }

@@ -100,9 +100,11 @@ class RWGC_Admin_Targeting_Rules_Index {
 			$countries   = get_post_meta( (int) $rule_post->ID, 'egp_countries', true );
 			$is_active   = '1' === (string) get_post_meta( (int) $rule_post->ID, 'egp_active', true ) || 'publish' === $rule_post->post_status;
 
-			$country_label = __( 'Any visitor', 'reactwoo-geocore' );
-			if ( is_array( $countries ) && ! empty( $countries ) ) {
+			$country_label = self::summarize_portable_meta( (int) $rule_post->ID, 'egp_portable_targeting' );
+			if ( __( 'No conditions saved', 'reactwoo-geocore' ) === $country_label && is_array( $countries ) && ! empty( $countries ) ) {
 				$country_label = implode( ', ', array_map( 'strval', $countries ) );
+			} elseif ( __( 'No conditions saved', 'reactwoo-geocore' ) === $country_label ) {
+				$country_label = __( 'Any visitor', 'reactwoo-geocore' );
 			}
 
 			$location = self::format_elementor_target( $target_type, $target_id );

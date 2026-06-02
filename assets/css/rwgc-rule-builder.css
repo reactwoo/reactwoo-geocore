@@ -259,6 +259,13 @@
 	display: inline-block;
 	margin-right: 4px;
 }
+.elementor-control-egp_portable_geo_targeting.rwgc-rb-textarea-hidden .elementor-control-title,
+.elementor-control-egp_portable_geo_targeting.rwgc-rb-textarea-hidden .elementor-control-description,
+.elementor-control-rwgc_portable_geo_targeting.rwgc-rb-textarea-hidden .elementor-control-title,
+.elementor-control-rwgc_portable_geo_targeting.rwgc-rb-textarea-hidden .elementor-control-description {
+	display: none !important;
+}
+.elementor-control-egp_portable_geo_targeting.rwgc-rb-textarea-hidden textarea,
 .elementor-control-rwgc_portable_geo_targeting.rwgc-rb-textarea-hidden textarea,
 .rwgc-rb-mount-wrap.rwgc-rb-textarea-hidden textarea,
 .interface-complementary-area .rwgc-rb-mount-wrap.rwgc-rb-textarea-hidden textarea {

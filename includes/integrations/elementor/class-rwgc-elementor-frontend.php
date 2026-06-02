@@ -63,18 +63,9 @@ class RWGC_Elementor_Frontend {
 	 * @return bool
 	 */
 	public static function settings_match_visitor( array $settings ) {
-		if ( ! empty( $settings['egp_use_portable_geo_targeting'] ) && 'yes' === (string) $settings['egp_use_portable_geo_targeting'] ) {
-			$raw = isset( $settings['egp_portable_geo_targeting'] ) ? (string) $settings['egp_portable_geo_targeting'] : '';
-			if ( '' !== trim( $raw )
-				&& class_exists( 'RWGC_Targeting_Rule_Set_Schema', false )
-				&& class_exists( 'RWGC_Rule_Evaluator', false )
-				&& class_exists( 'RWGC_Context_Resolver', false ) ) {
-				$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $raw );
-				if ( is_array( $set ) ) {
-					$snapshot = RWGC_Context_Resolver::resolve_current();
-					return RWGC_Rule_Evaluator::matches( $set, $snapshot );
-				}
-			}
+		if ( class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
+			$result = RWGC_Targeting_Surface_Evaluator::evaluate( $settings );
+			return (bool) $result['rules_match'];
 		}
 
 		$countries = self::parse_countries( $settings );
@@ -95,6 +86,14 @@ class RWGC_Elementor_Frontend {
 	 * @return bool
 	 */
 	public static function settings_should_render( array $settings ) {
+		if ( class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
+			$result = RWGC_Targeting_Surface_Evaluator::evaluate( $settings );
+			if ( ! $result['targeting_enabled'] ) {
+				return true;
+			}
+			return (bool) $result['should_render'];
+		}
+
 		$matched = self::settings_match_visitor( $settings );
 		if ( function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
 			$mode = isset( $settings['rwgc_visibility_mode'] ) ? $settings['rwgc_visibility_mode'] : ( isset( $settings['rwgc_geo_mode'] ) ? $settings['rwgc_geo_mode'] : 'show_if' );
