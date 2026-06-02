@@ -15,6 +15,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Registers Geo Targeting section on sections, columns, containers, widgets, popups.
  */
 class RWGC_Elementor_Elements {
+	/**
+	 * Guards duplicate control injection when Elementor fires the same stack hook more than once.
+	 *
+	 * @var array<string, bool>
+	 */
+	private static $registered_stack_instances = array();
 
 	/**
 	 * @return void
@@ -124,6 +130,19 @@ class RWGC_Elementor_Elements {
 		$controls = $element->get_controls();
 		if ( is_array( $controls ) && isset( $controls['egp_geo_tools'] ) ) {
 			return;
+		}
+		$stack_guard_key = '';
+		if ( method_exists( $element, 'get_unique_name' ) ) {
+			$stack_guard_key = (string) $element->get_unique_name();
+		}
+		if ( '' === $stack_guard_key && function_exists( 'spl_object_hash' ) ) {
+			$stack_guard_key = spl_object_hash( $element );
+		}
+		if ( '' !== $stack_guard_key ) {
+			if ( isset( self::$registered_stack_instances[ $stack_guard_key ] ) ) {
+				return;
+			}
+			self::$registered_stack_instances[ $stack_guard_key ] = true;
 		}
 
 		$advanced = function_exists( 'rwgc_advanced_targeting_enabled' ) && rwgc_advanced_targeting_enabled();
