@@ -226,6 +226,12 @@ class RWGC_Satellite_Updater {
 		$headers = array(
 			'Content-Type' => 'application/json',
 		);
+		$debug_context = array(
+			'slug'               => (string) $catalog_slug,
+			'current_version'    => (string) $current_version,
+			'attach_bearer'      => (bool) $attach_bearer_token,
+			'requested_sitehost' => '',
+		);
 		if ( $attach_bearer_token ) {
 			$bearer = self::item_bearer_for_updates( $cfg );
 			if ( null === $bearer ) {
@@ -236,6 +242,8 @@ class RWGC_Satellite_Updater {
 				 * @param array<string, mixed> $cfg          Item config.
 				 */
 				do_action( 'rwgc_satellite_updater_no_bearer', $catalog_slug, $cfg );
+				$debug_context['result'] = 'no_bearer';
+				self::debug_log( $debug_context );
 				return null;
 			}
 			$headers['Authorization'] = 'Bearer ' . $bearer;
@@ -251,6 +259,7 @@ class RWGC_Satellite_Updater {
 		if ( '' === $site_host ) {
 			$site_host = 'localhost';
 		}
+		$debug_context['requested_sitehost'] = $site_host;
 
 		$body = array(
 			'slug'            => $catalog_slug,
@@ -277,6 +286,9 @@ class RWGC_Satellite_Updater {
 			 * @param array<string, mixed> $cfg          Item config.
 			 */
 			do_action( 'rwgc_satellite_updater_check_transport_error', $catalog_slug, $response, $cfg );
+			$debug_context['result']          = 'transport_error';
+			$debug_context['transport_error'] = $response->get_error_message();
+			self::debug_log( $debug_context );
 			return null;
 		}
 
@@ -294,15 +306,25 @@ class RWGC_Satellite_Updater {
 		 * @param array<string, mixed> $cfg          Item config.
 		 */
 		do_action( 'rwgc_satellite_updater_check_http', $catalog_slug, $http_code, $raw_body, $data, $cfg );
+		$debug_context['http_code'] = $http_code;
 
 		if ( 200 !== $http_code ) {
+			$debug_context['result'] = 'http_non_200';
+			$debug_context['body']   = self::compact_json_for_log( $raw_body );
+			self::debug_log( $debug_context );
 			return null;
 		}
 
 		if ( ! is_array( $data ) || empty( $data['update'] ) || empty( $data['version'] ) || empty( $data['download_url'] ) ) {
+			$debug_context['result'] = 'no_update_payload';
+			$debug_context['body']   = self::compact_json_for_log( $raw_body );
+			self::debug_log( $debug_context );
 			return null;
 		}
 		if ( version_compare( $current_version, (string) $data['version'], '>=' ) ) {
+			$debug_context['result']         = 'already_up_to_date';
+			$debug_context['offered_version'] = (string) $data['version'];
+			self::debug_log( $debug_context );
 			return null;
 		}
 
@@ -316,8 +338,50 @@ class RWGC_Satellite_Updater {
 		if ( ! empty( $data['min_wp'] ) ) {
 			$out['requires'] = (string) $data['min_wp'];
 		}
+		$debug_context['result']          = 'update_available';
+		$debug_context['offered_version'] = (string) $data['version'];
+		self::debug_log( $debug_context );
 
 		return $out;
+	}
+
+	/**
+	 * @return bool
+	 */
+	private static function is_debug_enabled() {
+		return class_exists( 'RWGC_Settings', false ) && (bool) RWGC_Settings::get( 'debug_mode', 0 );
+	}
+
+	/**
+	 * @param array<string, mixed> $line Diagnostic payload.
+	 * @return void
+	 */
+	private static function debug_log( array $line ) {
+		if ( ! self::is_debug_enabled() || ! function_exists( 'error_log' ) ) {
+			return;
+		}
+		error_log( '[RWGC Updater] ' . wp_json_encode( $line ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+	}
+
+	/**
+	 * Keep API bodies readable and bounded in debug logs.
+	 *
+	 * @param string $raw Raw response body.
+	 * @return string
+	 */
+	private static function compact_json_for_log( $raw ) {
+		$raw = trim( (string) $raw );
+		if ( '' === $raw ) {
+			return '';
+		}
+		$data = json_decode( $raw, true );
+		if ( is_array( $data ) ) {
+			$encoded = wp_json_encode( $data );
+			if ( is_string( $encoded ) ) {
+				return strlen( $encoded ) > 800 ? substr( $encoded, 0, 800 ) . '…' : $encoded;
+			}
+		}
+		return strlen( $raw ) > 800 ? substr( $raw, 0, 800 ) . '…' : $raw;
 	}
 
 	/**
