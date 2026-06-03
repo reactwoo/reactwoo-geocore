@@ -1,9 +1,8 @@
 name: Geo Core tests
 
+# Run on PRs only — not on every push to main. Tag pushes already run publish-update.yml;
+# a separate push-to-main test job duplicated work and slowed agent releases on Windows.
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main

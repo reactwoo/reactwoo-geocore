@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.20
+Stable tag: 1.8.21
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,8 +32,8 @@ It is designed to be used on its own, or as a shared geo engine for premium Reac
 
 1. Upload the plugin files to the `/wp-content/plugins/reactwoo-geocore` directory, or install via WordPress plugin upload.
 2. Activate the plugin through the 'Plugins' screen in WordPress.
-3. Go to **Geo Core → Settings** and enter your **MaxMind** (GeoLite2) account credentials. This is a third-party MaxMind license for downloading the database — not a ReactWoo product license. Core geo works without any ReactWoo key.
-4. Use the **Tools** tab to download/update the database and test lookups.
+3. Go to **Geo → Integrations → MaxMind (GeoLite2)** and enter your **MaxMind** account credentials. This is a third-party MaxMind license for downloading the database — not a ReactWoo product license. Core geo works without any ReactWoo key.
+4. Download or upload the country database and test visitor detection on the same screen.
 
 == Usage ==
 
@@ -78,6 +78,10 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.21 =
+* **Release workflow:** Document single-push releases (`main` + tag); CI tests run on pull requests only so tag publishes are not preceded by a redundant main-branch test job.
+* **Agent guidance:** Added `.cursor/rules/release.mdc` for reliable Windows/git release steps.
 
 = 1.8.20 =
 * **MaxMind in Integrations:** New **Integrations → System services → MaxMind (GeoLite2)** screen for Account ID, license key, database download/refresh, manual `.mmdb` upload, cache clear, and visitor detection tests.
