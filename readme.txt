@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.26
+Stable tag: 1.8.27
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.27 =
+* **Elementor popups:** Stop calling `document.disable()` on every hide (was blocking geo-matched popups from triggering). User close uses a short in-memory reopen suppress only; geo still enforced server-side.
 
 = 1.8.26 =
 * **Elementor popups (close):** On dismiss, call Elementor `document.disable()` so timing triggers stop re-opening; resolve popup ID from modal `#elementor-popup-modal-{id}`; close capture runs `forceClosePopup()` (hide + disable); lazy-patch documents on `elementor/popup/show`; keep patching documents for 30s.
