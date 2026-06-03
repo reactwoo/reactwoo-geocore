@@ -154,7 +154,7 @@ class RWGC_Elementor_Elements {
 				$element,
 				array(
 					'section_id'   => 'egp_geo_tools',
-					'countries_ui' => 'native',
+					'countries_ui' => 'select2',
 				)
 			);
 		}

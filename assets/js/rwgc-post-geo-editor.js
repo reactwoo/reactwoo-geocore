@@ -6,11 +6,14 @@
 	var registerPlugin = wp.plugins.registerPlugin;
 	var PluginDocumentSettingPanel = wp.editPost.PluginDocumentSettingPanel;
 	var el = wp.element.createElement;
+	var Fragment = wp.element.Fragment;
 	var useSelect = wp.data.useSelect;
 	var useDispatch = wp.data.useDispatch;
+	var useState = wp.element.useState;
 	var ToggleControl = wp.components.ToggleControl;
 	var SelectControl = wp.components.SelectControl;
-	var PanelRow = wp.components.PanelRow;
+	var ComboboxControl = wp.components.ComboboxControl;
+	var Button = wp.components.Button;
 	var useEffect = wp.element.useEffect;
 
 	function PostGeoPanel() {
@@ -42,8 +45,40 @@
 		var portable = metaValues[ meta.portable ] || '';
 
 		var countryOptions = Object.keys( config.countries || {} ).map( function ( code ) {
-			return { label: config.countries[ code ], value: code };
+			return {
+				label: ( config.countries[ code ] || code ) + ' (' + code + ')',
+				value: code,
+			};
 		} );
+
+		var comboOptions = countryOptions.filter( function ( opt ) {
+			return countries.indexOf( opt.value ) === -1;
+		} );
+
+		var [ comboKey, setComboKey ] = useState( 0 );
+
+		function updateMeta( key, value ) {
+			var next = Object.assign( {}, metaValues );
+			next[ key ] = value;
+			editPost( { meta: next } );
+		}
+
+		function addCountry( code ) {
+			if ( ! code || countries.indexOf( code ) !== -1 ) {
+				return;
+			}
+			updateMeta( meta.countries, countries.concat( [ code ] ) );
+			setComboKey( comboKey + 1 );
+		}
+
+		function removeCountry( code ) {
+			updateMeta(
+				meta.countries,
+				countries.filter( function ( c ) {
+					return c !== code;
+				} )
+			);
+		}
 
 		useEffect(
 			function () {
@@ -65,12 +100,6 @@
 			[ config.advancedTargeting, visibilityOn, visibilityMode ]
 		);
 
-		function updateMeta( key, value ) {
-			var next = Object.assign( {}, metaValues );
-			next[ key ] = value;
-			editPost( { meta: next } );
-		}
-
 		var active = countryOn || visibilityOn;
 
 		return el(
@@ -80,7 +109,7 @@
 				title: 'Geo visibility',
 				className: 'rwgc-post-geo-panel',
 			},
-			el( 'p', { className: 'description' }, 'Match Elementor document Geo Visibility: country and visibility rules are independent layers.' ),
+			el( 'p', { className: 'description' }, 'Match Elementor page Geo Visibility: search and add countries; visibility rules are a separate layer.' ),
 			el( 'p', { style: { fontWeight: 600, marginBottom: 4 } }, 'Country targeting' ),
 			el( ToggleControl, {
 				label: 'Enable country targeting',
@@ -102,18 +131,52 @@
 					},
 				} ),
 			countryOn &&
-				el( SelectControl, {
-					label: 'Countries',
-					value: countries,
-					multiple: true,
-					options: countryOptions,
-					onChange: function ( val ) {
-						updateMeta( meta.countries, val || [] );
-					},
-				} ),
+				el(
+					Fragment,
+					null,
+					el( 'p', { className: 'components-base-control__help' }, 'Search the list and pick countries to add.' ),
+					el( ComboboxControl, {
+						key: 'rwgc-post-combo-' + comboKey,
+						label: 'Add country',
+						options: comboOptions,
+						value: null,
+						onChange: addCountry,
+					} ),
+					countries.length > 0 &&
+						el(
+							'ul',
+							{
+								className: 'rwgc-selected-countries',
+								style: { listStyle: 'none', paddingLeft: 0, marginTop: '8px' },
+							},
+							countries.map( function ( code ) {
+								return el(
+									'li',
+									{
+										key: code,
+										style: {
+											display: 'flex',
+											alignItems: 'center',
+											gap: '8px',
+											marginBottom: '6px',
+											flexWrap: 'wrap',
+										},
+									},
+									el( 'span', null, el( 'strong', null, code ), ' — ', config.countries[ code ] || code ),
+									el( Button, {
+										isSmall: true,
+										isDestructive: true,
+										onClick: function () {
+											removeCountry( code );
+										},
+									}, 'Remove' )
+								);
+							} )
+						)
+				),
 			config.advancedTargeting &&
 				el(
-					PanelRow,
+					Fragment,
 					null,
 					el( 'p', { style: { fontWeight: 600, margin: '12px 0 4px' } }, 'Visibility rules' ),
 					el( ToggleControl, {

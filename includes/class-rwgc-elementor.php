@@ -118,7 +118,7 @@ class RWGC_Elementor {
 				'multiple'    => true,
 				'label_block' => true,
 				'options'     => self::get_country_options(),
-				'description' => __( 'Optional. No selection means all countries.', 'reactwoo-geocore' ),
+				'description' => __( 'Search and pick countries. Leave empty for all countries.', 'reactwoo-geocore' ),
 				'condition'   => array(
 					'egp_enable_geo_targeting' => 'yes',
 				),

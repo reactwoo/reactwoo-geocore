@@ -18,7 +18,7 @@ class RWGC_Elementor_Geo_Controls {
 	 * @param \Elementor\Element_Base $element Element.
 	 * @param array<string, mixed>    $args {
 	 *     @type string $section_id Section control id.
-	 *     @type string $countries_ui native|select2
+	 *     @type string $countries_ui select2|native (select2 matches document/page settings; native is legacy)
 	 * }
 	 * @return void
 	 */
@@ -141,22 +141,23 @@ class RWGC_Elementor_Geo_Controls {
 					),
 				)
 			);
-		} else {
-			$element->add_control(
-				'egp_countries',
-				array(
-					'label'       => __( 'Countries', 'reactwoo-geocore' ),
-					'type'        => \Elementor\Controls_Manager::SELECT2,
-					'multiple'    => true,
-					'label_block' => true,
-					'options'     => self::get_country_options(),
-					'description' => __( 'Optional. No selection means all countries.', 'reactwoo-geocore' ),
-					'condition'   => array(
-						'egp_enable_geo_targeting' => 'yes',
-					),
-				)
-			);
+			return;
 		}
+
+		$element->add_control(
+			'egp_countries',
+			array(
+				'label'       => __( 'Countries', 'reactwoo-geocore' ),
+				'type'        => \Elementor\Controls_Manager::SELECT2,
+				'multiple'    => true,
+				'label_block' => true,
+				'options'     => self::get_country_options(),
+				'description' => __( 'Search and pick countries (same as page and popup settings). Leave empty for all countries.', 'reactwoo-geocore' ),
+				'condition'   => array(
+					'egp_enable_geo_targeting' => 'yes',
+				),
+			)
+		);
 	}
 
 	/**
