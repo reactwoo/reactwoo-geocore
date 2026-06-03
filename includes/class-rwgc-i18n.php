@@ -20,7 +20,17 @@ class RWGC_I18n {
 	private static $bootstrapped = array();
 
 	/**
-	 * Schedule textdomain load at init priority 0 (WordPress 6.7+ safe).
+	 * @var array<string, string> text_domain => plugin __FILE__
+	 */
+	private static $queue = array();
+
+	/**
+	 * @var bool
+	 */
+	private static $init_hook_added = false;
+
+	/**
+	 * Schedule textdomain load at init priority -1 (before Elementor init at 0).
 	 *
 	 * @param string $plugin_file Main plugin file path (__FILE__).
 	 * @param string $text_domain Text domain slug.
@@ -32,14 +42,27 @@ class RWGC_I18n {
 			return;
 		}
 		self::$bootstrapped[ $text_domain ] = true;
+		self::$queue[ $text_domain ]       = (string) $plugin_file;
 
-		add_action(
-			'init',
-			static function () use ( $plugin_file, $text_domain ) {
-				self::load_textdomain( $plugin_file, $text_domain );
-			},
-			0
-		);
+		if ( ! self::$init_hook_added ) {
+			self::$init_hook_added = true;
+			add_action( 'init', array( __CLASS__, 'load_all_bootstrapped' ), -1 );
+		}
+
+		if ( did_action( 'init' ) ) {
+			self::load_textdomain( $plugin_file, $text_domain );
+		}
+	}
+
+	/**
+	 * Load every queued suite textdomain in one early init pass.
+	 *
+	 * @return void
+	 */
+	public static function load_all_bootstrapped() {
+		foreach ( self::$queue as $text_domain => $plugin_file ) {
+			self::load_textdomain( $plugin_file, $text_domain );
+		}
 	}
 
 	/**
