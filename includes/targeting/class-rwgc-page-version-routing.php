@@ -33,6 +33,7 @@ class RWGC_Page_Version_Routing {
 		add_filter( 'query_vars', array( __CLASS__, 'register_query_var' ) );
 		add_filter( 'request', array( __CLASS__, 'filter_request' ), 1 );
 		add_action( 'pre_get_posts', array( __CLASS__, 'pre_get_posts' ), 1 );
+		add_action( 'wp', array( __CLASS__, 'reset_context_snapshot_cache' ), 1 );
 		add_filter( 'rwgc_context_snapshot_values', array( __CLASS__, 'filter_snapshot_values' ), 20 );
 		add_filter( 'wp_robots', array( __CLASS__, 'filter_robots_noindex' ), 20 );
 		add_action( 'wp_head', array( __CLASS__, 'maybe_output_canonical' ), 1 );
@@ -153,14 +154,41 @@ class RWGC_Page_Version_Routing {
 			$merged = array();
 		}
 
-		$version  = get_query_var( self::QUERY_VAR );
-		$error    = '';
-		$version  = RWGC_Page_Version::sanitize_version_name( is_string( $version ) ? $version : '', $error );
-		$pagename = get_query_var( 'pagename' );
-		$page_id  = 0;
+		$pv = self::get_request_page_version_context();
+		$merged['page_version']           = (string) ( $pv['page_version'] ?? '' );
+		$merged['page_version_page_id']   = (int) ( $pv['page_version_page_id'] ?? 0 );
+		$merged['page_version_active']    = ! empty( $pv['page_version_active'] );
+		$merged['page_version_base_path'] = (string) ( $pv['page_version_base_path'] ?? '' );
 
+		return $merged;
+	}
+
+	/**
+	 * Resolve Page Version URL context for the current HTTP request.
+	 *
+	 * @return array{page_version:string,page_version_page_id:int,page_version_active:bool,page_version_base_path:string}
+	 */
+	public static function get_request_page_version_context() {
+		$error    = '';
+		$version  = '';
+		$pagename = '';
+		$parsed   = self::parse_request_path();
+
+		if ( is_array( $parsed ) ) {
+			$version  = RWGC_Page_Version::sanitize_version_name( (string) $parsed['version'], $error );
+			$pagename = (string) $parsed['pagename'];
+		}
+
+		if ( '' === $version ) {
+			$version = RWGC_Page_Version::sanitize_version_name( (string) get_query_var( self::QUERY_VAR ), $error );
+		}
+		if ( '' === $pagename ) {
+			$pagename = (string) get_query_var( 'pagename' );
+		}
+
+		$page_id = 0;
 		if ( '' !== $version ) {
-			if ( is_string( $pagename ) && '' !== trim( $pagename ) ) {
+			if ( '' !== trim( $pagename ) ) {
 				$page_id = RWGC_Page_Version::resolve_post_id_from_path( $pagename );
 			}
 			if ( $page_id <= 0 && function_exists( 'get_queried_object_id' ) ) {
@@ -168,25 +196,23 @@ class RWGC_Page_Version_Routing {
 			}
 		}
 
-		// Early requests (e.g. Elementor popup should_show) may not have query vars yet.
-		if ( ( '' === $version || $page_id <= 0 ) && class_exists( 'RWGC_Page_Version_Routing', false ) ) {
-			$parsed = self::parse_request_path();
-			if ( is_array( $parsed ) ) {
-				if ( '' === $version && ! empty( $parsed['version'] ) ) {
-					$version = RWGC_Page_Version::sanitize_version_name( (string) $parsed['version'], $error );
-				}
-				if ( $page_id <= 0 && ! empty( $parsed['pagename'] ) ) {
-					$page_id = RWGC_Page_Version::resolve_post_id_from_path( (string) $parsed['pagename'] );
-				}
-			}
+		return array(
+			'page_version'           => $version,
+			'page_version_page_id'   => $page_id > 0 ? $page_id : 0,
+			'page_version_active'    => ( '' !== $version && $page_id > 0 ),
+			'page_version_base_path' => $page_id > 0 ? RWGC_Page_Version::get_post_relative_path( $page_id ) : '',
+		);
+	}
+
+	/**
+	 * Rebuild visitor snapshot after the main query knows the base page.
+	 *
+	 * @return void
+	 */
+	public static function reset_context_snapshot_cache() {
+		if ( class_exists( 'RWGC_Context_Resolver', false ) ) {
+			RWGC_Context_Resolver::reset_cache();
 		}
-
-		$merged['page_version']            = $version;
-		$merged['page_version_page_id']    = $page_id > 0 ? $page_id : 0;
-		$merged['page_version_active']     = ( '' !== $version && $page_id > 0 );
-		$merged['page_version_base_path']  = $page_id > 0 ? RWGC_Page_Version::get_post_relative_path( $page_id ) : '';
-
-		return $merged;
 	}
 
 	/**

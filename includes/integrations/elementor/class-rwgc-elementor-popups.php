@@ -70,14 +70,14 @@ class RWGC_Elementor_Popups {
 			return null;
 		}
 
-		if ( ! RWGC_Targeting_Surface_Evaluator::is_targeting_enabled( $settings ) ) {
+		if ( ! RWGC_Targeting_Surface_Evaluator::is_surface_active( $settings ) ) {
 			return null;
 		}
 
 		$visitor = function_exists( 'rwgc_get_visitor_data' ) ? rwgc_get_visitor_data() : array();
 		$cc      = isset( $visitor['country_code'] ) ? strtoupper( (string) $visitor['country_code'] ) : strtoupper( (string) rwgc_get_visitor_country() );
 
-		if ( '' === $cc && 'country_list' === self::peek_evaluation_reason( $settings ) ) {
+		if ( '' === $cc && 'country_list' === RWGC_Targeting_Surface_Evaluator::get_primary_evaluation_reason( $settings ) ) {
 			$fallback_decision = self::resolve_unknown_country_fallback(
 				isset( $settings['egp_fallback_behavior'] ) ? (string) $settings['egp_fallback_behavior'] : 'inherit'
 			);
@@ -95,21 +95,6 @@ class RWGC_Elementor_Popups {
 		self::debug_log_popup_decision( $popup_id, $settings, $result );
 
 		return $decision;
-	}
-
-	/**
-	 * @param array<string, mixed> $settings Popup targeting settings.
-	 * @return string
-	 */
-	private static function peek_evaluation_reason( array $settings ) {
-		if ( ! class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
-			return '';
-		}
-		if ( RWGC_Targeting_Surface_Evaluator::uses_portable_rules( $settings ) ) {
-			return 'portable_rules';
-		}
-		$countries = RWGC_Targeting_Surface_Evaluator::parse_countries( $settings );
-		return empty( $countries ) ? 'targeting_enabled_empty_rules' : 'country_list';
 	}
 
 	/**
@@ -353,7 +338,7 @@ class RWGC_Elementor_Popups {
 			}
 		}
 
-		if ( empty( $settings ) || empty( $settings['egp_enable_geo_targeting'] ) ) {
+		if ( empty( $settings ) || ! class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) || ! RWGC_Targeting_Surface_Evaluator::is_surface_active( $settings ) ) {
 			return null;
 		}
 
@@ -422,14 +407,20 @@ class RWGC_Elementor_Popups {
 			return false;
 		}
 
-		$enabled = false;
-		if ( ! empty( $page_settings['egp_enable_geo_targeting'] ) && 'yes' === (string) $page_settings['egp_enable_geo_targeting'] ) {
-			$enabled = true;
-		} elseif ( ! empty( $page_settings['egp_geo_enabled'] ) && 'yes' === (string) $page_settings['egp_geo_enabled'] ) {
-			$enabled = true;
-		}
+		$country_on = ( ! empty( $page_settings['egp_enable_geo_targeting'] ) && 'yes' === (string) $page_settings['egp_enable_geo_targeting'] )
+			|| ( ! empty( $page_settings['egp_geo_enabled'] ) && 'yes' === (string) $page_settings['egp_geo_enabled'] );
 
-		if ( ! $enabled ) {
+		$use_portable = ( ! empty( $page_settings['rwgc_enable_visibility_rules'] ) && 'yes' === (string) $page_settings['rwgc_enable_visibility_rules'] )
+			|| ( ! empty( $page_settings['rwgc_use_portable_geo_targeting'] ) && 'yes' === (string) $page_settings['rwgc_use_portable_geo_targeting'] )
+			|| ( ! empty( $page_settings['egp_use_portable_geo_targeting'] ) && 'yes' === (string) $page_settings['egp_use_portable_geo_targeting'] );
+
+		$has_portable_data = $use_portable
+			|| ! empty( $page_settings['rwgc_applied_visibility_rule_id'] )
+			|| ! empty( $page_settings['rwgc_visibility_rule_library'] )
+			|| ! empty( $page_settings['rwgc_portable_geo_targeting'] )
+			|| ! empty( $page_settings['egp_portable_geo_targeting'] );
+
+		if ( ! $country_on && ! $has_portable_data ) {
 			return false;
 		}
 
@@ -438,10 +429,8 @@ class RWGC_Elementor_Popups {
 			$countries = $page_settings['egp_countries'];
 		}
 
-		$use_portable = '';
-		if ( ! empty( $page_settings['rwgc_use_portable_geo_targeting'] ) && 'yes' === (string) $page_settings['rwgc_use_portable_geo_targeting'] ) {
-			$use_portable = 'yes';
-		} elseif ( ! empty( $page_settings['egp_use_portable_geo_targeting'] ) && 'yes' === (string) $page_settings['egp_use_portable_geo_targeting'] ) {
+		$use_portable = $use_portable ? 'yes' : '';
+		if ( ! empty( $page_settings['rwgc_enable_visibility_rules'] ) && 'yes' === (string) $page_settings['rwgc_enable_visibility_rules'] ) {
 			$use_portable = 'yes';
 		}
 
@@ -454,11 +443,12 @@ class RWGC_Elementor_Popups {
 
 		return array(
 			'enabled'                       => true,
-			'egp_enable_geo_targeting'        => 'yes',
+			'egp_enable_geo_targeting'        => $country_on ? 'yes' : '',
 			'egp_countries'                   => $countries,
-			'rwgc_visibility_mode'            => function_exists( 'rwgc_normalize_visibility_mode' )
-				? rwgc_normalize_visibility_mode( isset( $page_settings['rwgc_visibility_mode'] ) ? $page_settings['rwgc_visibility_mode'] : ( isset( $page_settings['rwgc_geo_mode'] ) ? $page_settings['rwgc_geo_mode'] : 'show_if' ) )
-				: 'show_if',
+			'rwgc_enable_visibility_rules'    => ! empty( $page_settings['rwgc_enable_visibility_rules'] ) ? (string) $page_settings['rwgc_enable_visibility_rules'] : ( 'yes' === $use_portable ? 'yes' : '' ),
+			'rwgc_country_visibility_mode'    => isset( $page_settings['rwgc_country_visibility_mode'] ) ? (string) $page_settings['rwgc_country_visibility_mode'] : ( isset( $page_settings['rwgc_visibility_mode'] ) ? (string) $page_settings['rwgc_visibility_mode'] : 'show_if' ),
+			'rwgc_visibility_rules_mode'    => isset( $page_settings['rwgc_visibility_rules_mode'] ) ? (string) $page_settings['rwgc_visibility_rules_mode'] : ( isset( $page_settings['rwgc_visibility_mode'] ) ? (string) $page_settings['rwgc_visibility_mode'] : 'show_if' ),
+			'rwgc_visibility_mode'            => isset( $page_settings['rwgc_visibility_mode'] ) ? (string) $page_settings['rwgc_visibility_mode'] : 'show_if',
 			'egp_fallback_behavior'           => isset( $page_settings['egp_fallback_behavior'] ) ? sanitize_key( (string) $page_settings['egp_fallback_behavior'] ) : 'inherit',
 			'rwgc_use_portable_geo_targeting' => $use_portable,
 			'egp_use_portable_geo_targeting'  => $use_portable,

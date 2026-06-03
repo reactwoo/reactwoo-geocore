@@ -225,16 +225,40 @@ class RWGC_Elementor_Elements {
 
 		if ( $advanced ) {
 			$element->add_control(
-				'egp_use_portable_geo_targeting',
+				'rwgc_enable_visibility_rules',
 				array(
-					'label'        => __( 'Use visibility rule builder', 'reactwoo-geocore' ),
+					'label'        => __( 'Enable visibility rules', 'reactwoo-geocore' ),
 					'type'         => \Elementor\Controls_Manager::SWITCHER,
-					'label_on'     => __( 'Yes', 'reactwoo-geocore' ),
-					'label_off'    => __( 'No', 'reactwoo-geocore' ),
+					'label_on'     => __( 'On', 'reactwoo-geocore' ),
+					'label_off'    => __( 'Off', 'reactwoo-geocore' ),
 					'return_value' => 'yes',
 					'default'      => '',
-					'description'  => __( 'Add portable conditions in addition to countries above. Both must match when both are set.', 'reactwoo-geocore' ),
-					'condition'    => array( 'egp_geo_enabled' => 'yes' ),
+					'description'  => __( 'Independent of country targeting above.', 'reactwoo-geocore' ),
+				)
+			);
+
+			$element->add_control(
+				'rwgc_visibility_rules_mode',
+				array(
+					'label'     => __( 'Visibility rules mode', 'reactwoo-geocore' ),
+					'type'      => \Elementor\Controls_Manager::SELECT,
+					'default'   => 'show_if',
+					'options'   => array(
+						'show_if' => __( 'Show only when rules match', 'reactwoo-geocore' ),
+						'hide_if' => __( 'Hide when rules match', 'reactwoo-geocore' ),
+					),
+					'condition' => array(
+						'rwgc_enable_visibility_rules' => 'yes',
+					),
+				)
+			);
+
+			$element->add_control(
+				'egp_use_portable_geo_targeting',
+				array(
+					'type'         => \Elementor\Controls_Manager::HIDDEN,
+					'default'      => '',
+					'return_value' => 'yes',
 				)
 			);
 
@@ -245,10 +269,9 @@ class RWGC_Elementor_Elements {
 					'type'        => \Elementor\Controls_Manager::SELECT,
 					'options'     => self::get_visibility_library_select_options(),
 					'label_block' => true,
-					'description' => __( 'Portable library rules only. Combines with countries above when both are set.', 'reactwoo-geocore' ),
+					'description' => __( 'Portable library rules only.', 'reactwoo-geocore' ),
 					'condition'   => array(
-						'egp_geo_enabled'                => 'yes',
-						'egp_use_portable_geo_targeting' => 'yes',
+						'rwgc_enable_visibility_rules' => 'yes',
 					),
 				)
 			);
@@ -259,8 +282,7 @@ class RWGC_Elementor_Elements {
 					'type'      => \Elementor\Controls_Manager::HIDDEN,
 					'default'   => '',
 					'condition' => array(
-						'egp_geo_enabled'                => 'yes',
-						'egp_use_portable_geo_targeting' => 'yes',
+						'rwgc_enable_visibility_rules' => 'yes',
 					),
 				)
 			);
@@ -273,8 +295,7 @@ class RWGC_Elementor_Elements {
 					'label_block' => true,
 					'classes'     => 'egp-portable-geo-targeting-textarea rwgc-rb-textarea-hidden',
 					'condition'   => array(
-						'egp_geo_enabled'                => 'yes',
-						'egp_use_portable_geo_targeting' => 'yes',
+						'rwgc_enable_visibility_rules' => 'yes',
 					),
 				)
 			);

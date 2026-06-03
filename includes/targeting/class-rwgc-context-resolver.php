@@ -27,6 +27,9 @@ class RWGC_Context_Resolver {
 	 * @return RWGC_Context_Snapshot
 	 */
 	public static function resolve_current() {
+		if ( null !== self::$current && self::should_invalidate_cached_snapshot() ) {
+			self::$current = null;
+		}
 		if ( null !== self::$current ) {
 			return self::$current;
 		}
@@ -215,5 +218,21 @@ class RWGC_Context_Resolver {
 	 */
 	public static function reset_cache() {
 		self::$current = null;
+	}
+
+	/**
+	 * Drop cache when it was built before Page Version URL context was available.
+	 *
+	 * @return bool
+	 */
+	private static function should_invalidate_cached_snapshot() {
+		if ( ! class_exists( 'RWGC_Page_Version_Routing', false ) ) {
+			return false;
+		}
+		$ctx = RWGC_Page_Version_Routing::get_request_page_version_context();
+		if ( empty( $ctx['page_version_active'] ) ) {
+			return false;
+		}
+		return ! (bool) self::$current->get( 'page_version_active', false );
 	}
 }

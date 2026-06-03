@@ -50,7 +50,22 @@
 		}
 	}
 
+	function syncVisibilityRulesToggle($panel) {
+		var on = $panel.find('.elementor-control-rwgc_enable_visibility_rules input[type="checkbox"]').is(':checked');
+		var $legacy = $panel.find('.elementor-control-rwgc_use_portable_geo_targeting input');
+		if ($legacy.length) {
+			$legacy.val(on ? 'yes' : '').trigger('input').trigger('change');
+		}
+	}
+
 	function bindLibrarySelect($panel) {
+		syncVisibilityRulesToggle($panel);
+		$panel
+			.find('.elementor-control-rwgc_enable_visibility_rules input')
+			.off('change.rwgcVisRules')
+			.on('change.rwgcVisRules', function () {
+				syncVisibilityRulesToggle($panel);
+			});
 		$panel
 			.find('.elementor-control-rwgc_visibility_rule_library select')
 			.off('change.rwgcLib')

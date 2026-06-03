@@ -15,19 +15,51 @@ if ( ! defined( 'ABSPATH' ) ) {
 class RWGC_Targeting_Surface_Evaluator {
 
 	/**
-	 * Whether geo targeting is enabled in a settings array.
+	 * Whether country targeting layer is enabled.
 	 *
 	 * @param array<string, mixed> $settings Settings.
 	 * @return bool
 	 */
-	public static function is_targeting_enabled( array $settings ) {
-		if ( ! empty( $settings['egp_geo_enabled'] ) && 'yes' === (string) $settings['egp_geo_enabled'] ) {
-			return true;
-		}
+	public static function is_country_targeting_enabled( array $settings ) {
 		if ( ! empty( $settings['egp_enable_geo_targeting'] ) && 'yes' === (string) $settings['egp_enable_geo_targeting'] ) {
 			return true;
 		}
+		if ( ! empty( $settings['egp_geo_enabled'] ) && 'yes' === (string) $settings['egp_geo_enabled'] ) {
+			return true;
+		}
 		return false;
+	}
+
+	/**
+	 * Whether visibility rules (portable / library) layer is enabled.
+	 *
+	 * @param array<string, mixed> $settings Settings.
+	 * @return bool
+	 */
+	public static function is_visibility_rules_enabled( array $settings ) {
+		if ( ! empty( $settings['rwgc_enable_visibility_rules'] ) && 'yes' === (string) $settings['rwgc_enable_visibility_rules'] ) {
+			return true;
+		}
+		return self::uses_portable_rules( $settings ) || self::has_resolved_portable_config( $settings );
+	}
+
+	/**
+	 * Whether any targeting layer is active for this surface.
+	 *
+	 * @param array<string, mixed> $settings Settings.
+	 * @return bool
+	 */
+	public static function is_surface_active( array $settings ) {
+		return self::is_country_targeting_enabled( $settings ) || self::is_visibility_rules_enabled( $settings );
+	}
+
+	/**
+	 * @deprecated Use is_surface_active().
+	 * @param array<string, mixed> $settings Settings.
+	 * @return bool
+	 */
+	public static function is_targeting_enabled( array $settings ) {
+		return self::is_surface_active( $settings );
 	}
 
 	/**
@@ -47,66 +79,126 @@ class RWGC_Targeting_Surface_Evaluator {
 	}
 
 	/**
-	 * Visibility mode from settings (defaults to show_if).
+	 * @param array<string, mixed> $settings Settings.
+	 * @return bool
+	 */
+	private static function has_resolved_portable_config( array $settings ) {
+		if ( ! class_exists( 'RWGC_Rule_Registry', false ) ) {
+			return false;
+		}
+		if ( '' !== trim( (string) ( $settings['rwgc_applied_visibility_rule_id'] ?? '' ) ) ) {
+			return true;
+		}
+		if ( '' !== trim( (string) ( $settings['rwgc_visibility_rule_library'] ?? '' ) ) ) {
+			return true;
+		}
+		foreach ( array( 'egp_portable_geo_targeting', 'rwgc_portable_geo_targeting' ) as $key ) {
+			if ( ! empty( $settings[ $key ] ) && '' !== trim( (string) $settings[ $key ] ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Country layer visibility mode (defaults to show_if).
 	 *
 	 * @param array<string, mixed> $settings Settings.
-	 * @return string show_if|hide_if
+	 * @return string
 	 */
-	public static function get_visibility_mode( array $settings ) {
+	public static function get_country_visibility_mode( array $settings ) {
 		$mode = 'show_if';
-		if ( isset( $settings['rwgc_visibility_mode'] ) ) {
+		if ( isset( $settings['rwgc_country_visibility_mode'] ) ) {
+			$mode = (string) $settings['rwgc_country_visibility_mode'];
+		} elseif ( isset( $settings['rwgc_visibility_mode'] ) && ! self::is_visibility_rules_enabled( $settings ) ) {
 			$mode = (string) $settings['rwgc_visibility_mode'];
 		} elseif ( isset( $settings['rwgc_geo_mode'] ) ) {
 			$mode = (string) $settings['rwgc_geo_mode'];
 		}
+		return self::normalize_mode( $mode );
+	}
+
+	/**
+	 * Visibility rules layer mode (defaults to show_if).
+	 *
+	 * @param array<string, mixed> $settings Settings.
+	 * @return string
+	 */
+	public static function get_visibility_rules_mode( array $settings ) {
+		$mode = 'show_if';
+		if ( isset( $settings['rwgc_visibility_rules_mode'] ) ) {
+			$mode = (string) $settings['rwgc_visibility_rules_mode'];
+		} elseif ( isset( $settings['rwgc_visibility_mode'] ) ) {
+			$mode = (string) $settings['rwgc_visibility_mode'];
+		} elseif ( isset( $settings['rwgc_geo_mode'] ) ) {
+			$mode = (string) $settings['rwgc_geo_mode'];
+		}
+		return self::normalize_mode( $mode );
+	}
+
+	/**
+	 * @param string $mode Raw mode.
+	 * @return string
+	 */
+	private static function normalize_mode( $mode ) {
 		if ( function_exists( 'rwgc_normalize_visibility_mode' ) ) {
 			return rwgc_normalize_visibility_mode( $mode );
 		}
-		return 'hide_if' === sanitize_key( $mode ) ? 'hide_if' : 'show_if';
+		return 'hide_if' === sanitize_key( (string) $mode ) ? 'hide_if' : 'show_if';
 	}
 
 	/**
 	 * Evaluate targeting for a settings array.
 	 *
-	 * Countries and portable rules combine with AND when both are configured.
-	 *
 	 * @param array<string, mixed> $settings Builder settings.
 	 * @return array<string, mixed>
 	 */
 	public static function evaluate( array $settings ) {
+		$country_on    = self::is_country_targeting_enabled( $settings );
+		$visibility_on = self::is_visibility_rules_enabled( $settings );
+
 		$result = array(
-			'targeting_enabled' => self::is_targeting_enabled( $settings ),
-			'rules_match'       => true,
-			'should_render'     => true,
-			'visibility_mode'   => self::get_visibility_mode( $settings ),
-			'rule_source'       => '',
-			'rule_json'         => '',
-			'reason'            => 'no_targeting',
-			'country_match'     => true,
-			'portable_match'    => true,
+			'targeting_enabled'  => $country_on || $visibility_on,
+			'rules_match'        => true,
+			'should_render'      => true,
+			'visibility_mode'    => self::get_visibility_rules_mode( $settings ),
+			'rule_source'        => '',
+			'rule_json'          => '',
+			'reason'             => 'no_targeting',
+			'country_match'      => true,
+			'portable_match'     => true,
+			'country_layer_on'   => $country_on,
+			'visibility_layer_on' => $visibility_on,
 		);
 
 		if ( ! $result['targeting_enabled'] ) {
 			return $result;
 		}
 
-		$mode            = $result['visibility_mode'];
-		$countries       = self::parse_countries( $settings );
-		$country_active  = ! empty( $countries );
-		$portable_active = self::uses_portable_rules( $settings );
-		$set             = null;
+		$should_render = true;
 
-		if ( $country_active ) {
-			$visitor = function_exists( 'rwgc_get_visitor_country' ) ? strtoupper( (string) rwgc_get_visitor_country() ) : '';
-			if ( '' === $visitor ) {
-				$result['country_match'] = false;
-			} else {
-				$result['country_match'] = in_array( $visitor, $countries, true );
+		if ( $country_on ) {
+			$countries     = self::parse_countries( $settings );
+			$country_match = true;
+			if ( ! empty( $countries ) ) {
+				$visitor = function_exists( 'rwgc_get_visitor_country' ) ? strtoupper( (string) rwgc_get_visitor_country() ) : '';
+				$country_match = '' !== $visitor && in_array( $visitor, $countries, true );
 			}
+			$result['country_match'] = $country_match;
+			$country_mode            = self::get_country_visibility_mode( $settings );
+			$country_show            = function_exists( 'rwgc_visibility_mode_allows_render' )
+				? rwgc_visibility_mode_allows_render( $country_mode, $country_match )
+				: $country_match;
+			$should_render           = $should_render && $country_show;
+			$result['reason']        = 'country_layer';
 		}
 
-		if ( $portable_active && class_exists( 'RWGC_Rule_Registry', false ) ) {
-			$set = RWGC_Rule_Registry::resolve_rule_set_from_settings( $settings );
+		if ( $visibility_on ) {
+			$set             = null;
+			$portable_match  = true;
+			if ( class_exists( 'RWGC_Rule_Registry', false ) ) {
+				$set = RWGC_Rule_Registry::resolve_rule_set_from_settings( $settings );
+			}
 			if ( is_array( $set ) ) {
 				$result['rule_source'] = ! empty( $settings['rwgc_visibility_rule_library'] ) || ! empty( $settings['rwgc_applied_visibility_rule_id'] )
 					? 'library:' . (string) ( $settings['rwgc_visibility_rule_library'] ?? $settings['rwgc_applied_visibility_rule_id'] )
@@ -114,37 +206,50 @@ class RWGC_Targeting_Surface_Evaluator {
 				$encoded               = wp_json_encode( $set );
 				$result['rule_json']   = is_string( $encoded ) ? $encoded : '';
 				if ( class_exists( 'RWGC_Rule_Evaluator', false ) && class_exists( 'RWGC_Context_Resolver', false ) ) {
-					$snapshot               = RWGC_Context_Resolver::resolve_current();
-					$result['portable_match'] = RWGC_Rule_Evaluator::matches( $set, $snapshot );
+					$snapshot         = RWGC_Context_Resolver::resolve_current();
+					$portable_match   = RWGC_Rule_Evaluator::matches( $set, $snapshot );
 				}
-			} elseif ( $portable_active ) {
-				// Portable mode on but no rule data yet — do not block (avoid suppressing everyone).
-				$result['portable_match'] = true;
-				$result['reason']         = 'portable_enabled_empty';
+			} elseif ( self::uses_portable_rules( $settings ) || self::has_resolved_portable_config( $settings ) ) {
+				$portable_match = true;
+				$result['reason'] = 'visibility_rules_empty';
 			}
+			$result['portable_match'] = $portable_match;
+			$rules_mode               = self::get_visibility_rules_mode( $settings );
+			$visibility_show          = function_exists( 'rwgc_visibility_mode_allows_render' )
+				? rwgc_visibility_mode_allows_render( $rules_mode, $portable_match )
+				: $portable_match;
+			$should_render            = $should_render && $visibility_show;
+			$result['reason']         = $country_on ? 'country_and_visibility_rules' : 'visibility_rules';
 		}
 
-		if ( $country_active && $portable_active && is_array( $set ) ) {
-			$result['rules_match'] = $result['country_match'] && $result['portable_match'];
-			$result['reason']      = 'countries_and_portable';
-		} elseif ( $portable_active && is_array( $set ) ) {
-			$result['rules_match'] = $result['portable_match'];
-			$result['reason']      = 'portable_rules';
-		} elseif ( $country_active ) {
-			$result['rules_match'] = $result['country_match'];
-			$result['reason']      = 'country_list';
-		} else {
-			$result['rules_match'] = true;
-			$result['reason']      = 'targeting_enabled_empty_rules';
+		$rules_match = true;
+		if ( $country_on && ! empty( self::parse_countries( $settings ) ) ) {
+			$rules_match = $rules_match && $result['country_match'];
+		}
+		if ( $visibility_on && isset( $set ) && is_array( $set ) ) {
+			$rules_match = $rules_match && $result['portable_match'];
 		}
 
-		if ( function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
-			$result['should_render'] = rwgc_visibility_mode_allows_render( $mode, $result['rules_match'] );
-		} else {
-			$result['should_render'] = (bool) $result['rules_match'];
-		}
+		$result['rules_match']   = $rules_match;
+		$result['should_render'] = $should_render;
 
 		return $result;
+	}
+
+	/**
+	 * Primary evaluation reason for popup country fallback checks.
+	 *
+	 * @param array<string, mixed> $settings Settings.
+	 * @return string
+	 */
+	public static function get_primary_evaluation_reason( array $settings ) {
+		if ( self::is_visibility_rules_enabled( $settings ) ) {
+			return 'visibility_rules';
+		}
+		if ( self::is_country_targeting_enabled( $settings ) && ! empty( self::parse_countries( $settings ) ) ) {
+			return 'country_list';
+		}
+		return 'targeting_enabled_empty_rules';
 	}
 
 	/**

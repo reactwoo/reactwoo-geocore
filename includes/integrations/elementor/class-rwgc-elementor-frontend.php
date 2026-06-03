@@ -42,7 +42,14 @@ class RWGC_Elementor_Frontend {
 		}
 
 		$settings = $element->get_settings_for_display();
-		if ( ! is_array( $settings ) || empty( $settings['egp_geo_enabled'] ) || 'yes' !== (string) $settings['egp_geo_enabled'] ) {
+		if ( ! is_array( $settings ) ) {
+			return;
+		}
+		if ( class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
+			if ( ! RWGC_Targeting_Surface_Evaluator::is_surface_active( $settings ) ) {
+				return;
+			}
+		} elseif ( empty( $settings['egp_geo_enabled'] ) || 'yes' !== (string) $settings['egp_geo_enabled'] ) {
 			return;
 		}
 

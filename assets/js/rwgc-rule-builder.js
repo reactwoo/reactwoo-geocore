@@ -1562,21 +1562,29 @@
 		var $panel = $('#elementor-panel-inner');
 		var pairs = [
 			{
+				toggle: '.elementor-control-rwgc_enable_visibility_rules',
+				textarea: '.elementor-control-rwgc_portable_geo_targeting textarea',
+				mode: '.elementor-control-rwgc_visibility_rules_mode select, .elementor-control-rwgc_visibility_mode select, .elementor-control-rwgc_geo_mode select',
+			},
+			{
 				toggle: '.elementor-control-rwgc_use_portable_geo_targeting',
 				textarea: '.elementor-control-rwgc_portable_geo_targeting textarea',
-				mode: '.elementor-control-rwgc_visibility_mode select, .elementor-control-rwgc_geo_mode select',
+				mode: '.elementor-control-rwgc_visibility_rules_mode select, .elementor-control-rwgc_visibility_mode select, .elementor-control-rwgc_geo_mode select',
 			},
 			{
 				toggle: '.elementor-control-egp_use_portable_geo_targeting',
 				textarea: '.elementor-control-egp_portable_geo_targeting textarea',
-				mode: '.elementor-control-rwgc_visibility_mode select, .elementor-control-rwgc_geo_mode select',
+				mode: '.elementor-control-rwgc_visibility_rules_mode select, .elementor-control-rwgc_visibility_mode select, .elementor-control-rwgc_geo_mode select',
 			},
 		];
 		for (var i = 0; i < pairs.length; i++) {
 			var p = pairs[i];
 			var $toggle = $panel.find(p.toggle);
-			var $input = $toggle.find('input[type=checkbox]');
-			if ($input.length && $input.prop('checked')) {
+			var $input = $toggle.find('input[type=checkbox], input[type=hidden]');
+			var active = $input.filter('[type=checkbox]').length
+				? $input.filter('[type=checkbox]').prop('checked')
+				: $input.val() === 'yes';
+			if ($input.length && active) {
 				var $ta = $panel.find(p.textarea);
 				if ($ta.length) {
 					return { textarea: $ta, modeSel: p.mode ? $panel.find(p.mode) : null };
