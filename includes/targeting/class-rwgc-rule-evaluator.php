@@ -133,11 +133,12 @@ class RWGC_Rule_Evaluator {
 	 */
 	public static function should_render_content( array $set, RWGC_Context_Snapshot $snapshot ) {
 		$matched = self::matches( $set, $snapshot );
+		$mode    = isset( $set['mode'] ) ? $set['mode'] : 'show_if';
 		if ( function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
-			$mode = isset( $set['mode'] ) ? $set['mode'] : 'show_if';
 			return rwgc_visibility_mode_allows_render( $mode, $matched );
 		}
-		return $matched;
+		$mode = function_exists( 'sanitize_key' ) ? sanitize_key( (string) $mode ) : strtolower( (string) $mode );
+		return in_array( $mode, array( 'hide_if', 'hide', 'restrict', 'suppress' ), true ) ? ! $matched : $matched;
 	}
 
 	/**
