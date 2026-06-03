@@ -67,59 +67,21 @@ class RWGC_Gutenberg {
 	 * @return string
 	 */
 	public static function render_geo_content_block( $attributes, $content ) {
-		$attrs = wp_parse_args(
-			is_array( $attributes ) ? $attributes : array(),
-			array(
-				'showCountries'         => array(),
-				'hideCountries'         => array(),
-				'mode'                  => 'show',
-				'portableTargeting'     => '',
-				'usePortableTargeting'  => false,
-			)
-		);
+		$attrs = is_array( $attributes ) ? $attributes : array();
 
-		$portable_raw  = isset( $attrs['portableTargeting'] ) ? (string) $attrs['portableTargeting'] : '';
-		$use_portable  = ! empty( $attrs['usePortableTargeting'] );
-		if ( ! $use_portable && '' !== trim( $portable_raw ) ) {
-			$use_portable = true;
-		}
-		if ( $use_portable && is_string( $portable_raw ) && '' !== trim( $portable_raw )
-			&& class_exists( 'RWGC_Targeting_Rule_Set_Schema' )
-			&& class_exists( 'RWGC_Rule_Evaluator' )
-			&& class_exists( 'RWGC_Context_Resolver' ) ) {
-			$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $portable_raw );
-			if ( is_array( $set ) ) {
-				$snapshot = RWGC_Context_Resolver::resolve_current();
-				$show     = RWGC_Rule_Evaluator::should_render_content( $set, $snapshot );
-				return $show ? '<div class="rwgc-geo-content">' . do_shortcode( $content ) . '</div>' : '';
+		if ( class_exists( 'RWGC_Surface_Settings', false ) && class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
+			$settings = RWGC_Surface_Settings::from_block_attributes( $attrs );
+			if ( ! RWGC_Targeting_Surface_Evaluator::is_surface_active( $settings ) ) {
+				return '<div class="rwgc-geo-content">' . do_shortcode( $content ) . '</div>';
 			}
-		}
-
-		$country = strtoupper( rwgc_get_visitor_country() );
-
-		$list = array();
-		if ( ! empty( $attrs['showCountries'] ) && is_array( $attrs['showCountries'] ) ) {
-			$list = array_map( 'strtoupper', $attrs['showCountries'] );
-		}
-
-		$show = true;
-		if ( ! empty( $list ) ) {
-			if ( 'hide' === $attrs['mode'] ) {
-				$show = ! in_array( $country, $list, true );
-			} else {
-				$show = in_array( $country, $list, true );
+			$result = RWGC_Targeting_Surface_Evaluator::evaluate( $settings );
+			if ( empty( $result['should_render'] ) ) {
+				return '';
 			}
-		} elseif ( ! empty( $attrs['hideCountries'] ) && is_array( $attrs['hideCountries'] ) ) {
-			if ( in_array( $country, array_map( 'strtoupper', $attrs['hideCountries'] ), true ) ) {
-				$show = false;
-			}
+			return '<div class="rwgc-geo-content">' . do_shortcode( $content ) . '</div>';
 		}
 
-		if ( ! $show ) {
-			return '';
-		}
-
-		return '<div class="rwgc-geo-content">' . do_shortcode( $content ) . '</div>';
+		return '';
 	}
 
 	/**

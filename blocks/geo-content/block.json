@@ -4,11 +4,19 @@
   "title": "Geo Content (ReactWoo)",
   "category": "widgets",
   "icon": "location-alt",
-  "description": "Show or hide content based on visitor country using ReactWoo Geo Core.",
+  "description": "Show or hide content based on visitor country and visibility rules using ReactWoo Geo Core.",
   "supports": {
     "html": false
   },
   "attributes": {
+    "enableCountryTargeting": {
+      "type": "boolean",
+      "default": false
+    },
+    "countryVisibilityMode": {
+      "type": "string",
+      "default": "show_if"
+    },
     "showCountries": {
       "type": "array",
       "default": []
@@ -17,13 +25,29 @@
       "type": "array",
       "default": []
     },
-    "mode": {
+    "enableVisibilityRules": {
+      "type": "boolean",
+      "default": false
+    },
+    "visibilityRulesMode": {
       "type": "string",
-      "default": "show"
+      "default": "show_if"
     },
     "portableTargeting": {
       "type": "string",
       "default": ""
+    },
+    "appliedVisibilityRuleId": {
+      "type": "string",
+      "default": ""
+    },
+    "visibilityRuleLibrary": {
+      "type": "string",
+      "default": ""
+    },
+    "mode": {
+      "type": "string",
+      "default": "show"
     },
     "usePortableTargeting": {
       "type": "boolean",
@@ -34,4 +58,3 @@
   "editorStyle": "rwgc-geo-content-editor",
   "style": "rwgc-geo-content"
 }
-

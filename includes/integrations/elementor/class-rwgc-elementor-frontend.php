@@ -45,6 +45,10 @@ class RWGC_Elementor_Frontend {
 		if ( ! is_array( $settings ) ) {
 			return;
 		}
+		if ( class_exists( 'RWGC_Surface_Settings', false ) ) {
+			$settings = RWGC_Surface_Settings::normalize( $settings );
+		}
+
 		if ( class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
 			if ( ! RWGC_Targeting_Surface_Evaluator::is_surface_active( $settings ) ) {
 				return;

@@ -25,14 +25,31 @@
 		const comboOptions = codes.map(function (code) {
 			return { label: countryMap[code] + ' (' + code + ')', value: code };
 		});
+		const countryOn =
+			!!attrs.enableCountryTargeting ||
+			(Array.isArray(attrs.showCountries) && attrs.showCountries.length > 0);
+		const visibilityOn =
+			!!attrs.enableVisibilityRules ||
+			!!attrs.usePortableTargeting ||
+			(typeof attrs.portableTargeting === 'string' && attrs.portableTargeting.trim() !== '');
 		const selected = Array.isArray(attrs.showCountries) ? attrs.showCountries : [];
 		const portable = typeof attrs.portableTargeting === 'string' ? attrs.portableTargeting : '';
-		const usePortable = !!attrs.usePortableTargeting;
+		const advanced =
+			typeof window !== 'undefined' &&
+			window.rwgcPortableTargetingAssist &&
+			window.rwgcPortableTargetingAssist.advancedTargeting;
 		const [comboKey, setComboKey] = useState(0);
+
+		const countryMode =
+			attrs.countryVisibilityMode === 'hide_if' || attrs.mode === 'hide'
+				? 'hide_if'
+				: 'show_if';
+		const visibilityMode =
+			attrs.visibilityRulesMode === 'hide_if' ? 'hide_if' : 'show_if';
 
 		useEffect(
 			function () {
-				if (!usePortable || !rbWrapRef.current || !window.ReactWooRuleBuilder) {
+				if (!visibilityOn || !rbWrapRef.current || !window.ReactWooRuleBuilder) {
 					return undefined;
 				}
 				var cancelled = false;
@@ -47,7 +64,8 @@
 						window.ReactWooRuleBuilder.mount({
 							textarea: ta,
 							getMode: function () {
-								return attrsRef.current.mode || 'show';
+								var m = attrsRef.current.visibilityRulesMode || 'show_if';
+								return m === 'hide_if' ? 'hide_if' : 'show_if';
 							},
 							onChange: function (json) {
 								if (attrsRef.current.portableTargeting !== json) {
@@ -64,12 +82,12 @@
 					clearInterval(id);
 				};
 			},
-			[usePortable]
+			[visibilityOn]
 		);
 
 		useEffect(
 			function () {
-				if (!usePortable || !rbMountedRef.current) {
+				if (!visibilityOn || !rbMountedRef.current) {
 					return;
 				}
 				var ta = rbWrapRef.current && rbWrapRef.current.querySelector('textarea');
@@ -85,7 +103,7 @@
 					}
 				}
 			},
-			[portable, usePortable]
+			[portable, visibilityOn]
 		);
 
 		function addCode(code) {
@@ -122,61 +140,29 @@
 				wp.element.createElement(
 					'div',
 					{ className: 'rwgc-panel', style: { padding: '12px' } },
-					wp.element.createElement(SelectControl, {
-						label: __('Mode', 'reactwoo-geocore'),
-						value: attrs.mode || 'show',
-						options: [
-							{
-								label: __('Show in selected countries', 'reactwoo-geocore'),
-								value: 'show',
-							},
-							{
-								label: __('Hide in selected countries', 'reactwoo-geocore'),
-								value: 'hide',
-							},
-						],
-						onChange: function (v) {
-							setAttr('mode', v);
-						},
-					}),
+					wp.element.createElement('hr', null),
+					wp.element.createElement('p', { style: { fontWeight: 600, marginBottom: 4 } }, __('Country targeting', 'reactwoo-geocore')),
 					wp.element.createElement(ToggleControl, {
-						label: __('Use visibility rule builder', 'reactwoo-geocore'),
-						help: __(
-							'When enabled, the rule builder below replaces the country list for this block.',
-							'reactwoo-geocore'
-						),
-						checked: usePortable,
+						label: __('Enable country targeting', 'reactwoo-geocore'),
+						checked: countryOn,
 						onChange: function (v) {
-							setAttr('usePortableTargeting', !!v);
+							setAttr('enableCountryTargeting', !!v);
 						},
 					}),
-					usePortable
-						? wp.element.createElement(
-								'div',
-								{ ref: rbWrapRef, className: 'rwgc-rb-mount-wrap' },
-								wp.element.createElement(TextareaControl, {
-									label: __('Visibility rules', 'reactwoo-geocore'),
-									help: __(
-										'Build conditions with the rule builder. Open Advanced in the builder for raw JSON only.',
-										'reactwoo-geocore'
-									),
-									value: portable,
-									rows: 4,
-									className: 'rwgc-geo-portable-textarea',
-									onChange: function (v) {
-										setAttr('portableTargeting', v || '');
-									},
-								})
-						  )
-						: wp.element.createElement(
-								'p',
-								{ className: 'components-base-control__help' },
-								__(
-									'Turn on the visibility rule builder to target by GA4 audiences, campaigns, UTM, device, and more.',
-									'reactwoo-geocore'
-								)
-						  ),
-					!usePortable
+					countryOn
+						? wp.element.createElement(SelectControl, {
+								label: __('Country visibility', 'reactwoo-geocore'),
+								value: countryMode,
+								options: [
+									{ label: __('Show only when country matches', 'reactwoo-geocore'), value: 'show_if' },
+									{ label: __('Hide when country matches', 'reactwoo-geocore'), value: 'hide_if' },
+								],
+								onChange: function (v) {
+									setAttr('countryVisibilityMode', v);
+								},
+						  })
+						: null,
+					countryOn
 						? wp.element.createElement(
 								Fragment,
 								null,
@@ -236,6 +222,51 @@
 									})
 								)
 						  )
+						: null,
+					advanced
+						? wp.element.createElement(
+								Fragment,
+								null,
+								wp.element.createElement('hr', null),
+								wp.element.createElement('p', { style: { fontWeight: 600, marginBottom: 4 } }, __('Visibility rules', 'reactwoo-geocore')),
+								wp.element.createElement(ToggleControl, {
+									label: __('Enable visibility rules', 'reactwoo-geocore'),
+									help: __('Independent of country targeting above.', 'reactwoo-geocore'),
+									checked: visibilityOn,
+									onChange: function (v) {
+										setAttr('enableVisibilityRules', !!v);
+										setAttr('usePortableTargeting', !!v);
+									},
+								}),
+								visibilityOn
+									? wp.element.createElement(SelectControl, {
+											label: __('Visibility rules mode', 'reactwoo-geocore'),
+											value: visibilityMode,
+											options: [
+												{ label: __('Show only when rules match', 'reactwoo-geocore'), value: 'show_if' },
+												{ label: __('Hide when rules match', 'reactwoo-geocore'), value: 'hide_if' },
+											],
+											onChange: function (v) {
+												setAttr('visibilityRulesMode', v);
+											},
+									  })
+									: null,
+								visibilityOn
+									? wp.element.createElement(
+											'div',
+											{ ref: rbWrapRef, className: 'rwgc-rb-mount-wrap' },
+											wp.element.createElement(TextareaControl, {
+												label: __('Visibility rules', 'reactwoo-geocore'),
+												value: portable,
+												rows: 4,
+												className: 'rwgc-geo-portable-textarea',
+												onChange: function (v) {
+													setAttr('portableTargeting', v || '');
+												},
+											})
+									  )
+									: null
+						  )
 						: null
 				)
 			),
@@ -245,15 +276,9 @@
 				wp.element.createElement(
 					'p',
 					null,
-					usePortable
-						? __(
-								'Geo Content — inner blocks render when visibility rules match.',
-								'reactwoo-geocore'
-						  )
-						: __(
-								'Geo Content — inner blocks render when visitor country rules match.',
-								'reactwoo-geocore'
-						  )
+					countryOn || visibilityOn
+						? __('Geo Content — inner blocks use country and/or visibility rules above.', 'reactwoo-geocore')
+						: __('Geo Content — enable country or visibility rules in the sidebar.', 'reactwoo-geocore')
 				),
 				props.children
 			)

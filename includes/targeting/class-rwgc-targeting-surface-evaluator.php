@@ -157,6 +157,10 @@ class RWGC_Targeting_Surface_Evaluator {
 	 * @return array<string, mixed>
 	 */
 	public static function evaluate( array $settings ) {
+		if ( class_exists( 'RWGC_Surface_Settings', false ) ) {
+			$settings = RWGC_Surface_Settings::normalize( $settings );
+		}
+
 		$country_on    = self::is_country_targeting_enabled( $settings );
 		$visibility_on = self::is_visibility_rules_enabled( $settings );
 

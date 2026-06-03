@@ -6,32 +6,39 @@
 	var registerPlugin = wp.plugins.registerPlugin;
 	var PluginDocumentSettingPanel = wp.editPost.PluginDocumentSettingPanel;
 	var el = wp.element.createElement;
-	var useState = wp.element.useState;
-	var useEffect = wp.element.useEffect;
 	var useSelect = wp.data.useSelect;
 	var useDispatch = wp.data.useDispatch;
 	var ToggleControl = wp.components.ToggleControl;
 	var SelectControl = wp.components.SelectControl;
 	var PanelRow = wp.components.PanelRow;
+	var useEffect = wp.element.useEffect;
 
 	function PostGeoPanel() {
 		var meta = config.meta || {};
-		var postType = useSelect( function ( select ) {
-			return select( 'core/editor' ).getCurrentPostType();
+		var metaValues = useSelect( function ( select ) {
+			return select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
 		}, [] );
-		var metaValues = useSelect(
-			function ( select ) {
-				return select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
-			},
-			[]
-		);
 		var editPost = useDispatch( 'core/editor' ).editPost;
 
-		var enabled = metaValues[ meta.enabled ] === 'yes';
-		var rawMode = metaValues[ meta.mode ] || 'show_if';
-		var mode = rawMode === 'hide' || rawMode === 'hide_if' ? 'hide_if' : 'show_if';
+		var countryOn = metaValues[ meta.countryEnabled ] === 'yes';
+		var visibilityOn = metaValues[ meta.visibilityEnabled ] === 'yes';
+		var legacyOn = metaValues[ meta.enabled ] === 'yes';
+
+		if ( ! countryOn && ! visibilityOn && legacyOn ) {
+			if ( metaValues[ meta.usePortable ] === 'yes' ) {
+				visibilityOn = true;
+			} else {
+				countryOn = true;
+			}
+		}
+
+		var countryMode =
+			metaValues[ meta.countryMode ] === 'hide_if' || metaValues[ meta.countryMode ] === 'hide'
+				? 'hide_if'
+				: 'show_if';
+		var visibilityMode =
+			metaValues[ meta.visibilityMode ] === 'hide_if' ? 'hide_if' : 'show_if';
 		var countries = Array.isArray( metaValues[ meta.countries ] ) ? metaValues[ meta.countries ] : [];
-		var usePortable = metaValues[ meta.usePortable ] === 'yes';
 		var portable = metaValues[ meta.portable ] || '';
 
 		var countryOptions = Object.keys( config.countries || {} ).map( function ( code ) {
@@ -40,7 +47,7 @@
 
 		useEffect(
 			function () {
-				if ( ! config.advancedTargeting || ! usePortable || ! window.ReactWooRuleBuilder ) {
+				if ( ! config.advancedTargeting || ! visibilityOn || ! window.ReactWooRuleBuilder ) {
 					return;
 				}
 				var textarea = document.getElementById( 'rwgc-post-portable-targeting' );
@@ -50,12 +57,12 @@
 				window.ReactWooRuleBuilder.mount( {
 					textarea: textarea,
 					getMode: function () {
-						return mode === 'hide_if' || mode === 'hide' ? 'hide_if' : 'show_if';
+						return visibilityMode;
 					},
 					allowAllConditionTypes: true,
 				} );
 			},
-			[ config.advancedTargeting, usePortable, mode ]
+			[ config.advancedTargeting, visibilityOn, visibilityMode ]
 		);
 
 		function updateMeta( key, value ) {
@@ -64,6 +71,8 @@
 			editPost( { meta: next } );
 		}
 
+		var active = countryOn || visibilityOn;
+
 		return el(
 			PluginDocumentSettingPanel,
 			{
@@ -71,27 +80,28 @@
 				title: 'Geo visibility',
 				className: 'rwgc-post-geo-panel',
 			},
+			el( 'p', { className: 'description' }, 'Match Elementor document Geo Visibility: country and visibility rules are independent layers.' ),
+			el( 'p', { style: { fontWeight: 600, marginBottom: 4 } }, 'Country targeting' ),
 			el( ToggleControl, {
-				label: 'Enable geo visibility for this post',
-				checked: enabled,
+				label: 'Enable country targeting',
+				checked: countryOn,
 				onChange: function ( val ) {
-					updateMeta( meta.enabled, val ? 'yes' : '' );
+					updateMeta( meta.countryEnabled, val ? 'yes' : '' );
 				},
 			} ),
-			enabled &&
+			countryOn &&
 				el( SelectControl, {
-					label: 'Visibility mode',
-					value: mode,
+					label: 'Country visibility',
+					value: countryMode,
 					options: [
-						{ label: 'Show only when rules match', value: 'show_if' },
-						{ label: 'Hide when rules match', value: 'hide_if' },
+						{ label: 'Show only when country matches', value: 'show_if' },
+						{ label: 'Hide when country matches', value: 'hide_if' },
 					],
 					onChange: function ( val ) {
-						updateMeta( meta.mode, val );
+						updateMeta( meta.countryMode, val );
 					},
 				} ),
-			enabled &&
-				! usePortable &&
+			countryOn &&
 				el( SelectControl, {
 					label: 'Countries',
 					value: countries,
@@ -101,38 +111,47 @@
 						updateMeta( meta.countries, val || [] );
 					},
 				} ),
-			enabled &&
-				el(
-					'p',
-					{ className: 'description', style: { marginTop: '8px' } },
-					mode === 'hide_if'
-						? 'This content will be hidden from visitors who match the selected targeting rules. Example: hide the default form when a South Africa-specific form is shown.'
-						: 'This content will only be visible to visitors who match the selected targeting rules. Example: show a South Africa form only to visitors from South Africa.'
-				),
-			enabled &&
-				config.advancedTargeting &&
-				el( ToggleControl, {
-					label: 'Use visibility rule builder (GeoCore Pro)',
-					checked: usePortable,
-					onChange: function ( val ) {
-						updateMeta( meta.usePortable, val ? 'yes' : '' );
-					},
-				} ),
-			enabled &&
-				config.advancedTargeting &&
-				usePortable &&
+			config.advancedTargeting &&
 				el(
 					PanelRow,
 					null,
-					el( 'textarea', {
-						id: 'rwgc-post-portable-targeting',
-						className: 'rwgc-rb-textarea-hidden',
-						style: { display: 'none' },
-						value: portable,
-						onChange: function ( e ) {
-							updateMeta( meta.portable, e.target.value );
+					el( 'p', { style: { fontWeight: 600, margin: '12px 0 4px' } }, 'Visibility rules' ),
+					el( ToggleControl, {
+						label: 'Enable visibility rules',
+						checked: visibilityOn,
+						onChange: function ( val ) {
+							updateMeta( meta.visibilityEnabled, val ? 'yes' : '' );
+							updateMeta( meta.usePortable, val ? 'yes' : '' );
 						},
-					} )
+					} ),
+					visibilityOn &&
+						el( SelectControl, {
+							label: 'Visibility rules mode',
+							value: visibilityMode,
+							options: [
+								{ label: 'Show only when rules match', value: 'show_if' },
+								{ label: 'Hide when rules match', value: 'hide_if' },
+							],
+							onChange: function ( val ) {
+								updateMeta( meta.visibilityMode, val );
+							},
+						} ),
+					visibilityOn &&
+						el( 'textarea', {
+							id: 'rwgc-post-portable-targeting',
+							className: 'rwgc-rb-textarea-hidden',
+							style: { display: 'none' },
+							value: portable,
+							onChange: function ( e ) {
+								updateMeta( meta.portable, e.target.value );
+							},
+						} )
+				),
+			active &&
+				el(
+					'p',
+					{ className: 'description', style: { marginTop: '8px' } },
+					'When both layers are on, the visitor must pass country rules and visibility rules (AND).'
 				)
 		);
 	}

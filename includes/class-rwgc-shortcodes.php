@@ -58,6 +58,11 @@ class RWGC_Shortcodes {
 	 * `[rwgc_if exclude="US,CA"]…[/rwgc_if]`
 	 * `[rwgc_if groups_exclude="blocked"]…[/rwgc_if]`
 	 *
+	 * Split model (same as Elementor Geo Visibility), via {@see RWGC_Targeting_Surface_Evaluator}:
+	 * `[rwgc_if country_on="yes" country="GB,US" country_mode="show_if"]…[/rwgc_if]`
+	 * `[rwgc_if visibility_on="yes" rule="my-rule-slug" mode="show_if"]…[/rwgc_if]`
+	 * `[rwgc_if visibility_on="yes" portable='{"version":1}']…[/rwgc_if]`
+	 *
 	 * @param array       $atts    Attributes.
 	 * @param string|null $content Wrapped content.
 	 * @return string
@@ -65,14 +70,25 @@ class RWGC_Shortcodes {
 	public static function render_conditional( $atts, $content = null ) {
 		$atts = shortcode_atts(
 			array(
-				'country'         => '',
-				'exclude'         => '',
-				'groups'          => '',
-				'groups_exclude'  => '',
+				'country'          => '',
+				'exclude'          => '',
+				'groups'           => '',
+				'groups_exclude'   => '',
+				'country_on'       => '',
+				'country_mode'     => 'show_if',
+				'visibility_on'    => '',
+				'mode'             => 'show_if',
+				'rule'             => '',
+				'visibility_rule'  => '',
+				'portable'         => '',
 			),
 			$atts,
 			'rwgc_if'
 		);
+
+		if ( self::should_use_surface_evaluator( $atts ) ) {
+			return self::render_conditional_surface( $atts, $content );
+		}
 
 		$country_csv         = trim( (string) $atts['country'] );
 		$exclude_csv         = trim( (string) $atts['exclude'] );
@@ -112,6 +128,62 @@ class RWGC_Shortcodes {
 		$match   = RWGC_Rule_Condition_Evaluator::context_matches_conditions( $conditions, $context );
 
 		if ( ! $match ) {
+			return '';
+		}
+
+		return do_shortcode( (string) $content );
+	}
+
+	/**
+	 * Whether to evaluate via the shared surface evaluator (visibility rules / explicit split attrs).
+	 *
+	 * @param array<string, string> $atts Shortcode attributes.
+	 * @return bool
+	 */
+	private static function should_use_surface_evaluator( array $atts ) {
+		if ( '' !== trim( (string) ( $atts['rule'] ?? '' ) ) || '' !== trim( (string) ( $atts['visibility_rule'] ?? '' ) ) ) {
+			return true;
+		}
+		if ( '' !== trim( (string) ( $atts['portable'] ?? '' ) ) ) {
+			return true;
+		}
+		if ( in_array( strtolower( (string) ( $atts['visibility_on'] ?? '' ) ), array( '1', 'yes', 'true' ), true ) ) {
+			return true;
+		}
+		if ( in_array( strtolower( (string) ( $atts['country_on'] ?? '' ) ), array( '1', 'yes', 'true' ), true ) ) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * @param array<string, string> $atts    Attributes.
+	 * @param string|null           $content Inner content.
+	 * @return string
+	 */
+	private static function render_conditional_surface( array $atts, $content ) {
+		if ( ! class_exists( 'RWGC_Surface_Settings', false ) || ! class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
+			return '';
+		}
+
+		$surface_atts = array(
+			'country_on'    => in_array( strtolower( (string) ( $atts['country_on'] ?? '' ) ), array( '1', 'yes', 'true' ), true ),
+			'country_mode'  => (string) ( $atts['country_mode'] ?? 'show_if' ),
+			'country'       => (string) ( $atts['country'] ?? '' ),
+			'visibility_on' => in_array( strtolower( (string) ( $atts['visibility_on'] ?? '' ) ), array( '1', 'yes', 'true' ), true ),
+			'mode'          => (string) ( $atts['mode'] ?? 'show_if' ),
+			'rule'          => (string) ( $atts['rule'] ?? '' ),
+			'visibility_rule' => (string) ( $atts['visibility_rule'] ?? '' ),
+			'portable'      => (string) ( $atts['portable'] ?? '' ),
+		);
+
+		$settings = RWGC_Surface_Settings::from_shortcode_atts( $surface_atts );
+		if ( ! RWGC_Targeting_Surface_Evaluator::is_surface_active( $settings ) ) {
+			return '';
+		}
+
+		$result = RWGC_Targeting_Surface_Evaluator::evaluate( $settings );
+		if ( empty( $result['should_render'] ) ) {
 			return '';
 		}
 

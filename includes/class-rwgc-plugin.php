@@ -129,6 +129,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-targeting-rule-set-schema.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-rule-evaluator.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-rule-registry.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-surface-settings.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-targeting-surface-evaluator.php';
 		require_once RWGC_PATH . 'includes/compat/class-rwgc-legacy-geo-rule-cpt.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-context-snapshot-formatter.php';

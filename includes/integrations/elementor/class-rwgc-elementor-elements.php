@@ -132,7 +132,7 @@ class RWGC_Elementor_Elements {
 		}
 
 		$controls = $element->get_controls();
-		if ( is_array( $controls ) && isset( $controls['egp_geo_tools'] ) ) {
+		if ( is_array( $controls ) && ( isset( $controls['egp_geo_tools'] ) || isset( $controls['rwgc_geo_section'] ) ) ) {
 			return;
 		}
 		$stack_guard_key = '';
@@ -149,204 +149,21 @@ class RWGC_Elementor_Elements {
 			self::$registered_stack_instances[ $stack_guard_key ] = true;
 		}
 
-		$advanced = function_exists( 'rwgc_advanced_targeting_enabled' ) && rwgc_advanced_targeting_enabled();
-
-		$element->start_controls_section(
-			'egp_geo_tools',
-			array(
-				'label' => __( 'Geo Targeting', 'reactwoo-geocore' ),
-				'tab'   => \Elementor\Controls_Manager::TAB_ADVANCED,
-			)
-		);
-
-		$preview = self::build_visitor_preview_markup();
-		if ( '' !== $preview ) {
-			$element->add_control(
-				'egp_visitor_geo_preview',
+		if ( class_exists( 'RWGC_Elementor_Geo_Controls', false ) ) {
+			RWGC_Elementor_Geo_Controls::register_section(
+				$element,
 				array(
-					'type'            => \Elementor\Controls_Manager::RAW_HTML,
-					'raw'             => $preview,
-					'content_classes' => 'egp-visitor-geo-preview',
+					'section_id'   => 'egp_geo_tools',
+					'countries_ui' => 'native',
 				)
 			);
 		}
-
-		$element->add_control(
-			'egp_geo_enabled',
-			array(
-				'label'        => __( 'Enable Geo Targeting', 'reactwoo-geocore' ),
-				'type'         => \Elementor\Controls_Manager::SWITCHER,
-				'label_on'     => __( 'On', 'reactwoo-geocore' ),
-				'label_off'    => __( 'Off', 'reactwoo-geocore' ),
-				'return_value' => 'yes',
-				'default'      => '',
-			)
-		);
-
-		$element->add_control(
-			'rwgc_visibility_mode',
-			array(
-				'label'       => __( 'Visibility mode', 'reactwoo-geocore' ),
-				'type'        => \Elementor\Controls_Manager::SELECT,
-				'default'     => 'show_if',
-				'options'     => array(
-					'show_if' => __( 'Show only when rules match', 'reactwoo-geocore' ),
-					'hide_if' => __( 'Hide when rules match', 'reactwoo-geocore' ),
-				),
-				'description' => __( 'Show mode: visible only to matching visitors. Hide mode: hidden from matching visitors (useful for replacement content).', 'reactwoo-geocore' ),
-				'condition'   => array(
-					'egp_geo_enabled' => 'yes',
-				),
-			)
-		);
-
-		$countries_html = self::get_countries_select_html();
-		$element->add_control(
-			'egp_countries_html',
-			array(
-				'type'      => \Elementor\Controls_Manager::RAW_HTML,
-				'raw'       => $countries_html,
-				'condition' => array(
-					'egp_geo_enabled' => 'yes',
-				),
-			)
-		);
-
-		$element->add_control(
-			'egp_countries',
-			array(
-				'type'      => \Elementor\Controls_Manager::HIDDEN,
-				'default'   => '',
-				'condition' => array(
-					'egp_geo_enabled' => 'yes',
-				),
-			)
-		);
-
-		if ( $advanced ) {
-			$element->add_control(
-				'rwgc_enable_visibility_rules',
-				array(
-					'label'        => __( 'Enable visibility rules', 'reactwoo-geocore' ),
-					'type'         => \Elementor\Controls_Manager::SWITCHER,
-					'label_on'     => __( 'On', 'reactwoo-geocore' ),
-					'label_off'    => __( 'Off', 'reactwoo-geocore' ),
-					'return_value' => 'yes',
-					'default'      => '',
-					'description'  => __( 'Independent of country targeting above.', 'reactwoo-geocore' ),
-				)
-			);
-
-			$element->add_control(
-				'rwgc_visibility_rules_mode',
-				array(
-					'label'     => __( 'Visibility rules mode', 'reactwoo-geocore' ),
-					'type'      => \Elementor\Controls_Manager::SELECT,
-					'default'   => 'show_if',
-					'options'   => array(
-						'show_if' => __( 'Show only when rules match', 'reactwoo-geocore' ),
-						'hide_if' => __( 'Hide when rules match', 'reactwoo-geocore' ),
-					),
-					'condition' => array(
-						'rwgc_enable_visibility_rules' => 'yes',
-					),
-				)
-			);
-
-			$element->add_control(
-				'egp_use_portable_geo_targeting',
-				array(
-					'type'         => \Elementor\Controls_Manager::HIDDEN,
-					'default'      => '',
-					'return_value' => 'yes',
-				)
-			);
-
-			$element->add_control(
-				'rwgc_visibility_rule_library',
-				array(
-					'label'       => __( 'Apply saved visibility rule', 'reactwoo-geocore' ),
-					'type'        => \Elementor\Controls_Manager::SELECT,
-					'options'     => self::get_visibility_library_select_options(),
-					'label_block' => true,
-					'description' => __( 'Portable library rules only.', 'reactwoo-geocore' ),
-					'condition'   => array(
-						'rwgc_enable_visibility_rules' => 'yes',
-					),
-				)
-			);
-
-			$element->add_control(
-				'rwgc_applied_visibility_rule_id',
-				array(
-					'type'      => \Elementor\Controls_Manager::HIDDEN,
-					'default'   => '',
-					'condition' => array(
-						'rwgc_enable_visibility_rules' => 'yes',
-					),
-				)
-			);
-
-			$element->add_control(
-				'egp_portable_geo_targeting',
-				array(
-					'type'        => \Elementor\Controls_Manager::TEXTAREA,
-					'rows'        => 2,
-					'label_block' => true,
-					'classes'     => 'egp-portable-geo-targeting-textarea rwgc-rb-textarea-hidden',
-					'condition'   => array(
-						'rwgc_enable_visibility_rules' => 'yes',
-					),
-				)
-			);
-		} else {
-			$element->add_control(
-				'egp_geocore_pro_upgrade',
-				array(
-					'type'            => \Elementor\Controls_Manager::RAW_HTML,
-					'raw'             => '<div style="background:#f0f6fc;border:1px solid #c3dafe;color:#1e3a5f;padding:12px;border-radius:4px;margin-top:8px;">'
-						. '<strong>' . esc_html__( 'GeoCore Pro', 'reactwoo-geocore' ) . '</strong><br>'
-						. esc_html__( 'Upgrade to GeoCore Pro for multi-condition visibility (device, UTM, audiences, page versions) in Elementor and Gutenberg.', 'reactwoo-geocore' )
-						. '</div>',
-					'content_classes' => 'egp-upgrade-box',
-					'condition'       => array( 'egp_geo_enabled' => 'yes' ),
-				)
-			);
-		}
-
-		$element->end_controls_section();
 	}
 
 	/**
 	 * @return string
 	 */
-	private static function build_visitor_preview_markup() {
-		if ( ! function_exists( 'rwgc_is_ready' ) || ! rwgc_is_ready() || ! function_exists( 'rwgc_get_visitor_data' ) ) {
-			return '';
-		}
-		$d      = rwgc_get_visitor_data();
-		$cc     = isset( $d['country_code'] ) ? strtoupper( (string) $d['country_code'] ) : '';
-		$cn     = isset( $d['country_name'] ) ? (string) $d['country_name'] : '';
-		$city   = isset( $d['city'] ) ? (string) $d['city'] : '';
-		$region = isset( $d['region'] ) ? (string) $d['region'] : '';
-		$ip     = isset( $d['ip'] ) ? (string) $d['ip'] : '';
-		$line1  = $cc;
-		if ( '' !== $cn ) {
-			$line1 .= ' (' . $cn . ')';
-		}
-		return '<div style="margin-bottom:10px;padding:8px;border:1px solid #e5e7eb;border-radius:4px;background:#f9fafb;font-size:12px;line-height:1.5;color:#374151;">'
-			. '<strong>' . esc_html__( 'Detected for your connection', 'reactwoo-geocore' ) . '</strong><br>'
-			. esc_html( $line1 !== '' ? $line1 : '—' ) . '<br>'
-			. esc_html__( 'City', 'reactwoo-geocore' ) . ': ' . esc_html( $city !== '' ? $city : '—' ) . '<br>'
-			. esc_html__( 'Region', 'reactwoo-geocore' ) . ': ' . esc_html( $region !== '' ? $region : '—' ) . '<br>'
-			. esc_html__( 'IP', 'reactwoo-geocore' ) . ': ' . esc_html( $ip !== '' ? $ip : '—' )
-			. '</div>';
-	}
-
-	/**
-	 * @return string
-	 */
-	private static function get_countries_select_html() {
+	public static function get_countries_select_html() {
 		$opts = self::get_country_options();
 		$html = '<div class="egp-countries-native"><label class="elementor-control-title">' . esc_html__( 'Target Countries', 'reactwoo-geocore' ) . '</label><div class="elementor-control-input-wrapper">';
 		$html .= '<select id="egp_countries_native" class="egp-country-select" multiple size="12" style="width:100%;max-width:100%;min-height:220px;">';
@@ -360,7 +177,7 @@ class RWGC_Elementor_Elements {
 	/**
 	 * @return array<string, string>
 	 */
-	private static function get_country_options() {
+	public static function get_country_options() {
 		if ( class_exists( 'RWGC_Countries', false ) ) {
 			$list = RWGC_Countries::get_options();
 			if ( is_array( $list ) && ! empty( $list ) ) {

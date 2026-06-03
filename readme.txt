@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.17
+Stable tag: 1.8.18
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,10 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.18 =
+* **Targeting conformity:** Shared `RWGC_Surface_Settings` normalization and `RWGC_Elementor_Geo_Controls` for split country targeting + visibility rules across Elementor elements, Gutenberg Geo Content block, post Geo visibility panel, and `[rwgc_if]` surface attributes.
+* **Evaluation:** All surfaces route through `RWGC_Targeting_Surface_Evaluator` with independent layers (AND when both enabled).
 
 = 1.8.9 =
 * **Popup suppression hardening:** Added runtime event-level popup guard (`elementor/popup/show`) with forced close fallback when a popup should be blocked by geo targeting.

@@ -14,11 +14,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class RWGC_Gutenberg_Post_Geo {
 
-	const META_ENABLED   = '_rwgc_post_geo_enabled';
-	const META_MODE      = '_rwgc_post_geo_mode';
-	const META_COUNTRIES = '_rwgc_post_geo_countries';
-	const META_USE_PORTABLE = '_rwgc_post_use_portable_targeting';
-	const META_PORTABLE  = '_rwgc_post_portable_targeting';
+	const META_ENABLED              = '_rwgc_post_geo_enabled';
+	const META_MODE                 = '_rwgc_post_geo_mode';
+	const META_COUNTRIES            = '_rwgc_post_geo_countries';
+	const META_USE_PORTABLE         = '_rwgc_post_use_portable_targeting';
+	const META_PORTABLE             = '_rwgc_post_portable_targeting';
+	const META_COUNTRY_ENABLED      = '_rwgc_post_country_enabled';
+	const META_COUNTRY_MODE         = '_rwgc_post_country_visibility_mode';
+	const META_VISIBILITY_ENABLED   = '_rwgc_post_visibility_rules_enabled';
+	const META_VISIBILITY_MODE      = '_rwgc_post_visibility_rules_mode';
 
 	/**
 	 * @return void
@@ -105,7 +109,53 @@ class RWGC_Gutenberg_Post_Geo {
 					'sanitize_callback' => array( __CLASS__, 'sanitize_portable' ),
 				)
 			);
+			self::register_yes_no_meta( $post_type, self::META_COUNTRY_ENABLED );
+			self::register_mode_meta( $post_type, self::META_COUNTRY_MODE );
+			self::register_yes_no_meta( $post_type, self::META_VISIBILITY_ENABLED );
+			self::register_mode_meta( $post_type, self::META_VISIBILITY_MODE );
 		}
+	}
+
+	/**
+	 * @param string $post_type Post type.
+	 * @param string $meta_key  Meta key.
+	 * @return void
+	 */
+	private static function register_yes_no_meta( $post_type, $meta_key ) {
+		register_post_meta(
+			$post_type,
+			$meta_key,
+			array(
+				'type'              => 'string',
+				'single'            => true,
+				'show_in_rest'      => true,
+				'auth_callback'     => array( __CLASS__, 'can_edit_meta' ),
+				'sanitize_callback' => static function ( $value ) {
+					return 'yes' === (string) $value ? 'yes' : '';
+				},
+			)
+		);
+	}
+
+	/**
+	 * @param string $post_type Post type.
+	 * @param string $meta_key  Meta key.
+	 * @return void
+	 */
+	private static function register_mode_meta( $post_type, $meta_key ) {
+		register_post_meta(
+			$post_type,
+			$meta_key,
+			array(
+				'type'              => 'string',
+				'single'            => true,
+				'show_in_rest'      => true,
+				'auth_callback'     => array( __CLASS__, 'can_edit_meta' ),
+				'sanitize_callback' => static function ( $value ) {
+					return function_exists( 'rwgc_normalize_visibility_mode' ) ? rwgc_normalize_visibility_mode( $value ) : sanitize_key( (string) $value );
+				},
+			)
+		);
 	}
 
 	/**
@@ -178,11 +228,15 @@ class RWGC_Gutenberg_Post_Geo {
 				'advancedTargeting' => function_exists( 'rwgc_advanced_targeting_enabled' ) && rwgc_advanced_targeting_enabled(),
 				'countries'         => class_exists( 'RWGC_Countries', false ) ? RWGC_Countries::get_options() : array(),
 				'meta'              => array(
-					'enabled'   => self::META_ENABLED,
-					'mode'      => self::META_MODE,
-					'countries' => self::META_COUNTRIES,
-					'usePortable' => self::META_USE_PORTABLE,
-					'portable'  => self::META_PORTABLE,
+					'enabled'           => self::META_ENABLED,
+					'mode'              => self::META_MODE,
+					'countries'         => self::META_COUNTRIES,
+					'usePortable'       => self::META_USE_PORTABLE,
+					'portable'          => self::META_PORTABLE,
+					'countryEnabled'    => self::META_COUNTRY_ENABLED,
+					'countryMode'       => self::META_COUNTRY_MODE,
+					'visibilityEnabled' => self::META_VISIBILITY_ENABLED,
+					'visibilityMode'    => self::META_VISIBILITY_MODE,
 				),
 			)
 		);
@@ -198,23 +252,20 @@ class RWGC_Gutenberg_Post_Geo {
 		}
 
 		$post_id = get_queried_object_id();
-		if ( ! $post_id || 'yes' !== (string) get_post_meta( $post_id, self::META_ENABLED, true ) ) {
+		if ( ! $post_id ) {
 			return $content;
 		}
 
-		$settings = array(
-			'egp_geo_enabled'                => 'yes',
-			'egp_use_portable_geo_targeting' => (string) get_post_meta( $post_id, self::META_USE_PORTABLE, true ),
-			'egp_portable_geo_targeting'     => (string) get_post_meta( $post_id, self::META_PORTABLE, true ),
-			'egp_countries'                  => get_post_meta( $post_id, self::META_COUNTRIES, true ),
-			'rwgc_visibility_mode'           => (string) get_post_meta( $post_id, self::META_MODE, true ),
-			'rwgc_geo_mode'                  => (string) get_post_meta( $post_id, self::META_MODE, true ),
-		);
-
-		if ( ! class_exists( 'RWGC_Elementor_Frontend', false ) ) {
+		if ( ! class_exists( 'RWGC_Surface_Settings', false ) || ! class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
 			return $content;
 		}
 
-		return RWGC_Elementor_Frontend::settings_should_render( $settings ) ? $content : '';
+		$settings = RWGC_Surface_Settings::from_post_meta( $post_id );
+		if ( ! RWGC_Targeting_Surface_Evaluator::is_surface_active( $settings ) ) {
+			return $content;
+		}
+
+		$result = RWGC_Targeting_Surface_Evaluator::evaluate( $settings );
+		return ! empty( $result['should_render'] ) ? $content : '';
 	}
 }
