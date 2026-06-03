@@ -38,9 +38,11 @@ class RWGC_Admin_Route_Registry {
 	 */
 	public static function init() {
 		add_action( 'rwgc_admin_submenu_registered', array( __CLASS__, 'on_submenu_registered' ), 10, 3 );
-		add_action( 'rwgc_loaded', array( __CLASS__, 'register_default_sections' ), 5 );
-		add_action( 'rwgc_loaded', array( __CLASS__, 'register_default_modules' ), 5 );
-		add_action( 'rwgc_loaded', array( __CLASS__, 'register_core_routes' ), 8 );
+		// Section/module/route labels use translation functions; register on `init`
+		// (not `rwgc_loaded` at plugins_loaded) to avoid WP 6.7 early-textdomain notices.
+		add_action( 'init', array( __CLASS__, 'register_default_sections' ), 5 );
+		add_action( 'init', array( __CLASS__, 'register_default_modules' ), 5 );
+		add_action( 'init', array( __CLASS__, 'register_core_routes' ), 8 );
 	}
 
 	/**

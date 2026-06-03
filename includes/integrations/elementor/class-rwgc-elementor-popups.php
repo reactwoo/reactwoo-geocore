@@ -243,11 +243,15 @@ class RWGC_Elementor_Popups {
 
 		$config_map = self::build_popup_config_map();
 		if ( empty( $config_map ) ) {
+			if ( self::is_debug_enabled() && function_exists( 'error_log' ) ) {
+				error_log( 'RWGC Popup Config Trace ' . wp_json_encode( array( 'detected_popups' => 0, 'note' => 'No Elementor popups have geo targeting page settings or active geo_rule popup rows.' ) ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			}
 			return;
 		}
 
 		$visitor = strtoupper( (string) rwgc_get_visitor_country() );
 		$blocked = array();
+		$trace   = array();
 
 		foreach ( $config_map as $popup_id => $config ) {
 			$decision = self::popup_should_display( (int) $popup_id );
@@ -255,6 +259,15 @@ class RWGC_Elementor_Popups {
 			if ( false === $decision ) {
 				$blocked[] = (int) $popup_id;
 			}
+			$trace[] = array(
+				'popup_id' => (int) $popup_id,
+				'decision' => null === $decision ? 'null(show)' : ( $decision ? 'show' : 'block' ),
+				'rwgc_show' => $config_map[ $popup_id ]['rwgc_show'],
+			);
+		}
+
+		if ( self::is_debug_enabled() && function_exists( 'error_log' ) ) {
+			error_log( 'RWGC Popup Config Trace ' . wp_json_encode( array( 'visitor_country' => $visitor, 'detected_popups' => count( $config_map ), 'decisions' => $trace ) ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		}
 
 		$printed = true;

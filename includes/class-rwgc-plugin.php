@@ -47,8 +47,11 @@ class RWGC_Plugin {
 
 		/**
 		 * Fires when ReactWoo Geo Core has loaded.
+		 *
+		 * Target registry init translates provider labels, so defer it to `init`
+		 * (WP 6.7 warns when translation functions run before `init`).
 		 */
-		add_action( 'rwgc_loaded', array( 'RWGC_Target_Registry', 'init' ), 1 );
+		add_action( 'init', array( 'RWGC_Target_Registry', 'init' ), 0 );
 
 		do_action( 'rwgc_loaded' );
 	}
