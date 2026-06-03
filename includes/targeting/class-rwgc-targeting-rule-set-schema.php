@@ -333,6 +333,7 @@ class RWGC_Targeting_Rule_Set_Schema {
 
 		$base = array(
 			'pro'                  => self::is_pro_active(),
+			'site_url'             => home_url( '/' ),
 			'advanced_targeting'   => function_exists( 'rwgc_advanced_targeting_enabled' ) && rwgc_advanced_targeting_enabled(),
 			'visibility_library'   => $library,
 			'audiences'            => array(),

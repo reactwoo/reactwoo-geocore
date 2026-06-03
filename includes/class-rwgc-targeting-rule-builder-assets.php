@@ -137,13 +137,17 @@ class RWGC_Targeting_Rule_Builder_Assets {
 			'pageVersionHelper'    => __( 'Visitors using this URL will see the targeted version of this page.', 'reactwoo-geocore' ),
 			'pageVersionPattern'   => __( 'Page Version URL:', 'reactwoo-geocore' ),
 			'pageVersionSummary'   => __( 'This content will show only on %s.', 'reactwoo-geocore' ),
+			'pageVersionFullUrl'   => __( 'Full URL to test or share', 'reactwoo-geocore' ),
+			'pageVersionCopy'      => __( 'Copy URL', 'reactwoo-geocore' ),
+			'pageVersionCopied'    => __( 'Copied', 'reactwoo-geocore' ),
+			'pageVersionOpen'      => __( 'Open in new tab', 'reactwoo-geocore' ),
 			'pageVersionInvalid'   => __( 'Enter only the version name, such as campaign_name.', 'reactwoo-geocore' ),
 			'pageVersionChars'     => __( 'Use letters, numbers, hyphens, and underscores only.', 'reactwoo-geocore' ),
 			'pageVersionLength'    => __( 'Keep the version name under 80 characters.', 'reactwoo-geocore' ),
 			'pageVersionPickPage'  => __( 'Choose a page first, then enter the version name.', 'reactwoo-geocore' ),
 			'libraryLabel'         => __( 'Apply saved visibility rule', 'reactwoo-geocore' ),
 			'libraryNone'          => __( '— Choose from library —', 'reactwoo-geocore' ),
-			'libraryHelp'          => __( 'Loads a published rule from Targeting → Visibility rules. You can still edit conditions after applying. Example: hide a default form when the South Africa form is shown.', 'reactwoo-geocore' ),
+			'libraryHelp'          => __( 'Portable library rules only (Targeting → Visibility rules). You can still edit conditions after applying.', 'reactwoo-geocore' ),
 			'advancedTargetingNotice' => __( 'Additional condition types require GeoCore Pro. Country targeting is always available.', 'reactwoo-geocore' ),
 		);
 	}

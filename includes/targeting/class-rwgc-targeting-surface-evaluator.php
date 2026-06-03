@@ -68,16 +68,10 @@ class RWGC_Targeting_Surface_Evaluator {
 	/**
 	 * Evaluate targeting for a settings array.
 	 *
+	 * Countries and portable rules combine with AND when both are configured.
+	 *
 	 * @param array<string, mixed> $settings Builder settings.
-	 * @return array<string, mixed> {
-	 *   @type bool   $targeting_enabled
-	 *   @type bool   $rules_match
-	 *   @type bool   $should_render
-	 *   @type string $visibility_mode
-	 *   @type string $rule_source
-	 *   @type string $rule_json
-	 *   @type string $reason
-	 * }
+	 * @return array<string, mixed>
 	 */
 	public static function evaluate( array $settings ) {
 		$result = array(
@@ -88,52 +82,60 @@ class RWGC_Targeting_Surface_Evaluator {
 			'rule_source'       => '',
 			'rule_json'         => '',
 			'reason'            => 'no_targeting',
+			'country_match'     => true,
+			'portable_match'    => true,
 		);
 
 		if ( ! $result['targeting_enabled'] ) {
 			return $result;
 		}
 
-		$mode = $result['visibility_mode'];
-		$set  = null;
+		$mode            = $result['visibility_mode'];
+		$countries       = self::parse_countries( $settings );
+		$country_active  = ! empty( $countries );
+		$portable_active = self::uses_portable_rules( $settings );
+		$set             = null;
 
-		if ( self::uses_portable_rules( $settings ) && class_exists( 'RWGC_Rule_Registry', false ) ) {
-			$set = RWGC_Rule_Registry::resolve_rule_set_from_settings( $settings );
-			if ( is_array( $set ) ) {
-				$result['rule_source'] = ! empty( $settings['rwgc_visibility_rule_library'] )
-					? 'library:' . (string) $settings['rwgc_visibility_rule_library']
-					: 'inline_portable';
-				$encoded               = wp_json_encode( $set );
-				$result['rule_json']   = is_string( $encoded ) ? $encoded : '';
+		if ( $country_active ) {
+			$visitor = function_exists( 'rwgc_get_visitor_country' ) ? strtoupper( (string) rwgc_get_visitor_country() ) : '';
+			if ( '' === $visitor ) {
+				$result['country_match'] = false;
+			} else {
+				$result['country_match'] = in_array( $visitor, $countries, true );
 			}
 		}
 
-		if ( is_array( $set ) && class_exists( 'RWGC_Rule_Evaluator', false ) && class_exists( 'RWGC_Context_Resolver', false ) ) {
-			$snapshot              = RWGC_Context_Resolver::resolve_current();
-			$result['rules_match'] = RWGC_Rule_Evaluator::matches( $set, $snapshot );
-			if ( ! empty( $set['mode'] ) && function_exists( 'rwgc_normalize_visibility_mode' ) ) {
-				$mode = rwgc_normalize_visibility_mode( (string) $set['mode'] );
+		if ( $portable_active && class_exists( 'RWGC_Rule_Registry', false ) ) {
+			$set = RWGC_Rule_Registry::resolve_rule_set_from_settings( $settings );
+			if ( is_array( $set ) ) {
+				$result['rule_source'] = ! empty( $settings['rwgc_visibility_rule_library'] ) || ! empty( $settings['rwgc_applied_visibility_rule_id'] )
+					? 'library:' . (string) ( $settings['rwgc_visibility_rule_library'] ?? $settings['rwgc_applied_visibility_rule_id'] )
+					: 'inline_portable';
+				$encoded               = wp_json_encode( $set );
+				$result['rule_json']   = is_string( $encoded ) ? $encoded : '';
+				if ( class_exists( 'RWGC_Rule_Evaluator', false ) && class_exists( 'RWGC_Context_Resolver', false ) ) {
+					$snapshot               = RWGC_Context_Resolver::resolve_current();
+					$result['portable_match'] = RWGC_Rule_Evaluator::matches( $set, $snapshot );
+				}
+			} elseif ( $portable_active ) {
+				// Portable mode on but no rule data yet — do not block (avoid suppressing everyone).
+				$result['portable_match'] = true;
+				$result['reason']         = 'portable_enabled_empty';
 			}
-			$result['visibility_mode'] = $mode;
-			$result['reason']          = 'portable_rules';
-		} else {
-			$countries = self::parse_countries( $settings );
-			if ( empty( $countries ) ) {
-				$result['rules_match']   = true;
-				$result['should_render'] = true;
-				$result['reason']        = 'targeting_enabled_empty_rules';
-				return $result;
-			}
+		}
 
-			$visitor = function_exists( 'rwgc_get_visitor_country' ) ? strtoupper( (string) rwgc_get_visitor_country() ) : '';
-			if ( '' === $visitor ) {
-				$result['rules_match'] = false;
-				$result['reason']      = 'unknown_country';
-			} else {
-				$result['rules_match'] = in_array( $visitor, $countries, true );
-				$result['reason']      = 'country_list';
-			}
-			$result['rule_source'] = 'countries';
+		if ( $country_active && $portable_active && is_array( $set ) ) {
+			$result['rules_match'] = $result['country_match'] && $result['portable_match'];
+			$result['reason']      = 'countries_and_portable';
+		} elseif ( $portable_active && is_array( $set ) ) {
+			$result['rules_match'] = $result['portable_match'];
+			$result['reason']      = 'portable_rules';
+		} elseif ( $country_active ) {
+			$result['rules_match'] = $result['country_match'];
+			$result['reason']      = 'country_list';
+		} else {
+			$result['rules_match'] = true;
+			$result['reason']      = 'targeting_enabled_empty_rules';
 		}
 
 		if ( function_exists( 'rwgc_visibility_mode_allows_render' ) ) {

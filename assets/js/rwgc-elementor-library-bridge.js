@@ -23,6 +23,11 @@
 		return $ta.length ? $ta.first() : null;
 	}
 
+	function appliedRuleInput($panel) {
+		var $inp = $panel.find('.elementor-control-rwgc_applied_visibility_rule_id input');
+		return $inp.length ? $inp.first() : null;
+	}
+
 	function applyLibraryJson($panel, json) {
 		if (!json) {
 			return;
@@ -38,6 +43,13 @@
 		}
 	}
 
+	function persistAppliedRuleId($panel, id) {
+		var $inp = appliedRuleInput($panel);
+		if ($inp && $inp.length) {
+			$inp.val(id).trigger('input').trigger('change');
+		}
+	}
+
 	function bindLibrarySelect($panel) {
 		$panel
 			.find('.elementor-control-rwgc_visibility_rule_library select')
@@ -45,13 +57,14 @@
 			.on('change.rwgcLib', function () {
 				var id = String($(this).val() || '');
 				if (!id) {
+					persistAppliedRuleId($panel, '');
 					return;
 				}
 				var row = rowsById[id];
 				if (row && row.json) {
 					applyLibraryJson($panel, row.json);
 				}
-				$(this).val('');
+				persistAppliedRuleId($panel, id);
 			});
 	}
 

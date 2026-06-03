@@ -153,18 +153,31 @@ class RWGC_Page_Version_Routing {
 			$merged = array();
 		}
 
-		$version = get_query_var( self::QUERY_VAR );
-		$error   = '';
-		$version = RWGC_Page_Version::sanitize_version_name( is_string( $version ) ? $version : '', $error );
+		$version  = get_query_var( self::QUERY_VAR );
+		$error    = '';
+		$version  = RWGC_Page_Version::sanitize_version_name( is_string( $version ) ? $version : '', $error );
+		$pagename = get_query_var( 'pagename' );
+		$page_id  = 0;
 
-		$page_id = 0;
 		if ( '' !== $version ) {
-			$pagename = get_query_var( 'pagename' );
 			if ( is_string( $pagename ) && '' !== trim( $pagename ) ) {
 				$page_id = RWGC_Page_Version::resolve_post_id_from_path( $pagename );
 			}
 			if ( $page_id <= 0 && function_exists( 'get_queried_object_id' ) ) {
 				$page_id = (int) get_queried_object_id();
+			}
+		}
+
+		// Early requests (e.g. Elementor popup should_show) may not have query vars yet.
+		if ( ( '' === $version || $page_id <= 0 ) && class_exists( 'RWGC_Page_Version_Routing', false ) ) {
+			$parsed = self::parse_request_path();
+			if ( is_array( $parsed ) ) {
+				if ( '' === $version && ! empty( $parsed['version'] ) ) {
+					$version = RWGC_Page_Version::sanitize_version_name( (string) $parsed['version'], $error );
+				}
+				if ( $page_id <= 0 && ! empty( $parsed['pagename'] ) ) {
+					$page_id = RWGC_Page_Version::resolve_post_id_from_path( (string) $parsed['pagename'] );
+				}
 			}
 		}
 

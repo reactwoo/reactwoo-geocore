@@ -35,21 +35,19 @@ class RWGC_Rule_Registry {
 	}
 
 	/**
-	 * Picker rows ({id, title, json}) for Elementor/Gutenberg JS bridges.
+	 * Picker rows for builder dropdowns — portable library CPT only (not section/geo_rule rows).
 	 *
 	 * @return array<int, array{id:string,title:string,json:string}>
 	 */
-	public static function get_library_picker_rows() {
+	public static function get_portable_library_picker_rows() {
 		$out = array();
-		foreach ( self::get_rules_for_builder() as $row ) {
+		foreach ( self::get_rwgc_library_rows() as $row ) {
 			$id = isset( $row['id'] ) ? (string) $row['id'] : '';
 			if ( '' === $id ) {
 				continue;
 			}
-			$json = '';
-			if ( ! empty( $row['json'] ) && is_string( $row['json'] ) ) {
-				$json = $row['json'];
-			} elseif ( ! empty( $row['rules'] ) && is_array( $row['rules'] ) ) {
+			$json = ! empty( $row['json'] ) && is_string( $row['json'] ) ? $row['json'] : '';
+			if ( '' === trim( $json ) && ! empty( $row['rules'] ) && is_array( $row['rules'] ) ) {
 				$encoded = wp_json_encode( $row['rules'] );
 				$json    = is_string( $encoded ) ? $encoded : '';
 			}
@@ -63,6 +61,15 @@ class RWGC_Rule_Registry {
 			);
 		}
 		return $out;
+	}
+
+	/**
+	 * Picker rows ({id, title, json}) for Elementor/Gutenberg JS bridges.
+	 *
+	 * @return array<int, array{id:string,title:string,json:string}>
+	 */
+	public static function get_library_picker_rows() {
+		return self::get_portable_library_picker_rows();
 	}
 
 	/**
@@ -90,10 +97,17 @@ class RWGC_Rule_Registry {
 	 */
 	public static function get_rule_set_by_id( $rule_id ) {
 		$row = self::get_rule_row( $rule_id );
-		if ( ! is_array( $row ) || empty( $row['rules'] ) || ! is_array( $row['rules'] ) ) {
-			return null;
+		if ( is_array( $row ) && ! empty( $row['rules'] ) && is_array( $row['rules'] ) ) {
+			return $row['rules'];
 		}
-		return $row['rules'];
+		$post_id = absint( $rule_id );
+		if ( $post_id > 0 && class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
+			$from_post = RWGC_Visibility_Rule_Repository::get_rule_set( $post_id );
+			if ( is_array( $from_post ) ) {
+				return $from_post;
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -107,16 +121,20 @@ class RWGC_Rule_Registry {
 		if ( ! empty( $settings['rwgc_visibility_rule_library'] ) ) {
 			$library_id = (string) $settings['rwgc_visibility_rule_library'];
 		}
+		if ( '' === $library_id && ! empty( $settings['rwgc_applied_visibility_rule_id'] ) ) {
+			$library_id = (string) $settings['rwgc_applied_visibility_rule_id'];
+		}
 
 		if ( '' !== $library_id ) {
 			$from_library = self::get_rule_set_by_id( $library_id );
 			if ( is_array( $from_library ) ) {
 				return $from_library;
 			}
-			if ( is_numeric( $library_id ) ) {
-				$from_library = self::get_rule_set_by_id( (string) (int) $library_id );
-				if ( is_array( $from_library ) ) {
-					return $from_library;
+			$post_id = absint( $library_id );
+			if ( $post_id > 0 && class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
+				$from_post = RWGC_Visibility_Rule_Repository::get_rule_set( $post_id );
+				if ( is_array( $from_post ) ) {
+					return $from_post;
 				}
 			}
 		}

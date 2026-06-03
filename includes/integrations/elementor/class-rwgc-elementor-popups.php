@@ -464,7 +464,8 @@ class RWGC_Elementor_Popups {
 			'egp_use_portable_geo_targeting'  => $use_portable,
 			'rwgc_portable_geo_targeting'     => $portable_raw,
 			'egp_portable_geo_targeting'      => $portable_raw,
-			'rwgc_visibility_rule_library'  => isset( $page_settings['rwgc_visibility_rule_library'] ) ? (string) $page_settings['rwgc_visibility_rule_library'] : '',
+			'rwgc_visibility_rule_library'    => isset( $page_settings['rwgc_visibility_rule_library'] ) ? (string) $page_settings['rwgc_visibility_rule_library'] : '',
+			'rwgc_applied_visibility_rule_id' => isset( $page_settings['rwgc_applied_visibility_rule_id'] ) ? (string) $page_settings['rwgc_applied_visibility_rule_id'] : '',
 		);
 	}
 
@@ -620,6 +621,8 @@ class RWGC_Elementor_Popups {
 			'applied_rule_source'=> isset( $result['rule_source'] ) ? (string) $result['rule_source'] : '',
 			'rule_json'          => isset( $result['rule_json'] ) ? (string) $result['rule_json'] : '',
 			'rule_match_result'  => $rules_match,
+			'country_match'      => isset( $result['country_match'] ) ? (bool) $result['country_match'] : null,
+			'portable_match'     => isset( $result['portable_match'] ) ? (bool) $result['portable_match'] : null,
 			'popup_trigger_result' => $should_render ? 'allow' : 'block',
 			'final_decision'     => $should_render ? 'show' : 'suppress',
 			'reason'             => isset( $result['reason'] ) ? (string) $result['reason'] : '',

@@ -197,6 +197,24 @@
 		return base + '/_gc/' + version;
 	}
 
+	function pageVersionAbsoluteUrl(relativePath, c) {
+		if (!relativePath) {
+			return '';
+		}
+		var site = (c && c.site_url) ? String(c.site_url) : '';
+		if (!site && typeof window !== 'undefined' && window.location && window.location.origin) {
+			site = window.location.origin + '/';
+		}
+		if (!site) {
+			return '/' + String(relativePath).replace(/^\/+/, '');
+		}
+		try {
+			return new URL(String(relativePath).replace(/^\//, ''), site).href;
+		} catch (e) {
+			return site.replace(/\/?$/, '/') + String(relativePath).replace(/^\/+/, '');
+		}
+	}
+
 	function opUiToPortable(ui) {
 		var m = {
 			is: 'is',
@@ -682,8 +700,68 @@
 		var summary = document.createElement('p');
 		summary.className = 'rwgc-rb__page-version-summary description';
 
+		var urlBox = document.createElement('div');
+		urlBox.className = 'rwgc-rb__page-version-urlbox';
+		urlBox.hidden = true;
+		var urlLab = document.createElement('label');
+		urlLab.className = 'rwgc-rb__page-version-urlbox-label';
+		urlLab.textContent = t('pageVersionFullUrl');
+		var urlRow = document.createElement('div');
+		urlRow.className = 'rwgc-rb__page-version-urlbox-row';
+		var urlInp = document.createElement('input');
+		urlInp.type = 'text';
+		urlInp.className = 'rwgc-rb__page-version-urlbox-input';
+		urlInp.readOnly = true;
+		var copyBtn = document.createElement('button');
+		copyBtn.type = 'button';
+		copyBtn.className = 'button button-small rwgc-rb__page-version-copy';
+		copyBtn.textContent = t('pageVersionCopy');
+		var openBtn = document.createElement('a');
+		openBtn.className = 'button button-small rwgc-rb__page-version-open';
+		openBtn.target = '_blank';
+		openBtn.rel = 'noopener noreferrer';
+		openBtn.textContent = t('pageVersionOpen');
+		urlRow.appendChild(urlInp);
+		urlRow.appendChild(copyBtn);
+		urlRow.appendChild(openBtn);
+		urlBox.appendChild(urlLab);
+		urlBox.appendChild(urlRow);
+
 		panel.appendChild(err);
 		panel.appendChild(summary);
+		panel.appendChild(urlBox);
+
+		copyBtn.addEventListener('click', function () {
+			var val = urlInp.value;
+			if (!val) {
+				return;
+			}
+			function done() {
+				copyBtn.textContent = t('pageVersionCopied');
+				setTimeout(function () {
+					copyBtn.textContent = t('pageVersionCopy');
+				}, 1600);
+			}
+			if (navigator.clipboard && navigator.clipboard.writeText) {
+				navigator.clipboard.writeText(val).then(done).catch(function () {
+					urlInp.select();
+					try {
+						document.execCommand('copy');
+						done();
+					} catch (e2) {
+						/* ignore */
+					}
+				});
+			} else {
+				urlInp.select();
+				try {
+					document.execCommand('copy');
+					done();
+				} catch (e3) {
+					/* ignore */
+				}
+			}
+		});
 
 		function updatePageVersionFeedback() {
 			if (!pageId) {
@@ -702,8 +780,15 @@
 			var preview = pageVersionPreviewPath(pageId, san.version, c);
 			if (preview) {
 				summary.textContent = t('pageVersionSummary').replace('%s', preview);
+				var abs = pageVersionAbsoluteUrl(preview, c);
+				urlInp.value = abs;
+				openBtn.href = abs;
+				urlBox.hidden = false;
 			} else {
 				summary.textContent = '';
+				urlInp.value = '';
+				openBtn.removeAttribute('href');
+				urlBox.hidden = true;
 			}
 		}
 

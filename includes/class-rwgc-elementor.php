@@ -125,7 +125,7 @@ class RWGC_Elementor {
 					'label_off'    => __( 'No', 'reactwoo-geocore' ),
 					'return_value' => 'yes',
 					'default'      => '',
-					'description'  => __( 'Pick a saved rule below or build conditions in the rule builder. When enabled, this replaces the country list for this document.', 'reactwoo-geocore' ),
+					'description'  => __( 'Add portable conditions in addition to countries above. Both must match when both are set.', 'reactwoo-geocore' ),
 					'condition'    => array(
 						'egp_enable_geo_targeting' => 'yes',
 					),
@@ -140,7 +140,7 @@ class RWGC_Elementor {
 						'type'        => \Elementor\Controls_Manager::SELECT,
 						'options'     => RWGC_Elementor_Elements::get_visibility_library_select_options(),
 						'label_block' => true,
-						'description' => __( 'Loads a rule from Targeting → Visibility rules.', 'reactwoo-geocore' ),
+						'description' => __( 'Portable library rules only (Targeting → Visibility rules). Inline edits apply to this document.', 'reactwoo-geocore' ),
 						'condition'   => array(
 							'egp_enable_geo_targeting'        => 'yes',
 							'rwgc_use_portable_geo_targeting' => 'yes',
@@ -148,6 +148,18 @@ class RWGC_Elementor {
 					)
 				);
 			}
+
+			$element->add_control(
+				'rwgc_applied_visibility_rule_id',
+				array(
+					'type'      => \Elementor\Controls_Manager::HIDDEN,
+					'default'   => '',
+					'condition' => array(
+						'egp_enable_geo_targeting'        => 'yes',
+						'rwgc_use_portable_geo_targeting' => 'yes',
+					),
+				)
+			);
 
 			$element->add_control(
 				'rwgc_portable_geo_targeting',
@@ -334,7 +346,8 @@ class RWGC_Elementor {
 				'egp_use_portable_geo_targeting'  => isset( $settings['egp_use_portable_geo_targeting'] ) ? (string) $settings['egp_use_portable_geo_targeting'] : '',
 				'rwgc_portable_geo_targeting'     => isset( $settings['rwgc_portable_geo_targeting'] ) ? wp_unslash( (string) $settings['rwgc_portable_geo_targeting'] ) : '',
 				'egp_portable_geo_targeting'      => isset( $settings['egp_portable_geo_targeting'] ) ? wp_unslash( (string) $settings['egp_portable_geo_targeting'] ) : '',
-				'rwgc_visibility_rule_library'  => isset( $settings['rwgc_visibility_rule_library'] ) ? (string) $settings['rwgc_visibility_rule_library'] : '',
+				'rwgc_visibility_rule_library'    => isset( $settings['rwgc_visibility_rule_library'] ) ? (string) $settings['rwgc_visibility_rule_library'] : '',
+				'rwgc_applied_visibility_rule_id' => isset( $settings['rwgc_applied_visibility_rule_id'] ) ? (string) $settings['rwgc_applied_visibility_rule_id'] : '',
 				'egp_countries'                  => isset( $settings['egp_countries'] ) ? $settings['egp_countries'] : array(),
 				'rwgc_visibility_mode'           => isset( $settings['rwgc_visibility_mode'] ) ? $settings['rwgc_visibility_mode'] : ( isset( $settings['rwgc_geo_mode'] ) ? $settings['rwgc_geo_mode'] : 'show_if' ),
 			);

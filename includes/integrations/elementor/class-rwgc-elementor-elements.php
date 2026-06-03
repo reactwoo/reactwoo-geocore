@@ -207,8 +207,7 @@ class RWGC_Elementor_Elements {
 				'type'      => \Elementor\Controls_Manager::RAW_HTML,
 				'raw'       => $countries_html,
 				'condition' => array(
-					'egp_geo_enabled'                => 'yes',
-					'egp_use_portable_geo_targeting' => '',
+					'egp_geo_enabled' => 'yes',
 				),
 			)
 		);
@@ -219,8 +218,7 @@ class RWGC_Elementor_Elements {
 				'type'      => \Elementor\Controls_Manager::HIDDEN,
 				'default'   => '',
 				'condition' => array(
-					'egp_geo_enabled'                => 'yes',
-					'egp_use_portable_geo_targeting' => '',
+					'egp_geo_enabled' => 'yes',
 				),
 			)
 		);
@@ -235,7 +233,7 @@ class RWGC_Elementor_Elements {
 					'label_off'    => __( 'No', 'reactwoo-geocore' ),
 					'return_value' => 'yes',
 					'default'      => '',
-					'description'  => __( 'Advanced targeting via GeoCore Pro. Pick a saved rule below or build conditions in the rule builder.', 'reactwoo-geocore' ),
+					'description'  => __( 'Add portable conditions in addition to countries above. Both must match when both are set.', 'reactwoo-geocore' ),
 					'condition'    => array( 'egp_geo_enabled' => 'yes' ),
 				)
 			);
@@ -247,8 +245,20 @@ class RWGC_Elementor_Elements {
 					'type'        => \Elementor\Controls_Manager::SELECT,
 					'options'     => self::get_visibility_library_select_options(),
 					'label_block' => true,
-					'description' => __( 'Loads a rule from Targeting → Visibility rules. You can still edit conditions after applying.', 'reactwoo-geocore' ),
+					'description' => __( 'Portable library rules only. Combines with countries above when both are set.', 'reactwoo-geocore' ),
 					'condition'   => array(
+						'egp_geo_enabled'                => 'yes',
+						'egp_use_portable_geo_targeting' => 'yes',
+					),
+				)
+			);
+
+			$element->add_control(
+				'rwgc_applied_visibility_rule_id',
+				array(
+					'type'      => \Elementor\Controls_Manager::HIDDEN,
+					'default'   => '',
+					'condition' => array(
 						'egp_geo_enabled'                => 'yes',
 						'egp_use_portable_geo_targeting' => 'yes',
 					),

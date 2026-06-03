@@ -302,6 +302,30 @@
 	margin: 6px 0 0;
 	font-size: 12px;
 }
+.rwgc-rb__page-version-urlbox {
+	margin-top: 10px;
+	padding: 10px 12px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+}
+.rwgc-rb__page-version-urlbox-label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 6px;
+}
+.rwgc-rb__page-version-urlbox-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: center;
+}
+.rwgc-rb__page-version-urlbox-input {
+	flex: 1 1 220px;
+	min-width: 0;
+	font-family: Consolas, Monaco, monospace;
+	font-size: 12px;
+}
 .rwgc-rb__page-version-summary {
 	margin: 6px 0 0;
 	font-weight: 500;
