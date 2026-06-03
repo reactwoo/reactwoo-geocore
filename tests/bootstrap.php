@@ -5,6 +5,10 @@
 
 define( 'ABSPATH', dirname( __DIR__ ) . '/' );
 
+if ( ! defined( 'HOUR_IN_SECONDS' ) ) {
+	define( 'HOUR_IN_SECONDS', 3600 );
+}
+
 if ( ! function_exists( 'sanitize_text_field' ) ) {
 	/**
 	 * @param mixed $str Value.
@@ -33,6 +37,46 @@ if ( ! function_exists( 'absint' ) ) {
 	 */
 	function absint( $maybeint ) {
 		return (int) abs( (float) $maybeint );
+	}
+}
+
+if ( ! function_exists( 'wp_parse_args' ) ) {
+	/**
+	 * @param mixed $args     Arguments.
+	 * @param array $defaults Defaults.
+	 * @return array
+	 */
+	function wp_parse_args( $args, $defaults = array() ) {
+		if ( ! is_array( $args ) ) {
+			$args = array();
+		}
+		return array_merge( $defaults, $args );
+	}
+}
+
+if ( ! function_exists( 'get_option' ) ) {
+	/**
+	 * @param string $key     Option key.
+	 * @param mixed  $default Default value.
+	 * @return mixed
+	 */
+	function get_option( $key, $default = false ) {
+		return array_key_exists( $key, $GLOBALS['rwgc_test_options'] ?? array() ) ? $GLOBALS['rwgc_test_options'][ $key ] : $default;
+	}
+}
+
+if ( ! function_exists( 'update_option' ) ) {
+	/**
+	 * @param string $key   Option key.
+	 * @param mixed  $value Option value.
+	 * @return bool
+	 */
+	function update_option( $key, $value ) {
+		if ( ! isset( $GLOBALS['rwgc_test_options'] ) || ! is_array( $GLOBALS['rwgc_test_options'] ) ) {
+			$GLOBALS['rwgc_test_options'] = array();
+		}
+		$GLOBALS['rwgc_test_options'][ $key ] = $value;
+		return true;
 	}
 }
 
@@ -65,6 +109,37 @@ if ( ! function_exists( 'wp_json_encode' ) ) {
 	 */
 	function wp_json_encode( $value ) {
 		return json_encode( $value );
+	}
+}
+
+if ( ! function_exists( 'rwgc_get_visitor_country' ) ) {
+	/**
+	 * @return string
+	 */
+	function rwgc_get_visitor_country() {
+		return isset( $GLOBALS['rwgc_test_visitor_country'] ) ? (string) $GLOBALS['rwgc_test_visitor_country'] : '';
+	}
+}
+
+if ( ! function_exists( 'rwgc_normalize_visibility_mode' ) ) {
+	/**
+	 * @param mixed $mode Raw mode.
+	 * @return string
+	 */
+	function rwgc_normalize_visibility_mode( $mode ) {
+		$raw = sanitize_key( (string) $mode );
+		return in_array( $raw, array( 'hide_if', 'hide', 'restrict', 'suppress' ), true ) ? 'hide_if' : 'show_if';
+	}
+}
+
+if ( ! function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
+	/**
+	 * @param mixed $mode    Visibility mode.
+	 * @param bool  $matched Whether the target matched.
+	 * @return bool
+	 */
+	function rwgc_visibility_mode_allows_render( $mode, $matched ) {
+		return 'hide_if' === rwgc_normalize_visibility_mode( $mode ) ? ! $matched : (bool) $matched;
 	}
 }
 

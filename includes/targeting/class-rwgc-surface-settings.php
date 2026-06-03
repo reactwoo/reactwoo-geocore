@@ -56,6 +56,7 @@ class RWGC_Surface_Settings {
 	 * @return array<string, mixed>
 	 */
 	public static function from_block_attributes( array $attributes ) {
+		$has_country_visibility_mode = array_key_exists( 'countryVisibilityMode', $attributes );
 		$attrs = wp_parse_args(
 			$attributes,
 			array(
@@ -73,23 +74,32 @@ class RWGC_Surface_Settings {
 			)
 		);
 
-		$country_on = ! empty( $attrs['enableCountryTargeting'] );
+		$show_countries = is_array( $attrs['showCountries'] ) ? $attrs['showCountries'] : array();
+		$hide_countries = is_array( $attrs['hideCountries'] ) ? $attrs['hideCountries'] : array();
+		$legacy_portable_on = ! empty( $attrs['usePortableTargeting'] ) || '' !== trim( (string) $attrs['portableTargeting'] );
+
+		$country_on    = ! empty( $attrs['enableCountryTargeting'] );
 		$visibility_on = ! empty( $attrs['enableVisibilityRules'] );
 
 		if ( ! $country_on && ! $visibility_on ) {
-			$countries = is_array( $attrs['showCountries'] ) ? $attrs['showCountries'] : array();
-			if ( ! empty( $countries ) || ( is_array( $attrs['hideCountries'] ) && ! empty( $attrs['hideCountries'] ) ) ) {
+			if ( $legacy_portable_on ) {
+				$visibility_on = true;
+			} elseif ( ! empty( $show_countries ) || ! empty( $hide_countries ) ) {
 				$country_on = true;
 			}
-			if ( ! empty( $attrs['usePortableTargeting'] ) || '' !== trim( (string) $attrs['portableTargeting'] ) ) {
-				$visibility_on = true;
-			}
+		}
+
+		$country_mode = self::normalize_mode_value( $has_country_visibility_mode ? $attrs['countryVisibilityMode'] : ( $attrs['mode'] ?? 'show_if' ) );
+		$countries    = $show_countries;
+		if ( $country_on && empty( $show_countries ) && ! empty( $hide_countries ) ) {
+			$countries    = $hide_countries;
+			$country_mode = 'hide_if';
 		}
 
 		$settings = array(
 			'egp_enable_geo_targeting'        => $country_on ? 'yes' : '',
-			'rwgc_country_visibility_mode'    => self::normalize_mode_value( $attrs['countryVisibilityMode'] ?? $attrs['mode'] ?? 'show_if' ),
-			'egp_countries'                   => is_array( $attrs['showCountries'] ) ? $attrs['showCountries'] : array(),
+			'rwgc_country_visibility_mode'    => $country_mode,
+			'egp_countries'                   => $countries,
 			'rwgc_enable_visibility_rules'    => $visibility_on ? 'yes' : '',
 			'rwgc_visibility_rules_mode'      => self::normalize_mode_value( $attrs['visibilityRulesMode'] ?? 'show_if' ),
 			'rwgc_portable_geo_targeting'     => (string) ( $attrs['portableTargeting'] ?? '' ),
