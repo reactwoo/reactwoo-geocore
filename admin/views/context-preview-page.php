@@ -9,7 +9,7 @@ $preview_url           = admin_url( 'admin.php?page=rwgc-context-preview' );
 <div class="wrap rwgc-wrap">
 	<h1><?php esc_html_e( 'Visitor test (advanced)', 'reactwoo-geocore' ); ?></h1>
 	<p class="description">
-		<?php esc_html_e( 'Use this advanced tool to simulate visitor values. Most users should use Tools > Test current visitor.', 'reactwoo-geocore' ); ?>
+		<?php esc_html_e( 'Use this advanced tool to simulate visitor values. Most users should test the live visitor on Integrations → MaxMind.', 'reactwoo-geocore' ); ?>
 	</p>
 
 	<form method="get" action="<?php echo esc_url( $preview_url ); ?>" class="rwgc-context-preview-form">

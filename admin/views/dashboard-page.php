@@ -73,7 +73,7 @@ if ( $rwgc_platform_shell ) {
 			'primary' => true,
 		),
 		array(
-			'url'     => admin_url( 'admin.php?page=rwgc-tools' ),
+			'url'     => function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ),
 			'label'   => __( 'Test Visitor Context', 'reactwoo-geocore' ),
 			'primary' => false,
 		),
@@ -126,7 +126,7 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 		<div class="rwgc-suite-hero__actions">
 			<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-suite-variants' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Create Geo Rule', 'reactwoo-geocore' ); ?></a>
 			<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-settings' ) ); ?>" class="button"><?php esc_html_e( 'Configure Detection', 'reactwoo-geocore' ); ?></a>
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-tools' ) ); ?>" class="button"><?php esc_html_e( 'Test Visitor Context', 'reactwoo-geocore' ); ?></a>
+			<a href="<?php echo esc_url( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) ); ?>" class="button"><?php esc_html_e( 'Test Visitor Context', 'reactwoo-geocore' ); ?></a>
 		</div>
 	</section>
 	<?php endif; ?>
@@ -147,15 +147,15 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 			<?php
 			RWGC_Admin_UI::render_checklist_row(
 				$maxmind_ok,
-				__( 'Save MaxMind (GeoLite2) credentials under Settings.', 'reactwoo-geocore' ),
-				admin_url( 'admin.php?page=rwgc-settings' ),
-				__( 'Open Settings', 'reactwoo-geocore' )
+				__( 'Save MaxMind (GeoLite2) credentials under Integrations.', 'reactwoo-geocore' ),
+				function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ),
+				__( 'Open MaxMind integration', 'reactwoo-geocore' )
 			);
 			RWGC_Admin_UI::render_checklist_row(
 				$db_ready,
-				__( 'Download or upload the country database (Tools).', 'reactwoo-geocore' ),
-				admin_url( 'admin.php?page=rwgc-tools' ),
-				__( 'Open Tools', 'reactwoo-geocore' )
+				__( 'Download or upload the country database.', 'reactwoo-geocore' ),
+				function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ),
+				__( 'Open MaxMind integration', 'reactwoo-geocore' )
 			);
 			RWGC_Admin_UI::render_checklist_row(
 				true,

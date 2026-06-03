@@ -37,37 +37,17 @@ $option_key = RWGC_Settings::OPTION_KEY;
 					</p>
 				</td>
 			</tr>
-			<tr><th colspan="2"><h2><?php esc_html_e( 'Database', 'reactwoo-geocore' ); ?></h2></th></tr>
 			<tr>
-				<th scope="row"><?php esc_html_e( 'MaxMind account (GeoLite2)', 'reactwoo-geocore' ); ?></th>
+				<th scope="row"><?php esc_html_e( 'MaxMind (GeoLite2)', 'reactwoo-geocore' ); ?></th>
 				<td>
-					<p>
-						<label>
-							<?php esc_html_e( 'Account ID', 'reactwoo-geocore' ); ?>
-							<input type="text" name="<?php echo esc_attr( $option_key ); ?>[maxmind_account_id]" value="<?php echo esc_attr( isset( $settings['maxmind_account_id'] ) ? $settings['maxmind_account_id'] : '' ); ?>" class="regular-text" />
-						</label>
+					<p class="description">
+						<?php esc_html_e( 'Credentials, database download, upload, and visitor detection tests live under Integrations.', 'reactwoo-geocore' ); ?>
 					</p>
 					<p>
-						<label>
-							<?php esc_html_e( 'MaxMind license key', 'reactwoo-geocore' ); ?>
-							<input type="text" name="<?php echo esc_attr( $option_key ); ?>[maxmind_license_key]" value="<?php echo esc_attr( $settings['maxmind_license_key'] ); ?>" class="regular-text" />
-						</label>
+						<a class="button button-secondary" href="<?php echo esc_url( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) ); ?>">
+							<?php esc_html_e( 'Open MaxMind integration', 'reactwoo-geocore' ); ?>
+						</a>
 					</p>
-					<p class="description">
-						<?php esc_html_e( 'This is your MaxMind (third-party) credential for GeoLite2 downloads — not a ReactWoo product license. Geo Core uses HTTP Basic Authentication with your Account ID and MaxMind license key.', 'reactwoo-geocore' ); ?>
-						<?php esc_html_e( 'You need a free MaxMind GeoLite2 license (commercial use may require a different agreement).', 'reactwoo-geocore' ); ?>
-					</p>
-					<p class="description">
-						<strong><?php esc_html_e( 'How to get your Account ID and License Key:', 'reactwoo-geocore' ); ?></strong><br />
-						<?php esc_html_e( '1) Go to maxmind.com and create or log in to your account.', 'reactwoo-geocore' ); ?><br />
-						<?php esc_html_e( '2) In your account, open Services → My License Key (or GeoLite2) and create a new key.', 'reactwoo-geocore' ); ?><br />
-						<?php esc_html_e( '3) Copy the AccountID and LicenseKey values from the generated GeoIP.conf snippet.', 'reactwoo-geocore' ); ?><br />
-						<?php esc_html_e( '4) Paste AccountID and LicenseKey into the fields above, save, then use the Tools tab to download/update the database.', 'reactwoo-geocore' ); ?>
-					</p>
-					<label>
-						<input type="checkbox" name="<?php echo esc_attr( $option_key ); ?>[auto_update_db]" value="1" <?php checked( $settings['auto_update_db'], 1 ); ?> />
-						<?php esc_html_e( 'Automatically update the database when possible.', 'reactwoo-geocore' ); ?>
-					</label>
 				</td>
 			</tr>
 			<tr><th colspan="2"><h2><?php esc_html_e( 'Behaviour', 'reactwoo-geocore' ); ?></h2></th></tr>

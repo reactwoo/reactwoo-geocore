@@ -137,7 +137,7 @@ class RWGC_Workflows {
 				break;
 			case 'foundation':
 				$out['headline'] = __( 'Path: geolocation first', 'reactwoo-geocore' );
-				$out['body']     = __( 'Save MaxMind credentials, download the country database from Tools, then confirm visitor country on the Dashboard. Other workflows build on this.', 'reactwoo-geocore' );
+				$out['body']     = __( 'Save MaxMind credentials and refresh the country database under Integrations → MaxMind, then confirm visitor country on the Dashboard. Other workflows build on this.', 'reactwoo-geocore' );
 				break;
 			default:
 				break;

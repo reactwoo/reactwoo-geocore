@@ -405,7 +405,7 @@ class RWGC_Admin_Settings_Nav {
 	 */
 	private static function provider_hub_description( $provider_id ) {
 		$map = array(
-			'core'          => __( 'General options, MaxMind tools, and add-ons.', 'reactwoo-geocore' ),
+			'core'          => __( 'General options, developer tools, and add-ons.', 'reactwoo-geocore' ),
 			'geocore_pro'   => __( 'GeoCore Pro licence, React Cloud, and advanced targeting.', 'reactwoo-geocore' ),
 			'geo_elementor' => __( 'Elementor adapter settings and add-ons (free integration).', 'reactwoo-geocore' ),
 			'geo_optimise'  => __( 'Licence, experiment settings, tracking, and developer tools.', 'reactwoo-geocore' ),

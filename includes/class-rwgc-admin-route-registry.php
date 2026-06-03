@@ -396,6 +396,14 @@ class RWGC_Admin_Route_Registry {
 				'order'                => 10,
 			),
 			array(
+				'menu_slug'            => 'rwgc-integrations-maxmind',
+				'section'              => 'integrations',
+				'integration_category' => 'system_services',
+				'route'                => 'maxmind',
+				'label'                => __( 'MaxMind (GeoLite2)', 'reactwoo-geocore' ),
+				'order'                => 5,
+			),
+			array(
 				'menu_slug' => 'rwgc-settings-hub',
 				'section'   => 'settings',
 				'route'     => 'settings-home',

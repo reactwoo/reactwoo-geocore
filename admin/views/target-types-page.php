@@ -62,6 +62,17 @@ if ( $rwgc_pro_enabled && ! empty( $help['integrations_ga'] ) ) {
 		<?php RWGC_Admin::render_inner_nav( 'rwgc-target-types' ); ?>
 	<?php endif; ?>
 
+	<?php if ( function_exists( 'rwgc_is_ready' ) && ! rwgc_is_ready() && function_exists( 'rwgc_get_maxmind_admin_url' ) ) : ?>
+		<div class="notice notice-warning">
+			<p>
+				<?php esc_html_e( 'Country targeting needs a MaxMind GeoLite2 database. Add credentials and download or upload the database under Integrations → MaxMind.', 'reactwoo-geocore' ); ?>
+				<a class="button button-secondary" href="<?php echo esc_url( rwgc_get_maxmind_admin_url() ); ?>" style="margin-left:8px;">
+					<?php esc_html_e( 'Open MaxMind integration', 'reactwoo-geocore' ); ?>
+				</a>
+			</p>
+		</div>
+	<?php endif; ?>
+
 	<?php if ( class_exists( 'RWGC_Admin_UI', false ) ) : ?>
 		<?php RWGC_Admin_UI::render_quick_actions( $quick_actions ); ?>
 	<?php endif; ?>

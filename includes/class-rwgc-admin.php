@@ -19,6 +19,7 @@ class RWGC_Admin {
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_assets' ) );
 		add_action( 'rwgc_platform_admin_notices', array( __CLASS__, 'maybe_show_admin_notices' ) );
 		add_action( 'admin_post_rwgc_upload_mmdb', array( __CLASS__, 'handle_upload_mmdb' ) );
+		add_action( 'admin_post_rwgc_save_maxmind_settings', array( __CLASS__, 'handle_save_maxmind_settings' ) );
 		add_action( 'add_meta_boxes_page', array( __CLASS__, 'register_page_meta_box' ) );
 		add_action( 'save_post_page', array( __CLASS__, 'save_page_meta_box' ) );
 	}
@@ -318,6 +319,17 @@ class RWGC_Admin {
 				'callback'             => array( __CLASS__, 'render_integrations_woocommerce' ),
 			)
 		);
+		self::register_app_route(
+			array(
+				'section'              => 'integrations',
+				'integration_category' => 'system_services',
+				'route'                => 'maxmind',
+				'menu_slug'            => 'rwgc-integrations-maxmind',
+				'label'                => __( 'MaxMind (GeoLite2)', 'reactwoo-geocore' ),
+				'order'                => 5,
+				'callback'             => array( __CLASS__, 'render_integrations_maxmind' ),
+			)
+		);
 
 		self::register_app_route(
 			array(
@@ -493,7 +505,7 @@ class RWGC_Admin {
 	}
 
 	/**
-	 * Handle manual .mmdb upload from Tools page.
+	 * Handle manual .mmdb upload from Integrations → MaxMind.
 	 *
 	 * @return void
 	 */
@@ -504,8 +516,9 @@ class RWGC_Admin {
 		check_admin_referer( 'rwgc_upload_mmdb' );
 
 		if ( empty( $_FILES['rwgc_mmdb']['tmp_name'] ) || ! is_uploaded_file( $_FILES['rwgc_mmdb']['tmp_name'] ) ) {
-			add_settings_error( 'rwgc_tools', 'rwgc_upload_missing', __( 'No file uploaded or upload failed.', 'reactwoo-geocore' ), 'error' );
-			wp_safe_redirect( admin_url( 'admin.php?page=rwgc-tools' ) );
+			add_settings_error( 'rwgc_maxmind', 'rwgc_upload_missing', __( 'No file uploaded or upload failed.', 'reactwoo-geocore' ), 'error' );
+			set_transient( 'settings_errors', get_settings_errors(), 30 );
+			wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
 			exit;
 		}
 
@@ -514,8 +527,9 @@ class RWGC_Admin {
 		$ext      = strtolower( pathinfo( $filename, PATHINFO_EXTENSION ) );
 
 		if ( 'mmdb' !== $ext ) {
-			add_settings_error( 'rwgc_tools', 'rwgc_upload_ext', __( 'Invalid file type. Please upload a .mmdb MaxMind database file.', 'reactwoo-geocore' ), 'error' );
-			wp_safe_redirect( admin_url( 'admin.php?page=rwgc-tools' ) );
+			add_settings_error( 'rwgc_maxmind', 'rwgc_upload_ext', __( 'Invalid file type. Please upload a .mmdb MaxMind database file.', 'reactwoo-geocore' ), 'error' );
+			set_transient( 'settings_errors', get_settings_errors(), 30 );
+			wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
 			exit;
 		}
 
@@ -524,8 +538,9 @@ class RWGC_Admin {
 		$dest_path = trailingslashit( $dest_dir ) . 'GeoLite2-Country.mmdb';
 
 		if ( ! @move_uploaded_file( $file['tmp_name'], $dest_path ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Detected
-			add_settings_error( 'rwgc_tools', 'rwgc_upload_move', __( 'Failed to move uploaded file into storage directory.', 'reactwoo-geocore' ), 'error' );
-			wp_safe_redirect( admin_url( 'admin.php?page=rwgc-tools' ) );
+			add_settings_error( 'rwgc_maxmind', 'rwgc_upload_move', __( 'Failed to move uploaded file into storage directory.', 'reactwoo-geocore' ), 'error' );
+			set_transient( 'settings_errors', get_settings_errors(), 30 );
+			wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
 			exit;
 		}
 
@@ -535,8 +550,9 @@ class RWGC_Admin {
 		$settings['db_last_error']   = '';
 		RWGC_Settings::update( $settings );
 
-		add_settings_error( 'rwgc_tools', 'rwgc_upload_success', __( 'MaxMind database uploaded successfully.', 'reactwoo-geocore' ), 'updated' );
-		wp_safe_redirect( admin_url( 'admin.php?page=rwgc-tools' ) );
+		add_settings_error( 'rwgc_maxmind', 'rwgc_upload_success', __( 'MaxMind database uploaded successfully.', 'reactwoo-geocore' ), 'updated' );
+		set_transient( 'settings_errors', get_settings_errors(), 30 );
+		wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
 		exit;
 	}
 
@@ -628,6 +644,49 @@ class RWGC_Admin {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Integrations → MaxMind (credentials + country database).
+	 *
+	 * @return void
+	 */
+	public static function render_integrations_maxmind() {
+		if ( ! self::can_manage() ) {
+			return;
+		}
+		$settings = RWGC_Settings::get_settings();
+		$status   = RWGC_MaxMind::get_status();
+		$data     = RWGC_API::get_visitor_data();
+		include RWGC_PATH . 'admin/views/integrations-maxmind-page.php';
+	}
+
+	/**
+	 * Save MaxMind credentials from the integrations screen (merge with existing settings).
+	 *
+	 * @return void
+	 */
+	public static function handle_save_maxmind_settings() {
+		if ( ! self::can_manage() ) {
+			wp_die( esc_html__( 'Unauthorized', 'reactwoo-geocore' ), 403 );
+		}
+		check_admin_referer( 'rwgc_save_maxmind_settings' );
+
+		$settings = RWGC_Settings::get_settings();
+		if ( isset( $_POST['maxmind_account_id'] ) ) {
+			$settings['maxmind_account_id'] = sanitize_text_field( wp_unslash( $_POST['maxmind_account_id'] ) );
+		}
+		if ( isset( $_POST['maxmind_license_key'] ) ) {
+			$settings['maxmind_license_key'] = sanitize_text_field( wp_unslash( $_POST['maxmind_license_key'] ) );
+		}
+		$settings['auto_update_db'] = ! empty( $_POST['auto_update_db'] ) ? 1 : 0;
+		RWGC_Settings::update( $settings );
+
+		add_settings_error( 'rwgc_maxmind', 'rwgc_maxmind_saved', __( 'MaxMind credentials saved.', 'reactwoo-geocore' ), 'updated' );
+		set_transient( 'settings_errors', get_settings_errors(), 30 );
+
+		wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
+		exit;
+	}
+
 	public static function render_integrations_woocommerce() {
 		if ( ! self::can_manage() ) {
 			return;
@@ -888,28 +947,38 @@ class RWGC_Admin {
 		$status   = RWGC_MaxMind::get_status();
 		$settings = RWGC_Settings::get_settings();
 
+		$maxmind_url = function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' );
+
 		if ( empty( $settings['maxmind_license_key'] ) ) {
 			printf(
-				'<div class="notice notice-warning rwgc-notice"><p>%s</p></div>',
-				esc_html__( 'ReactWoo Geo Core: MaxMind license key is not configured. GeoIP lookups will use fallback values.', 'reactwoo-geocore' )
+				'<div class="notice notice-warning rwgc-notice"><p>%1$s <a href="%2$s">%3$s</a></p></div>',
+				esc_html__( 'ReactWoo Geo Core: MaxMind license key is not configured. GeoIP lookups will use fallback values.', 'reactwoo-geocore' ),
+				esc_url( $maxmind_url ),
+				esc_html__( 'Open MaxMind integration', 'reactwoo-geocore' )
 			);
 		} elseif ( ! $status['exists'] ) {
 			if ( ! empty( $status['last_error'] ) ) {
 				printf(
-					'<div class="notice notice-warning rwgc-notice"><p>%s</p><p><code>%s</code></p></div>',
+					'<div class="notice notice-warning rwgc-notice"><p>%1$s <a href="%2$s">%3$s</a></p><p><code>%4$s</code></p></div>',
 					esc_html__( 'ReactWoo Geo Core: MaxMind database not found. Last error:', 'reactwoo-geocore' ),
+					esc_url( $maxmind_url ),
+					esc_html__( 'Download or upload the database', 'reactwoo-geocore' ),
 					esc_html( $status['last_error'] )
 				);
 			} else {
 				printf(
-					'<div class="notice notice-warning rwgc-notice"><p>%s</p></div>',
-					esc_html__( 'ReactWoo Geo Core: MaxMind database not found. Run a manual update from the Tools tab.', 'reactwoo-geocore' )
+					'<div class="notice notice-warning rwgc-notice"><p>%1$s <a href="%2$s">%3$s</a></p></div>',
+					esc_html__( 'ReactWoo Geo Core: MaxMind country database not found.', 'reactwoo-geocore' ),
+					esc_url( $maxmind_url ),
+					esc_html__( 'Download or upload the database', 'reactwoo-geocore' )
 				);
 			}
 		} elseif ( $status['is_stale'] ) {
 			printf(
-				'<div class="notice notice-info rwgc-notice"><p>%s</p></div>',
-				esc_html__( 'ReactWoo Geo Core: MaxMind database may be stale. Consider updating from the Tools tab.', 'reactwoo-geocore' )
+				'<div class="notice notice-info rwgc-notice"><p>%1$s <a href="%2$s">%3$s</a></p></div>',
+				esc_html__( 'ReactWoo Geo Core: MaxMind database may be stale.', 'reactwoo-geocore' ),
+				esc_url( $maxmind_url ),
+				esc_html__( 'Refresh the database', 'reactwoo-geocore' )
 			);
 		}
 	}

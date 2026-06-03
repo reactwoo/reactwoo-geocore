@@ -195,7 +195,7 @@ class RWGC_Module_Registry {
 					array(
 						'status'        => $has_key ? 'ready' : 'needs_setup',
 						'detail'        => $has_key ? __( 'MaxMind credentials saved.', 'reactwoo-geocore' ) : __( 'Add your GeoLite2 license key.', 'reactwoo-geocore' ),
-						'configure_url' => admin_url( 'admin.php?page=rwgc-settings' ),
+						'configure_url' => function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ),
 						'consequence'   => $has_key ? '' : __( 'Without credentials, downloads and accurate lookups may not work.', 'reactwoo-geocore' ),
 					)
 				);
@@ -208,7 +208,7 @@ class RWGC_Module_Registry {
 					array(
 						'status'        => $ok ? 'ready' : 'needs_setup',
 						'detail'        => $ok ? __( 'Country database is on disk.', 'reactwoo-geocore' ) : __( 'Download or upload the GeoLite2 Country database.', 'reactwoo-geocore' ),
-						'configure_url' => admin_url( 'admin.php?page=rwgc-tools' ),
+						'configure_url' => function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ),
 						'consequence'   => $ok ? '' : __( 'Visitor country may fall back until the database is available.', 'reactwoo-geocore' ),
 					)
 				);

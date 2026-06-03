@@ -125,6 +125,7 @@ class RWGC_Admin_Integrations_Nav {
 			'rwgcp-api-keys'         => 'apis',
 			'rwgcp-meta'             => 'advertising',
 			'rwgcp-geocore-pro'      => 'system_services',
+			'rwgc-integrations-maxmind'     => 'system_services',
 			'rwgc-integrations-gutenberg'   => 'content_builders',
 			'rwgc-integrations-woocommerce' => 'ecommerce',
 			'geo-elementor'          => 'content_builders',
@@ -151,6 +152,9 @@ class RWGC_Admin_Integrations_Nav {
 		}
 		if ( in_array( $route_id, array( 'gutenberg', 'elementor' ), true ) ) {
 			return 'content_builders';
+		}
+		if ( in_array( $route_id, array( 'maxmind', 'geolite2', 'geoip' ), true ) || 'rwgc-integrations-maxmind' === $slug ) {
+			return 'system_services';
 		}
 
 		$provider = isset( $route['provider'] ) ? sanitize_key( (string) $route['provider'] ) : '';

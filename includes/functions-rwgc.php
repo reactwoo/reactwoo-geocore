@@ -189,6 +189,21 @@ if ( ! function_exists( 'rwgc_get_setup_progress' ) ) {
 	}
 }
 
+if ( ! function_exists( 'rwgc_get_maxmind_admin_url' ) ) {
+	/**
+	 * Admin URL for MaxMind credentials and GeoLite2 country database management.
+	 *
+	 * @return string
+	 */
+	function rwgc_get_maxmind_admin_url() {
+		$slug = 'rwgc-integrations-maxmind';
+		if ( function_exists( 'rw_geo_app_url' ) && function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell() ) {
+			return rw_geo_app_url( 'integrations', $slug );
+		}
+		return admin_url( 'admin.php?page=' . rawurlencode( $slug ) );
+	}
+}
+
 if ( ! function_exists( 'rwgc_get_visitor_data' ) ) {
 	/**
 	 * Get full visitor geo payload.

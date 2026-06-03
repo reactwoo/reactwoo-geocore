@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.19
+Stable tag: 1.8.20
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,10 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.20 =
+* **MaxMind in Integrations:** New **Integrations → System services → MaxMind (GeoLite2)** screen for Account ID, license key, database download/refresh, manual `.mmdb` upload, cache clear, and visitor detection tests.
+* **Admin IA:** Removed MaxMind/database controls from Settings and legacy Tools; updated dashboard, onboarding, targeting notices, and global admin notices to point at the integration screen.
 
 = 1.8.19 =
 * **Country picker UX:** Elementor widgets/sections now use the same Elementor SELECT2 country control as pages and popups (no Ctrl/Cmd native list).

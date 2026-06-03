@@ -158,7 +158,7 @@ $goal_label    = isset( $goal_labels[ $goal ] ) ? $goal_labels[ $goal ] : '';
 	<?php if ( $wizard_step >= 3 ) : ?>
 	<section class="rwgc-suite-wizard-section" aria-labelledby="rwgc-wz-s3">
 		<h2 id="rwgc-wz-s3" class="rwgc-suite-wizard-section__title"><?php esc_html_e( 'Step 3 — Quick detection check (admin preview)', 'reactwoo-geocore' ); ?></h2>
-		<p class="description"><?php esc_html_e( 'This sample uses the same visitor APIs as the front end. Use Tools if the database is missing or country looks wrong.', 'reactwoo-geocore' ); ?></p>
+		<p class="description"><?php esc_html_e( 'This sample uses the same visitor APIs as the front end. Use Integrations → MaxMind if the database is missing or country looks wrong.', 'reactwoo-geocore' ); ?></p>
 		<?php if ( ! empty( $visitor_data ) ) : ?>
 			<div class="rwgc-visitor-stats rwgc-suite-visitor-preview">
 				<div class="rwgc-visitor-stat">
@@ -175,7 +175,7 @@ $goal_label    = isset( $goal_labels[ $goal ] ) ? $goal_labels[ $goal ] : '';
 				</div>
 			</div>
 		<?php else : ?>
-			<p class="description"><?php esc_html_e( 'No preview data yet — open Tools to verify the database.', 'reactwoo-geocore' ); ?></p>
+			<p class="description"><?php esc_html_e( 'No preview data yet — open Integrations → MaxMind to verify the database.', 'reactwoo-geocore' ); ?></p>
 		<?php endif; ?>
 
 		<h3><?php esc_html_e( 'Recommended next steps', 'reactwoo-geocore' ); ?></h3>

@@ -99,7 +99,7 @@ class RWGC_Target_Provider_Geo implements RWGC_Target_Provider_Interface {
 		return array(
 			'label'  => __( 'Geo (MaxMind / API)', 'reactwoo-geocore' ),
 			'state'  => $ready ? 'ok' : 'warn',
-			'detail' => $ready ? __( 'Visitor geo resolution active.', 'reactwoo-geocore' ) : __( 'Geo Core reports not ready; fallback country may apply.', 'reactwoo-geocore' ),
+			'detail' => $ready ? __( 'Visitor geo resolution active.', 'reactwoo-geocore' ) : __( 'Geo Core reports not ready; configure MaxMind under Integrations.', 'reactwoo-geocore' ),
 		);
 	}
 }
