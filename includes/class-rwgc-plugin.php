@@ -192,19 +192,28 @@ class RWGC_Plugin {
 		RWGC_REST::init();
 		RWGC_Upsells::init();
 
-		// Free Geo Core: same R2 pipeline; `attach_bearer_token` false = no Authorization header (API allows slug via UPDATES_FREE_SLUGS).
-		if ( class_exists( 'RWGC_Satellite_Updater', false ) ) {
-			RWGC_Satellite_Updater::register(
-				array(
-					'basename'            => plugin_basename( RWGC_FILE ),
-					'version'             => RWGC_VERSION,
-					'catalog_slug'        => 'reactwoo-geocore',
-					'attach_bearer_token' => false,
-					'name'                => __( 'ReactWoo Geo Core', 'reactwoo-geocore' ),
-					'description'         => __( 'Free geolocation engine: MaxMind country detection, routing, REST, block.', 'reactwoo-geocore' ),
-				)
-			);
+		add_action( 'init', array( __CLASS__, 'register_satellite_updater' ), 1 );
+	}
+
+	/**
+	 * Register update checker after textdomain load (init priority 0).
+	 *
+	 * @return void
+	 */
+	public static function register_satellite_updater() {
+		if ( ! class_exists( 'RWGC_Satellite_Updater', false ) ) {
+			return;
 		}
+		RWGC_Satellite_Updater::register(
+			array(
+				'basename'            => plugin_basename( RWGC_FILE ),
+				'version'             => RWGC_VERSION,
+				'catalog_slug'        => 'reactwoo-geocore',
+				'attach_bearer_token' => false,
+				'name'                => __( 'ReactWoo Geo Core', 'reactwoo-geocore' ),
+				'description'         => __( 'Free geolocation engine: MaxMind country detection, routing, REST, block.', 'reactwoo-geocore' ),
+			)
+		);
 	}
 
 	/**
