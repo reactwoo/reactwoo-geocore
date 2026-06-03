@@ -28,7 +28,9 @@ class RWGC_Elementor_Popups {
 		}
 
 		add_filter( 'elementor_pro/popup/should_show', array( __CLASS__, 'filter_popup_should_show' ), 5, 2 );
+		add_filter( 'elementor/theme/get_location_templates/template_id', array( __CLASS__, 'filter_popup_theme_template_id' ), 50, 2 );
 		add_action( 'wp_head', array( __CLASS__, 'print_popup_antiflash_head' ), 1 );
+		add_action( 'wp_head', array( __CLASS__, 'print_popup_show_patch_script' ), 2 );
 		add_action( 'wp_footer', array( __CLASS__, 'print_popup_show_patch_script' ), 5 );
 		add_action( 'wp_footer', array( __CLASS__, 'print_popup_dom_guard_script' ), 99 );
 	}
@@ -54,6 +56,34 @@ class RWGC_Elementor_Popups {
 		}
 
 		return (bool) $should_show;
+	}
+
+	/**
+	 * Skip geo-blocked popup templates when Elementor resolves the popup location.
+	 *
+	 * @param int    $theme_template_id Popup template ID.
+	 * @param string $location          Theme location slug.
+	 * @return int
+	 */
+	public static function filter_popup_theme_template_id( $theme_template_id, $location ) {
+		if ( 'popup' !== $location ) {
+			return (int) $theme_template_id;
+		}
+
+		if ( function_exists( 'rwgc_is_builder_edit_request' ) && rwgc_is_builder_edit_request() ) {
+			return (int) $theme_template_id;
+		}
+
+		$popup_id = absint( $theme_template_id );
+		if ( $popup_id <= 0 ) {
+			return (int) $theme_template_id;
+		}
+
+		if ( false === self::popup_should_display( $popup_id ) ) {
+			return 0;
+		}
+
+		return $popup_id;
 	}
 
 	/**
@@ -202,6 +232,12 @@ class RWGC_Elementor_Popups {
 	 * @return void
 	 */
 	public static function print_popup_show_patch_script() {
+		static $printed = false;
+
+		if ( $printed ) {
+			return;
+		}
+
 		if ( function_exists( 'rwgc_is_builder_edit_request' ) && rwgc_is_builder_edit_request() ) {
 			return;
 		}
@@ -221,6 +257,8 @@ class RWGC_Elementor_Popups {
 				$blocked[] = (int) $popup_id;
 			}
 		}
+
+		$printed = true;
 
 		wp_print_inline_script_tag(
 			self::build_popup_runtime_script( $config_map, $visitor, $blocked )
@@ -367,7 +405,7 @@ class RWGC_Elementor_Popups {
 			. "function suppressReopenBriefly(pid){if(!pid){return;}suppressUntil[String(pid)]=Date.now()+suppressMs;}\n"
 			. "function getPopupDoc(pid){var docs=getPopupDocuments();if(!docs||!pid){return null;}return docs[pid]||docs[String(pid)]||null;}\n"
 			. "function popupShouldDisplay(m){if(typeof m.rwgc_show==='boolean'){return m.rwgc_show;}var allowed=(m.countries||[]).map(function(c){return String(c).toUpperCase();});if(allowed.length===0){return true;}var matched=allowed.indexOf(String(userCountry).toUpperCase())!==-1;var mode=(m.visibility_mode==='hide_if'||m.visibility_mode==='hide')?'hide_if':'show_if';return (mode==='hide_if')?!matched:matched;}\n"
-			. "function shouldShowForPopup(pid){if(isSuppressingReopen(pid)){return false;}var m=meta(pid);if(!m){return true;}return popupShouldDisplay(m);}\n"
+			. "function shouldShowForPopup(pid){if(isSuppressingReopen(pid)){return false;}var m=meta(pid);if(!m){return true;}if(m.rwgc_show===true){return true;}if(m.rwgc_show===false){return false;}return popupShouldDisplay(m);}\n"
 			. "function popupIdFromModal(modal){if(!modal){return null;}var id=modal.getAttribute('data-elementor-id');if(id!=null&&id!==''){return norm(id);}if(modal.id&&modal.id.indexOf('elementor-popup-modal-')===0){return norm(modal.id.slice('elementor-popup-modal-'.length));}var inner=modal.querySelector('[data-elementor-type=\"popup\"]');if(inner){var innerId=inner.getAttribute('data-elementor-id');if(innerId!=null&&innerId!==''){return norm(innerId);}}return null;}\n"
 			. "function getPopupDocuments(){var mgr=window.elementorFrontend&&elementorFrontend.documentsManager;return mgr&&mgr.documents?mgr.documents:null;}\n"
 			. "function resolveDocId(doc,docKey){var pid=norm(docKey);if(doc&&typeof doc.getSettings==='function'){var sid=doc.getSettings('id');if(sid!=null){pid=norm(sid);}}return pid;}\n"
@@ -378,7 +416,7 @@ class RWGC_Elementor_Popups {
 			. "function wrapClose(orig,scope,args){var pid=resolveClosePopupId(args);if(pid){suppressReopenBriefly(pid);}return orig.apply(scope,args);}\n"
 			. "function patchPopupDocuments(){var docs=getPopupDocuments();if(!docs){return false;}var patched=false;Object.keys(docs).forEach(function(docKey){if(patchSingleDocument(docs[docKey],docKey)){patched=true;}});return patched;}\n"
 			. "function patchModule(){var mod=window.elementorProFrontend&&elementorProFrontend.modules&&elementorProFrontend.modules.popup;if(!mod){return false;}if(typeof mod.showPopup==='function'&&!mod.__rwgcPopupGeoPatch){var o=mod.showPopup;mod.showPopup=function(){return apply(o,this,arguments);};mod.__rwgcPopupGeoPatch=1;}if(typeof mod.triggerPopup==='function'&&!mod.__rwgcTriggerPatch){var t=mod.triggerPopup;mod.triggerPopup=function(){return apply(t,this,arguments);};mod.__rwgcTriggerPatch=1;}if(typeof mod.closePopup==='function'&&!mod.__rwgcClosePatch){var c=mod.closePopup;mod.closePopup=function(){return wrapClose(c,this,arguments);};mod.__rwgcClosePatch=1;}return true;}\n"
-			. "function bindPopupEvents(){if(window.__rwgcPopupGeoEventPatch){return;}window.__rwgcPopupGeoEventPatch=1;var jq=window.jQuery;if(!jq){return;}var onShow=function(evt,popupId,docInst){var pid=norm(popupId);if(docInst){patchSingleDocument(docInst,pid);}if(!pid){return;}var m=meta(pid);if(m&&m.rwgc_show===false){setTimeout(function(){forceClosePopup(pid);},0);}};var targets=[];if(window.elementorFrontend&&elementorFrontend.elements){if(elementorFrontend.elements.\$document){targets.push(elementorFrontend.elements.\$document);}if(elementorFrontend.elements.\$window){targets.push(elementorFrontend.elements.\$window);}}targets.push(jq(document));targets.forEach(function(\$el){if(\$el&&typeof \$el.on==='function'){\$el.on('elementor/popup/show',onShow);}});}\n"
+			. "function bindPopupEvents(){if(window.__rwgcPopupGeoEventPatch){return;}window.__rwgcPopupGeoEventPatch=1;var jq=window.jQuery;if(!jq){return;}var onShow=function(evt,popupId,docInst){var pid=norm(popupId);if(docInst){patchSingleDocument(docInst,pid);}};var targets=[];if(window.elementorFrontend&&elementorFrontend.elements){if(elementorFrontend.elements.\$document){targets.push(elementorFrontend.elements.\$document);}if(elementorFrontend.elements.\$window){targets.push(elementorFrontend.elements.\$window);}}targets.push(jq(document));targets.forEach(function(\$el){if(\$el&&typeof \$el.on==='function'){\$el.on('elementor/popup/show',onShow);}});}\n"
 			. "function installCloseCapture(){if(window.__rwgcPopupCloseCapture){return;}window.__rwgcPopupCloseCapture=1;document.addEventListener('click',function(e){var t=e.target;if(!t||!t.closest){return;}var modal=t.closest('.elementor-popup-modal');if(!modal){return;}var closeBtn=t.closest('.dialog-close-button,.eicon-close');var overlay=t.classList&&t.classList.contains('dialog-widget-overlay');if(!closeBtn&&!overlay){return;}var pid=popupIdFromModal(modal);if(pid){forceClosePopup(pid);}},true);document.addEventListener('keydown',function(e){if(!e||e.key!=='Escape'){return;}var modals=document.querySelectorAll('.elementor-popup-modal');for(var i=0;i<modals.length;i++){if(modals[i].offsetParent===null){continue;}var pid=popupIdFromModal(modals[i]);if(pid){forceClosePopup(pid);break;}}},true);}\n"
 			. "function patchRuntime(){patchPopupDocuments();patchModule();bindPopupEvents();installCloseCapture();}\n"
 			. "patchRuntime();var tick=0;var patchIv=setInterval(function(){patchRuntime();tick++;if(tick>=120){clearInterval(patchIv);}},250);\n"

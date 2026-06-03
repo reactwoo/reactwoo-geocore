@@ -26,7 +26,7 @@ class RWGC_Elementor_Elements {
 	 * @return void
 	 */
 	public static function init() {
-		add_action( 'elementor/init', array( __CLASS__, 'register_hooks' ), 20 );
+		add_action( 'init', array( __CLASS__, 'register_hooks' ), 20 );
 		add_action( 'elementor/editor/before_enqueue_scripts', array( __CLASS__, 'enqueue_editor_assets' ), 6 );
 	}
 

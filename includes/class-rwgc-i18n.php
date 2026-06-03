@@ -30,7 +30,12 @@ class RWGC_I18n {
 	private static $init_hook_added = false;
 
 	/**
-	 * Schedule textdomain load at init priority -1 (before Elementor init at 0).
+	 * @var bool
+	 */
+	private static $plugins_loaded_hook_added = false;
+
+	/**
+	 * Queue textdomain load before any init priority-0 translation calls (e.g. Elementor).
 	 *
 	 * @param string $plugin_file Main plugin file path (__FILE__).
 	 * @param string $text_domain Text domain slug.
@@ -44,12 +49,17 @@ class RWGC_I18n {
 		self::$bootstrapped[ $text_domain ] = true;
 		self::$queue[ $text_domain ]       = (string) $plugin_file;
 
-		if ( ! self::$init_hook_added ) {
-			self::$init_hook_added = true;
-			add_action( 'init', array( __CLASS__, 'load_all_bootstrapped' ), -1 );
+		if ( ! self::$plugins_loaded_hook_added ) {
+			self::$plugins_loaded_hook_added = true;
+			add_action( 'plugins_loaded', array( __CLASS__, 'load_all_bootstrapped' ), 0 );
 		}
 
-		if ( did_action( 'init' ) ) {
+		if ( ! self::$init_hook_added ) {
+			self::$init_hook_added = true;
+			add_action( 'init', array( __CLASS__, 'load_all_bootstrapped' ), 1 );
+		}
+
+		if ( did_action( 'plugins_loaded' ) ) {
 			self::load_textdomain( $plugin_file, $text_domain );
 		}
 	}
