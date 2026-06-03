@@ -169,7 +169,7 @@ class RWGC_Admin_Section_Hubs {
 		$map = array(
 			'rwgc-targeting-hub'      => '',
 			'rwgc-experiences-hub'    => '',
-			'rwgc-visibility-rules'   => __( 'Reusable eligibility rules used by experiences and commerce.', 'reactwoo-geocore' ),
+			'rwgc-visibility-rules'   => __( 'Portable rule library and builder-attached targeting rules.', 'reactwoo-geocore' ),
 			'rwgc-targeting-audiences'=> __( 'Audience definitions for targeting eligibility and reporting.', 'reactwoo-geocore' ),
 			'rwgc-targeting-campaigns'=> __( 'Campaign references used by targeting and attribution workflows.', 'reactwoo-geocore' ),
 			'rwgc-target-types'       => __( 'Condition catalog and targeting simulation reference.', 'reactwoo-geocore' ),
