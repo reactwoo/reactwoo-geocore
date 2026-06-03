@@ -106,12 +106,12 @@ class RWGC_Elementor_Elements {
 			return;
 		}
 
+		// Popup document targeting lives in RWGC_Elementor document_settings (Geo Visibility). Do not register here — avoids duplicate controls on the popup stack.
 		$hooks = array(
 			'elementor/element/common/_section_style/after_section_end',
 			'elementor/element/section/section_advanced/after_section_end',
 			'elementor/element/column/section_advanced/after_section_end',
 			'elementor/element/container/section_layout/after_section_end',
-			'elementor/element/popup/section_advanced/after_section_end',
 		);
 
 		foreach ( $hooks as $hook ) {

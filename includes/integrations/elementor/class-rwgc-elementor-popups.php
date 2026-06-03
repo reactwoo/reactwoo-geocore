@@ -28,6 +28,7 @@ class RWGC_Elementor_Popups {
 		}
 
 		add_filter( 'elementor_pro/popup/should_show', array( __CLASS__, 'filter_popup_should_show' ), 5, 2 );
+		add_action( 'wp_head', array( __CLASS__, 'print_popup_antiflash_head' ), 1 );
 		add_action( 'wp_footer', array( __CLASS__, 'print_popup_show_patch_script' ), 5 );
 		add_action( 'wp_footer', array( __CLASS__, 'print_popup_dom_guard_script' ), 99 );
 	}
@@ -95,6 +96,106 @@ class RWGC_Elementor_Popups {
 		self::debug_log_popup_decision( $popup_id, $settings, $result );
 
 		return $decision;
+	}
+
+	/**
+	 * Hide popups that will not display before Elementor opens them (reduces flash).
+	 *
+	 * @return void
+	 */
+	public static function print_popup_antiflash_head() {
+		if ( function_exists( 'rwgc_is_builder_edit_request' ) && rwgc_is_builder_edit_request() ) {
+			return;
+		}
+
+		$blocked = self::get_blocked_popup_ids_for_request();
+		if ( empty( $blocked ) ) {
+			return;
+		}
+
+		$css = '';
+		foreach ( $blocked as $popup_id ) {
+			$id = absint( $popup_id );
+			if ( $id <= 0 ) {
+				continue;
+			}
+			$css .= '.elementor-popup-modal[data-elementor-id="' . $id . '"],'
+				. '#elementor-popup-modal-' . $id
+				. '{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;}';
+		}
+
+		if ( '' !== $css ) {
+			echo '<style id="rwgc-popup-antiflash">' . $css . '</style>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
+
+		wp_print_inline_script_tag(
+			'window.rwgcPopupGeoBlocked=' . wp_json_encode( array_values( $blocked ) ) . ';'
+		);
+	}
+
+	/**
+	 * Popup IDs that should not display on this request.
+	 *
+	 * @return int[]
+	 */
+	private static function get_blocked_popup_ids_for_request() {
+		$blocked = array();
+		foreach ( array_keys( self::build_popup_config_map() ) as $popup_id ) {
+			$popup_id = (int) $popup_id;
+			if ( $popup_id <= 0 ) {
+				continue;
+			}
+			if ( false === self::popup_should_display( $popup_id ) ) {
+				$blocked[] = $popup_id;
+			}
+		}
+		return $blocked;
+	}
+
+	/**
+	 * @param array<string, mixed> $page_settings Elementor page settings.
+	 * @return bool
+	 */
+	private static function page_settings_country_enabled( array $page_settings ) {
+		return ( ! empty( $page_settings['egp_enable_geo_targeting'] ) && 'yes' === (string) $page_settings['egp_enable_geo_targeting'] )
+			|| ( ! empty( $page_settings['egp_geo_enabled'] ) && 'yes' === (string) $page_settings['egp_geo_enabled'] );
+	}
+
+	/**
+	 * @param array<string, mixed> $page_settings Elementor page settings.
+	 * @return bool
+	 */
+	private static function page_settings_visibility_enabled( array $page_settings ) {
+		if ( ! empty( $page_settings['rwgc_enable_visibility_rules'] ) && 'yes' === (string) $page_settings['rwgc_enable_visibility_rules'] ) {
+			return true;
+		}
+		if ( ! empty( $page_settings['rwgc_use_portable_geo_targeting'] ) && 'yes' === (string) $page_settings['rwgc_use_portable_geo_targeting'] ) {
+			return true;
+		}
+		if ( ! empty( $page_settings['egp_use_portable_geo_targeting'] ) && 'yes' === (string) $page_settings['egp_use_portable_geo_targeting'] ) {
+			return true;
+		}
+		if ( ! empty( $page_settings['rwgc_applied_visibility_rule_id'] ) ) {
+			return true;
+		}
+		if ( ! empty( $page_settings['rwgc_visibility_rule_library'] ) ) {
+			return true;
+		}
+		$raw = '';
+		if ( ! empty( $page_settings['rwgc_portable_geo_targeting'] ) ) {
+			$raw = (string) $page_settings['rwgc_portable_geo_targeting'];
+		} elseif ( ! empty( $page_settings['egp_portable_geo_targeting'] ) ) {
+			$raw = (string) $page_settings['egp_portable_geo_targeting'];
+		}
+		return '' !== trim( $raw );
+	}
+
+	/**
+	 * @param array<string, mixed> $page_settings Elementor page settings.
+	 * @return bool
+	 */
+	private static function page_settings_have_targeting( array $page_settings ) {
+		return self::page_settings_country_enabled( $page_settings ) || self::page_settings_visibility_enabled( $page_settings );
 	}
 
 	/**
@@ -172,7 +273,7 @@ class RWGC_Elementor_Popups {
 			. "}else{\n"
 			. "  hidePopups();\n"
 			. "}\n"
-			. "setInterval(hidePopups,500);\n"
+			. "var tick=0;var iv=setInterval(function(){hidePopups();tick++;if(tick>40){clearInterval(iv);}},50);\n"
 			. "})();"
 		);
 	}
@@ -407,22 +508,13 @@ class RWGC_Elementor_Popups {
 			return false;
 		}
 
-		$country_on = ( ! empty( $page_settings['egp_enable_geo_targeting'] ) && 'yes' === (string) $page_settings['egp_enable_geo_targeting'] )
-			|| ( ! empty( $page_settings['egp_geo_enabled'] ) && 'yes' === (string) $page_settings['egp_geo_enabled'] );
-
-		$use_portable = ( ! empty( $page_settings['rwgc_enable_visibility_rules'] ) && 'yes' === (string) $page_settings['rwgc_enable_visibility_rules'] )
-			|| ( ! empty( $page_settings['rwgc_use_portable_geo_targeting'] ) && 'yes' === (string) $page_settings['rwgc_use_portable_geo_targeting'] )
-			|| ( ! empty( $page_settings['egp_use_portable_geo_targeting'] ) && 'yes' === (string) $page_settings['egp_use_portable_geo_targeting'] );
-
-		$has_portable_data = $use_portable
-			|| ! empty( $page_settings['rwgc_applied_visibility_rule_id'] )
-			|| ! empty( $page_settings['rwgc_visibility_rule_library'] )
-			|| ! empty( $page_settings['rwgc_portable_geo_targeting'] )
-			|| ! empty( $page_settings['egp_portable_geo_targeting'] );
-
-		if ( ! $country_on && ! $has_portable_data ) {
+		if ( ! self::page_settings_have_targeting( $page_settings ) ) {
 			return false;
 		}
+
+		$country_on = self::page_settings_country_enabled( $page_settings );
+
+		$use_portable = self::page_settings_visibility_enabled( $page_settings );
 
 		$countries = array();
 		if ( ! empty( $page_settings['egp_countries'] ) && is_array( $page_settings['egp_countries'] ) ) {
@@ -481,6 +573,10 @@ class RWGC_Elementor_Popups {
 		$out = array();
 		foreach ( $popups as $popup_id ) {
 			$popup_id = (int) $popup_id;
+			$page_settings = get_post_meta( $popup_id, '_elementor_page_settings', true );
+			if ( ! is_array( $page_settings ) || ! self::page_settings_have_targeting( $page_settings ) ) {
+				continue;
+			}
 			$settings = self::get_popup_page_geo_settings( $popup_id );
 			if ( ! $settings || empty( $settings['enabled'] ) ) {
 				continue;

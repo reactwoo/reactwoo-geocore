@@ -40,7 +40,10 @@ class RWGC_Targeting_Surface_Evaluator {
 		if ( ! empty( $settings['rwgc_enable_visibility_rules'] ) && 'yes' === (string) $settings['rwgc_enable_visibility_rules'] ) {
 			return true;
 		}
-		return self::uses_portable_rules( $settings ) || self::has_resolved_portable_config( $settings );
+		if ( self::uses_portable_rules( $settings ) ) {
+			return true;
+		}
+		return self::has_resolved_portable_config( $settings );
 	}
 
 	/**
