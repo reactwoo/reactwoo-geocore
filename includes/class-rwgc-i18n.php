@@ -25,17 +25,20 @@ class RWGC_I18n {
 	private static $queue = array();
 
 	/**
+	 * @var array<string, bool>
+	 */
+	private static $loaded = array();
+
+	/**
 	 * @var bool
 	 */
 	private static $init_hook_added = false;
 
 	/**
-	 * @var bool
-	 */
-	private static $plugins_loaded_hook_added = false;
-
-	/**
-	 * Queue textdomain load before any init priority-0 translation calls (e.g. Elementor).
+	 * Queue textdomain load on the earliest {@see init} pass (before Elementor init priority 0).
+	 *
+	 * Satellites call this from {@see plugins_loaded} priority 6 so Geo Core has defined this class
+	 * even when their main file parsed before reactwoo-geocore.php.
 	 *
 	 * @param string $plugin_file Main plugin file path (__FILE__).
 	 * @param string $text_domain Text domain slug.
@@ -49,18 +52,9 @@ class RWGC_I18n {
 		self::$bootstrapped[ $text_domain ] = true;
 		self::$queue[ $text_domain ]       = (string) $plugin_file;
 
-		if ( ! self::$plugins_loaded_hook_added ) {
-			self::$plugins_loaded_hook_added = true;
-			add_action( 'plugins_loaded', array( __CLASS__, 'load_all_bootstrapped' ), 0 );
-		}
-
 		if ( ! self::$init_hook_added ) {
 			self::$init_hook_added = true;
-			add_action( 'init', array( __CLASS__, 'load_all_bootstrapped' ), 1 );
-		}
-
-		if ( did_action( 'plugins_loaded' ) ) {
-			self::load_textdomain( $plugin_file, $text_domain );
+			add_action( 'init', array( __CLASS__, 'load_all_bootstrapped' ), -1 );
 		}
 	}
 
@@ -82,9 +76,10 @@ class RWGC_I18n {
 	 */
 	public static function load_textdomain( $plugin_file, $text_domain ) {
 		$text_domain = sanitize_key( (string) $text_domain );
-		if ( '' === $text_domain || ! is_readable( $plugin_file ) ) {
+		if ( '' === $text_domain || isset( self::$loaded[ $text_domain ] ) || ! is_readable( $plugin_file ) ) {
 			return;
 		}
+		self::$loaded[ $text_domain ] = true;
 		load_plugin_textdomain( $text_domain, false, dirname( plugin_basename( $plugin_file ) ) . '/languages' );
 	}
 }

@@ -28,7 +28,6 @@ class RWGC_Elementor_Popups {
 		}
 
 		add_filter( 'elementor_pro/popup/should_show', array( __CLASS__, 'filter_popup_should_show' ), 5, 2 );
-		add_filter( 'elementor/theme/get_location_templates/template_id', array( __CLASS__, 'filter_popup_theme_template_id' ), 50, 2 );
 		add_action( 'wp_head', array( __CLASS__, 'print_popup_antiflash_head' ), 1 );
 		add_action( 'wp_head', array( __CLASS__, 'print_popup_show_patch_script' ), 2 );
 		add_action( 'wp_footer', array( __CLASS__, 'print_popup_show_patch_script' ), 5 );
