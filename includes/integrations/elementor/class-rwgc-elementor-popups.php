@@ -253,16 +253,24 @@ class RWGC_Elementor_Popups {
 		$blocked = array();
 		$trace   = array();
 
+		$variant_active = class_exists( 'RWGC_Page_Version_Routing', false )
+			&& RWGC_Page_Version_Routing::is_page_version_request();
+
 		foreach ( $config_map as $popup_id => $config ) {
-			$decision = self::popup_should_display( (int) $popup_id );
-			$config_map[ $popup_id ]['rwgc_show'] = null === $decision ? true : (bool) $decision;
+			$popup_id = (int) $popup_id;
+			$decision = self::popup_should_display( $popup_id );
+			$show     = null === $decision ? true : (bool) $decision;
+			$config_map[ $popup_id ]['rwgc_show']             = $show;
+			$config_map[ $popup_id ]['page_load_fallback']    = $show && $variant_active && self::popup_has_page_load_trigger( $popup_id );
+			$config_map[ $popup_id ]['page_load_delay_ms']    = (int) round( self::get_page_load_delay_seconds( $popup_id ) * 1000 );
 			if ( false === $decision ) {
-				$blocked[] = (int) $popup_id;
+				$blocked[] = $popup_id;
 			}
 			$trace[] = array(
-				'popup_id' => (int) $popup_id,
-				'decision' => null === $decision ? 'null(show)' : ( $decision ? 'show' : 'block' ),
-				'rwgc_show' => $config_map[ $popup_id ]['rwgc_show'],
+				'popup_id'            => $popup_id,
+				'decision'            => null === $decision ? 'null(show)' : ( $decision ? 'show' : 'block' ),
+				'rwgc_show'           => $config_map[ $popup_id ]['rwgc_show'],
+				'page_load_fallback'  => $config_map[ $popup_id ]['page_load_fallback'],
 			);
 		}
 
@@ -402,37 +410,131 @@ class RWGC_Elementor_Popups {
 	 * @return string
 	 */
 	private static function build_popup_runtime_script( $map, $visitor, $blocked ) {
-		$user_country = wp_json_encode( $visitor );
 		$popup_data   = wp_json_encode( $map );
 		$blocked_data = wp_json_encode( array_values( $blocked ) );
+		$variant_data = wp_json_encode( self::get_variant_route_context_for_script() );
 
-		return "(function(){\n"
-			. 'var userCountry=' . $user_country . ";\n"
-			. 'var popupData=' . $popup_data . ";\n"
-			. 'var blocked=' . $blocked_data . ";\n"
-			. "var suppressUntil={};var suppressMs=4000;\n"
-			. "function meta(pid){if(pid==null){return null;}var k=String(pid);return popupData[k]||popupData[pid]||null;}\n"
-			. "function norm(v){if(v==null){return null;}if(typeof v==='number'){return v;}if(typeof v==='string'){var n=parseInt(v,10);return isNaN(n)?v:n;}if(typeof v==='object'){if(v.id!=null){return norm(v.id);}if(v.detail&&v.detail.id!=null){return norm(v.detail.id);}if(v.popup&&v.popup.id!=null){return norm(v.popup.id);}if(typeof v.getSettings==='function'){var sid=v.getSettings('id');if(sid!=null){return norm(sid);}}}return v;}\n"
-			. "function isSuppressingReopen(pid){if(!pid){return false;}var until=suppressUntil[String(pid)];return until&&Date.now()<until;}\n"
-			. "function suppressReopenBriefly(pid){if(!pid){return;}suppressUntil[String(pid)]=Date.now()+suppressMs;}\n"
-			. "function getPopupDoc(pid){var docs=getPopupDocuments();if(!docs||!pid){return null;}return docs[pid]||docs[String(pid)]||null;}\n"
-			. "function popupShouldDisplay(m){if(typeof m.rwgc_show==='boolean'){return m.rwgc_show;}var allowed=(m.countries||[]).map(function(c){return String(c).toUpperCase();});if(allowed.length===0){return true;}var matched=allowed.indexOf(String(userCountry).toUpperCase())!==-1;var mode=(m.visibility_mode==='hide_if'||m.visibility_mode==='hide')?'hide_if':'show_if';return (mode==='hide_if')?!matched:matched;}\n"
-			. "function shouldShowForPopup(pid){if(isSuppressingReopen(pid)){return false;}var m=meta(pid);if(!m){return true;}if(m.rwgc_show===true){return true;}if(m.rwgc_show===false){return false;}return popupShouldDisplay(m);}\n"
-			. "function popupIdFromModal(modal){if(!modal){return null;}var id=modal.getAttribute('data-elementor-id');if(id!=null&&id!==''){return norm(id);}if(modal.id&&modal.id.indexOf('elementor-popup-modal-')===0){return norm(modal.id.slice('elementor-popup-modal-'.length));}var inner=modal.querySelector('[data-elementor-type=\"popup\"]');if(inner){var innerId=inner.getAttribute('data-elementor-id');if(innerId!=null&&innerId!==''){return norm(innerId);}}return null;}\n"
-			. "function getPopupDocuments(){var mgr=window.elementorFrontend&&elementorFrontend.documentsManager;return mgr&&mgr.documents?mgr.documents:null;}\n"
-			. "function resolveDocId(doc,docKey){var pid=norm(docKey);if(doc&&typeof doc.getSettings==='function'){var sid=doc.getSettings('id');if(sid!=null){pid=norm(sid);}}return pid;}\n"
-			. "function patchSingleDocument(doc,docKey){if(!doc){return false;}var docId=resolveDocId(doc,docKey);if(typeof doc.showModal!=='function'||doc.__rwgcShowModalPatch){return false;}var os=doc.showModal;doc.showModal=function(){if(docId&&!shouldShowForPopup(docId)){return;}return os.apply(doc,arguments);};doc.__rwgcShowModalPatch=1;return true;}\n"
-			. "function forceClosePopup(pid){pid=norm(pid);if(!pid){return;}suppressReopenBriefly(pid);try{var doc=getPopupDoc(pid);if(doc&&typeof doc.getModal==='function'){doc.getModal().hide();return;}}catch(e){}try{var modals=document.querySelectorAll('.elementor-popup-modal');for(var i=0;i<modals.length;i++){var mid=popupIdFromModal(modals[i]);if(mid&&String(mid)===String(pid)){var m=modals[i];m.style.display='none';m.setAttribute('aria-hidden','true');}}}catch(e2){}}\n"
-			. "function resolveClosePopupId(args){if(!args||!args.length){return null;}var pid=norm(args[0]);if(pid&&meta(pid)){return pid;}if(args.length>1&&window.jQuery){var evt=args[1];if(evt&&evt.target){var el=jQuery(evt.target).parents('[data-elementor-type=\"popup\"]').data('elementorId');if(el!=null){return norm(el);}}}return pid;}\n"
-			. "function apply(orig,scope,args){var pid=norm(args.length?args[0]:null);if(!pid){return orig.apply(scope,args);}if(!shouldShowForPopup(pid)){return false;}return orig.apply(scope,args);}\n"
-			. "function wrapClose(orig,scope,args){var pid=resolveClosePopupId(args);if(pid){suppressReopenBriefly(pid);}return orig.apply(scope,args);}\n"
-			. "function patchPopupDocuments(){var docs=getPopupDocuments();if(!docs){return false;}var patched=false;Object.keys(docs).forEach(function(docKey){if(patchSingleDocument(docs[docKey],docKey)){patched=true;}});return patched;}\n"
-			. "function patchModule(){var mod=window.elementorProFrontend&&elementorProFrontend.modules&&elementorProFrontend.modules.popup;if(!mod){return false;}if(typeof mod.showPopup==='function'&&!mod.__rwgcPopupGeoPatch){var o=mod.showPopup;mod.showPopup=function(){return apply(o,this,arguments);};mod.__rwgcPopupGeoPatch=1;}if(typeof mod.triggerPopup==='function'&&!mod.__rwgcTriggerPatch){var t=mod.triggerPopup;mod.triggerPopup=function(){return apply(t,this,arguments);};mod.__rwgcTriggerPatch=1;}if(typeof mod.closePopup==='function'&&!mod.__rwgcClosePatch){var c=mod.closePopup;mod.closePopup=function(){return wrapClose(c,this,arguments);};mod.__rwgcClosePatch=1;}return true;}\n"
-			. "function bindPopupEvents(){if(window.__rwgcPopupGeoEventPatch){return;}window.__rwgcPopupGeoEventPatch=1;var jq=window.jQuery;if(!jq){return;}var onShow=function(evt,popupId,docInst){var pid=norm(popupId);if(docInst){patchSingleDocument(docInst,pid);}};var targets=[];if(window.elementorFrontend&&elementorFrontend.elements){if(elementorFrontend.elements.\$document){targets.push(elementorFrontend.elements.\$document);}if(elementorFrontend.elements.\$window){targets.push(elementorFrontend.elements.\$window);}}targets.push(jq(document));targets.forEach(function(\$el){if(\$el&&typeof \$el.on==='function'){\$el.on('elementor/popup/show',onShow);}});}\n"
-			. "function installCloseCapture(){if(window.__rwgcPopupCloseCapture){return;}window.__rwgcPopupCloseCapture=1;document.addEventListener('click',function(e){var t=e.target;if(!t||!t.closest){return;}var modal=t.closest('.elementor-popup-modal');if(!modal){return;}var closeBtn=t.closest('.dialog-close-button,.eicon-close');var overlay=t.classList&&t.classList.contains('dialog-widget-overlay');if(!closeBtn&&!overlay){return;}var pid=popupIdFromModal(modal);if(pid){forceClosePopup(pid);}},true);document.addEventListener('keydown',function(e){if(!e||e.key!=='Escape'){return;}var modals=document.querySelectorAll('.elementor-popup-modal');for(var i=0;i<modals.length;i++){if(modals[i].offsetParent===null){continue;}var pid=popupIdFromModal(modals[i]);if(pid){forceClosePopup(pid);break;}}},true);}\n"
-			. "function patchRuntime(){patchPopupDocuments();patchModule();bindPopupEvents();installCloseCapture();}\n"
-			. "patchRuntime();var tick=0;var patchIv=setInterval(function(){patchRuntime();tick++;if(tick>=120){clearInterval(patchIv);}},250);\n"
-			. "})();";
+		$template = <<<'JS'
+(function(){
+var userCountry=__USER_COUNTRY__;
+var popupData=__POPUP_DATA__;
+var blocked=__BLOCKED__;
+var variantCtx=__VARIANT_CTX__;
+var suppressUntil={};var suppressMs=4000;var fallbackDone={};
+function meta(pid){if(pid==null){return null;}var k=String(pid);return popupData[k]||popupData[pid]||null;}
+function norm(v){if(v==null){return null;}if(typeof v==='number'){return v;}if(typeof v==='string'){var n=parseInt(v,10);return isNaN(n)?v:n;}if(typeof v==='object'){if(v.id!=null){return norm(v.id);}if(v.popupId!=null){return norm(v.popupId);}if(v.popup_id!=null){return norm(v.popup_id);}if(v.detail&&v.detail.id!=null){return norm(v.detail.id);}if(v.popup&&v.popup.id!=null){return norm(v.popup.id);}if(typeof v.getSettings==='function'){var sid=v.getSettings('id');if(sid!=null){return norm(sid);}}}return v;}
+function isBlockedList(pid){if(!pid){return false;}var k=String(pid);return blocked.indexOf(parseInt(k,10))!==-1||blocked.indexOf(k)!==-1;}
+function shouldBlockOpen(pid){if(!pid){return false;}if(isBlockedList(pid)){return true;}var m=meta(pid);if(m&&m.rwgc_show===false){return true;}if(m&&m.rwgc_show===true){return false;}return false;}
+function isSuppressingReopen(pid){if(!pid){return false;}var m=meta(pid);if(m&&m.rwgc_show===true){return false;}var until=suppressUntil[String(pid)];return until&&Date.now()<until;}
+function suppressReopenBriefly(pid){if(!pid){return;}suppressUntil[String(pid)]=Date.now()+suppressMs;}
+function getPopupDoc(pid){var docs=getPopupDocuments();if(!docs||!pid){return null;}return docs[pid]||docs[String(pid)]||null;}
+function resolvePopupIdFromArgs(args){if(!args||!args.length){return null;}var i,pid;for(i=0;i<args.length;i++){pid=norm(args[i]);if(pid){return pid;}}return null;}
+function popupIdFromModal(modal){if(!modal){return null;}var id=modal.getAttribute('data-elementor-id');if(id!=null&&id!==''){return norm(id);}if(modal.id&&modal.id.indexOf('elementor-popup-modal-')===0){return norm(modal.id.slice('elementor-popup-modal-'.length));}var inner=modal.querySelector('[data-elementor-type="popup"]');if(inner){var innerId=inner.getAttribute('data-elementor-id');if(innerId!=null&&innerId!==''){return norm(innerId);}}return null;}
+function getPopupDocuments(){var mgr=window.elementorFrontend&&elementorFrontend.documentsManager;return mgr&&mgr.documents?mgr.documents:null;}
+function resolveDocId(doc,docKey){var pid=norm(docKey);if(doc&&typeof doc.getSettings==='function'){var sid=doc.getSettings('id');if(sid!=null){pid=norm(sid);}}return pid;}
+function patchSingleDocument(doc,docKey){if(!doc){return false;}var docId=resolveDocId(doc,docKey);if(typeof doc.showModal!=='function'||doc.__rwgcShowModalPatch){return false;}var os=doc.showModal;doc.showModal=function(){if(docId&&shouldBlockOpen(docId)){return;}if(docId&&isSuppressingReopen(docId)){return;}return os.apply(doc,arguments);};doc.__rwgcShowModalPatch=1;return true;}
+function forceClosePopup(pid){pid=norm(pid);if(!pid){return;}suppressReopenBriefly(pid);try{var doc=getPopupDoc(pid);if(doc&&typeof doc.getModal==='function'){doc.getModal().hide();return;}}catch(e){}try{var modals=document.querySelectorAll('.elementor-popup-modal');for(var i=0;i<modals.length;i++){var mid=popupIdFromModal(modals[i]);if(mid&&String(mid)===String(pid)){var m=modals[i];m.style.display='none';m.setAttribute('aria-hidden','true');}}}catch(e2){}}
+function resolveClosePopupId(args){if(!args||!args.length){return null;}var pid=resolvePopupIdFromArgs(args);if(pid&&meta(pid)){return pid;}if(args.length>1&&window.jQuery){var evt=args[1];if(evt&&evt.target){var el=jQuery(evt.target).parents('[data-elementor-type="popup"]').data('elementorId');if(el!=null){return norm(el);}}}return pid;}
+function applyOpen(orig,scope,args){var pid=resolvePopupIdFromArgs(args);if(pid&&shouldBlockOpen(pid)){return false;}return orig.apply(scope,args);}
+function wrapClose(orig,scope,args){var pid=resolveClosePopupId(args);if(pid){suppressReopenBriefly(pid);}return orig.apply(scope,args);}
+function patchPopupDocuments(){var docs=getPopupDocuments();if(!docs){return false;}var patched=false;Object.keys(docs).forEach(function(docKey){if(patchSingleDocument(docs[docKey],docKey)){patched=true;}});return patched;}
+function patchModule(){var mod=window.elementorProFrontend&&elementorProFrontend.modules&&elementorProFrontend.modules.popup;if(!mod){return false;}if(typeof mod.showPopup==='function'&&!mod.__rwgcPopupGeoPatch){var o=mod.showPopup;mod.showPopup=function(){return applyOpen(o,this,arguments);};mod.__rwgcPopupGeoPatch=1;}if(typeof mod.triggerPopup==='function'&&!mod.__rwgcTriggerPatch){var t=mod.triggerPopup;mod.triggerPopup=function(){return applyOpen(t,this,arguments);};mod.__rwgcTriggerPatch=1;}if(typeof mod.closePopup==='function'&&!mod.__rwgcClosePatch){var c=mod.closePopup;mod.closePopup=function(){return wrapClose(c,this,arguments);};mod.__rwgcClosePatch=1;}return true;}
+function bindPopupEvents(){if(window.__rwgcPopupGeoEventPatch){return;}window.__rwgcPopupGeoEventPatch=1;var jq=window.jQuery;if(!jq){return;}var onShow=function(evt,popupId,docInst){var pid=norm(popupId);if(docInst){patchSingleDocument(docInst,pid);}};var targets=[];if(window.elementorFrontend&&elementorFrontend.elements){if(elementorFrontend.elements.$document){targets.push(elementorFrontend.elements.$document);}if(elementorFrontend.elements.$window){targets.push(elementorFrontend.elements.$window);}}targets.push(jq(document));targets.forEach(function($el){if($el&&typeof $el.on==='function'){$el.on('elementor/popup/show',onShow);}});}
+function installCloseCapture(){if(window.__rwgcPopupCloseCapture){return;}window.__rwgcPopupCloseCapture=1;document.addEventListener('click',function(e){var t=e.target;if(!t||!t.closest){return;}var modal=t.closest('.elementor-popup-modal');if(!modal){return;}var closeBtn=t.closest('.dialog-close-button,.eicon-close');var overlay=t.classList&&t.classList.contains('dialog-widget-overlay');if(!closeBtn&&!overlay){return;}var pid=popupIdFromModal(modal);if(pid){forceClosePopup(pid);}},true);document.addEventListener('keydown',function(e){if(!e||e.key!=='Escape'){return;}var modals=document.querySelectorAll('.elementor-popup-modal');for(var i=0;i<modals.length;i++){if(modals[i].offsetParent===null){continue;}var pid=popupIdFromModal(modals[i]);if(pid){forceClosePopup(pid);break;}}},true);}
+function isPopupVisible(pid){var sel='#elementor-popup-modal-'+pid+',.elementor-popup-modal[data-elementor-id="'+pid+'"]';var nodes=document.querySelectorAll(sel);for(var i=0;i<nodes.length;i++){if(nodes[i].offsetParent!==null){return true;}}return false;}
+function openAllowedPopup(pid,delayMs){pid=norm(pid);if(!pid||shouldBlockOpen(pid)){return;}var mod=window.elementorProFrontend&&elementorProFrontend.modules&&elementorProFrontend.modules.popup;var run=function(){if(isPopupVisible(pid)){fallbackDone[String(pid)]=1;return;}if(mod&&typeof mod.showPopup==='function'){mod.showPopup({id:pid});return;}var doc=getPopupDoc(pid);if(doc&&typeof doc.showModal==='function'){doc.showModal();}};if(delayMs>0){setTimeout(run,delayMs);}else{run();}}
+function maybeVariantPageLoadFallback(){if(!variantCtx||!variantCtx.active){return;}Object.keys(popupData).forEach(function(key){var m=popupData[key];if(!m||m.rwgc_show!==true||!m.page_load_fallback){return;}var pid=parseInt(key,10);if(!pid||fallbackDone[String(pid)]){return;}fallbackDone[String(pid)]=1;var delay=parseInt(m.page_load_delay_ms,10)||0;setTimeout(function(){if(!isPopupVisible(pid)){openAllowedPopup(pid,0);}},Math.max(delay,300));});}
+function patchRuntime(){patchPopupDocuments();patchModule();bindPopupEvents();installCloseCapture();}
+patchRuntime();var tick=0;var patchIv=setInterval(function(){patchRuntime();tick++;if(tick>=120){clearInterval(patchIv);}},250);
+function bindVariantFallback(){var run=maybeVariantPageLoadFallback;if(window.jQuery){jQuery(window).on('elementor/frontend/init',run);}if(window.elementorFrontend&&elementorFrontend.init){run();}else{setTimeout(run,1200);}}
+bindVariantFallback();
+window.rwgcPopupGeoBlocked=blocked;window.popupData=popupData;
+})();
+JS;
+
+		return str_replace(
+			array(
+				'__USER_COUNTRY__',
+				'__POPUP_DATA__',
+				'__BLOCKED__',
+				'__VARIANT_CTX__',
+			),
+			array(
+				wp_json_encode( $visitor ),
+				$popup_data,
+				$blocked_data,
+				$variant_data,
+			),
+			$template
+		);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private static function get_variant_route_context_for_script() {
+		$ctx = array(
+			'active'  => false,
+			'page_id' => 0,
+			'version' => '',
+			'url'     => '',
+		);
+
+		if ( ! class_exists( 'RWGC_Page_Version_Routing', false ) ) {
+			return $ctx;
+		}
+
+		if ( ! RWGC_Page_Version_Routing::is_page_version_request() ) {
+			return $ctx;
+		}
+
+		$page_id = function_exists( 'get_queried_object_id' ) ? (int) get_queried_object_id() : 0;
+		$version = RWGC_Page_Version_Routing::get_active_version();
+		$url     = function_exists( 'home_url' ) ? (string) wp_unslash( isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '' ) : '';
+
+		$ctx['active']  = true;
+		$ctx['page_id'] = $page_id;
+		$ctx['version'] = $version;
+		$ctx['url']     = $url;
+
+		return $ctx;
+	}
+
+	/**
+	 * @param int $popup_id Popup template ID.
+	 * @return bool
+	 */
+	private static function popup_has_page_load_trigger( $popup_id ) {
+		$popup_id = absint( $popup_id );
+		if ( $popup_id <= 0 ) {
+			return false;
+		}
+
+		$display = get_post_meta( $popup_id, '_elementor_popup_display_settings', true );
+		if ( ! is_array( $display ) || empty( $display['triggers'] ) || ! is_array( $display['triggers'] ) ) {
+			return false;
+		}
+
+		return isset( $display['triggers']['page_load'] ) && is_array( $display['triggers']['page_load'] );
+	}
+
+	/**
+	 * @param int $popup_id Popup template ID.
+	 * @return float Seconds.
+	 */
+	private static function get_page_load_delay_seconds( $popup_id ) {
+		$popup_id = absint( $popup_id );
+		if ( $popup_id <= 0 ) {
+			return 0.0;
+		}
+
+		$display = get_post_meta( $popup_id, '_elementor_popup_display_settings', true );
+		if ( ! is_array( $display ) || empty( $display['triggers']['page_load'] ) || ! is_array( $display['triggers']['page_load'] ) ) {
+			return 0.0;
+		}
+
+		$delay = isset( $display['triggers']['page_load']['delay'] ) ? (float) $display['triggers']['page_load']['delay'] : 0.0;
+		return max( 0.0, $delay );
 	}
 
 	/**
@@ -754,24 +856,49 @@ class RWGC_Elementor_Popups {
 		$should_render = isset( $result['should_render'] ) ? (bool) $result['should_render'] : true;
 		$rules_match   = isset( $result['rules_match'] ) ? (bool) $result['rules_match'] : true;
 
+		$snapshot = class_exists( 'RWGC_Context_Resolver', false ) ? RWGC_Context_Resolver::resolve_current() : null;
+		$rule_id  = 0;
+		if ( ! empty( $settings['rwgc_visibility_rule_library'] ) ) {
+			$rule_id = absint( $settings['rwgc_visibility_rule_library'] );
+		} elseif ( ! empty( $settings['rwgc_applied_visibility_rule_id'] ) ) {
+			$rule_id = absint( $settings['rwgc_applied_visibility_rule_id'] );
+		}
+
+		$provenance = ( $rule_id > 0 && class_exists( 'RWGC_Variant_Rule_Applications', false ) )
+			? RWGC_Variant_Rule_Applications::get_provenance( $rule_id )
+			: array();
+
+		$canonical_page_id = function_exists( 'get_queried_object_id' ) ? (int) get_queried_object_id() : 0;
+
 		$payload = array(
-			'popup_id'           => (int) $popup_id,
-			'popup_title'        => get_the_title( $popup_id ),
-			'current_url'        => function_exists( 'home_url' ) ? (string) wp_unslash( isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '' ) : '',
-			'detected_country'   => $cc . ( $cn ? ' (' . $cn . ')' : '' ),
-			'detected_city'      => $city,
-			'detected_region'    => $region,
-			'detected_ip'        => $ip,
-			'visibility_mode'    => isset( $result['visibility_mode'] ) ? (string) $result['visibility_mode'] : 'show_if',
-			'applied_rule_id'    => isset( $settings['rwgc_visibility_rule_library'] ) ? (string) $settings['rwgc_visibility_rule_library'] : '',
-			'applied_rule_source'=> isset( $result['rule_source'] ) ? (string) $result['rule_source'] : '',
-			'rule_json'          => isset( $result['rule_json'] ) ? (string) $result['rule_json'] : '',
-			'rule_match_result'  => $rules_match,
-			'country_match'      => isset( $result['country_match'] ) ? (bool) $result['country_match'] : null,
-			'portable_match'     => isset( $result['portable_match'] ) ? (bool) $result['portable_match'] : null,
-			'popup_trigger_result' => $should_render ? 'allow' : 'block',
-			'final_decision'     => $should_render ? 'show' : 'suppress',
-			'reason'             => isset( $result['reason'] ) ? (string) $result['reason'] : '',
+			'popup_id'                 => (int) $popup_id,
+			'popup_title'              => get_the_title( $popup_id ),
+			'assigned_page'            => $canonical_page_id,
+			'current_url'              => function_exists( 'home_url' ) ? (string) wp_unslash( isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '' ) : '',
+			'canonical_page_id'        => $canonical_page_id,
+			'detected_variant_key'     => $snapshot ? (string) $snapshot->get( 'page_version', '' ) : '',
+			'detected_variant_page_id' => $snapshot ? (int) $snapshot->get( 'page_version_page_id', 0 ) : 0,
+			'variant_route_active'     => $snapshot ? (bool) $snapshot->get( 'page_version_active', false ) : false,
+			'detected_country'         => $cc . ( $cn ? ' (' . $cn . ')' : '' ),
+			'detected_city'            => $city,
+			'detected_region'          => $region,
+			'detected_ip'              => $ip,
+			'applied_rule_id'          => $rule_id > 0 ? (string) $rule_id : '',
+			'rule_source_type'         => isset( $provenance['sourceType'] ) ? (string) $provenance['sourceType'] : '',
+			'rule_source_page'         => isset( $provenance['sourcePageId'] ) ? (int) $provenance['sourcePageId'] : 0,
+			'rule_source_variant'      => isset( $provenance['sourceVariant'] ) ? (string) $provenance['sourceVariant'] : '',
+			'visibility_mode'          => isset( $result['visibility_mode'] ) ? (string) $result['visibility_mode'] : 'show_if',
+			'applied_rule_source'      => isset( $result['rule_source'] ) ? (string) $result['rule_source'] : '',
+			'rule_json'                => isset( $result['rule_json'] ) ? (string) $result['rule_json'] : '',
+			'rule_match_result'        => $rules_match,
+			'country_match'            => isset( $result['country_match'] ) ? (bool) $result['country_match'] : null,
+			'portable_match'           => isset( $result['portable_match'] ) ? (bool) $result['portable_match'] : null,
+			'elementor_page_load'      => self::popup_has_page_load_trigger( $popup_id ),
+			'geo_allowed'              => $should_render,
+			'popup_trigger_result'     => $should_render ? 'allow' : 'block',
+			'final_decision'           => $should_render ? 'show' : 'suppress',
+			'page_load_fallback'       => $should_render && self::popup_has_page_load_trigger( $popup_id ),
+			'reason'                   => isset( $result['reason'] ) ? (string) $result['reason'] : '',
 		);
 
 		error_log( 'RWGC Popup Targeting Debug ' . wp_json_encode( $payload ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log

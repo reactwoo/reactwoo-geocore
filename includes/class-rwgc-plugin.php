@@ -142,6 +142,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-registry.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-page-version.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-page-version-routing.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-variant-rule-applications.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-context-resolver.php';
 		require_once RWGC_PATH . 'includes/targeting/providers/class-rwgc-target-provider-geo.php';
 		require_once RWGC_PATH . 'includes/targeting/providers/class-rwgc-target-provider-language.php';
@@ -165,6 +166,7 @@ class RWGC_Plugin {
 		RWGC_Country_Groups::init();
 		RWGC_Preview::init();
 		RWGC_Visibility_Rule_CPT::init();
+		RWGC_Variant_Rule_Applications::init();
 		RWGC_Legacy_Geo_Rule_CPT::init();
 
 		if ( is_admin() ) {

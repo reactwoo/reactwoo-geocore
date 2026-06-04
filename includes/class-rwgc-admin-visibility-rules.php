@@ -75,6 +75,17 @@ class RWGC_Admin_Visibility_Rules {
 			wp_safe_redirect( admin_url( 'admin.php?page=rwgc-visibility-rules&rwgc_error=save' ) );
 			exit;
 		}
+
+		if ( class_exists( 'RWGC_Variant_Rule_Applications', false ) && class_exists( 'RWGC_Targeting_Rule_Set_Schema', false ) ) {
+			$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $json );
+			if ( is_array( $set ) ) {
+				$provenance = RWGC_Variant_Rule_Applications::infer_provenance_from_rule_set( $new_id, $set );
+				if ( ! empty( $provenance ) ) {
+					RWGC_Variant_Rule_Applications::save_provenance( $new_id, $provenance );
+				}
+			}
+		}
+
 		wp_safe_redirect( admin_url( 'admin.php?page=rwgc-visibility-rules&rwgc_edit=' . $new_id . '&updated=1' ) );
 		exit;
 	}
@@ -120,6 +131,27 @@ class RWGC_Admin_Visibility_Rules {
 			}
 		}
 		$list_url = admin_url( 'admin.php?page=rwgc-visibility-rules' );
+
+		$variant_provenance = array();
+		$variant_references = array();
+		$variant_sync_url   = '';
+		if ( $post_id > 0 && class_exists( 'RWGC_Variant_Rule_Applications', false ) ) {
+			$variant_provenance = RWGC_Variant_Rule_Applications::get_provenance( $post_id );
+			if ( empty( $variant_provenance['sourceType'] ) && class_exists( 'RWGC_Targeting_Rule_Set_Schema', false ) ) {
+				$raw_set = RWGC_Visibility_Rule_Repository::get_rule_set( $post_id );
+				if ( is_array( $raw_set ) ) {
+					$variant_provenance = RWGC_Variant_Rule_Applications::infer_provenance_from_rule_set( $post_id, $raw_set );
+				}
+			}
+			if ( ! empty( $variant_provenance['sourceType'] ) && 'page_variant' === $variant_provenance['sourceType'] ) {
+				$variant_references = RWGC_Variant_Rule_Applications::get_reference_status_rows( $post_id );
+				$variant_sync_url     = wp_nonce_url(
+					admin_url( 'admin-post.php?action=rwgc_sync_variant_rule_surfaces&rule_id=' . $post_id ),
+					'rwgc_sync_variant_rule_' . $post_id
+				);
+			}
+		}
+
 		include RWGC_PATH . 'admin/views/visibility-rules-edit.php';
 	}
 
@@ -128,6 +160,9 @@ class RWGC_Admin_Visibility_Rules {
 	 */
 	private static function render_list() {
 		$rules = RWGC_Visibility_Rule_Repository::query();
+		$orphaned_variant_rules = class_exists( 'RWGC_Variant_Rule_Applications', false )
+			? RWGC_Variant_Rule_Applications::find_orphaned_rules()
+			: array();
 		include RWGC_PATH . 'admin/views/visibility-rules-list.php';
 	}
 }

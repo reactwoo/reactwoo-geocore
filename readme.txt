@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.30
+Stable tag: 1.8.31
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,10 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.31 =
+* **Elementor popups:** Fail-open when `rwgc_show` is true (never block `showPopup`/`triggerPopup`/`showModal`); block only explicit denied popup IDs; robust popup ID resolution from Elementor call args; variant route page-load fallback when Elementor does not auto-open; expanded popup debug fields (variant key, page-load trigger, geo allowed).
+* **Variant rules:** `RWGC_Variant_Rule_Applications` — provenance metadata, popup reference discovery, sync-to-popup action, orphan health list, fail-closed evaluation for archived/missing variant rules, admin variant application panel on visibility rule edit.
 
 = 1.8.30 =
 * **i18n (WP 6.7):** Defer target-type registry init and admin route/section/module registration from `rwgc_loaded` (plugins_loaded) to `init`, so provider/section labels never translate before `init` (fixes `_load_textdomain_just_in_time` notices on English installs with no .mo files).

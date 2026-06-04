@@ -10,6 +10,7 @@ $index_rows               = class_exists( 'RWGC_Admin_Targeting_Rules_Index', fa
 $rwgc_use_platform_shell  = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
 $new_url                  = admin_url( 'admin.php?page=rwgc-visibility-rules&rwgc_edit=new' );
 $rule_builder_url         = admin_url( 'admin.php?page=rwgc-target-types' );
+$orphaned_variant_rules   = isset( $orphaned_variant_rules ) && is_array( $orphaned_variant_rules ) ? $orphaned_variant_rules : array();
 ?>
 <div class="wrap rwgc-wrap rwgc-suite">
 	<?php if ( class_exists( 'RWGC_Admin_UI', false ) ) : ?>
@@ -23,6 +24,21 @@ $rule_builder_url         = admin_url( 'admin.php?page=rwgc-target-types' );
 		?>
 	<?php else : ?>
 		<h1><?php esc_html_e( 'Targeting rules', 'reactwoo-geocore' ); ?></h1>
+	<?php endif; ?>
+
+	<?php if ( ! empty( $orphaned_variant_rules ) ) : ?>
+		<div class="notice notice-warning">
+			<p>
+				<?php
+				printf(
+					/* translators: %d: orphan count */
+					esc_html( _n( '%d orphaned variant rule found.', '%d orphaned variant rules found.', count( $orphaned_variant_rules ), 'reactwoo-geocore' ) ),
+					count( $orphaned_variant_rules )
+				);
+				?>
+				<a href="#rwgc-orphan-variant-rules"><?php esc_html_e( 'Review', 'reactwoo-geocore' ); ?></a>
+			</p>
+		</div>
 	<?php endif; ?>
 
 	<?php if ( isset( $_GET['updated'] ) && '1' === $_GET['updated'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
@@ -161,6 +177,37 @@ $rule_builder_url         = admin_url( 'admin.php?page=rwgc-target-types' );
 			<div class="notice notice-info inline"><p><?php esc_html_e( 'No builder-attached targeting rules found yet. Create rules in Elementor, the block editor, page routing, or Geo Commerce.', 'reactwoo-geocore' ); ?></p></div>
 		<?php endif; ?>
 	</div>
+
+	<?php if ( ! empty( $orphaned_variant_rules ) ) : ?>
+		<div class="rwgc-card rwgc-card--full" id="rwgc-orphan-variant-rules" style="margin-top:1.5em;">
+			<h2><?php esc_html_e( 'Variant rule health', 'reactwoo-geocore' ); ?></h2>
+			<p class="description"><?php esc_html_e( 'These variant rules are archived or point at a removed page. Front-end evaluation fails closed (variant popups and content stay hidden).', 'reactwoo-geocore' ); ?></p>
+			<table class="widefat striped">
+				<thead>
+					<tr>
+						<th scope="col"><?php esc_html_e( 'Rule', 'reactwoo-geocore' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Variant', 'reactwoo-geocore' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Lifecycle', 'reactwoo-geocore' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Actions', 'reactwoo-geocore' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $orphaned_variant_rules as $orphan ) : ?>
+						<tr>
+							<td><?php echo esc_html( (string) ( $orphan['title'] ?? '' ) ); ?></td>
+							<td><?php echo esc_html( (string) ( $orphan['variant'] ?? '' ) ); ?></td>
+							<td><?php echo esc_html( (string) ( $orphan['lifecycle'] ?? __( 'inactive', 'reactwoo-geocore' ) ) ); ?></td>
+							<td>
+								<?php if ( ! empty( $orphan['edit_url'] ) ) : ?>
+									<a class="button button-small" href="<?php echo esc_url( (string) $orphan['edit_url'] ); ?>"><?php esc_html_e( 'Review', 'reactwoo-geocore' ); ?></a>
+								<?php endif; ?>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+		</div>
+	<?php endif; ?>
 </div>
 <style>
 	.rwgc-rules-scope{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;line-height:1.4}
