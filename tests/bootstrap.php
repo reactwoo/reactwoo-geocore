@@ -5,6 +5,10 @@
 
 define( 'ABSPATH', dirname( __DIR__ ) . '/' );
 
+if ( ! ob_get_level() ) {
+	ob_start();
+}
+
 if ( ! defined( 'HOUR_IN_SECONDS' ) ) {
 	define( 'HOUR_IN_SECONDS', 3600 );
 }
@@ -150,7 +154,8 @@ if ( ! function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
 	 * @return bool
 	 */
 	function rwgc_visibility_mode_allows_render( $mode, $match ) {
-		return 'hide_if' === sanitize_key( (string) $mode ) ? ! (bool) $match : (bool) $match;
+		$mode = sanitize_key( (string) $mode );
+		return in_array( $mode, array( 'hide', 'hide_if' ), true ) ? ! (bool) $match : (bool) $match;
 	}
 }
 

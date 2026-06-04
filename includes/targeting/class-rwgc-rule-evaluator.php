@@ -137,7 +137,8 @@ class RWGC_Rule_Evaluator {
 			$mode = isset( $set['mode'] ) ? $set['mode'] : 'show_if';
 			return rwgc_visibility_mode_allows_render( $mode, $matched );
 		}
-		return $matched;
+		$mode = isset( $set['mode'] ) ? sanitize_key( (string) $set['mode'] ) : 'show_if';
+		return in_array( $mode, array( 'hide', 'hide_if' ), true ) ? ! $matched : $matched;
 	}
 
 	/**
