@@ -132,13 +132,24 @@ class RWGC_Settings {
 	public static function sanitize_settings( $input ) {
 		$defaults = self::get_defaults();
 		$settings = is_array( $input ) ? $input : array();
+		$stored   = function_exists( 'get_option' ) ? get_option( self::OPTION_KEY, array() ) : array();
+		if ( ! is_array( $stored ) ) {
+			$stored = array();
+		}
+		$preserved = array_merge( $defaults, $stored );
 
 		$out = $defaults;
 
 		$out['enabled']             = ! empty( $settings['enabled'] ) ? 1 : 0;
-		$out['maxmind_account_id']  = isset( $settings['maxmind_account_id'] ) ? sanitize_text_field( $settings['maxmind_account_id'] ) : '';
-		$out['maxmind_license_key'] = isset( $settings['maxmind_license_key'] ) ? sanitize_text_field( $settings['maxmind_license_key'] ) : '';
-		$out['auto_update_db']      = ! empty( $settings['auto_update_db'] ) ? 1 : 0;
+		$out['maxmind_account_id']  = isset( $settings['maxmind_account_id'] )
+			? sanitize_text_field( $settings['maxmind_account_id'] )
+			: sanitize_text_field( $preserved['maxmind_account_id'] );
+		$out['maxmind_license_key'] = isset( $settings['maxmind_license_key'] )
+			? sanitize_text_field( $settings['maxmind_license_key'] )
+			: sanitize_text_field( $preserved['maxmind_license_key'] );
+		$out['auto_update_db']      = isset( $settings['auto_update_db'] )
+			? ( ! empty( $settings['auto_update_db'] ) ? 1 : 0 )
+			: ( ! empty( $preserved['auto_update_db'] ) ? 1 : 0 );
 		$out['cache_enabled']       = ! empty( $settings['cache_enabled'] ) ? 1 : 0;
 		$out['cache_ttl']           = isset( $settings['cache_ttl'] ) ? max( 60, (int) $settings['cache_ttl'] ) : $defaults['cache_ttl'];
 		$fc = isset( $settings['fallback_country'] ) ? strtoupper( substr( sanitize_text_field( $settings['fallback_country'] ), 0, 2 ) ) : $defaults['fallback_country'];
@@ -150,10 +161,18 @@ class RWGC_Settings {
 		$out['fallback_currency']     = isset( $currency_opts[ $fcur ] ) ? $fcur : $defaults['fallback_currency'];
 		$out['rest_enabled']        = ! empty( $settings['rest_enabled'] ) ? 1 : 0;
 		$out['debug_mode']          = ! empty( $settings['debug_mode'] ) ? 1 : 0;
-		$out['db_last_updated']     = isset( $settings['db_last_updated'] ) ? sanitize_text_field( $settings['db_last_updated'] ) : '';
-		$out['db_file_path']        = isset( $settings['db_file_path'] ) ? sanitize_text_field( $settings['db_file_path'] ) : '';
-		$out['db_last_error']       = isset( $settings['db_last_error'] ) ? sanitize_text_field( $settings['db_last_error'] ) : '';
-		$out['migration_completed'] = ! empty( $settings['migration_completed'] ) ? 1 : 0;
+		$out['db_last_updated']     = isset( $settings['db_last_updated'] )
+			? sanitize_text_field( $settings['db_last_updated'] )
+			: sanitize_text_field( $preserved['db_last_updated'] );
+		$out['db_file_path']        = isset( $settings['db_file_path'] )
+			? sanitize_text_field( $settings['db_file_path'] )
+			: sanitize_text_field( $preserved['db_file_path'] );
+		$out['db_last_error']       = isset( $settings['db_last_error'] )
+			? sanitize_text_field( $settings['db_last_error'] )
+			: sanitize_text_field( $preserved['db_last_error'] );
+		$out['migration_completed'] = isset( $settings['migration_completed'] )
+			? ( ! empty( $settings['migration_completed'] ) ? 1 : 0 )
+			: ( ! empty( $preserved['migration_completed'] ) ? 1 : 0 );
 
 		return $out;
 	}
