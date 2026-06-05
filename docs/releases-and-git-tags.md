@@ -21,7 +21,9 @@ Do **not** use `reactwoo-geo-core` (extra hyphen). Dependent repos’ **`package
 Geo Core and the three Geo satellite repos include **`package.json`** with:
 
 - **`reactwooBuild.pluginFolder`** — first directory inside the release zip; after upload, WordPress installs to `wp-content/plugins/{pluginFolder}/`. This must stay aligned with **`Requires Plugins:`** dependency slugs (e.g. `reactwoo-geocore`) and PHP constants such as **`RWGC_PLUGIN_SLUG`**.
-- **`reactwooBuild.zipFile`** — filename of the zip produced next to the repo root (for CI, R2, or manual distribution).
+- **`reactwooBuild.zipFile`** — base filename of the zip produced next to the repo root (for CI, R2, or manual distribution). **Local** `npm run package:zip` appends the plugin header version (e.g. `reactwoo-geocore-1.8.33.zip`). **CI** (`CI=true`) keeps the unversioned name so publish workflows stay unchanged.
+- **`reactwooBuild.versionInZipFile`** — optional; default `true`. Set `false` to always emit the unversioned `zipFile` name.
+- **`reactwooBuild.mainPhp`** — optional; main plugin PHP file used to read `* Version:` (defaults to `{pluginFolder}.php`).
 - **`reactwooBuild.geoCoreDependencySlug`** (satellites + Geo Elementor) — always **`reactwoo-geocore`**; must match **`Requires Plugins:`** and Core’s **`pluginFolder`**.
 - **`reactwooBuild.pluginSlug`** (Geo Core only) — same as **`pluginFolder`** for the Core zip.
 
