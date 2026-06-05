@@ -61,17 +61,16 @@ class RWGC_Visibility_Rule_Repository {
 	 * @return array<string, mixed>|null Sanitized portable rule set.
 	 */
 	public static function get_rule_set( $post_id ) {
-		if ( class_exists( 'RWGC_Rule_Registry', false ) ) {
-			$from_registry = RWGC_Rule_Registry::get_rule_set_by_id( $post_id );
-			if ( is_array( $from_registry ) ) {
-				return $from_registry;
-			}
-		}
-
 		$post_id = absint( $post_id );
 		if ( $post_id <= 0 ) {
 			return null;
 		}
+
+		$post = self::get_post( $post_id );
+		if ( ! $post || ! in_array( $post->post_status, array( 'publish', 'draft' ), true ) ) {
+			return null;
+		}
+
 		$raw = get_post_meta( $post_id, RWGC_Visibility_Rule_CPT::META_PORTABLE, true );
 		if ( ! is_string( $raw ) || '' === trim( $raw ) ) {
 			return null;
