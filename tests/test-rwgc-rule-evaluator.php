@@ -22,6 +22,7 @@ if ( ! function_exists( 'apply_filters' ) ) {
 	}
 }
 
+require_once dirname( __DIR__ ) . '/includes/functions-rwgc.php';
 require_once dirname( __DIR__ ) . '/includes/targeting/class-rwgc-context-snapshot.php';
 require_once dirname( __DIR__ ) . '/includes/targeting/class-rwgc-target-operators.php';
 require_once dirname( __DIR__ ) . '/includes/targeting/class-rwgc-targeting-rule-set-schema.php';

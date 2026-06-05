@@ -5,6 +5,7 @@
 	bootstrap="tests/bootstrap.php"
 	colors="true"
 	beStrictAboutTestsThatDoNotTestAnything="true"
+	stderr="true"
 	verbose="true"
 >
 	<testsuites>

@@ -79,6 +79,7 @@ if ( ! function_exists( 'do_action' ) ) {
 }
 
 $base = dirname( __DIR__ ) . '/includes/';
+require_once $base . 'functions-rwgc.php';
 require_once $base . 'context/class-rwgc-context-attribution.php';
 require_once $base . 'engine/class-rwgc-context.php';
 require_once $base . 'rules/class-rwgc-rule-condition-evaluator.php';
