@@ -35,12 +35,15 @@ class RWGC_Elementor_Popups {
 		}
 
 		add_filter( 'elementor_pro/popup/should_show', array( __CLASS__, 'filter_popup_should_show' ), 5, 2 );
+		add_filter( 'elementor/document/wrapper_attributes', array( __CLASS__, 'filter_popup_wrapper_attributes' ), 20, 2 );
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'ensure_allowed_popups_in_location' ), 5 );
+		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_allowed_popup_assets' ), 15 );
 		add_action( 'wp_head', array( __CLASS__, 'print_popup_antiflash_head' ), 1 );
 		add_action( 'wp_head', array( __CLASS__, 'print_popup_show_patch_script' ), 2 );
 		add_action( 'elementor/theme/before_do_popup', array( __CLASS__, 'ensure_allowed_popups_in_location' ), 0 );
 		add_action( 'elementor/theme/after_do_popup', array( __CLASS__, 'force_print_missing_allowed_popups' ), 5 );
 		add_action( 'wp_footer', array( __CLASS__, 'ensure_allowed_popups_in_location' ), 1 );
+		add_action( 'wp_footer', array( __CLASS__, 'prepare_allowed_popups_before_elementor_print' ), 9 );
 		add_action( 'wp_footer', array( __CLASS__, 'force_print_missing_allowed_popups' ), 11 );
 		add_action( 'wp_footer', array( __CLASS__, 'force_print_missing_allowed_popups' ), 999 );
 		add_action( 'wp_footer', array( __CLASS__, 'print_popup_show_patch_script' ), 5 );
@@ -81,6 +84,98 @@ class RWGC_Elementor_Popups {
 			$logged = true;
 			error_log( 'RWGC Popup Location Inject ' . wp_json_encode( array( 'popup_ids' => $allowed ) ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		}
+	}
+
+	/**
+	 * Enqueue popup CSS/assets for geo-allowed templates so forced prints carry styles and triggers.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_allowed_popup_assets() {
+		if ( function_exists( 'rwgc_is_builder_edit_request' ) && rwgc_is_builder_edit_request() ) {
+			return;
+		}
+
+		if ( ! class_exists( '\Elementor\Plugin', false ) || ! class_exists( '\ElementorPro\Modules\Popup\Module', false ) ) {
+			return;
+		}
+
+		$allowed = self::get_allowed_popup_ids_for_request();
+		if ( empty( $allowed ) ) {
+			return;
+		}
+
+		self::merge_allowed_popups_into_condition_cache( $allowed );
+
+		foreach ( $allowed as $popup_id ) {
+			$popup_id = (int) $popup_id;
+			if ( $popup_id <= 0 ) {
+				continue;
+			}
+
+			\ElementorPro\Modules\Popup\Module::add_popup_to_location( $popup_id );
+
+			if ( class_exists( '\Elementor\Core\Files\CSS\Post', false ) ) {
+				$css = \Elementor\Core\Files\CSS\Post::create( $popup_id );
+				if ( $css && method_exists( $css, 'enqueue' ) ) {
+					$css->enqueue();
+				}
+			}
+
+			wp_enqueue_style( 'e-popup' );
+		}
+	}
+
+	/**
+	 * Final merge before Elementor prints popups at wp_footer:10.
+	 *
+	 * @return void
+	 */
+	public static function prepare_allowed_popups_before_elementor_print() {
+		self::ensure_allowed_popups_in_location();
+	}
+
+	/**
+	 * Ensure geo-allowed popup wrappers include location class and page-load triggers.
+	 *
+	 * @param array<string, mixed> $attributes Wrapper attributes.
+	 * @param object               $document   Elementor document.
+	 * @return array<string, mixed>
+	 */
+	public static function filter_popup_wrapper_attributes( $attributes, $document ) {
+		if ( ! is_array( $attributes ) || ! $document || ! method_exists( $document, 'get_name' ) || 'popup' !== $document->get_name() ) {
+			return $attributes;
+		}
+
+		$popup_id = method_exists( $document, 'get_main_id' ) ? (int) $document->get_main_id() : 0;
+		if ( $popup_id <= 0 || true !== self::popup_should_display( $popup_id ) ) {
+			return $attributes;
+		}
+
+		if ( isset( $attributes['class'] ) && false === strpos( (string) $attributes['class'], 'elementor-location-popup' ) ) {
+			$attributes['class'] .= ' elementor-location-popup';
+		}
+
+		$settings = array();
+		if ( ! empty( $attributes['data-elementor-settings'] ) ) {
+			$decoded = json_decode( (string) $attributes['data-elementor-settings'], true );
+			if ( is_array( $decoded ) ) {
+				$settings = $decoded;
+			}
+		}
+
+		if ( empty( $settings['triggers'] ) && method_exists( $document, 'get_display_settings' ) ) {
+			$display = $document->get_display_settings();
+			if ( is_array( $display ) && ! empty( $display['triggers'] ) && is_object( $display['triggers'] ) && method_exists( $display['triggers'], 'get_frontend_settings' ) ) {
+				$settings['triggers'] = $display['triggers']->get_frontend_settings();
+			}
+		}
+
+		if ( ! empty( $settings ) ) {
+			$attributes['data-elementor-settings'] = wp_json_encode( $settings );
+		}
+
+		return $attributes;
 	}
 
 	/**
@@ -151,8 +246,24 @@ class RWGC_Elementor_Popups {
 				\Elementor\Plugin::$instance->frontend->enqueue_styles();
 			}
 
+			if ( class_exists( '\Elementor\Core\Files\CSS\Post', false ) ) {
+				$css = \Elementor\Core\Files\CSS\Post::create( $popup_id );
+				if ( $css && method_exists( $css, 'enqueue' ) ) {
+					$css->enqueue();
+				}
+			}
+
+			wp_enqueue_style( 'e-popup' );
+
+			$has_triggers = self::popup_has_page_load_trigger( $popup_id );
+
 			ob_start();
-			$document->print_content();
+			self::with_popup_location_context(
+				$locations_manager,
+				static function () use ( $document ) {
+					$document->print_content();
+				}
+			);
 			$html  = (string) ob_get_clean();
 			$bytes = strlen( trim( $html ) );
 
@@ -168,6 +279,8 @@ class RWGC_Elementor_Popups {
 					'action'                     => 'forced',
 					'bytes'                      => $bytes,
 					'elementor_marked_printed'   => $elementor_marked_printed,
+					'page_load_trigger'          => $has_triggers,
+					'has_elementor_root'         => false !== strpos( $html, 'data-elementor-type="popup"' ),
 				);
 			} else {
 				$trace[] = array(
@@ -183,6 +296,48 @@ class RWGC_Elementor_Popups {
 				error_log( 'RWGC Popup Force Print ' . wp_json_encode( array( 'popup_ids' => $forced ) ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			}
 			error_log( 'RWGC Popup Force Print Trace ' . wp_json_encode( $trace ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		}
+	}
+
+	/**
+	 * Run a callback while Elementor's locations manager thinks the popup location is active.
+	 *
+	 * @param object   $locations_manager Elementor locations manager.
+	 * @param callable $callback          Callback to run.
+	 * @return mixed
+	 */
+	private static function with_popup_location_context( $locations_manager, $callback ) {
+		if ( ! is_callable( $callback ) ) {
+			return null;
+		}
+
+		$previous = null;
+		$changed  = false;
+
+		try {
+			$ref  = new \ReflectionClass( $locations_manager );
+			$prop = $ref->getProperty( 'current_location' );
+			$prop->setAccessible( true );
+			$previous = $prop->getValue( $locations_manager );
+			$prop->setValue( $locations_manager, 'popup' );
+			$changed = true;
+		} catch ( \ReflectionException $e ) {
+			unset( $e );
+		}
+
+		try {
+			return call_user_func( $callback );
+		} finally {
+			if ( $changed ) {
+				try {
+					$ref  = new \ReflectionClass( $locations_manager );
+					$prop = $ref->getProperty( 'current_location' );
+					$prop->setAccessible( true );
+					$prop->setValue( $locations_manager, $previous );
+				} catch ( \ReflectionException $e ) {
+					unset( $e );
+				}
+			}
 		}
 	}
 
@@ -690,17 +845,21 @@ function patchPopupDocuments(){var docs=getPopupDocuments();if(!docs){return fal
 function patchModule(){var mod=window.elementorProFrontend&&elementorProFrontend.modules&&elementorProFrontend.modules.popup;if(!mod){return false;}if(typeof mod.showPopup==='function'&&!mod.__rwgcPopupGeoPatch){var o=mod.showPopup;mod.showPopup=function(){return applyOpen(o,this,arguments);};mod.__rwgcPopupGeoPatch=1;}if(typeof mod.triggerPopup==='function'&&!mod.__rwgcTriggerPatch){var t=mod.triggerPopup;mod.triggerPopup=function(){return applyOpen(t,this,arguments);};mod.__rwgcTriggerPatch=1;}if(typeof mod.closePopup==='function'&&!mod.__rwgcClosePatch){var c=mod.closePopup;mod.closePopup=function(){return wrapClose(c,this,arguments);};mod.__rwgcClosePatch=1;}return true;}
 function bindPopupEvents(){if(window.__rwgcPopupGeoEventPatch){return;}window.__rwgcPopupGeoEventPatch=1;var jq=window.jQuery;if(!jq){return;}var onShow=function(evt,popupId,docInst){var pid=norm(popupId);if(docInst){patchSingleDocument(docInst,pid);}};var targets=[];if(window.elementorFrontend&&elementorFrontend.elements){if(elementorFrontend.elements.$document){targets.push(elementorFrontend.elements.$document);}if(elementorFrontend.elements.$window){targets.push(elementorFrontend.elements.$window);}}targets.push(jq(document));targets.forEach(function($el){if($el&&typeof $el.on==='function'){$el.on('elementor/popup/show',onShow);}});}
 function installCloseCapture(){if(window.__rwgcPopupCloseCapture){return;}window.__rwgcPopupCloseCapture=1;document.addEventListener('click',function(e){var t=e.target;if(!t||!t.closest){return;}var modal=t.closest('.elementor-popup-modal');if(!modal){return;}var closeBtn=t.closest('.dialog-close-button,.eicon-close');var overlay=t.classList&&t.classList.contains('dialog-widget-overlay');if(!closeBtn&&!overlay){return;}var pid=popupIdFromModal(modal);if(pid){forceClosePopup(pid);}},true);document.addEventListener('keydown',function(e){if(!e||e.key!=='Escape'){return;}var modals=document.querySelectorAll('.elementor-popup-modal');for(var i=0;i<modals.length;i++){if(modals[i].offsetParent===null){continue;}var pid=popupIdFromModal(modals[i]);if(pid){forceClosePopup(pid);break;}}},true);}
-function findPopupMarkup(pid){var sel='#elementor-popup-modal-'+pid+',.elementor-popup-modal[data-elementor-id="'+pid+'"],[data-elementor-type="popup"][data-elementor-id="'+pid+'"],.elementor-'+pid+'[data-elementor-type="popup"]';var nodes=document.querySelectorAll(sel);return nodes.length?nodes[0]:null;}
+function findPopupElementorRoot(pid){var sel='[data-elementor-type="popup"][data-elementor-id="'+pid+'"],.elementor-'+pid+'[data-elementor-type="popup"]';var nodes=document.querySelectorAll(sel);return nodes.length?nodes[0]:null;}
+function findPopupMarkup(pid){var root=findPopupElementorRoot(pid);if(root){return root;}var sel='#elementor-popup-modal-'+pid+',.elementor-popup-modal[data-elementor-id="'+pid+'"]';var nodes=document.querySelectorAll(sel);return nodes.length?nodes[0]:null;}
 function findPopupModal(pid){return findPopupMarkup(pid);}
+function clearEgpReopenBlock(pid){if(!pid){return;}try{sessionStorage.removeItem('egp_closed_'+String(pid));}catch(e){}}
+function ensurePopupDocument(pid){pid=norm(pid);if(!pid){return null;}var doc=getPopupDoc(pid);if(doc){return doc;}var root=findPopupElementorRoot(pid);if(!root||!window.jQuery||!elementorFrontend||!elementorFrontend.documentsManager){dbg('ensure doc miss',pid,'root=',!!root);return null;}var mgr=elementorFrontend.documentsManager;if(mgr.documents[pid]||mgr.documents[String(pid)]){return getPopupDoc(pid);}try{var $el=jQuery(root);mgr.attachDocumentClass($el);doc=getPopupDoc(pid);patchSingleDocument(doc,pid);dbg('attached popup doc',pid,!!doc);return doc;}catch(e){dbg('attach doc failed',pid,e&&e.message?e.message:e);return null;}}
+function bindLatePopupDocuments(){if(!variantCtx||!variantCtx.active){return;}Object.keys(popupData).forEach(function(key){var m=popupData[key];if(!m||m.rwgc_show!==true){return;}var pid=parseInt(key,10);if(!pid){return;}ensurePopupDocument(pid);});}
 function isPopupDocOpen(pid){var doc=getPopupDoc(pid);if(!doc||typeof doc.getModal!=='function'){return false;}try{var modal=doc.getModal();if(modal&&typeof modal.isVisible==='function'){return !!modal.isVisible();}}catch(e){}return false;}
 function isPopupVisible(pid){if(isPopupDocOpen(pid)){return true;}var nodes=document.querySelectorAll('#elementor-popup-modal-'+pid+',.elementor-popup-modal[data-elementor-id="'+pid+'"]');for(var i=0;i<nodes.length;i++){var st=window.getComputedStyle?window.getComputedStyle(nodes[i]):null;if(st&&st.display==='none'){continue;}if(st&&st.visibility==='hidden'){continue;}if(nodes[i].offsetParent!==null){return true;}}return false;}
 function forceShowModalDom(pid){var modal=findPopupModal(pid);if(!modal){return false;}modal.style.setProperty('display','flex','important');modal.style.setProperty('visibility','visible','important');modal.style.setProperty('opacity','1','important');modal.removeAttribute('aria-hidden');try{document.body.classList.add('elementor-popup-modal-open');}catch(e){}return isPopupVisible(pid);}
-function openAllowedPopup(pid){pid=norm(pid);if(!pid||shouldBlockOpen(pid)){return false;}patchRuntime();var doc=getPopupDoc(pid);var mod=window.elementorProFrontend&&elementorProFrontend.modules&&elementorProFrontend.modules.popup;dbg('open attempt',pid,'doc=',!!doc,'markup=',!!findPopupMarkup(pid));if(mod&&typeof mod.showPopup==='function'){mod.showPopup({id:pid});}else if(doc&&typeof doc.showModal==='function'){doc.showModal();}if(!isPopupVisible(pid)){forceShowModalDom(pid);}return isPopupVisible(pid);}
+function openAllowedPopup(pid){pid=norm(pid);if(!pid||shouldBlockOpen(pid)){return false;}clearEgpReopenBlock(pid);patchRuntime();var doc=ensurePopupDocument(pid);var mod=window.elementorProFrontend&&elementorProFrontend.modules&&elementorProFrontend.modules.popup;dbg('open attempt',pid,'doc=',!!doc,'markup=',!!findPopupMarkup(pid),'root=',!!findPopupElementorRoot(pid));if(doc&&typeof doc.showModal==='function'){try{doc.showModal();}catch(e){dbg('showModal error',pid,e&&e.message?e.message:e);}}else if(mod&&typeof mod.showPopup==='function'){mod.showPopup({id:pid});}if(!isPopupVisible(pid)){forceShowModalDom(pid);}return isPopupVisible(pid);}
 function tryPageLoadFallbackFor(pid,m){if(fallbackDone[String(pid)]||fallbackStarted[String(pid)]){return;}fallbackStarted[String(pid)]=1;var delay=parseInt(m.page_load_delay_ms,10)||0;var attempt=0;var maxAttempts=20;var tick=function(){if(fallbackDone[String(pid)]){return;}patchRuntime();if(isPopupVisible(pid)){fallbackDone[String(pid)]=1;dbg('fallback open ok',pid);return;}attempt++;dbg('fallback attempt',pid,attempt,'modal=',!!findPopupModal(pid),'doc=',!!getPopupDoc(pid),'markup=',!!findPopupMarkup(pid));openAllowedPopup(pid);if(isPopupVisible(pid)){fallbackDone[String(pid)]=1;dbg('fallback open ok',pid);return;}if(attempt>=maxAttempts){fallbackDone[String(pid)]=1;dbg('fallback gave up',pid,'modal=',!!findPopupModal(pid),'doc=',!!getPopupDoc(pid),'markup=',!!findPopupMarkup(pid));return;}setTimeout(tick,300);};setTimeout(tick,Math.max(delay,800));}
 function maybeVariantPageLoadFallback(){if(!variantCtx||!variantCtx.active){return;}Object.keys(popupData).forEach(function(key){var m=popupData[key];if(!m||m.rwgc_show!==true||!m.page_load_fallback){return;}var pid=parseInt(key,10);if(!pid){return;}tryPageLoadFallbackFor(pid,m);});}
 function patchRuntime(){patchPopupDocuments();patchModule();bindPopupEvents();installCloseCapture();}
 patchRuntime();var tick=0;var patchIv=setInterval(function(){patchRuntime();tick++;if(tick>=120){clearInterval(patchIv);}},250);
-function bindVariantFallback(){var run=maybeVariantPageLoadFallback;if(window.jQuery){jQuery(window).on('elementor/frontend/init',function(){setTimeout(run,400);});}window.addEventListener('load',function(){setTimeout(run,600);},{once:true});}
+function bindVariantFallback(){var run=function(){bindLatePopupDocuments();maybeVariantPageLoadFallback();};if(window.jQuery){jQuery(window).on('elementor/frontend/init',function(){setTimeout(run,200);setTimeout(run,800);});}window.addEventListener('load',function(){setTimeout(run,400);setTimeout(run,1200);},{once:true});}
 bindVariantFallback();
 window.rwgcPopupGeoBlocked=blocked;window.popupData=popupData;
 })();
