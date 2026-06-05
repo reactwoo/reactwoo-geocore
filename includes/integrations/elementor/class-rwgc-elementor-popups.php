@@ -30,8 +30,47 @@ class RWGC_Elementor_Popups {
 		add_filter( 'elementor_pro/popup/should_show', array( __CLASS__, 'filter_popup_should_show' ), 5, 2 );
 		add_action( 'wp_head', array( __CLASS__, 'print_popup_antiflash_head' ), 1 );
 		add_action( 'wp_head', array( __CLASS__, 'print_popup_show_patch_script' ), 2 );
+		add_action( 'wp_footer', array( __CLASS__, 'ensure_allowed_popups_in_location' ), 1 );
 		add_action( 'wp_footer', array( __CLASS__, 'print_popup_show_patch_script' ), 5 );
 		add_action( 'wp_footer', array( __CLASS__, 'print_popup_dom_guard_script' ), 99 );
+	}
+
+	/**
+	 * Ensure geo-allowed popups are enqueued before Elementor prints the popup location.
+	 *
+	 * Variant URLs and some theme-builder conditions omit popups from the location list,
+	 * which strips page-load triggers and leaves no modal markup for showPopup().
+	 *
+	 * @return void
+	 */
+	public static function ensure_allowed_popups_in_location() {
+		if ( function_exists( 'rwgc_is_builder_edit_request' ) && rwgc_is_builder_edit_request() ) {
+			return;
+		}
+
+		if ( ! class_exists( '\ElementorPro\Modules\Popup\Module', false ) ) {
+			return;
+		}
+
+		$config_map = self::build_popup_config_map();
+		if ( empty( $config_map ) ) {
+			return;
+		}
+
+		$injected = array();
+		foreach ( array_keys( $config_map ) as $popup_id ) {
+			$popup_id = (int) $popup_id;
+			if ( $popup_id <= 0 || true !== self::popup_should_display( $popup_id ) ) {
+				continue;
+			}
+
+			\ElementorPro\Modules\Popup\Module::add_popup_to_location( $popup_id );
+			$injected[] = $popup_id;
+		}
+
+		if ( self::is_debug_enabled() && ! empty( $injected ) && function_exists( 'error_log' ) ) {
+			error_log( 'RWGC Popup Location Inject ' . wp_json_encode( array( 'popup_ids' => $injected ) ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		}
 	}
 
 	/**
@@ -413,6 +452,7 @@ class RWGC_Elementor_Popups {
 		$popup_data   = wp_json_encode( $map );
 		$blocked_data = wp_json_encode( array_values( $blocked ) );
 		$variant_data = wp_json_encode( self::get_variant_route_context_for_script() );
+		$debug_flag   = self::is_debug_enabled() ? 'true' : 'false';
 
 		$template = <<<'JS'
 (function(){
@@ -420,7 +460,9 @@ var userCountry=__USER_COUNTRY__;
 var popupData=__POPUP_DATA__;
 var blocked=__BLOCKED__;
 var variantCtx=__VARIANT_CTX__;
+var rwgcPopupDebug=__DEBUG_FLAG__;
 var suppressUntil={};var suppressMs=4000;var fallbackDone={};
+function dbg(){if(!rwgcPopupDebug||!window.console){return;}try{console.log.apply(console,['[RWGC Popup]'].concat([].slice.call(arguments)));}catch(e){}}
 function meta(pid){if(pid==null){return null;}var k=String(pid);return popupData[k]||popupData[pid]||null;}
 function norm(v){if(v==null){return null;}if(typeof v==='number'){return v;}if(typeof v==='string'){var n=parseInt(v,10);return isNaN(n)?v:n;}if(typeof v==='object'){if(v.id!=null){return norm(v.id);}if(v.popupId!=null){return norm(v.popupId);}if(v.popup_id!=null){return norm(v.popup_id);}if(v.detail&&v.detail.id!=null){return norm(v.detail.id);}if(v.popup&&v.popup.id!=null){return norm(v.popup.id);}if(typeof v.getSettings==='function'){var sid=v.getSettings('id');if(sid!=null){return norm(sid);}}}return v;}
 function isBlockedList(pid){if(!pid){return false;}var k=String(pid);return blocked.indexOf(parseInt(k,10))!==-1||blocked.indexOf(k)!==-1;}
@@ -442,11 +484,12 @@ function patchModule(){var mod=window.elementorProFrontend&&elementorProFrontend
 function bindPopupEvents(){if(window.__rwgcPopupGeoEventPatch){return;}window.__rwgcPopupGeoEventPatch=1;var jq=window.jQuery;if(!jq){return;}var onShow=function(evt,popupId,docInst){var pid=norm(popupId);if(docInst){patchSingleDocument(docInst,pid);}};var targets=[];if(window.elementorFrontend&&elementorFrontend.elements){if(elementorFrontend.elements.$document){targets.push(elementorFrontend.elements.$document);}if(elementorFrontend.elements.$window){targets.push(elementorFrontend.elements.$window);}}targets.push(jq(document));targets.forEach(function($el){if($el&&typeof $el.on==='function'){$el.on('elementor/popup/show',onShow);}});}
 function installCloseCapture(){if(window.__rwgcPopupCloseCapture){return;}window.__rwgcPopupCloseCapture=1;document.addEventListener('click',function(e){var t=e.target;if(!t||!t.closest){return;}var modal=t.closest('.elementor-popup-modal');if(!modal){return;}var closeBtn=t.closest('.dialog-close-button,.eicon-close');var overlay=t.classList&&t.classList.contains('dialog-widget-overlay');if(!closeBtn&&!overlay){return;}var pid=popupIdFromModal(modal);if(pid){forceClosePopup(pid);}},true);document.addEventListener('keydown',function(e){if(!e||e.key!=='Escape'){return;}var modals=document.querySelectorAll('.elementor-popup-modal');for(var i=0;i<modals.length;i++){if(modals[i].offsetParent===null){continue;}var pid=popupIdFromModal(modals[i]);if(pid){forceClosePopup(pid);break;}}},true);}
 function isPopupVisible(pid){var sel='#elementor-popup-modal-'+pid+',.elementor-popup-modal[data-elementor-id="'+pid+'"]';var nodes=document.querySelectorAll(sel);for(var i=0;i<nodes.length;i++){if(nodes[i].offsetParent!==null){return true;}}return false;}
-function openAllowedPopup(pid,delayMs){pid=norm(pid);if(!pid||shouldBlockOpen(pid)){return;}var mod=window.elementorProFrontend&&elementorProFrontend.modules&&elementorProFrontend.modules.popup;var run=function(){if(isPopupVisible(pid)){fallbackDone[String(pid)]=1;return;}if(mod&&typeof mod.showPopup==='function'){mod.showPopup({id:pid});return;}var doc=getPopupDoc(pid);if(doc&&typeof doc.showModal==='function'){doc.showModal();}};if(delayMs>0){setTimeout(run,delayMs);}else{run();}}
-function maybeVariantPageLoadFallback(){if(!variantCtx||!variantCtx.active){return;}Object.keys(popupData).forEach(function(key){var m=popupData[key];if(!m||m.rwgc_show!==true||!m.page_load_fallback){return;}var pid=parseInt(key,10);if(!pid||fallbackDone[String(pid)]){return;}fallbackDone[String(pid)]=1;var delay=parseInt(m.page_load_delay_ms,10)||0;setTimeout(function(){if(!isPopupVisible(pid)){openAllowedPopup(pid,0);}},Math.max(delay,300));});}
+function openAllowedPopup(pid){pid=norm(pid);if(!pid||shouldBlockOpen(pid)){return false;}var mod=window.elementorProFrontend&&elementorProFrontend.modules&&elementorProFrontend.modules.popup;if(mod&&typeof mod.showPopup==='function'){mod.showPopup({id:pid});}else{var doc=getPopupDoc(pid);if(doc&&typeof doc.showModal==='function'){doc.showModal();}}return isPopupVisible(pid);}
+function tryPageLoadFallbackFor(pid,m){if(fallbackDone[String(pid)]){return;}var delay=parseInt(m.page_load_delay_ms,10)||0;var attempt=0;var maxAttempts=20;var tick=function(){if(fallbackDone[String(pid)]){return;}if(isPopupVisible(pid)){fallbackDone[String(pid)]=1;dbg('fallback open ok',pid);return;}attempt++;dbg('fallback attempt',pid,attempt);openAllowedPopup(pid);if(isPopupVisible(pid)){fallbackDone[String(pid)]=1;dbg('fallback open ok',pid);return;}if(attempt>=maxAttempts){fallbackDone[String(pid)]=1;dbg('fallback gave up',pid);return;}setTimeout(tick,300);};setTimeout(tick,Math.max(delay,500));}
+function maybeVariantPageLoadFallback(){if(!variantCtx||!variantCtx.active){return;}Object.keys(popupData).forEach(function(key){var m=popupData[key];if(!m||m.rwgc_show!==true||!m.page_load_fallback){return;}var pid=parseInt(key,10);if(!pid){return;}tryPageLoadFallbackFor(pid,m);});}
 function patchRuntime(){patchPopupDocuments();patchModule();bindPopupEvents();installCloseCapture();}
 patchRuntime();var tick=0;var patchIv=setInterval(function(){patchRuntime();tick++;if(tick>=120){clearInterval(patchIv);}},250);
-function bindVariantFallback(){var run=maybeVariantPageLoadFallback;if(window.jQuery){jQuery(window).on('elementor/frontend/init',run);}if(window.elementorFrontend&&elementorFrontend.init){run();}else{setTimeout(run,1200);}}
+function bindVariantFallback(){var run=maybeVariantPageLoadFallback;if(window.jQuery){jQuery(window).on('elementor/frontend/init',run);}if(document.readyState==='complete'){run();}else{window.addEventListener('load',run,{once:true});}setTimeout(run,1800);}
 bindVariantFallback();
 window.rwgcPopupGeoBlocked=blocked;window.popupData=popupData;
 })();
@@ -458,12 +501,14 @@ JS;
 				'__POPUP_DATA__',
 				'__BLOCKED__',
 				'__VARIANT_CTX__',
+				'__DEBUG_FLAG__',
 			),
 			array(
 				wp_json_encode( $visitor ),
 				$popup_data,
 				$blocked_data,
 				$variant_data,
+				$debug_flag,
 			),
 			$template
 		);
