@@ -510,12 +510,18 @@ JS;
 			return false;
 		}
 
-		$display = get_post_meta( $popup_id, '_elementor_popup_display_settings', true );
-		if ( ! is_array( $display ) || empty( $display['triggers'] ) || ! is_array( $display['triggers'] ) ) {
+		$triggers = self::get_popup_display_triggers( $popup_id );
+		if ( empty( $triggers ) ) {
 			return false;
 		}
 
-		return isset( $display['triggers']['page_load'] ) && is_array( $display['triggers']['page_load'] );
+		// Elementor Pro stores On Page Load as a switcher: triggers.page_load = "yes".
+		if ( ! empty( $triggers['page_load'] ) && 'yes' === (string) $triggers['page_load'] ) {
+			return true;
+		}
+
+		// Older / exported nested shape: triggers.page_load = { delay: N }.
+		return isset( $triggers['page_load'] ) && is_array( $triggers['page_load'] );
 	}
 
 	/**
@@ -528,13 +534,51 @@ JS;
 			return 0.0;
 		}
 
-		$display = get_post_meta( $popup_id, '_elementor_popup_display_settings', true );
-		if ( ! is_array( $display ) || empty( $display['triggers']['page_load'] ) || ! is_array( $display['triggers']['page_load'] ) ) {
+		$triggers = self::get_popup_display_triggers( $popup_id );
+		if ( empty( $triggers ) ) {
 			return 0.0;
 		}
 
-		$delay = isset( $display['triggers']['page_load']['delay'] ) ? (float) $display['triggers']['page_load']['delay'] : 0.0;
-		return max( 0.0, $delay );
+		if ( isset( $triggers['page_load'] ) && is_array( $triggers['page_load'] ) && isset( $triggers['page_load']['delay'] ) ) {
+			return max( 0.0, (float) $triggers['page_load']['delay'] );
+		}
+
+		if ( isset( $triggers['page_load_delay'] ) ) {
+			return max( 0.0, (float) $triggers['page_load_delay'] );
+		}
+
+		return 0.0;
+	}
+
+	/**
+	 * @param int $popup_id Popup template ID.
+	 * @return array<string, mixed>
+	 */
+	private static function get_popup_display_triggers( $popup_id ) {
+		$popup_id = absint( $popup_id );
+		if ( $popup_id <= 0 ) {
+			return array();
+		}
+
+		if ( did_action( 'elementor/loaded' ) && class_exists( '\ElementorPro\Modules\Popup\Module', false ) && class_exists( '\Elementor\Plugin', false ) ) {
+			$document = \Elementor\Plugin::$instance->documents->get( $popup_id );
+			if ( $document && method_exists( $document, 'get_display_settings' ) ) {
+				$display = $document->get_display_settings();
+				if ( is_array( $display ) && ! empty( $display['triggers'] ) && is_object( $display['triggers'] ) && method_exists( $display['triggers'], 'get_settings' ) ) {
+					$settings = $display['triggers']->get_settings();
+					if ( is_array( $settings ) ) {
+						return $settings;
+					}
+				}
+			}
+		}
+
+		$display = get_post_meta( $popup_id, '_elementor_popup_display_settings', true );
+		if ( ! is_array( $display ) || empty( $display['triggers'] ) || ! is_array( $display['triggers'] ) ) {
+			return array();
+		}
+
+		return $display['triggers'];
 	}
 
 	/**
