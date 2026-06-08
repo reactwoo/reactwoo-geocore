@@ -396,6 +396,38 @@ if ( ! function_exists( 'rwgc_emit_geo_event' ) ) {
 	}
 }
 
+if ( ! function_exists( 'rwgc_build_ai_snapshot' ) ) {
+	/**
+	 * Build a compact site intelligence snapshot for Geo AI cloud workflows.
+	 *
+	 * Does not include page content, Elementor JSON, or personal data.
+	 *
+	 * @param array<string, mixed> $context Optional builder context.
+	 * @return array<string, mixed>
+	 */
+	function rwgc_build_ai_snapshot( array $context = array() ) {
+		if ( ! class_exists( 'RWGC_AI_Snapshot_Builder', false ) ) {
+			return array();
+		}
+		return RWGC_AI_Snapshot_Builder::build( $context );
+	}
+}
+
+if ( ! function_exists( 'rwgc_get_ai_snapshot_hash' ) ) {
+	/**
+	 * SHA-256 hash of the current site intelligence snapshot.
+	 *
+	 * @return string
+	 */
+	function rwgc_get_ai_snapshot_hash() {
+		if ( ! class_exists( 'RWGC_AI_Snapshot_Builder', false ) ) {
+			return '';
+		}
+		$payload = RWGC_AI_Snapshot_Builder::build();
+		return isset( $payload['snapshot_hash'] ) ? (string) $payload['snapshot_hash'] : '';
+	}
+}
+
 if ( ! function_exists( 'rwgc_get_geo_event_types' ) ) {
 	/**
 	 * Known `event_type` slugs for Geo Core events (see RWGC_Event::known_event_types()).

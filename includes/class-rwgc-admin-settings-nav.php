@@ -193,6 +193,7 @@ class RWGC_Admin_Settings_Nav {
 		$map   = array(
 			'rwgc-settings'           => __( 'General', 'reactwoo-geocore' ),
 			'rwgc-tools'              => __( 'Tools', 'reactwoo-geocore' ),
+			'rwgc-settings-ai-snapshot' => __( 'AI Data Snapshot', 'reactwoo-geocore' ),
 			'rwgc-addons'             => __( 'Add-ons', 'reactwoo-geocore' ),
 			'rwgcm-license'           => __( 'License', 'reactwoo-geocore' ),
 			'rwgcm-settings'          => __( 'Commerce settings', 'reactwoo-geocore' ),

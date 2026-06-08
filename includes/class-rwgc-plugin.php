@@ -86,6 +86,9 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-platform-client.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-satellite-updater.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-ai-orchestrator.php';
+		require_once RWGC_PATH . 'includes/ai/class-rwgc-ai-snapshot-schema.php';
+		require_once RWGC_PATH . 'includes/ai/class-rwgc-ai-snapshot-sync-status.php';
+		require_once RWGC_PATH . 'includes/ai/class-rwgc-ai-snapshot-builder.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-platform.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-route-registry.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-app-shell.php';

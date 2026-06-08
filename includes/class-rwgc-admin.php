@@ -367,6 +367,17 @@ class RWGC_Admin {
 		self::register_app_route(
 			array(
 				'section'   => 'settings',
+				'route'     => 'ai-snapshot',
+				'menu_slug' => 'rwgc-settings-ai-snapshot',
+				'label'     => __( 'AI Data Snapshot', 'reactwoo-geocore' ),
+				'order'     => 25,
+				'callback'  => array( __CLASS__, 'render_ai_snapshot_preview' ),
+			)
+		);
+
+		self::register_app_route(
+			array(
+				'section'   => 'settings',
 				'route'     => 'addons',
 				'menu_slug' => 'rwgc-addons',
 				'label'     => __( 'Add-ons', 'reactwoo-geocore' ),
@@ -692,6 +703,22 @@ class RWGC_Admin {
 			return;
 		}
 		include RWGC_PATH . 'admin/views/integrations-woocommerce-page.php';
+	}
+
+	/**
+	 * Settings → AI Data Snapshot preview (compact site intelligence for Geo AI).
+	 *
+	 * @return void
+	 */
+	public static function render_ai_snapshot_preview() {
+		if ( ! self::can_manage() ) {
+			return;
+		}
+		$rwgc_ai_snapshot    = function_exists( 'rwgc_build_ai_snapshot' ) ? rwgc_build_ai_snapshot() : array();
+		$rwgc_ai_sync_status = class_exists( 'RWGC_AI_Snapshot_Sync_Status', false )
+			? RWGC_AI_Snapshot_Sync_Status::get_status()
+			: array();
+		include RWGC_PATH . 'admin/views/ai-snapshot-preview-page.php';
 	}
 
 	/**

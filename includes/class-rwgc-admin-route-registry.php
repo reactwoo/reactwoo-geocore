@@ -427,6 +427,13 @@ class RWGC_Admin_Route_Registry {
 				'order'     => 20,
 			),
 			array(
+				'menu_slug' => 'rwgc-settings-ai-snapshot',
+				'section'   => 'settings',
+				'route'     => 'ai-snapshot',
+				'label'     => __( 'AI Data Snapshot', 'reactwoo-geocore' ),
+				'order'     => 25,
+			),
+			array(
 				'menu_slug' => 'rwgc-addons',
 				'section'   => 'settings',
 				'route'     => 'addons',
