@@ -57,6 +57,28 @@ Appended by **GeoCore Pro** via `rwgc_ai_snapshot_payload` (no tokens or API key
 
 Filter: `rwgcp_ai_snapshot_block`.
 
+### Geo Optimise block (`geo_optimise`)
+
+Appended by **Geo Optimise** when active:
+
+| Key | Content |
+|-----|---------|
+| `counts` | Total / active / draft / paused experiment counts |
+| `experiments` | Compact rows: id, key, name, status, test_type, source_page_id, goal_type, targeting_mode |
+
+Relationship edges: `experiment` → `page` (`tests`). Filter: `rwgo_ai_snapshot_block`.
+
+### Geo Commerce block (`geo_commerce`)
+
+Appended by **Geo Commerce** when active (no order PII or prices):
+
+| Key | Content |
+|-----|---------|
+| `counts` | Active/draft rules, legacy overlay count, `rules_by_action` tallies |
+| `rules` | Compact rows: id, label, status, scope, condition_count, action_types |
+
+Relationship edges: `commerce_rule` → `product` (`targets`). Filter: `rwgcm_ai_snapshot_block`.
+
 ## Privacy and size
 
 - **Excluded fields** at any depth: emails, API keys, license keys, tokens (see `RWGC_AI_Snapshot_Schema::default_excluded_fields()`)
