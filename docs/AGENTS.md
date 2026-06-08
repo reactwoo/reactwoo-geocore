@@ -18,6 +18,7 @@
 | `docs/phases/phase-3.md` | Phase 3 (free UX) — complete |
 | `docs/phases/phase-4.md` | Phase 4 (Elementor + Geo Core bridge) — complete |
 | `docs/phases/phase-5.md` | Phase 5 (AI layer) — Core bridge shipped; Geo AI plugin owns product UX |
+| `docs/GEO-AI-SNAPSHOT.md` | Compact site intelligence snapshot for Geo AI cloud sync |
 | `docs/phases/phase-6.md` | Phase 6 (experiments / events) — Core hooks + REST; Geo Optimise owns assignment + stats |
 | `docs/phases/phase-7.md` | Phase 7 (Geo Commerce) — WooCommerce pricing rules + geo merge in satellite plugin |
 

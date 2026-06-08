@@ -20,7 +20,16 @@ Optional **AI-assisted variant drafts** via **ReactWoo API** — drafts and revi
 - **Orchestrator:** `RWGC_AI_Orchestrator` — `ai_health()` (unauthenticated reachability), `get_usage()` (authenticated assistant usage), `request_variant_draft()`; filters `rwgc_ai_variant_draft_payload`, `rwgc_ai_variant_draft_response`.
 - **Tools (wp-admin):** **Geo Core → Tools** — optional “ReactWoo AI” card: **Test AI service reachability** (no license) and **Test license & API (assistant usage)** (requires ReactWoo product key in settings).
 
+## Site intelligence snapshot (Geo AI cloud sync)
+
+Shipped alongside the variant-draft bridge:
+
+- **`rwgc_build_ai_snapshot()`**, **`rwgc_get_ai_snapshot_hash()`** — compact geo configuration metadata (no page content / Elementor JSON / PII).
+- **`RWGC_AI_Snapshot_Builder`**, schema v1, admin preview, sync status.
+- Filter **`rwgc_ai_snapshot_payload`** for satellite rows.
+- Full contract: **`docs/GEO-AI-SNAPSHOT.md`**. Cross-repo intelligence plan: **`reactwoo-api/docs/PLAN-GEO-AI-INTELLIGENCE.md`**.
+
 ## Next
 
-- **Geo AI plugin** (`reactwoo-geo-ai/` v0.1.11+): **block editor** page sidebar (variant-draft REST URL, copy + open tab + translations); dashboard **REST capabilities** + **REST location** links, **assistant token usage**, **`rwga_usage_display_rows`**, **`rwga_stats_snapshot`**. Block product depth can extend here.
+- **Geo AI plugin** (`reactwoo-geo-ai/` v0.4.66+): block editor sidebar, remote workflows, **site intelligence sync**, **approval-gated intelligence actions** — see **`reactwoo-geo-ai/docs/GEO-AI-INTELLIGENCE.md`**.
 - Core **thin** AI surface remains; see **`docs/phases/phase-6.md`** for experiments/events. Master plan **§17–§18**.
