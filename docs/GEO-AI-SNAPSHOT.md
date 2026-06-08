@@ -38,6 +38,24 @@ Top-level keys (v1):
 | `tracking_events` | Configured tracking event slugs |
 | `conversion_events` | Conversion goal references |
 | `relationships` | Variant ↔ rule ↔ popup links |
+| `geocore_pro` | *(optional)* GeoCore Pro metadata when Pro is active — see below |
+
+### GeoCore Pro block (`geocore_pro`)
+
+Appended by **GeoCore Pro** via `rwgc_ai_snapshot_payload` (no tokens or API keys):
+
+| Key | Content |
+|-----|---------|
+| `license_configured` | Whether a Pro licence key is stored |
+| `cloud_token_valid` | Whether React Cloud auth cache is valid |
+| `profiles` | Experience profiles (`profile_id`, `name`, `status`, `condition_count` only) |
+| `google` | Ads/GA connection flags, campaign/audience counts and compact entity rows |
+| `weather` | Provider slug, configured flag, cron — not the BYOK API key |
+| `providers` | External provider registry status rows |
+| `portable_conditions` | Pro condition types available to the rule evaluator |
+| `condition_usage` | Count of Pro condition types used in portable rules |
+
+Filter: `rwgcp_ai_snapshot_block`.
 
 ## Privacy and size
 
