@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.38] - 2026-06-09
+
+### Added
+- **Geo AI site intelligence:** `RWGC_AI_Snapshot_Builder`, `rwgc_build_ai_snapshot()`, schema v1, sync status, and admin preview (Settings → AI Data Snapshot). Filter `rwgc_ai_snapshot_payload` for satellite snapshot rows.
+
 ## [1.8.37] - 2026-06-06
 
 ### Fixed

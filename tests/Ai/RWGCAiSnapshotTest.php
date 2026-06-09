@@ -26,7 +26,7 @@ class RWGCAiSnapshotTest extends TestCase {
 				'name' => 'Demo Site',
 			),
 			'plugins'           => array(
-				'geocore_version' => '1.8.37',
+				'geocore_version' => '1.8.38',
 				'satellites'      => array(),
 			),
 			'modules'           => array(),

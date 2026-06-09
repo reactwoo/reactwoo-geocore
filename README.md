@@ -1,6 +1,6 @@
 # ReactWoo Geo Core
 
-**Version:** 1.8.37  
+**Version:** 1.8.38  
 **Plugin slug:** `reactwoo-geocore`
 
 ## Overview
