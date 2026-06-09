@@ -189,6 +189,7 @@ class RWGC_Admin_Section_Hubs {
 			'rwgc-integrations-woocommerce' => __( 'WooCommerce connection status and commerce dependency guidance.', 'reactwoo-geocore' ),
 			'rwga-analyses'           => __( 'AI analysis runs and page intelligence reports.', 'reactwoo-geocore' ),
 			'rwga-recommendations'    => __( 'Actionable recommendations from Geo AI workflows.', 'reactwoo-geocore' ),
+			'rwga-intelligence-wizard' => __( 'Guided setup: sync, site audit, and review suggestions step by step.', 'reactwoo-geocore' ),
 			'rwga-intelligence-cloud' => __( 'Cloud site audit runs, relationship graph, and run history after intelligence sync.', 'reactwoo-geocore' ),
 			'rwga-intelligence-actions' => __( 'Approve or dismiss AI-suggested site changes before anything is applied.', 'reactwoo-geocore' ),
 			'rwgc-settings'           => __( 'Detection, cache, and core platform options.', 'reactwoo-geocore' ),
