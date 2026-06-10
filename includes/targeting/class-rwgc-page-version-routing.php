@@ -26,18 +26,108 @@ class RWGC_Page_Version_Routing {
 	private static $parsed_request = false;
 
 	/**
+	 * Raw request URI captured before WordPress may rewrite or redirect it.
+	 *
+	 * @var string
+	 */
+	private static $raw_request_uri = '';
+
+	/**
 	 * @return void
 	 */
 	public static function init() {
+		add_action( 'plugins_loaded', array( __CLASS__, 'capture_raw_request_uri' ), 0 );
 		add_action( 'init', array( __CLASS__, 'register_rewrites' ), 5 );
 		add_filter( 'query_vars', array( __CLASS__, 'register_query_var' ) );
 		add_filter( 'request', array( __CLASS__, 'filter_request' ), 1 );
-		add_filter( 'redirect_canonical', array( __CLASS__, 'filter_redirect_canonical' ), 10, 2 );
+		add_filter( 'redirect_canonical', array( __CLASS__, 'filter_redirect_canonical' ), 1, 2 );
+		add_filter( 'wp_redirect', array( __CLASS__, 'filter_wp_redirect' ), 1, 2 );
+		add_action( 'template_redirect', array( __CLASS__, 'maybe_disable_canonical_redirect' ), 0 );
 		add_action( 'pre_get_posts', array( __CLASS__, 'pre_get_posts' ), 1 );
 		add_action( 'wp', array( __CLASS__, 'reset_context_snapshot_cache' ), 1 );
 		add_filter( 'rwgc_context_snapshot_values', array( __CLASS__, 'filter_snapshot_values' ), 20 );
 		add_filter( 'wp_robots', array( __CLASS__, 'filter_robots_noindex' ), 20 );
 		add_action( 'wp_head', array( __CLASS__, 'maybe_output_canonical' ), 1 );
+	}
+
+	/**
+	 * Store the inbound URI before canonical redirects normalize `/_gc/{version}` to `/`.
+	 *
+	 * @return void
+	 */
+	public static function capture_raw_request_uri() {
+		if ( '' !== self::$raw_request_uri ) {
+			return;
+		}
+
+		$candidates = array();
+		foreach ( array( 'HTTP_X_ORIGINAL_URL', 'HTTP_X_REWRITE_URL', 'REDIRECT_URL', 'REQUEST_URI' ) as $key ) {
+			if ( empty( $_SERVER[ $key ] ) ) {
+				continue;
+			}
+			$candidates[] = (string) wp_unslash( $_SERVER[ $key ] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		}
+
+		foreach ( $candidates as $uri ) {
+			if ( self::uri_contains_page_version_segment( $uri ) ) {
+				self::$raw_request_uri = $uri;
+				return;
+			}
+		}
+
+		if ( ! empty( $candidates[0] ) ) {
+			self::$raw_request_uri = $candidates[ count( $candidates ) - 1 ];
+		}
+	}
+
+	/**
+	 * @return string
+	 */
+	public static function get_raw_request_uri() {
+		if ( '' === self::$raw_request_uri ) {
+			self::capture_raw_request_uri();
+		}
+		return self::$raw_request_uri;
+	}
+
+	/**
+	 * @param string $uri Full or relative URI/path.
+	 * @return bool
+	 */
+	public static function uri_contains_page_version_segment( $uri ) {
+		if ( ! is_string( $uri ) || '' === $uri ) {
+			return false;
+		}
+
+		$path = wp_parse_url( $uri, PHP_URL_PATH );
+		if ( ! is_string( $path ) || '' === $path ) {
+			$path = $uri;
+		}
+
+		$rel = trim( $path, '/' );
+		if ( '' === $rel ) {
+			return false;
+		}
+
+		return (bool) preg_match(
+			'#(^|/)' . preg_quote( RWGC_Page_Version::ROUTE_SEGMENT, '#' ) . '/[a-zA-Z0-9_-]{1,80}/?$#',
+			$rel
+		);
+	}
+
+	/**
+	 * Whether the inbound HTTP request targets a Page Version URL.
+	 *
+	 * @return bool
+	 */
+	private static function request_looks_like_page_version() {
+		if ( self::is_page_version_request() ) {
+			return true;
+		}
+		if ( null !== self::parse_request_path() ) {
+			return true;
+		}
+		return self::uri_contains_page_version_segment( self::get_raw_request_uri() );
 	}
 
 	/**
@@ -48,11 +138,43 @@ class RWGC_Page_Version_Routing {
 	 * @return string|false
 	 */
 	public static function filter_redirect_canonical( $redirect_url, $requested_url ) {
-		unset( $requested_url );
-		if ( self::is_page_version_request() || null !== self::parse_request_path() ) {
+		if ( self::request_looks_like_page_version() ) {
+			return false;
+		}
+		if ( is_string( $requested_url ) && self::uri_contains_page_version_segment( $requested_url ) ) {
 			return false;
 		}
 		return $redirect_url;
+	}
+
+	/**
+	 * Cancel strip-to-home redirects issued while serving a Page Version URL.
+	 *
+	 * @param string|false $location Redirect target.
+	 * @param int          $status   HTTP status code.
+	 * @return string|false
+	 */
+	public static function filter_wp_redirect( $location, $status ) {
+		if ( ! $location || ! self::request_looks_like_page_version() ) {
+			return $location;
+		}
+
+		$home = trailingslashit( home_url( '/' ) );
+		if ( trailingslashit( (string) $location ) === $home && in_array( (int) $status, array( 301, 302, 303, 307, 308 ), true ) ) {
+			return false;
+		}
+
+		return $location;
+	}
+
+	/**
+	 * @return void
+	 */
+	public static function maybe_disable_canonical_redirect() {
+		if ( ! self::request_looks_like_page_version() ) {
+			return;
+		}
+		remove_action( 'template_redirect', 'redirect_canonical' );
 	}
 
 	/**
@@ -363,7 +485,10 @@ class RWGC_Page_Version_Routing {
 	 * @return string
 	 */
 	public static function get_request_path() {
-		$uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$uri = self::get_raw_request_uri();
+		if ( '' === $uri && isset( $_SERVER['REQUEST_URI'] ) ) {
+			$uri = (string) wp_unslash( $_SERVER['REQUEST_URI'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		}
 		$path = wp_parse_url( $uri, PHP_URL_PATH );
 		if ( ! is_string( $path ) ) {
 			return '';

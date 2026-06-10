@@ -24,7 +24,7 @@ class RWGC_Cache_Compat {
 			return;
 		}
 
-		add_action( 'init', array( __CLASS__, 'maybe_set_country_cookie' ), 25 );
+		add_action( 'send_headers', array( __CLASS__, 'maybe_set_country_cookie' ), 0 );
 		add_filter( 'litespeed_vary_cookies', array( __CLASS__, 'litespeed_vary_cookies' ) );
 		add_action( 'litespeed_init', array( __CLASS__, 'litespeed_vary_country' ) );
 	}
@@ -35,7 +35,7 @@ class RWGC_Cache_Compat {
 	 * @return void
 	 */
 	public static function maybe_set_country_cookie() {
-		if ( isset( $_COOKIE[ self::COUNTRY_COOKIE ] ) ) {
+		if ( headers_sent() || isset( $_COOKIE[ self::COUNTRY_COOKIE ] ) ) {
 			return;
 		}
 		if ( ! function_exists( 'rwgc_get_visitor_country' ) ) {
