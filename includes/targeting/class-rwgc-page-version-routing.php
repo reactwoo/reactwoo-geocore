@@ -16,7 +16,7 @@ class RWGC_Page_Version_Routing {
 
 	const QUERY_VAR = 'rwgc_page_version';
 
-	const REWRITE_VERSION = '1';
+	const REWRITE_VERSION = '2';
 
 	/**
 	 * Parsed request cache.
@@ -44,6 +44,11 @@ class RWGC_Page_Version_Routing {
 	 */
 	public static function register_rewrites() {
 		add_rewrite_tag( '%' . self::QUERY_VAR . '%', '([a-zA-Z0-9_-]{1,80})' );
+		add_rewrite_rule(
+			'^' . preg_quote( RWGC_Page_Version::ROUTE_SEGMENT, '#' ) . '/([a-zA-Z0-9_-]{1,80})/?$',
+			'index.php?' . self::QUERY_VAR . '=$matches[1]',
+			'top'
+		);
 		add_rewrite_rule(
 			'^(.+?)/' . preg_quote( RWGC_Page_Version::ROUTE_SEGMENT, '#' ) . '/([a-zA-Z0-9_-]{1,80})/?$',
 			'index.php?pagename=$matches[1]&' . self::QUERY_VAR . '=$matches[2]',
@@ -125,9 +130,8 @@ class RWGC_Page_Version_Routing {
 		}
 
 		$pagename = get_query_var( 'pagename' );
-		if ( ! is_string( $pagename ) || '' === trim( $pagename ) ) {
-			$query->set_404();
-			return;
+		if ( ! is_string( $pagename ) ) {
+			$pagename = '';
 		}
 
 		$post_id = RWGC_Page_Version::resolve_post_id_from_path( $pagename );
@@ -188,9 +192,7 @@ class RWGC_Page_Version_Routing {
 
 		$page_id = 0;
 		if ( '' !== $version ) {
-			if ( '' !== trim( $pagename ) ) {
-				$page_id = RWGC_Page_Version::resolve_post_id_from_path( $pagename );
-			}
+			$page_id = RWGC_Page_Version::resolve_post_id_from_path( $pagename );
 			if ( $page_id <= 0 && function_exists( 'get_queried_object_id' ) ) {
 				$page_id = (int) get_queried_object_id();
 			}
@@ -242,7 +244,10 @@ class RWGC_Page_Version_Routing {
 		$error   = '';
 		$version = RWGC_Page_Version::sanitize_version_name( $version, $error );
 		$pagename = get_query_var( 'pagename' );
-		if ( ! is_string( $pagename ) || '' === $version ) {
+		if ( ! is_string( $pagename ) ) {
+			$pagename = '';
+		}
+		if ( '' === $version ) {
 			return;
 		}
 
@@ -294,6 +299,23 @@ class RWGC_Page_Version_Routing {
 		}
 
 		$path = self::get_request_path();
+
+		$home_pattern = '#^' . preg_quote( RWGC_Page_Version::ROUTE_SEGMENT, '#' ) . '/([a-zA-Z0-9_-]{1,80})/?$#';
+		if ( '' !== $path && preg_match( $home_pattern, $path, $home_match ) ) {
+			$error = '';
+			$ver   = RWGC_Page_Version::sanitize_version_name( $home_match[1], $error );
+			if ( '' === $ver ) {
+				self::$parsed_request = null;
+				return null;
+			}
+
+			self::$parsed_request = array(
+				'pagename' => '',
+				'version'  => $ver,
+			);
+			return self::$parsed_request;
+		}
+
 		if ( '' === $path ) {
 			self::$parsed_request = null;
 			return null;

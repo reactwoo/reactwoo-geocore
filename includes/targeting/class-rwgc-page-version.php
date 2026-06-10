@@ -142,6 +142,32 @@ class RWGC_Page_Version {
 	}
 
 	/**
+	 * Whether a post is the static front page.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public static function is_static_front_page( $post_id ) {
+		$post_id = absint( $post_id );
+		if ( $post_id <= 0 || 'page' !== (string) get_option( 'show_on_front' ) ) {
+			return false;
+		}
+
+		return $post_id === (int) get_option( 'page_on_front' );
+	}
+
+	/**
+	 * Public path for admin UIs (`/` for the static front page).
+	 *
+	 * @param string $relative_path Path from get_post_relative_path().
+	 * @return string
+	 */
+	public static function format_public_path( $relative_path ) {
+		$relative_path = trim( (string) $relative_path, '/' );
+		return '' === $relative_path ? '/' : '/' . $relative_path;
+	}
+
+	/**
 	 * Relative site path for a page/post (no trailing slash), e.g. `about-us` or `parent/child`.
 	 *
 	 * @param int $post_id Post ID.
@@ -184,8 +210,11 @@ class RWGC_Page_Version {
 	public static function build_version_relative_path( $post_id, $version ) {
 		$base = self::get_post_relative_path( $post_id );
 		$ver  = self::sanitize_version_name( $version );
-		if ( '' === $base || '' === $ver ) {
+		if ( '' === $ver ) {
 			return '';
+		}
+		if ( '' === $base ) {
+			return self::is_static_front_page( $post_id ) ? self::ROUTE_SEGMENT . '/' . $ver : '';
 		}
 		return $base . '/' . self::ROUTE_SEGMENT . '/' . $ver;
 	}
@@ -214,6 +243,10 @@ class RWGC_Page_Version {
 	public static function resolve_post_id_from_path( $pagename ) {
 		$pagename = trim( (string) $pagename, '/' );
 		if ( '' === $pagename ) {
+			if ( 'page' === (string) get_option( 'show_on_front' ) ) {
+				$front = (int) get_option( 'page_on_front' );
+				return $front > 0 ? $front : 0;
+			}
 			return 0;
 		}
 
@@ -243,13 +276,13 @@ class RWGC_Page_Version {
 		}
 
 		$path = self::get_post_relative_path( $post_id );
-		if ( '' === $path ) {
+		if ( '' === $path && ! self::is_static_front_page( $post_id ) ) {
 			return null;
 		}
 
 		return array(
 			'id'    => $post_id,
-			'path'  => '/' . $path,
+			'path'  => self::format_public_path( $path ),
 			'title' => get_the_title( $post ),
 		);
 	}
@@ -309,20 +342,37 @@ class RWGC_Page_Version {
 			)
 		);
 
-		$out = array();
-		foreach ( $posts as $post ) {
-			if ( ! $post instanceof WP_Post ) {
-				continue;
+		$out    = array();
+		$seen   = array();
+		$append = static function ( WP_Post $post ) use ( &$out, &$seen ) {
+			$post_id = (int) $post->ID;
+			if ( isset( $seen[ $post_id ] ) ) {
+				return;
 			}
-			$path = self::get_post_relative_path( (int) $post->ID );
-			if ( '' === $path ) {
-				continue;
+			$path = self::get_post_relative_path( $post_id );
+			if ( '' === $path && ! self::is_static_front_page( $post_id ) ) {
+				return;
 			}
-			$out[] = array(
-				'id'    => (int) $post->ID,
-				'path'  => '/' . $path,
+			$seen[ $post_id ] = true;
+			$out[]            = array(
+				'id'    => $post_id,
+				'path'  => self::format_public_path( $path ),
 				'title' => get_the_title( $post ),
 			);
+		};
+
+		$front_id = 'page' === (string) get_option( 'show_on_front' ) ? (int) get_option( 'page_on_front' ) : 0;
+		if ( $front_id > 0 ) {
+			$front = get_post( $front_id );
+			if ( $front instanceof WP_Post && 'publish' === $front->post_status ) {
+				$append( $front );
+			}
+		}
+
+		foreach ( $posts as $post ) {
+			if ( $post instanceof WP_Post ) {
+				$append( $post );
+			}
 		}
 		return $out;
 	}

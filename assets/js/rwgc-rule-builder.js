@@ -189,12 +189,17 @@
 		return { version: s, error: '' };
 	}
 
+	function pageVersionPathPrefix(basePath) {
+		var base = String(basePath || '');
+		return base === '/' ? '' : base;
+	}
+
 	function pageVersionPreviewPath(pageId, version, c) {
 		var base = pagePathById(pageId, c);
 		if (!base || !version) {
 			return '';
 		}
-		return base + '/_gc/' + version;
+		return pageVersionPathPrefix(base) + '/_gc/' + version;
 	}
 
 	function pageVersionAbsoluteUrl(relativePath, c) {
@@ -644,7 +649,7 @@
 			'<strong>' +
 			escapeHtml(t('pageVersionPattern')) +
 			'</strong> <code class="rwgc-rb__page-version-code">' +
-			escapeHtml((basePath || '/') + '/_gc/[ version-name ]') +
+			escapeHtml(pageVersionPathPrefix(basePath || '/') + '/_gc/[ version-name ]') +
 			'</code>';
 		panel.appendChild(pattern);
 
@@ -686,7 +691,7 @@
 		if (basePath) {
 			var ex = document.createElement('p');
 			ex.className = 'description rwgc-rb__page-version-example';
-			ex.textContent = 'Example: ' + basePath + '/_gc/campaign_name';
+			ex.textContent = 'Example: ' + pageVersionPathPrefix(basePath) + '/_gc/campaign_name';
 			panel.appendChild(helper);
 			panel.appendChild(ex);
 		} else {
