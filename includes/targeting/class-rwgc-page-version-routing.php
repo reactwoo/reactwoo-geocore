@@ -77,8 +77,45 @@ class RWGC_Page_Version_Routing {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Browser-facing request URI for the current hit.
+	 *
+	 * @return string
+	 */
+	public static function get_client_request_uri() {
+		return isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+	}
+
+	/**
+	 * Whether the client requested a normal URL (not `/_gc/{version}`).
+	 *
+	 * @return bool
+	 */
+	public static function client_request_is_base_page_url() {
+		$uri = self::get_client_request_uri();
+		return '' !== $uri && ! self::uri_contains_page_version_segment( $uri );
+	}
+
+	/**
+	 * @return array{page_version:string,page_version_page_id:int,page_version_active:bool,page_version_base_path:string}
+	 */
+	private static function empty_page_version_context() {
+		return array(
+			'page_version'           => '',
+			'page_version_page_id'   => 0,
+			'page_version_active'    => false,
+			'page_version_base_path' => '',
+		);
+	}
+
 	public static function capture_raw_request_uri() {
 		if ( '' !== self::$raw_request_uri ) {
+			return;
+		}
+
+		$client_uri = self::get_client_request_uri();
+		if ( '' !== $client_uri && ! self::uri_contains_page_version_segment( $client_uri ) ) {
+			self::$raw_request_uri = $client_uri;
 			return;
 		}
 
@@ -143,6 +180,9 @@ class RWGC_Page_Version_Routing {
 	 * @return bool
 	 */
 	private static function request_looks_like_page_version() {
+		if ( self::client_request_is_base_page_url() ) {
+			return false;
+		}
 		if ( self::is_page_version_request() ) {
 			return true;
 		}
@@ -337,6 +377,10 @@ class RWGC_Page_Version_Routing {
 	 * @return array{page_version:string,page_version_page_id:int,page_version_active:bool,page_version_base_path:string}
 	 */
 	public static function get_request_page_version_context() {
+		if ( self::client_request_is_base_page_url() ) {
+			return self::empty_page_version_context();
+		}
+
 		$error    = '';
 		$version  = '';
 		$pagename = '';
@@ -434,6 +478,9 @@ class RWGC_Page_Version_Routing {
 	 * @return bool
 	 */
 	public static function is_page_version_request() {
+		if ( self::client_request_is_base_page_url() ) {
+			return false;
+		}
 		$version = get_query_var( self::QUERY_VAR );
 		if ( is_string( $version ) && '' !== trim( $version ) ) {
 			return true;
@@ -460,6 +507,11 @@ class RWGC_Page_Version_Routing {
 	public static function parse_request_path() {
 		if ( false !== self::$parsed_request ) {
 			return self::$parsed_request ?: null;
+		}
+
+		if ( self::client_request_is_base_page_url() ) {
+			self::$parsed_request = null;
+			return null;
 		}
 
 		$path = self::get_request_path();
