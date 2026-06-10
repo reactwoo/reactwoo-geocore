@@ -833,6 +833,7 @@
 			jsonDraft: '',
 			parseError: null,
 		};
+		var syncingFromState = false;
 
 		function readDocFromTextarea() {
 			var p = parseDoc(textarea.value);
@@ -864,8 +865,10 @@
 			}
 			var json = stringifyDoc(d);
 			if (textarea.value !== json) {
+				syncingFromState = true;
 				textarea.value = json;
 				$(textarea).trigger('input').trigger('change');
+				syncingFromState = false;
 			}
 			if (setMode) {
 				setMode(mode);
@@ -1547,6 +1550,9 @@
 		render();
 
 		$(textarea).on('input.rwgcRb change.rwgcRb', function () {
+			if (syncingFromState) {
+				return;
+			}
 			readDocFromTextarea();
 			render();
 		});
