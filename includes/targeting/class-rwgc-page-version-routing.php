@@ -55,7 +55,6 @@ class RWGC_Page_Version_Routing {
 
 		add_filter( 'redirect_canonical', array( __CLASS__, 'filter_redirect_canonical' ), 1, 2 );
 		add_filter( 'wp_redirect', array( __CLASS__, 'filter_wp_redirect' ), 1, 2 );
-		add_action( 'template_redirect', array( __CLASS__, 'maybe_disable_canonical_redirect' ), 0 );
 	}
 
 	/**
@@ -161,12 +160,26 @@ class RWGC_Page_Version_Routing {
 	 * @return string|false
 	 */
 	public static function filter_redirect_canonical( $redirect_url, $requested_url ) {
-		if ( self::request_looks_like_page_version() ) {
+		if ( ! $redirect_url ) {
+			return $redirect_url;
+		}
+
+		$request_path = '';
+		if ( is_string( $requested_url ) && '' !== $requested_url ) {
+			$request_path = $requested_url;
+		} else {
+			$request_path = self::get_raw_request_uri();
+		}
+
+		if ( ! self::uri_contains_page_version_segment( $request_path ) ) {
+			return $redirect_url;
+		}
+
+		// Cancel canonical redirects that would strip `/_gc/{version}` from the inbound URL.
+		if ( ! self::uri_contains_page_version_segment( (string) $redirect_url ) ) {
 			return false;
 		}
-		if ( is_string( $requested_url ) && self::uri_contains_page_version_segment( $requested_url ) ) {
-			return false;
-		}
+
 		return $redirect_url;
 	}
 
@@ -188,16 +201,6 @@ class RWGC_Page_Version_Routing {
 		}
 
 		return $location;
-	}
-
-	/**
-	 * @return void
-	 */
-	public static function maybe_disable_canonical_redirect() {
-		if ( ! self::request_looks_like_page_version() ) {
-			return;
-		}
-		remove_action( 'template_redirect', 'redirect_canonical' );
 	}
 
 	/**
