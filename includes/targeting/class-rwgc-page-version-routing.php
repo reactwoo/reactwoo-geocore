@@ -32,11 +32,27 @@ class RWGC_Page_Version_Routing {
 		add_action( 'init', array( __CLASS__, 'register_rewrites' ), 5 );
 		add_filter( 'query_vars', array( __CLASS__, 'register_query_var' ) );
 		add_filter( 'request', array( __CLASS__, 'filter_request' ), 1 );
+		add_filter( 'redirect_canonical', array( __CLASS__, 'filter_redirect_canonical' ), 10, 2 );
 		add_action( 'pre_get_posts', array( __CLASS__, 'pre_get_posts' ), 1 );
 		add_action( 'wp', array( __CLASS__, 'reset_context_snapshot_cache' ), 1 );
 		add_filter( 'rwgc_context_snapshot_values', array( __CLASS__, 'filter_snapshot_values' ), 20 );
 		add_filter( 'wp_robots', array( __CLASS__, 'filter_robots_noindex' ), 20 );
 		add_action( 'wp_head', array( __CLASS__, 'maybe_output_canonical' ), 1 );
+	}
+
+	/**
+	 * Prevent WordPress canonical redirect from stripping `/_gc/{version}` (especially on the static front page).
+	 *
+	 * @param string|false $redirect_url  Canonical redirect target.
+	 * @param string       $requested_url Requested URL.
+	 * @return string|false
+	 */
+	public static function filter_redirect_canonical( $redirect_url, $requested_url ) {
+		unset( $requested_url );
+		if ( self::is_page_version_request() || null !== self::parse_request_path() ) {
+			return false;
+		}
+		return $redirect_url;
 	}
 
 	/**
