@@ -8,6 +8,7 @@ $option_key = RWGC_Settings::OPTION_KEY;
 	<h1><?php esc_html_e( 'Geo Core Settings', 'reactwoo-geocore' ); ?></h1>
 	<p class="description"><?php esc_html_e( 'Configure detection, database, behavior, and integrations.', 'reactwoo-geocore' ); ?></p>
 	<?php RWGC_Admin::render_inner_nav( 'rwgc-settings' ); ?>
+	<?php settings_errors( 'rwgc_settings' ); ?>
 
 	<form method="post" action="options.php">
 		<?php settings_fields( 'rwgc_settings_group' ); ?>
@@ -106,8 +107,19 @@ $option_key = RWGC_Settings::OPTION_KEY;
 					<td>
 						<label>
 							<input type="checkbox" name="<?php echo esc_attr( $option_key ); ?>[debug_mode]" value="1" <?php checked( $settings['debug_mode'], 1 ); ?> />
-							<?php esc_html_e( 'Log geo errors to debug.log when WP_DEBUG is enabled.', 'reactwoo-geocore' ); ?>
+							<?php esc_html_e( 'Log geo and plugin updater diagnostics to debug.log.', 'reactwoo-geocore' ); ?>
 						</label>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Plugin updates', 'reactwoo-geocore' ); ?></th>
+					<td>
+						<p class="description"><?php esc_html_e( 'Geo Core checks api.reactwoo.com for new releases. WordPress may cache “no update” for several hours after a failed check.', 'reactwoo-geocore' ); ?></p>
+						<p>
+							<a class="button button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=rwgc-settings&rwgc_force_plugin_updates=1' ), 'rwgc_force_plugin_updates' ) ); ?>">
+								<?php esc_html_e( 'Clear update cache & check now', 'reactwoo-geocore' ); ?>
+							</a>
+						</p>
 					</td>
 				</tr>
 			</table>

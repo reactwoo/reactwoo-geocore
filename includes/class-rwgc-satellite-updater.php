@@ -145,8 +145,86 @@ class RWGC_Satellite_Updater {
 			return;
 		}
 		self::$hooks_added = true;
-		add_filter( 'pre_set_site_transient_update_plugins', array( __CLASS__, 'filter_update_transient' ), 10, 1 );
+		add_filter( 'pre_set_site_transient_update_plugins', array( __CLASS__, 'filter_update_transient' ), 50, 1 );
 		add_filter( 'plugins_api', array( __CLASS__, 'filter_plugins_api' ), 10, 3 );
+		add_action( 'admin_init', array( __CLASS__, 'handle_admin_force_check' ) );
+	}
+
+	/**
+	 * Clear WordPress plugin update cache and re-query api.reactwoo.com.
+	 *
+	 * @return void
+	 */
+	public static function force_check_updates() {
+		delete_site_transient( 'update_plugins' );
+		if ( function_exists( 'wp_clean_plugins_cache' ) ) {
+			wp_clean_plugins_cache( false );
+		}
+		if ( function_exists( 'wp_update_plugins' ) ) {
+			wp_update_plugins();
+		}
+	}
+
+	/**
+	 * Admin Tools / Settings link: ?page=rwgc-settings&rwgc_force_plugin_updates=1
+	 *
+	 * @return void
+	 */
+	public static function handle_admin_force_check() {
+		if ( ! is_admin() || ! current_user_can( 'update_plugins' ) ) {
+			return;
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( empty( $_GET['rwgc_force_plugin_updates'] ) ) {
+			return;
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( ! in_array( $page, array( 'rwgc-settings', 'rwgc-tools' ), true ) ) {
+			return;
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'rwgc_force_plugin_updates' ) ) {
+			return;
+		}
+
+		self::force_check_updates();
+
+		$lines   = array();
+		$items   = apply_filters( 'rwgc_satellite_updater_items', self::$items );
+		$plugins = function_exists( 'get_plugins' ) ? get_plugins() : array();
+		if ( is_array( $items ) ) {
+			foreach ( $items as $slug => $cfg ) {
+				if ( ! is_array( $cfg ) ) {
+					continue;
+				}
+				$basename = isset( $cfg['basename'] ) ? (string) $cfg['basename'] : '';
+				if ( '' === $basename || ! isset( $plugins[ $basename ] ) ) {
+					continue;
+				}
+				$current = isset( $plugins[ $basename ]['Version'] ) ? (string) $plugins[ $basename ]['Version'] : '';
+				$offer   = self::request_update_offer( (string) $slug, $current, self::item_attach_bearer_token( $cfg ), $cfg );
+				if ( is_array( $offer ) && ! empty( $offer['version'] ) ) {
+					$lines[] = sprintf(
+						/* translators: 1: plugin catalog slug, 2: installed version, 3: offered version */
+						__( '%1$s: update available (%2$s → %3$s).', 'reactwoo-geocore' ),
+						(string) $slug,
+						$current,
+						(string) $offer['version']
+					);
+				} else {
+					$lines[] = sprintf(
+						/* translators: 1: plugin catalog slug, 2: installed version */
+						__( '%1$s: no newer release for %2$s (API check).', 'reactwoo-geocore' ),
+						(string) $slug,
+						$current
+					);
+				}
+			}
+		}
+
+		$message = $lines ? implode( ' ', $lines ) : __( 'Plugin update cache cleared. Re-check Plugins → Updates in wp-admin.', 'reactwoo-geocore' );
+		add_settings_error( 'rwgc_settings', 'rwgc_force_plugin_updates', $message, 'updated' );
 	}
 
 	/**
@@ -176,7 +254,10 @@ class RWGC_Satellite_Updater {
 			if ( '' === $basename || ! isset( $transient->checked[ $basename ] ) ) {
 				continue;
 			}
-			$current        = isset( $cfg['version'] ) ? (string) $cfg['version'] : '';
+			$current = (string) $transient->checked[ $basename ];
+			if ( '' === $current && isset( $cfg['version'] ) ) {
+				$current = (string) $cfg['version'];
+			}
 			$attach_bearer = self::item_attach_bearer_token( $cfg );
 			$offer          = self::request_update_offer( (string) $slug, $current, $attach_bearer, $cfg );
 			if ( null === $offer ) {

@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.45
+Stable tag: 1.8.46
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.46 =
+* **Plugin updates:** Settings → Advanced “Clear update cache & check now”; updater uses WordPress `update_plugins` checked version when calling api.reactwoo.com.
 
 = 1.8.45 =
 * **Elementor visibility:** Honor hide-when-rules-match from saved rule JSON, skip rendering hidden sections/containers via should_render, and sync visibility mode in the editor.
