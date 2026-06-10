@@ -519,12 +519,14 @@ if ( ! function_exists( 'rwgc_get_suite_handoff_request_context' ) ) {
 	 */
 	function rwgc_get_suite_handoff_request_context() {
 		$out = array(
-			'active'            => false,
-			'from'              => '',
-			'launcher'          => '',
-			'variant_page_id'   => 0,
-			'master_page_id'    => 0,
-			'geo_target'        => '',
+			'active'              => false,
+			'from'                => '',
+			'launcher'            => '',
+			'variant_page_id'     => 0,
+			'master_page_id'      => 0,
+			'geo_target'          => '',
+			'visibility_rule_id'  => 0,
+			'targeting_summary'   => '',
 		);
 		if ( ! is_admin() ) {
 			return $out;
@@ -554,13 +556,68 @@ if ( ! function_exists( 'rwgc_get_suite_handoff_request_context' ) ) {
 		if ( isset( $_GET['rwga_geo_target'] ) ) {
 			$out['geo_target'] = strtoupper( substr( sanitize_text_field( wp_unslash( (string) $_GET['rwga_geo_target'] ) ), 0, 2 ) );
 		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['rwgc_visibility_rule_id'] ) ) {
+			$out['visibility_rule_id'] = absint( wp_unslash( $_GET['rwgc_visibility_rule_id'] ) );
+		}
+		if ( $out['visibility_rule_id'] > 0 && function_exists( 'rwgc_get_visibility_rule_copy_context' ) ) {
+			$tc = rwgc_get_visibility_rule_copy_context( $out['visibility_rule_id'] );
+			if ( is_array( $tc ) && ! empty( $tc['summary'] ) ) {
+				$out['targeting_summary'] = (string) $tc['summary'];
+			}
+		}
 		/**
 		 * Filter parsed suite handoff request context (tests or custom entry points).
 		 *
-		 * @param array{active: bool, from: string, launcher: string, variant_page_id: int, master_page_id: int, geo_target: string} $out Parsed values.
+		 * @param array{active: bool, from: string, launcher: string, variant_page_id: int, master_page_id: int, geo_target: string, visibility_rule_id: int, targeting_summary: string} $out Parsed values.
 		 */
 		$filtered = apply_filters( 'rwgc_suite_handoff_request_context', $out );
 		return is_array( $filtered ) ? array_merge( $out, $filtered ) : $out;
+	}
+}
+
+if ( ! function_exists( 'rwgc_get_visibility_rule_copy_context' ) ) {
+	/**
+	 * Structured targeting context for Geo AI copy adaptation from a visibility rule ID.
+	 *
+	 * @param int $rule_id Visibility rule post ID.
+	 * @return array<string, mixed>
+	 */
+	function rwgc_get_visibility_rule_copy_context( $rule_id ) {
+		if ( ! class_exists( 'RWGC_Visibility_Rule_Copy_Context', false ) ) {
+			return array();
+		}
+		return RWGC_Visibility_Rule_Copy_Context::from_rule_id( absint( $rule_id ) );
+	}
+}
+
+if ( ! function_exists( 'rwgc_get_page_experience_copy_context' ) ) {
+	/**
+	 * Targeting context from experience builder meta on a page.
+	 *
+	 * @param int $page_id Page ID.
+	 * @return array<string, mixed>
+	 */
+	function rwgc_get_page_experience_copy_context( $page_id ) {
+		if ( ! class_exists( 'RWGC_Visibility_Rule_Copy_Context', false ) ) {
+			return array();
+		}
+		return RWGC_Visibility_Rule_Copy_Context::from_page_experience_meta( absint( $page_id ) );
+	}
+}
+
+if ( ! function_exists( 'rwgc_get_country_codes_copy_context' ) ) {
+	/**
+	 * Synthetic targeting context from ISO2 country codes (selected countries path).
+	 *
+	 * @param array<int, string> $country_codes ISO2 codes.
+	 * @return array<string, mixed>
+	 */
+	function rwgc_get_country_codes_copy_context( array $country_codes ) {
+		if ( ! class_exists( 'RWGC_Visibility_Rule_Copy_Context', false ) ) {
+			return array();
+		}
+		return RWGC_Visibility_Rule_Copy_Context::from_country_codes( $country_codes );
 	}
 }
 

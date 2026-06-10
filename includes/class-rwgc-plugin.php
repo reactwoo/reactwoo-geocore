@@ -109,6 +109,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-targeting-rule-builder-assets.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-cpt.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-repository.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-copy-context.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-visibility-rules.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-elementor.php';
 		require_once RWGC_PATH . 'includes/integrations/class-rwgc-integrations-loader.php';

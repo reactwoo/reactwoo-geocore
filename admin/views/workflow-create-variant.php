@@ -70,8 +70,13 @@ if ( is_array( $result ) && ! empty( $result['variant_page_id'] ) && class_exist
 			<p><strong><?php esc_html_e( 'Experience saved.', 'reactwoo-geocore' ); ?></strong></p>
 			<?php if ( ! empty( $result['linked_existing'] ) ) : ?>
 				<p><?php esc_html_e( 'The existing page is now linked as the local version.', 'reactwoo-geocore' ); ?></p>
+			<?php elseif ( ! empty( $result['copy_draft_ids'] ) ) : ?>
+				<p><?php esc_html_e( 'Geo AI generated copy drafts from your page content and targeting rule. Review them before publishing.', 'reactwoo-geocore' ); ?></p>
 			<?php else : ?>
 				<p><?php esc_html_e( 'Review the draft, adjust content, then publish when ready.', 'reactwoo-geocore' ); ?></p>
+			<?php endif; ?>
+			<?php if ( ! empty( $result['copy_error'] ) ) : ?>
+				<p class="description"><?php echo esc_html( (string) $result['copy_error'] ); ?></p>
 			<?php endif; ?>
 			<?php if ( ! empty( $next_steps ) ) : ?>
 			<div class="rwgc-suite-next-actions">

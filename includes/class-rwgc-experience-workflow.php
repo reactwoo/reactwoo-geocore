@@ -387,19 +387,88 @@ class RWGC_Experience_Workflow {
 		$res['experience_name'] = $experience_name;
 
 		if ( 'ai_adapt' === $content_mode && ! empty( $res['variant_page_id'] ) ) {
-			$res['ai_handoff_url'] = self::build_ai_adapt_handoff_url( $master, (int) $res['variant_page_id'], $country_iso2 );
+			$copy_result = self::run_ai_adapt_copy_drafts(
+				(int) $res['variant_page_id'],
+				$visibility_rule_id,
+				$country_iso2,
+				$countries
+			);
+			$draft_ids = array();
+			if ( is_array( $copy_result ) && ! empty( $copy_result['draft_ids'] ) && is_array( $copy_result['draft_ids'] ) ) {
+				$draft_ids              = $copy_result['draft_ids'];
+				$res['copy_draft_ids']  = $draft_ids;
+			} elseif ( is_wp_error( $copy_result ) ) {
+				$res['copy_error'] = $copy_result->get_error_message();
+			}
+			$res['ai_handoff_url'] = self::build_ai_adapt_handoff_url(
+				$master,
+				(int) $res['variant_page_id'],
+				$country_iso2,
+				$visibility_rule_id,
+				$draft_ids
+			);
 		}
 
 		return $res;
 	}
 
 	/**
-	 * @param int    $master_page_id Master page.
-	 * @param int    $variant_page_id Variant page.
-	 * @param string $country_iso2 Geo hint.
+	 * Generate rule-aware copy drafts for the duplicated variant (Geo AI).
+	 *
+	 * @param int                $variant_page_id    Variant page ID.
+	 * @param int                $visibility_rule_id Attached library rule ID.
+	 * @param string             $country_iso2       Primary routing ISO2.
+	 * @param array<int, string> $countries          Selected countries when no library rule.
+	 * @return array<string, mixed>|\WP_Error|null
+	 */
+	public static function run_ai_adapt_copy_drafts( $variant_page_id, $visibility_rule_id, $country_iso2 = '', array $countries = array() ) {
+		if ( ! class_exists( 'RWGA_Workflow_Registry', false ) ) {
+			return null;
+		}
+		$wf = RWGA_Workflow_Registry::get( 'copy_implement' );
+		if ( ! $wf ) {
+			return null;
+		}
+		$payload = array(
+			'page_id' => absint( $variant_page_id ),
+			'source'  => 'experience_builder_ai_adapt',
+		);
+		if ( $visibility_rule_id > 0 ) {
+			$payload['visibility_rule_id'] = $visibility_rule_id;
+		}
+		if ( '' !== $country_iso2 ) {
+			$payload['geo_target'] = strtoupper( substr( sanitize_text_field( $country_iso2 ), 0, 2 ) );
+		}
+		if ( ! empty( $countries ) ) {
+			$payload['countries'] = $countries;
+		}
+		return $wf->execute( $payload );
+	}
+
+	/**
+	 * @param int                $master_page_id     Master page.
+	 * @param int                $variant_page_id    Variant page.
+	 * @param string             $country_iso2       Geo hint.
+	 * @param int                $visibility_rule_id Attached rule ID.
+	 * @param array<int, int>    $draft_ids          Generated copy draft IDs.
 	 * @return string
 	 */
-	public static function build_ai_adapt_handoff_url( $master_page_id, $variant_page_id, $country_iso2 = '' ) {
+	public static function build_ai_adapt_handoff_url( $master_page_id, $variant_page_id, $country_iso2 = '', $visibility_rule_id = 0, array $draft_ids = array() ) {
+		if ( ! empty( $draft_ids ) && class_exists( 'RWGA_Journey_Router', false ) ) {
+			$url = RWGA_Journey_Router::implementation_review_url( $draft_ids );
+			$url = add_query_arg(
+				array(
+					'rwga_copy'        => 'ok',
+					'rwgc_handoff'     => '1',
+					'rwgc_from'        => 'experience_builder',
+					'rwgc_launcher'    => 'ai_adapt',
+					'rwga_draft_count' => count( $draft_ids ),
+				),
+				$url
+			);
+			return $url;
+		}
+
 		$args = array(
 			'page'                 => class_exists( 'RWGA_Admin', false ) ? RWGA_Admin::MENU_PARENT : 'rwga-dashboard',
 			'rwgc_handoff'         => '1',
@@ -410,6 +479,9 @@ class RWGC_Experience_Workflow {
 		);
 		if ( '' !== $country_iso2 ) {
 			$args['rwga_geo_target'] = strtoupper( substr( sanitize_text_field( $country_iso2 ), 0, 2 ) );
+		}
+		if ( $visibility_rule_id > 0 ) {
+			$args['rwgc_visibility_rule_id'] = absint( $visibility_rule_id );
 		}
 		$url = add_query_arg( $args, admin_url( 'admin.php' ) );
 		if ( class_exists( 'RWGC_Workflows', false ) ) {
