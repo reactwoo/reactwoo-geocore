@@ -424,6 +424,15 @@ class RWGC_Admin {
 				RWGC_VERSION
 			);
 		}
+		if ( false !== strpos( $hook, 'rwgc-workflow-variant' ) ) {
+			wp_enqueue_script(
+				'rwgc-experience-workflow',
+				RWGC_URL . 'admin/js/rwgc-experience-workflow.js',
+				array( 'jquery' ),
+				RWGC_VERSION,
+				true
+			);
+		}
 		wp_enqueue_script(
 			'rwgc-admin',
 			RWGC_URL . 'admin/js/admin.js',

@@ -515,7 +515,7 @@ if ( ! function_exists( 'rwgc_get_suite_handoff_request_context' ) ) {
 	 * Parse Geo Suite workflow handoff query args (`rwgc_handoff`, `rwgc_from`, `rwgc_launcher`, `rwgc_variant_page_id`).
 	 * Satellites use this on their admin screens to show context after deep links from Suite Home / Getting Started / next steps.
 	 *
-	 * @return array{active: bool, from: string, launcher: string, variant_page_id: int}
+	 * @return array{active: bool, from: string, launcher: string, variant_page_id: int, master_page_id: int, geo_target: string}
 	 */
 	function rwgc_get_suite_handoff_request_context() {
 		$out = array(
@@ -523,6 +523,8 @@ if ( ! function_exists( 'rwgc_get_suite_handoff_request_context' ) ) {
 			'from'              => '',
 			'launcher'          => '',
 			'variant_page_id'   => 0,
+			'master_page_id'    => 0,
+			'geo_target'        => '',
 		);
 		if ( ! is_admin() ) {
 			return $out;
@@ -544,10 +546,18 @@ if ( ! function_exists( 'rwgc_get_suite_handoff_request_context' ) ) {
 		if ( isset( $_GET['rwgc_variant_page_id'] ) ) {
 			$out['variant_page_id'] = absint( wp_unslash( $_GET['rwgc_variant_page_id'] ) );
 		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['rwgc_master_page_id'] ) ) {
+			$out['master_page_id'] = absint( wp_unslash( $_GET['rwgc_master_page_id'] ) );
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['rwga_geo_target'] ) ) {
+			$out['geo_target'] = strtoupper( substr( sanitize_text_field( wp_unslash( (string) $_GET['rwga_geo_target'] ) ), 0, 2 ) );
+		}
 		/**
 		 * Filter parsed suite handoff request context (tests or custom entry points).
 		 *
-		 * @param array{active: bool, from: string, launcher: string, variant_page_id: int} $out Parsed values.
+		 * @param array{active: bool, from: string, launcher: string, variant_page_id: int, master_page_id: int, geo_target: string} $out Parsed values.
 		 */
 		$filtered = apply_filters( 'rwgc_suite_handoff_request_context', $out );
 		return is_array( $filtered ) ? array_merge( $out, $filtered ) : $out;

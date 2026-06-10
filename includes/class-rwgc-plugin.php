@@ -101,6 +101,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-onboarding.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-workflows.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-variant-manager.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-experience-workflow.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-suite-admin.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-shortcodes.php';

@@ -51,6 +51,9 @@ $is_variant_rule          = ! empty( $variant_provenance['sourceType'] ) && 'pag
 		<?php wp_nonce_field( 'rwgc_save_visibility_rule' ); ?>
 		<input type="hidden" name="action" value="rwgc_save_visibility_rule" />
 		<input type="hidden" name="rwgc_rule_id" value="<?php echo esc_attr( (string) $post_id ); ?>" />
+		<?php if ( ! empty( $return_url ) ) : ?>
+			<input type="hidden" name="rwgc_return" value="<?php echo esc_attr( (string) $return_url ); ?>" />
+		<?php endif; ?>
 
 		<table class="form-table" role="presentation">
 			<tr>

@@ -115,7 +115,9 @@ class RWGC_Suite_Admin {
 		} else {
 			$result = null;
 		}
-		$prefill_master = isset( $_GET['rwgc_master_page_id'] ) ? absint( wp_unslash( $_GET['rwgc_master_page_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$prefill_master    = isset( $_GET['rwgc_master_page_id'] ) ? absint( wp_unslash( $_GET['rwgc_master_page_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$prefill_rule_id   = isset( $_GET['rwgc_rule_id'] ) ? absint( wp_unslash( $_GET['rwgc_rule_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$prefill_condition = isset( $_GET['rwgc_condition_type'] ) ? sanitize_key( wp_unslash( (string) $_GET['rwgc_condition_type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		include RWGC_PATH . 'admin/views/workflow-create-variant.php';
 	}
 
@@ -172,11 +174,24 @@ class RWGC_Suite_Admin {
 		}
 		check_admin_referer( 'rwgc_create_variant_workflow' );
 
-		$master = isset( $_POST['rwgc_master_page_id'] ) ? absint( wp_unslash( $_POST['rwgc_master_page_id'] ) ) : 0;
-		$iso2   = isset( $_POST['rwgc_country_iso2'] ) ? sanitize_text_field( wp_unslash( $_POST['rwgc_country_iso2'] ) ) : '';
-		$mode   = isset( $_POST['rwgc_variant_mode'] ) ? sanitize_key( wp_unslash( $_POST['rwgc_variant_mode'] ) ) : 'duplicate';
+		$countries = isset( $_POST['rwgc_countries'] ) && is_array( $_POST['rwgc_countries'] )
+			? array_map( 'sanitize_text_field', wp_unslash( $_POST['rwgc_countries'] ) )
+			: array();
 
-		$res = RWGC_Variant_Manager::create_country_variant( $master, $iso2, $mode );
+		$input = array(
+			'master_page_id'        => isset( $_POST['rwgc_master_page_id'] ) ? absint( wp_unslash( $_POST['rwgc_master_page_id'] ) ) : 0,
+			'condition_type'        => isset( $_POST['rwgc_condition_type'] ) ? sanitize_key( wp_unslash( (string) $_POST['rwgc_condition_type'] ) ) : 'countries',
+			'content_mode'          => isset( $_POST['rwgc_content_mode'] ) ? sanitize_key( wp_unslash( (string) $_POST['rwgc_content_mode'] ) ) : 'duplicate',
+			'experience_name'       => isset( $_POST['rwgc_experience_name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['rwgc_experience_name'] ) ) : '',
+			'saved_rule_id'         => isset( $_POST['rwgc_saved_rule_id'] ) ? absint( wp_unslash( $_POST['rwgc_saved_rule_id'] ) ) : 0,
+			'existing_variant_id'   => isset( $_POST['rwgc_existing_variant_id'] ) ? absint( wp_unslash( $_POST['rwgc_existing_variant_id'] ) ) : 0,
+			'save_countries_as_rule'=> ! empty( $_POST['rwgc_save_countries_as_rule'] ),
+			'countries'             => $countries,
+		);
+
+		$res = class_exists( 'RWGC_Experience_Workflow', false )
+			? RWGC_Experience_Workflow::submit( $input )
+			: new WP_Error( 'rwgc_exp_missing', __( 'Experience workflow is unavailable.', 'reactwoo-geocore' ) );
 
 		if ( is_wp_error( $res ) ) {
 			set_transient(

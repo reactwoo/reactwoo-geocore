@@ -68,6 +68,7 @@ class RWGC_Admin_Visibility_Rules {
 		$title   = isset( $_POST['rwgc_rule_title'] ) ? wp_unslash( (string) $_POST['rwgc_rule_title'] ) : '';
 		$status  = isset( $_POST['rwgc_rule_status'] ) ? wp_unslash( (string) $_POST['rwgc_rule_status'] ) : 'draft';
 		$json    = isset( $_POST['rwgc_portable_targeting'] ) ? wp_unslash( (string) $_POST['rwgc_portable_targeting'] ) : '';
+		$return  = isset( $_POST['rwgc_return'] ) ? esc_url_raw( wp_unslash( (string) $_POST['rwgc_return'] ) ) : '';
 		// phpcs:enable
 
 		$new_id = RWGC_Visibility_Rule_Repository::save( $title, $status, $json, $post_id );
@@ -84,6 +85,20 @@ class RWGC_Admin_Visibility_Rules {
 					RWGC_Variant_Rule_Applications::save_provenance( $new_id, $provenance );
 				}
 			}
+		}
+
+		if ( '' !== $return && wp_validate_redirect( $return, false ) ) {
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'rwgc_rule_id'        => $new_id,
+						'rwgc_condition_type' => 'saved_rule',
+						'rwgc_rule_saved'     => '1',
+					),
+					$return
+				)
+			);
+			exit;
 		}
 
 		wp_safe_redirect( admin_url( 'admin.php?page=rwgc-visibility-rules&rwgc_edit=' . $new_id . '&updated=1' ) );
@@ -131,6 +146,11 @@ class RWGC_Admin_Visibility_Rules {
 			}
 		}
 		$list_url = admin_url( 'admin.php?page=rwgc-visibility-rules' );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$return_url = isset( $_GET['rwgc_return'] ) ? esc_url_raw( wp_unslash( (string) $_GET['rwgc_return'] ) ) : '';
+		if ( '' !== $return_url && ! wp_validate_redirect( $return_url, false ) ) {
+			$return_url = '';
+		}
 
 		$variant_provenance = array();
 		$variant_references = array();

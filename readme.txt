@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.40
+Stable tag: 1.8.41
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,10 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.41 =
+* **Experience builder:** Visitor conditions (everyone, multi-country, saved rule, create-rule handoff), four content modes (duplicate, existing, blank, Geo AI adapt), rule library picker, and visibility-rule return URL after save.
+* **Suite handoff:** `rwgc_get_suite_handoff_request_context()` includes `master_page_id` and `geo_target` for Geo AI adapt flows.
 
 = 1.8.40 =
 * **Insights hub:** Site intelligence wizard card description for Geo AI guided setup.
