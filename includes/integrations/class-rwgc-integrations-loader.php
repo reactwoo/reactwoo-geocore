@@ -23,7 +23,9 @@ class RWGC_Integrations_Loader {
 		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-frontend.php';
 		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-popups.php';
 		require_once RWGC_PATH . 'includes/integrations/gutenberg/class-rwgc-gutenberg-post-geo.php';
+		require_once RWGC_PATH . 'includes/integrations/class-rwgc-cache-compat.php';
 
+		RWGC_Cache_Compat::init();
 		RWGC_Elementor_Elements::init();
 		RWGC_Elementor_Frontend::init();
 		RWGC_Elementor_Popups::init();

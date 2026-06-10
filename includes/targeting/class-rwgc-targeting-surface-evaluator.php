@@ -124,19 +124,42 @@ class RWGC_Targeting_Surface_Evaluator {
 	/**
 	 * Visibility rules layer mode (defaults to show_if).
 	 *
-	 * @param array<string, mixed> $settings Settings.
+	 * @param array<string, mixed>        $settings Settings.
+	 * @param array<string, mixed>|null   $rule_set Optional resolved portable rule set.
 	 * @return string
 	 */
-	public static function get_visibility_rules_mode( array $settings ) {
-		$mode = 'show_if';
-		if ( isset( $settings['rwgc_visibility_rules_mode'] ) ) {
-			$mode = (string) $settings['rwgc_visibility_rules_mode'];
-		} elseif ( isset( $settings['rwgc_visibility_mode'] ) ) {
-			$mode = (string) $settings['rwgc_visibility_mode'];
-		} elseif ( isset( $settings['rwgc_geo_mode'] ) ) {
-			$mode = (string) $settings['rwgc_geo_mode'];
+	public static function get_visibility_rules_mode( array $settings, $rule_set = null ) {
+		$ui_mode = '';
+		if ( ! empty( $settings['rwgc_visibility_rules_mode'] ) ) {
+			$ui_mode = self::normalize_mode( (string) $settings['rwgc_visibility_rules_mode'] );
+		} elseif ( ! empty( $settings['rwgc_visibility_mode'] ) ) {
+			$ui_mode = self::normalize_mode( (string) $settings['rwgc_visibility_mode'] );
 		}
-		return self::normalize_mode( $mode );
+
+		if ( 'hide_if' === $ui_mode ) {
+			return 'hide_if';
+		}
+
+		if ( is_array( $rule_set ) && ! empty( $rule_set['mode'] ) ) {
+			$json_mode = self::normalize_mode( (string) $rule_set['mode'] );
+			if ( 'hide_if' === $json_mode ) {
+				return 'hide_if';
+			}
+		}
+
+		if ( '' !== $ui_mode ) {
+			return $ui_mode;
+		}
+
+		if ( is_array( $rule_set ) && ! empty( $rule_set['mode'] ) ) {
+			return self::normalize_mode( (string) $rule_set['mode'] );
+		}
+
+		if ( ! empty( $settings['rwgc_geo_mode'] ) ) {
+			return self::normalize_mode( (string) $settings['rwgc_geo_mode'] );
+		}
+
+		return 'show_if';
 	}
 
 	/**
@@ -168,7 +191,7 @@ class RWGC_Targeting_Surface_Evaluator {
 			'targeting_enabled'  => $country_on || $visibility_on,
 			'rules_match'        => true,
 			'should_render'      => true,
-			'visibility_mode'    => self::get_visibility_rules_mode( $settings ),
+			'visibility_mode'    => self::get_visibility_rules_mode( $settings, null ),
 			'rule_source'        => '',
 			'rule_json'          => '',
 			'reason'             => 'no_targeting',
@@ -215,7 +238,7 @@ class RWGC_Targeting_Surface_Evaluator {
 				$result['portable_match'] = false;
 				$result['rule_source']    = 'library:' . (string) $library_rule_id;
 				$result['reason']         = 'variant_rule_inactive';
-				$rules_mode               = self::get_visibility_rules_mode( $settings );
+				$rules_mode               = self::get_visibility_rules_mode( $settings, null );
 				$visibility_show          = function_exists( 'rwgc_visibility_mode_allows_render' )
 					? rwgc_visibility_mode_allows_render( $rules_mode, false )
 					: false;
@@ -242,7 +265,8 @@ class RWGC_Targeting_Surface_Evaluator {
 				$result['reason'] = 'visibility_rules_empty';
 			}
 			$result['portable_match'] = $portable_match;
-			$rules_mode               = self::get_visibility_rules_mode( $settings );
+			$rules_mode               = self::get_visibility_rules_mode( $settings, is_array( $set ) ? $set : null );
+			$result['visibility_mode'] = $rules_mode;
 			$visibility_show          = function_exists( 'rwgc_visibility_mode_allows_render' )
 				? rwgc_visibility_mode_allows_render( $rules_mode, $portable_match )
 				: $portable_match;

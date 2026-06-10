@@ -28,10 +28,42 @@
 		return $inp.length ? $inp.first() : null;
 	}
 
+	function normalizeVisibilityMode(mode) {
+		var raw = String(mode || '').toLowerCase();
+		return raw === 'hide_if' || raw === 'hide' || raw === 'restrict' || raw === 'suppress' ? 'hide_if' : 'show_if';
+	}
+
+	function syncVisibilityModeControls($panel, mode) {
+		var normalized = normalizeVisibilityMode(mode);
+		var $rulesMode = $panel.find('.elementor-control-rwgc_visibility_rules_mode select');
+		if ($rulesMode.length && $rulesMode.val() !== normalized) {
+			$rulesMode.val(normalized).trigger('change');
+		}
+		var $legacy = $panel.find('.elementor-control-rwgc_visibility_mode input');
+		if ($legacy.length) {
+			$legacy.val(normalized).trigger('input').trigger('change');
+		}
+	}
+
+	function syncVisibilityModeFromJson($panel, json) {
+		if (!json) {
+			return;
+		}
+		try {
+			var doc = typeof json === 'string' ? JSON.parse(json) : json;
+			if (doc && doc.mode) {
+				syncVisibilityModeControls($panel, doc.mode);
+			}
+		} catch (e) {
+			/* ignore invalid JSON */
+		}
+	}
+
 	function applyLibraryJson($panel, json) {
 		if (!json) {
 			return;
 		}
+		syncVisibilityModeFromJson($panel, json);
 		var $ta = portableTextarea($panel);
 		if (!$ta || !$ta.length) {
 			return;

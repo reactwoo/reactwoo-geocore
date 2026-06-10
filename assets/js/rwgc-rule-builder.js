@@ -1634,11 +1634,35 @@
 				allowAllConditionTypes: !!(c.advanced_targeting || c.pro),
 				getMode: function () {
 					if (pair.modeSel && pair.modeSel.length) {
-						return pair.modeSel.val() || 'show';
+						return pair.modeSel.val() || 'show_if';
 					}
-					return 'show';
+					return 'show_if';
+				},
+				setMode: function (mode) {
+					var normalized = mode === 'hide_if' || mode === 'hide' ? 'hide_if' : 'show_if';
+					if (pair.modeSel && pair.modeSel.length && pair.modeSel.val() !== normalized) {
+						pair.modeSel.val(normalized).trigger('change');
+					}
+					var $panel = $('#elementor-panel-inner');
+					var $legacy = $panel.find('.elementor-control-rwgc_visibility_mode input');
+					if ($legacy.length) {
+						$legacy.val(normalized).trigger('input').trigger('change');
+					}
 				},
 			});
+			if (window.ReactWooRuleBuilder && typeof window.ReactWooRuleBuilder.parseDoc === 'function') {
+				try {
+					var initial = window.ReactWooRuleBuilder.parseDoc(el.value || '');
+					if (initial && !initial.error && initial.mode && pair.modeSel && pair.modeSel.length) {
+						var initialMode = initial.mode === 'hide_if' || initial.mode === 'hide' ? 'hide_if' : 'show_if';
+						if (pair.modeSel.val() !== initialMode) {
+							pair.modeSel.val(initialMode).trigger('change');
+						}
+					}
+				} catch (e2) {
+					/* ignore */
+				}
+			}
 		}
 
 		$(window).on('elementor:init', function () {

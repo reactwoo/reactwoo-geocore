@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.44
+Stable tag: 1.8.45
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,10 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.45 =
+* **Elementor visibility:** Honor hide-when-rules-match from saved rule JSON, skip rendering hidden sections/containers via should_render, and sync visibility mode in the editor.
+* **LiteSpeed:** Country vary cookie (`rwgc_cc`) so full-page cache can serve geo-targeted Elementor HTML per visitor.
 
 = 1.8.44 =
 * **Rule builder:** Page version name field no longer re-renders on every keystroke while typing.

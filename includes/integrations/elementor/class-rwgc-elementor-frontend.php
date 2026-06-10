@@ -24,8 +24,62 @@ class RWGC_Elementor_Frontend {
 
 		$elements = array( 'section', 'column', 'container', 'widget' );
 		foreach ( $elements as $type ) {
+			add_filter( "elementor/frontend/{$type}/should_render", array( __CLASS__, 'filter_should_render' ), 10, 2 );
 			add_action( "elementor/frontend/{$type}/before_render", array( __CLASS__, 'before_render' ), 10, 1 );
 		}
+
+		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_styles' ), 20 );
+	}
+
+	/**
+	 * Backup CSS when inline render attributes are stripped by optimizers.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_styles() {
+		if ( ! wp_style_is( 'rwgc-elementor-frontend', 'registered' ) ) {
+			wp_register_style( 'rwgc-elementor-frontend', false, array(), defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.0.0' );
+		}
+		wp_enqueue_style( 'rwgc-elementor-frontend' );
+		wp_add_inline_style(
+			'rwgc-elementor-frontend',
+			'.elementor-element.rwgc-geo-element-hidden{display:none!important;visibility:hidden!important;}'
+		);
+	}
+
+	/**
+	 * Skip rendering geo-hidden elements (preferred over display:none for flex rows/containers).
+	 *
+	 * @param bool                    $should_render Elementor default.
+	 * @param \Elementor\Element_Base $element       Element.
+	 * @return bool
+	 */
+	public static function filter_should_render( $should_render, $element ) {
+		if ( ! $should_render || ! is_object( $element ) || ! method_exists( $element, 'get_settings_for_display' ) ) {
+			return (bool) $should_render;
+		}
+
+		if ( function_exists( 'rwgc_is_builder_edit_request' ) && rwgc_is_builder_edit_request() ) {
+			return true;
+		}
+
+		$settings = $element->get_settings_for_display();
+		if ( ! is_array( $settings ) ) {
+			return (bool) $should_render;
+		}
+		if ( class_exists( 'RWGC_Surface_Settings', false ) ) {
+			$settings = RWGC_Surface_Settings::normalize( $settings );
+		}
+
+		if ( class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
+			if ( ! RWGC_Targeting_Surface_Evaluator::is_surface_active( $settings ) ) {
+				return (bool) $should_render;
+			}
+		} elseif ( empty( $settings['egp_geo_enabled'] ) || 'yes' !== (string) $settings['egp_geo_enabled'] ) {
+			return (bool) $should_render;
+		}
+
+		return self::settings_should_render( $settings );
 	}
 
 	/**
