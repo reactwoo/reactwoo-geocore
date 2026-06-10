@@ -33,16 +33,39 @@ class RWGC_Page_Version_Routing {
 	private static $raw_request_uri = '';
 
 	/**
+	 * @var bool
+	 */
+	private static $early_bootstrapped = false;
+
+	/**
+	 * Capture inbound URI and block canonical redirects as early as the plugin file loads.
+	 *
 	 * @return void
 	 */
-	public static function init() {
-		add_action( 'plugins_loaded', array( __CLASS__, 'capture_raw_request_uri' ), 0 );
-		add_action( 'init', array( __CLASS__, 'register_rewrites' ), 5 );
-		add_filter( 'query_vars', array( __CLASS__, 'register_query_var' ) );
-		add_filter( 'request', array( __CLASS__, 'filter_request' ), 1 );
+	public static function bootstrap_early() {
+		if ( self::$early_bootstrapped ) {
+			return;
+		}
+		self::$early_bootstrapped = true;
+		self::capture_raw_request_uri();
+
+		if ( is_admin() && ! wp_doing_ajax() ) {
+			return;
+		}
+
 		add_filter( 'redirect_canonical', array( __CLASS__, 'filter_redirect_canonical' ), 1, 2 );
 		add_filter( 'wp_redirect', array( __CLASS__, 'filter_wp_redirect' ), 1, 2 );
 		add_action( 'template_redirect', array( __CLASS__, 'maybe_disable_canonical_redirect' ), 0 );
+	}
+
+	/**
+	 * @return void
+	 */
+	public static function init() {
+		self::bootstrap_early();
+		add_action( 'init', array( __CLASS__, 'register_rewrites' ), 5 );
+		add_filter( 'query_vars', array( __CLASS__, 'register_query_var' ) );
+		add_filter( 'request', array( __CLASS__, 'filter_request' ), 1 );
 		add_action( 'pre_get_posts', array( __CLASS__, 'pre_get_posts' ), 1 );
 		add_action( 'wp', array( __CLASS__, 'reset_context_snapshot_cache' ), 1 );
 		add_filter( 'rwgc_context_snapshot_values', array( __CLASS__, 'filter_snapshot_values' ), 20 );
@@ -61,7 +84,7 @@ class RWGC_Page_Version_Routing {
 		}
 
 		$candidates = array();
-		foreach ( array( 'HTTP_X_ORIGINAL_URL', 'HTTP_X_REWRITE_URL', 'REDIRECT_URL', 'REQUEST_URI' ) as $key ) {
+		foreach ( array( 'HTTP_X_ORIGINAL_URL', 'HTTP_X_REWRITE_URL', 'REDIRECT_URL', 'UNENCODED_URL', 'REQUEST_URI' ) as $key ) {
 			if ( empty( $_SERVER[ $key ] ) ) {
 				continue;
 			}
