@@ -1,13 +1,13 @@
-#woocommerce-product-data ul.wc-tabs li.geocore_options a::before {
+#woocommerce-product-data ul.wc-tabs li.rwgc_geocore_options a::before {
 	content: "\f230";
 	font-family: dashicons;
 }
 
-.rwgc-product-geocore-tab {
+#rwgc_geocore_product_data.rwgc-product-geocore-tab {
 	padding: 12px 16px 4px;
 }
 
-.rwgc-product-geocore-card {
+#rwgc_geocore_product_data .rwgc-product-geocore-card {
 	margin: 0 0 14px;
 	padding: 14px 16px;
 	background: #fff;
@@ -16,59 +16,109 @@
 	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.02);
 }
 
-.rwgc-product-geocore-card__title {
+#rwgc_geocore_product_data .rwgc-product-geocore-card__title {
 	margin: 0 0 4px;
 	font-size: 13px;
 	font-weight: 600;
 }
 
-.rwgc-product-geocore-card__desc {
+#rwgc_geocore_product_data .rwgc-product-geocore-card__desc {
 	margin: 0 0 10px !important;
 }
 
-.rwgc-product-geocore-card__body .form-field {
-	margin: 0 0 10px;
+/* Reset WooCommerce .form-field float layout inside our tab. */
+#rwgc_geocore_product_data .form-field,
+#rwgc_geocore_product_data .rwgc-product-field {
+	float: none;
+	width: 100%;
+	margin: 0 0 12px;
 	padding: 0;
+	clear: both;
 }
 
-.rwgc-product-geo-mode__option,
-.rwgc-product-boost__option {
-	display: block;
+#rwgc_geocore_product_data .form-field::before,
+#rwgc_geocore_product_data .form-field::after {
+	display: none;
+}
+
+#rwgc_geocore_product_data label,
+#rwgc_geocore_product_data .rwgc-product-field__label {
+	float: none !important;
+	width: auto !important;
 	margin: 0 0 6px;
+	padding: 0;
+	display: block;
 }
 
-.rwgc-product-weather-grid {
+#rwgc_geocore_product_data select,
+#rwgc_geocore_product_data input[type="text"],
+#rwgc_geocore_product_data .rwgc-product-rule-select,
+#rwgc_geocore_product_data .rwgc-product-country-select {
+	float: none;
+	width: 100%;
+	max-width: 420px;
+}
+
+#rwgc_geocore_product_data .rwgc-product-radio-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0;
+}
+
+#rwgc_geocore_product_data .rwgc-product-radio-list__item {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.4;
+	font-weight: 400;
+}
+
+#rwgc_geocore_product_data .rwgc-product-radio-list__item input {
+	margin: 2px 0 0;
+	flex: 0 0 auto;
+}
+
+#rwgc_geocore_product_data .rwgc-product-radio-list__item span {
+	flex: 1 1 auto;
+}
+
+#rwgc_geocore_product_data .rwgc-product-weather-grid {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 6px 14px;
+	gap: 8px 14px;
 	margin: 8px 0 0;
 }
 
-.rwgc-product-weather-grid__item {
+#rwgc_geocore_product_data .rwgc-product-weather-grid__item {
 	display: flex;
 	align-items: flex-start;
 	gap: 6px;
 	margin: 0;
 	font-size: 12px;
 	line-height: 1.35;
+	font-weight: 400;
 }
 
-.rwgc-preview-weather-grid {
+#rwgc_geocore_product_data .rwgc-preview-weather-grid {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: 6px 14px;
+	gap: 8px 14px;
 	margin: 0 0 10px;
 }
 
-.rwgc-preview-weather-grid__item {
+#rwgc_geocore_product_data .rwgc-preview-weather-grid__item {
 	display: flex;
 	align-items: flex-start;
 	gap: 6px;
 	margin: 0;
 	font-size: 12px;
+	font-weight: 400;
 }
 
-.rwgc-preview-badge {
+#rwgc_geocore_product_data .rwgc-preview-badge {
 	display: inline-block;
 	padding: 2px 8px;
 	border-radius: 3px;
@@ -78,34 +128,34 @@
 	vertical-align: middle;
 }
 
-.rwgc-preview-badge--visible {
+#rwgc_geocore_product_data .rwgc-preview-badge--visible {
 	background: #d5f2d8;
 	color: #0a5c12;
 }
 
-.rwgc-preview-badge--hidden {
+#rwgc_geocore_product_data .rwgc-preview-badge--hidden {
 	background: #f8d7da;
 	color: #8a2424;
 }
 
-.rwgc-preview-badge--boosted {
+#rwgc_geocore_product_data .rwgc-preview-badge--boosted {
 	background: #dbeafe;
 	color: #1e40af;
 }
 
-.rwgc-preview-badge--no-weather {
+#rwgc_geocore_product_data .rwgc-preview-badge--no-weather {
 	background: #f0f0f1;
 	color: #50575e;
 }
 
-.rwgc-preview-badge--neutral {
+#rwgc_geocore_product_data .rwgc-preview-badge--neutral {
 	background: #f0f0f1;
 	color: #50575e;
 }
 
 @media (max-width: 960px) {
-	.rwgc-product-weather-grid,
-	.rwgc-preview-weather-grid {
+	#rwgc_geocore_product_data .rwgc-product-weather-grid,
+	#rwgc_geocore_product_data .rwgc-preview-weather-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 }

@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.53
+Stable tag: 1.8.54
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,10 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.54 =
+* **WooCommerce GeoCore tab:** Fix product data tab layout (reset WC float styles), unique panel id, and first-click tab behaviour.
+* **WooCommerce GeoCore tab:** Card sections for weather, geo targeting, catalogue boost, and storefront preview with extension hooks.
 
 = 1.8.53 =
 * **Rule builder:** Expose **Shopping weather** when GeoCore Pro BYOK weather is connected (Elementor, Geo Content block, Commerce portable rules) without requiring advanced targeting mode.

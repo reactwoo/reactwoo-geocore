@@ -147,11 +147,11 @@
 	}
 
 	$(function () {
-		if (!$('#geocore_product_data').length) {
+		if (!$('#rwgc_geocore_product_data').length) {
 			return;
 		}
 
-		$('#geocore_product_data').on('change', 'input, select', updatePreview);
+		$('#rwgc_geocore_product_data').on('change', 'input, select', updatePreview);
 		$('input[name="_geocore_product_geo_mode"]').on('change', toggleGeoCountryField);
 		$('#_geocore_product_rule_id').on('change', toggleRuleModeField);
 		$('#rwgc-preview-simulate-weather').on('change', function () {

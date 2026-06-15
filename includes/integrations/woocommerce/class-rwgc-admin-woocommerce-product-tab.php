@@ -32,9 +32,9 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 	 * @return array<string, array<string, mixed>>
 	 */
 	public static function register_tab( $tabs ) {
-		$tabs['geocore'] = array(
+		$tabs['rwgc_geocore'] = array(
 			'label'    => __( 'GeoCore', 'reactwoo-geocore' ),
-			'target'   => 'geocore_product_data',
+			'target'   => 'rwgc_geocore_product_data',
 			'class'    => array(),
 			'priority' => 65,
 		);
@@ -48,7 +48,7 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 		global $post;
 		$post_id = ( $post instanceof WP_Post ) ? (int) $post->ID : 0;
 
-		echo '<div id="geocore_product_data" class="panel woocommerce_options_panel hidden rwgc-product-geocore-tab">';
+		echo '<div id="rwgc_geocore_product_data" class="panel woocommerce_options_panel rwgc-product-geocore-tab">';
 
 		self::render_section_open(
 			'weather',
@@ -127,26 +127,27 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 		$visibility_mode  = RWGC_Product_Meta::get_visibility_mode( $post_id );
 		$selected_rule_id = ! empty( $rule_ids ) ? (int) $rule_ids[0] : 0;
 
-		echo '<fieldset class="form-field rwgc-product-geo-mode">';
-		echo '<legend><strong>' . esc_html__( 'Product visibility by location', 'reactwoo-geocore' ) . '</strong></legend>';
+		echo '<div class="rwgc-product-field rwgc-product-geo-mode">';
+		echo '<p class="rwgc-product-field__label"><strong>' . esc_html__( 'Product visibility by location', 'reactwoo-geocore' ) . '</strong></p>';
 		$modes = array(
 			RWGC_Product_Meta::GEO_MODE_GLOBAL       => __( 'Use global GeoCore rules', 'reactwoo-geocore' ),
 			RWGC_Product_Meta::GEO_MODE_HIDE_IN      => __( 'Hide this product in selected countries', 'reactwoo-geocore' ),
 			RWGC_Product_Meta::GEO_MODE_SHOW_ONLY_IN => __( 'Show this product only in selected countries', 'reactwoo-geocore' ),
 		);
+		echo '<div class="rwgc-product-radio-list">';
 		foreach ( $modes as $value => $label ) {
 			printf(
-				'<label class="rwgc-product-geo-mode__option"><input type="radio" name="_geocore_product_geo_mode" value="%1$s" %2$s /> %3$s</label>',
+				'<label class="rwgc-product-radio-list__item"><input type="radio" name="_geocore_product_geo_mode" value="%1$s" %2$s /><span>%3$s</span></label>',
 				esc_attr( $value ),
 				checked( $geo_mode, $value, false ),
 				esc_html( $label )
 			);
 		}
-		echo '</fieldset>';
+		echo '</div></div>';
 
 		$country_style = RWGC_Product_Meta::GEO_MODE_GLOBAL === $geo_mode ? ' style="display:none;"' : '';
-		echo '<p class="form-field rwgc-product-countries-wrap"' . $country_style . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo '<label for="_geocore_product_countries"><strong>' . esc_html__( 'Countries / regions', 'reactwoo-geocore' ) . '</strong></label><br />';
+		echo '<div class="rwgc-product-field rwgc-product-countries-wrap"' . $country_style . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<label class="rwgc-product-field__label" for="_geocore_product_countries"><strong>' . esc_html__( 'Countries / regions', 'reactwoo-geocore' ) . '</strong></label>';
 		if ( class_exists( 'RWGC_Experience_Workflow', false ) ) {
 			RWGC_Experience_Workflow::render_country_multi_select(
 				'_geocore_product_countries',
@@ -158,10 +159,10 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 				)
 			);
 		}
-		echo '</p>';
+		echo '</div>';
 
-		echo '<p class="form-field">';
-		echo '<label for="_geocore_product_rule_id"><strong>' . esc_html__( 'Attach existing GeoCore rule', 'reactwoo-geocore' ) . '</strong></label>';
+		echo '<div class="rwgc-product-field">';
+		echo '<label class="rwgc-product-field__label" for="_geocore_product_rule_id"><strong>' . esc_html__( 'Attach existing GeoCore rule', 'reactwoo-geocore' ) . '</strong></label>';
 		echo '<select name="_geocore_product_rule_id" id="_geocore_product_rule_id" class="rwgc-product-rule-select">';
 		echo '<option value="">' . esc_html__( '— None —', 'reactwoo-geocore' ) . '</option>';
 		foreach ( self::get_rule_options() as $rule_id => $rule_label ) {
@@ -173,21 +174,22 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 			);
 		}
 		echo '</select>';
-		echo '</p>';
+		echo '</div>';
 
-		echo '<p class="form-field rwgc-product-rule-mode-wrap"' . ( $selected_rule_id > 0 ? '' : ' style="display:none;"' ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo '<label><strong>' . esc_html__( 'Attached rule visibility', 'reactwoo-geocore' ) . '</strong></label><br />';
+		echo '<div class="rwgc-product-field rwgc-product-rule-mode-wrap"' . ( $selected_rule_id > 0 ? '' : ' style="display:none;"' ) . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<p class="rwgc-product-field__label"><strong>' . esc_html__( 'Attached rule visibility', 'reactwoo-geocore' ) . '</strong></p>';
+		echo '<div class="rwgc-product-radio-list">';
 		printf(
-			'<label><input type="radio" name="_geocore_product_visibility_mode" value="show_if" %1$s /> %2$s</label> ',
+			'<label class="rwgc-product-radio-list__item"><input type="radio" name="_geocore_product_visibility_mode" value="show_if" %1$s /><span>%2$s</span></label>',
 			checked( $visibility_mode, 'show_if', false ),
 			esc_html__( 'Show when rule matches', 'reactwoo-geocore' )
 		);
 		printf(
-			'<label><input type="radio" name="_geocore_product_visibility_mode" value="hide_if" %1$s /> %2$s</label>',
+			'<label class="rwgc-product-radio-list__item"><input type="radio" name="_geocore_product_visibility_mode" value="hide_if" %1$s /><span>%2$s</span></label>',
 			checked( $visibility_mode, 'hide_if', false ),
 			esc_html__( 'Hide when rule matches', 'reactwoo-geocore' )
 		);
-		echo '</p>';
+		echo '</div></div>';
 	}
 
 	/**
@@ -222,16 +224,16 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 			RWGC_Product_Meta::BOOST_YES     => __( 'Enable weather catalogue boost for this product', 'reactwoo-geocore' ),
 			RWGC_Product_Meta::BOOST_NO      => __( 'Exclude from weather catalogue boost', 'reactwoo-geocore' ),
 		);
-		echo '<p class="form-field">';
+		echo '<div class="rwgc-product-radio-list">';
 		foreach ( $choices as $value => $label ) {
 			printf(
-				'<label class="rwgc-product-boost__option"><input type="radio" name="_geocore_product_boost_enabled" value="%1$s" %2$s /> %3$s</label>',
+				'<label class="rwgc-product-radio-list__item"><input type="radio" name="_geocore_product_boost_enabled" value="%1$s" %2$s /><span>%3$s</span></label>',
 				esc_attr( $value ),
 				checked( $boost, $value, false ),
 				esc_html( $label )
 			);
 		}
-		echo '</p>';
+		echo '</div>';
 		if ( class_exists( 'RWGCM_Admin', false ) ) {
 			$url = admin_url( 'admin.php?page=rwgcm-merchandising' );
 			echo '<p class="description"><a href="' . esc_url( $url ) . '">' . esc_html__( 'Geo Commerce merchandising settings', 'reactwoo-geocore' ) . '</a></p>';
@@ -246,8 +248,8 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 		unset( $post_id );
 		$visitor_country = function_exists( 'rwgc_get_visitor_country' ) ? strtoupper( (string) rwgc_get_visitor_country() ) : '';
 
-		echo '<p class="form-field">';
-		echo '<label for="rwgc-preview-visitor-country"><strong>' . esc_html__( 'Simulate visitor location', 'reactwoo-geocore' ) . '</strong></label><br />';
+		echo '<div class="rwgc-product-field">';
+		echo '<label class="rwgc-product-field__label" for="rwgc-preview-visitor-country"><strong>' . esc_html__( 'Simulate visitor location', 'reactwoo-geocore' ) . '</strong></label>';
 		if ( class_exists( 'RWGC_Admin', false ) ) {
 			RWGC_Admin::render_country_select(
 				'rwgc_preview_visitor_country',
@@ -266,12 +268,12 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 				)
 			);
 		}
-		echo '</p>';
+		echo '</div>';
 
-		echo '<p class="form-field">';
-		echo '<label><input type="checkbox" id="rwgc-preview-simulate-weather" value="1" /> ';
+		echo '<div class="rwgc-product-field rwgc-product-field--inline">';
+		echo '<label class="rwgc-product-radio-list__item"><input type="checkbox" id="rwgc-preview-simulate-weather" value="1" /><span>';
 		echo esc_html__( 'Simulate visitor weather', 'reactwoo-geocore' );
-		echo '</label></p>';
+		echo '</span></label></div>';
 
 		echo '<div class="rwgc-preview-weather-grid" id="rwgc-preview-weather-grid" style="display:none;">';
 		$facets = self::get_weather_facet_labels();
@@ -284,10 +286,10 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 		}
 		echo '</div>';
 
-		echo '<p class="form-field rwgc-preview-result-wrap">';
-		echo '<strong>' . esc_html__( 'Preview result', 'reactwoo-geocore' ) . '</strong> ';
+		echo '<div class="rwgc-product-field rwgc-preview-result-wrap">';
+		echo '<span class="rwgc-product-field__label"><strong>' . esc_html__( 'Preview result', 'reactwoo-geocore' ) . '</strong></span> ';
 		echo '<span id="rwgc-preview-status-badge" class="rwgc-preview-badge rwgc-preview-badge--neutral">' . esc_html__( '—', 'reactwoo-geocore' ) . '</span>';
-		echo '</p>';
+		echo '</div>';
 		echo '<p id="rwgc-preview-status-detail" class="description"></p>';
 	}
 
@@ -353,10 +355,15 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 			RWGC_VERSION
 		);
 
+		$deps = array( 'jquery' );
+		if ( wp_script_is( 'woocommerce_admin', 'registered' ) ) {
+			$deps[] = 'woocommerce_admin';
+		}
+
 		wp_enqueue_script(
 			'rwgc-product-geocore-preview',
 			RWGC_URL . 'assets/js/admin-product-geocore-preview.js',
-			array( 'jquery' ),
+			$deps,
 			RWGC_VERSION,
 			true
 		);
