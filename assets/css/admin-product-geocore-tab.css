@@ -1,0 +1,111 @@
+#woocommerce-product-data ul.wc-tabs li.geocore_options a::before {
+	content: "\f230";
+	font-family: dashicons;
+}
+
+.rwgc-product-geocore-tab {
+	padding: 12px 16px 4px;
+}
+
+.rwgc-product-geocore-card {
+	margin: 0 0 14px;
+	padding: 14px 16px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.02);
+}
+
+.rwgc-product-geocore-card__title {
+	margin: 0 0 4px;
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.rwgc-product-geocore-card__desc {
+	margin: 0 0 10px !important;
+}
+
+.rwgc-product-geocore-card__body .form-field {
+	margin: 0 0 10px;
+	padding: 0;
+}
+
+.rwgc-product-geo-mode__option,
+.rwgc-product-boost__option {
+	display: block;
+	margin: 0 0 6px;
+}
+
+.rwgc-product-weather-grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 6px 14px;
+	margin: 8px 0 0;
+}
+
+.rwgc-product-weather-grid__item {
+	display: flex;
+	align-items: flex-start;
+	gap: 6px;
+	margin: 0;
+	font-size: 12px;
+	line-height: 1.35;
+}
+
+.rwgc-preview-weather-grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 6px 14px;
+	margin: 0 0 10px;
+}
+
+.rwgc-preview-weather-grid__item {
+	display: flex;
+	align-items: flex-start;
+	gap: 6px;
+	margin: 0;
+	font-size: 12px;
+}
+
+.rwgc-preview-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.5;
+	vertical-align: middle;
+}
+
+.rwgc-preview-badge--visible {
+	background: #d5f2d8;
+	color: #0a5c12;
+}
+
+.rwgc-preview-badge--hidden {
+	background: #f8d7da;
+	color: #8a2424;
+}
+
+.rwgc-preview-badge--boosted {
+	background: #dbeafe;
+	color: #1e40af;
+}
+
+.rwgc-preview-badge--no-weather {
+	background: #f0f0f1;
+	color: #50575e;
+}
+
+.rwgc-preview-badge--neutral {
+	background: #f0f0f1;
+	color: #50575e;
+}
+
+@media (max-width: 960px) {
+	.rwgc-product-weather-grid,
+	.rwgc-preview-weather-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}

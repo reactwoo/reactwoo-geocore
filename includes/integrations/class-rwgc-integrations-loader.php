@@ -25,6 +25,14 @@ class RWGC_Integrations_Loader {
 		require_once RWGC_PATH . 'includes/integrations/gutenberg/class-rwgc-gutenberg-post-geo.php';
 		require_once RWGC_PATH . 'includes/integrations/class-rwgc-cache-compat.php';
 
+		if ( function_exists( 'rwgc_is_woocommerce_active' ) && rwgc_is_woocommerce_active() ) {
+			require_once RWGC_PATH . 'includes/integrations/woocommerce/class-rwgc-product-meta.php';
+			require_once RWGC_PATH . 'includes/integrations/woocommerce/class-rwgc-product-visibility.php';
+			require_once RWGC_PATH . 'includes/integrations/woocommerce/class-rwgc-admin-woocommerce-product-tab.php';
+			RWGC_Admin_WooCommerce_Product_Tab::init();
+			RWGC_Product_Visibility::init();
+		}
+
 		RWGC_Cache_Compat::init();
 		RWGC_Elementor_Elements::init();
 		RWGC_Elementor_Frontend::init();

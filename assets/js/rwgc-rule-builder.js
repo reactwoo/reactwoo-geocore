@@ -14,7 +14,9 @@
 	}
 
 	function ctx() {
-		var c = window.rwgcRuleBuilderContext || window.rwgcPortableTargetingAssist || {};
+		var base = window.rwgcRuleBuilderContext || {};
+		var assist = window.rwgcPortableTargetingAssist || {};
+		var c = Object.assign({}, base, assist);
 		if (typeof c !== 'object' || !c) {
 			c = {};
 		}
@@ -69,6 +71,33 @@
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Whether a condition type appears in the "When" picker.
+	 * Shopping weather is a baseline merchandising field when BYOK weather is connected.
+	 */
+	function fieldAllowedInPicker(fd, c, options) {
+		if (!fd) {
+			return false;
+		}
+		if (fd.requiresWeather) {
+			return !!c.weather_connected;
+		}
+		if (fd.key === 'country') {
+			return true;
+		}
+		if (fd.pro && !c.pro) {
+			return false;
+		}
+		if (!c.advanced_targeting && !options.isPlayground && !options.allowAllConditionTypes) {
+			return false;
+		}
+		return true;
+	}
+
+	function defaultAllowAllConditionTypes(c) {
+		return !!(c.advanced_targeting || c.pro || c.weather_connected);
 	}
 
 	function uiLabelForField(key) {
@@ -844,6 +873,11 @@
 	}
 
 	function mount(options) {
+		options = options || {};
+		var c = ctx();
+		if (options.allowAllConditionTypes === undefined) {
+			options.allowAllConditionTypes = defaultAllowAllConditionTypes(c);
+		}
 		var textarea = options.textarea;
 		if (!textarea || textarea.getAttribute('data-rwgc-rb-mounted')) {
 			return;
@@ -994,7 +1028,7 @@
 				root.appendChild(libPicker);
 			}
 
-			if (!c.advanced_targeting && !options.isPlayground && !options.allowAllConditionTypes) {
+			if (!c.advanced_targeting && !options.isPlayground && !options.allowAllConditionTypes && !c.weather_connected) {
 				var advNote = document.createElement('p');
 				advNote.className = 'description rwgc-rb__advanced-notice';
 				advNote.textContent = t('advancedTargetingNotice');
@@ -1228,18 +1262,7 @@
 			var fs = document.createElement('select');
 			fs.innerHTML = '<option value="">' + escapeHtml('—') + '</option>';
 			FIELD_DEFS.forEach(function (fd) {
-				if (
-					fd.key !== 'country' &&
-					!c.advanced_targeting &&
-					!options.isPlayground &&
-					!options.allowAllConditionTypes
-				) {
-					return;
-				}
-				if (fd.pro && !c.pro) {
-					return;
-				}
-				if (fd.requiresWeather && !c.weather_connected) {
+				if (!fieldAllowedInPicker(fd, c, options)) {
 					return;
 				}
 				var o = document.createElement('option');
@@ -1726,7 +1749,7 @@
 			mount({
 				textarea: el,
 				observeMode: true,
-				allowAllConditionTypes: !!(c.advanced_targeting || c.pro),
+				allowAllConditionTypes: defaultAllowAllConditionTypes(c),
 				getMode: function () {
 					if (pair.modeSel && pair.modeSel.length) {
 						return pair.modeSel.val() || 'show_if';

@@ -56,6 +56,17 @@ class RWGC_Targeting_Rule_Builder_Assets {
 			'rwgcRuleBuilderI18n',
 			self::get_js_strings()
 		);
+	}
+
+	/**
+	 * Fresh editor context (weather facets, Pro sync lists) when the script is enqueued.
+	 *
+	 * @return void
+	 */
+	public static function localize_editor_context() {
+		if ( ! wp_script_is( self::SCRIPT_HANDLE, 'registered' ) ) {
+			return;
+		}
 		$ctx = function_exists( 'rwgc_get_portable_targeting_editor_context' ) ? rwgc_get_portable_targeting_editor_context() : array();
 		wp_localize_script(
 			self::SCRIPT_HANDLE,
@@ -152,7 +163,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 			'libraryLabel'         => __( 'Apply saved visibility rule', 'reactwoo-geocore' ),
 			'libraryNone'          => __( '— Choose from library —', 'reactwoo-geocore' ),
 			'libraryHelp'          => __( 'Portable library rules only (Targeting → Visibility rules). You can still edit conditions after applying.', 'reactwoo-geocore' ),
-			'advancedTargetingNotice' => __( 'Additional condition types require GeoCore Pro. Country targeting is always available.', 'reactwoo-geocore' ),
+			'advancedTargetingNotice' => __( 'Additional condition types require GeoCore Pro. Country and shopping weather (when configured) are always available.', 'reactwoo-geocore' ),
 		);
 	}
 
@@ -205,6 +216,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 	 */
 	public static function enqueue_elementor() {
 		self::register_scripts();
+		self::localize_editor_context();
 		wp_enqueue_style( self::STYLE_HANDLE );
 		wp_enqueue_script( self::SCRIPT_HANDLE );
 	}
@@ -214,6 +226,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 	 */
 	public static function enqueue_block_editor() {
 		self::register_scripts();
+		self::localize_editor_context();
 		wp_enqueue_style( self::STYLE_HANDLE );
 		wp_enqueue_script( self::SCRIPT_HANDLE );
 	}
@@ -225,6 +238,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 	 */
 	public static function enqueue_admin() {
 		self::register_scripts();
+		self::localize_editor_context();
 		wp_enqueue_style( self::STYLE_HANDLE );
 		wp_enqueue_script( self::SCRIPT_HANDLE );
 	}
