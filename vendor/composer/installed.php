@@ -3,7 +3,7 @@
         'name' => 'reactwoo/reactwoo-geocore',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '27f7e25f04eb67175302086515dafb1a1d006e6e',
+        'reference' => '79abe538c8cc16f6b6b5a015109a139248f0e09a',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -49,7 +49,7 @@
         'reactwoo/reactwoo-geocore' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '27f7e25f04eb67175302086515dafb1a1d006e6e',
+            'reference' => '79abe538c8cc16f6b6b5a015109a139248f0e09a',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

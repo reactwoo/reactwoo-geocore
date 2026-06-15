@@ -62,7 +62,15 @@ class RWGC_Context_Resolver {
 		$merged = self::apply_definition_resolve_callbacks( $merged );
 		$merged = is_array( $merged ) ? $merged : array();
 		$base   = new RWGC_Context_Snapshot( $merged );
-		return RWGC_Target_Simulator::apply_overrides( $base, $overrides );
+		$snap   = RWGC_Target_Simulator::apply_overrides( $base, $overrides );
+		/**
+		 * Filter preview snapshot after simulator overrides (weather facets, etc.).
+		 *
+		 * @param RWGC_Context_Snapshot $snap      Snapshot.
+		 * @param array<string, mixed>  $overrides Raw overrides from admin preview.
+		 */
+		$snap = apply_filters( 'rwgc_preview_context_snapshot', $snap, $overrides );
+		return $snap;
 	}
 
 	/**

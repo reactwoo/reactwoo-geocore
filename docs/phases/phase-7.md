@@ -35,3 +35,4 @@ Commerce-specific personalization on top of the shared engine.
 ## Next
 
 - Edge cases for third-party bundle/composite plugins — **`rwgcm_skip_pricing_for_cart_item`** and related hooks (master plan **§18**).
+- **Weather facets merchandising** — product tagging, catalog boost, Weather Products block/widget/shortcode; suite plan **`docs/WEATHER-FACETS-MERCHANDISING-PLAN.md`**; Commerce checklist **`reactwoo-geo-commerce/docs/WEATHER-MERCHANDISING.md`**.

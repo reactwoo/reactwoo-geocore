@@ -21,6 +21,8 @@
 | `docs/GEO-AI-SNAPSHOT.md` | Compact site intelligence snapshot for Geo AI cloud sync |
 | `docs/phases/phase-6.md` | Phase 6 (experiments / events) — Core hooks + REST; Geo Optimise owns assignment + stats |
 | `docs/phases/phase-7.md` | Phase 7 (Geo Commerce) — WooCommerce pricing rules + geo merge in satellite plugin |
+| `docs/WEATHER-FACETS-MERCHANDISING-PLAN.md` | Shopping-weather facets, Woo/Elementor/Gutenberg widgets, phased rollout |
+| `docs/TARGETING-RULES-PLAN.md` | Portable JSON visibility rules (Elementor, blocks, library) |
 
 **Master plan execution:** Geo Core phases **1–7** are **complete for engine/contracts** (see **§16**). **§17** records shipped satellite depth; **§18** is the rolling backlog. REST **`GET …/v1/capabilities`** includes **`satellites`** (`geo_ai`, `geo_optimise`, `geo_commerce`: `ready`, `version`) and **`integration.satellite_actions`** / **`satellite_filters`** (hook names for discovery).
 

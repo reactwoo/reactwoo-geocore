@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.51
+Stable tag: 1.8.52
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -79,7 +79,7 @@ No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (se
 
 == Changelog ==
 
-= 1.8.51 =
+= 1.8.52 =
 * **Page Version URLs:** Treat `REQUEST_URI` as authoritative on base URLs (`/`, `/about`, etc.) so hide/show rules are not polluted by stale server rewrite vars.
 * **LiteSpeed:** Vary full-page cache by page version (`rwgc_pv` cookie) so campaign `/_gc/{version}` HTML is not served on the default homepage URL.
 

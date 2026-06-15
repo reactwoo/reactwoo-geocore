@@ -53,6 +53,7 @@
 		{ key: 'utm_medium', portableType: 'utm_medium', pro: true, multi: false },
 		{ key: 'device_type', portableType: 'device_type', pro: false, multi: true },
 		{ key: 'logged_in', portableType: 'logged_in', pro: false, multi: false },
+		{ key: 'weather_facet', portableType: 'weather_facet', pro: true, multi: true, requiresWeather: true },
 	];
 
 	var DEVICE_OPTIONS = [
@@ -90,6 +91,8 @@
 				return t('fieldLoggedIn');
 			case 'page_version_url':
 				return t('fieldPageVersion');
+			case 'weather_facet':
+				return t('fieldWeatherFacet');
 			default:
 				return key;
 		}
@@ -107,6 +110,7 @@
 			device_type: 'device_type',
 			logged_in: 'logged_in',
 			page_version_url: 'page_version_url',
+			weather_facet: 'weather_facet',
 		};
 		return map[pt] || null;
 	}
@@ -492,6 +496,9 @@
 				}
 			}
 		}
+		if (field === 'weather_facet') {
+			return weatherFacetLabel(value, c);
+		}
 		return value;
 	}
 
@@ -565,6 +572,12 @@
 		if (row.field === 'device_type') {
 			return uiLabelForField(row.field) + ' ' + opw + ' ' + row.values.join(', ');
 		}
+		if (row.field === 'weather_facet') {
+			var wn = row.values.map(function (slug) {
+				return weatherFacetLabel(slug, c);
+			});
+			return uiLabelForField(row.field) + ' ' + opw + ' ' + wn.join(', ');
+		}
 		return uiLabelForField(row.field) + ' ' + opw + ' ' + row.values.join(', ');
 	}
 
@@ -586,6 +599,35 @@
 			}
 		}
 		return id;
+	}
+
+	function weatherFacetOptions(c) {
+		var list = c.weather_facets || [];
+		if (!list.length) {
+			return [
+				{ v: 'wet', l: 'Wet / raining' },
+				{ v: 'dry', l: 'Dry' },
+				{ v: 'hot', l: 'Hot' },
+				{ v: 'cold', l: 'Cold' },
+				{ v: 'mild', l: 'Mild / comfortable' },
+				{ v: 'windy', l: 'Windy' },
+				{ v: 'sunny', l: 'Sunny / bright' },
+			];
+		}
+		return list.map(function (row) {
+			return { v: String(row.slug || ''), l: String(row.label || row.slug || '') };
+		});
+	}
+
+	function weatherFacetLabel(slug, c) {
+		var s = String(slug || '');
+		var opts = weatherFacetOptions(c);
+		for (var i = 0; i < opts.length; i++) {
+			if (opts[i].v === s) {
+				return opts[i].l;
+			}
+		}
+		return s;
 	}
 
 	function campaignLabel(id, c) {
@@ -1197,6 +1239,9 @@
 				if (fd.pro && !c.pro) {
 					return;
 				}
+				if (fd.requiresWeather && !c.weather_connected) {
+					return;
+				}
 				var o = document.createElement('option');
 				o.value = fd.key;
 				o.textContent = uiLabelForField(fd.key);
@@ -1381,6 +1426,56 @@
 					writeTextareaFromState();
 				});
 				frag.appendChild(inp);
+				return frag;
+			}
+			if (row.field === 'weather_facet') {
+				if (!c.weather_connected) {
+					var wEmpty = document.createElement('div');
+					wEmpty.className = 'rwgc-rb__empty';
+					wEmpty.innerHTML = '<strong>' + escapeHtml(t('noWeatherTitle')) + '</strong>';
+					var wAct = document.createElement('div');
+					wAct.className = 'rwgc-rb__empty-actions';
+					var wu = c.help_urls || {};
+					if (wu.integrations_weather) {
+						wAct.innerHTML +=
+							'<a class="button button-small" href="' +
+							escapeHtml(wu.integrations_weather) +
+							'">' +
+							escapeHtml(t('connectWeather')) +
+							'</a>';
+					}
+					wEmpty.appendChild(wAct);
+					frag.appendChild(wEmpty);
+					return frag;
+				}
+				var wBox = document.createElement('div');
+				wBox.className = 'rwgc-rb__multi';
+				weatherFacetOptions(c).forEach(function (d) {
+					if (!d.v) {
+						return;
+					}
+					var lab = document.createElement('label');
+					var cb = document.createElement('input');
+					cb.type = 'checkbox';
+					cb.value = d.v;
+					cb.checked = row.values.indexOf(d.v) !== -1;
+					cb.addEventListener('change', function () {
+						if (cb.checked) {
+							if (row.values.indexOf(d.v) === -1) {
+								row.values.push(d.v);
+							}
+						} else {
+							row.values = row.values.filter(function (x) {
+								return x !== d.v;
+							});
+						}
+						writeTextareaFromState();
+					});
+					lab.appendChild(cb);
+					lab.appendChild(document.createTextNode(d.l));
+					wBox.appendChild(lab);
+				});
+				frag.appendChild(wBox);
 				return frag;
 			}
 			if (row.field === 'device_type') {

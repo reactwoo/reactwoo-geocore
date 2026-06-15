@@ -1,6 +1,6 @@
 <?php
 /**
- * Weather targets (placeholder provider; integration later).
+ * Weather targets — shopping facets when GeoCore Pro weather is configured.
  *
  * @package ReactWoo_Geo_Core
  */
@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Registers weather targets; values empty until a weather integration is configured.
+ * Registers shopping-weather facet targets for diagnostics and future simulators.
  */
 class RWGC_Target_Provider_Weather implements RWGC_Target_Provider_Interface {
 
@@ -34,28 +34,15 @@ class RWGC_Target_Provider_Weather implements RWGC_Target_Provider_Interface {
 	public function register_targets( RWGC_Target_Registry $registry ) {
 		$registry->register_target_type(
 			array(
-				'key'           => 'weather_condition',
-				'label'         => __( 'Weather condition', 'reactwoo-geocore' ),
-				'group'         => 'weather',
-				'description'   => __( 'Requires a weather integration (not configured).', 'reactwoo-geocore' ),
-				'operators'     => array( 'is', 'is_not', 'in', 'not_in' ),
-				'value_mode'    => 'single',
-				'provider'      => $this->get_provider_key(),
-				'supports_simulation' => true,
-				'is_available_callback' => array( __CLASS__, 'target_not_configured' ),
-			)
-		);
-		$registry->register_target_type(
-			array(
-				'key'           => 'temperature_band',
-				'label'         => __( 'Temperature band', 'reactwoo-geocore' ),
-				'group'         => 'weather',
-				'description'   => __( 'Requires a weather integration (not configured).', 'reactwoo-geocore' ),
-				'operators'     => array( 'is', 'between', 'greater_than', 'less_than' ),
-				'value_mode'    => 'single',
-				'provider'      => $this->get_provider_key(),
-				'supports_simulation' => true,
-				'is_available_callback' => array( __CLASS__, 'target_not_configured' ),
+				'key'                   => 'weather_facet',
+				'label'                 => __( 'Shopping weather', 'reactwoo-geocore' ),
+				'group'                 => 'weather',
+				'description'           => __( 'Wet, dry, hot, cold, windy, sunny — requires GeoCore Pro weather.', 'reactwoo-geocore' ),
+				'operators'             => array( 'in', 'not_in', 'is', 'is_not' ),
+				'value_mode'            => 'multi',
+				'provider'              => $this->get_provider_key(),
+				'supports_simulation'   => true,
+				'is_available_callback' => array( __CLASS__, 'weather_configured' ),
 			)
 		);
 	}
@@ -64,12 +51,8 @@ class RWGC_Target_Provider_Weather implements RWGC_Target_Provider_Interface {
 	 * @param array<string, mixed> $definition Definition.
 	 * @return bool
 	 */
-	public static function target_not_configured( $definition ) {
-		/**
-		 * Whether weather targets are configured (future integration).
-		 *
-		 * @param bool $configured Default false.
-		 */
+	public static function weather_configured( $definition ) {
+		unset( $definition );
 		return (bool) apply_filters( 'rwgc_weather_targets_configured', false );
 	}
 
@@ -77,19 +60,20 @@ class RWGC_Target_Provider_Weather implements RWGC_Target_Provider_Interface {
 	 * @inheritDoc
 	 */
 	public function resolve_context_values( array $base = array() ) {
-		$condition = '';
-		$band      = '';
+		$facets = array();
+		if ( isset( $base['weather'] ) && is_array( $base['weather'] ) && ! empty( $base['weather']['facets'] ) && is_array( $base['weather']['facets'] ) ) {
+			$facets = array_values( array_map( 'strval', $base['weather']['facets'] ) );
+		}
 		/**
-		 * Filter resolved weather context values.
+		 * Filter resolved weather facet values for targeting diagnostics.
 		 *
-		 * @param array{weather_condition?: string, temperature_band?: string} $values Values.
-		 * @param array<string, mixed> $base Merged base values.
+		 * @param array{weather_facet?: string[]} $values Facet slugs.
+		 * @param array<string, mixed>           $base   Merged base values.
 		 */
 		$filtered = apply_filters(
 			'rwgc_weather_context_values',
 			array(
-				'weather_condition' => $condition,
-				'temperature_band'  => $band,
+				'weather_facet' => $facets,
 			),
 			$base
 		);
@@ -104,7 +88,9 @@ class RWGC_Target_Provider_Weather implements RWGC_Target_Provider_Interface {
 		return array(
 			'label'  => __( 'Weather', 'reactwoo-geocore' ),
 			'state'  => $on ? 'ok' : 'warn',
-			'detail' => $on ? __( 'Weather provider connected.', 'reactwoo-geocore' ) : __( 'Not configured; targets register for future use.', 'reactwoo-geocore' ),
+			'detail' => $on
+				? __( 'Shopping weather facets available for targeting rules.', 'reactwoo-geocore' )
+				: __( 'Configure GeoCore Pro weather to enable shopping-weather rules.', 'reactwoo-geocore' ),
 		);
 	}
 }

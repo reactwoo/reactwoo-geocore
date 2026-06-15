@@ -742,11 +742,20 @@ class RWGC_Admin {
 		$overrides = array();
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only preview fields.
 		if ( ! empty( $_GET['rwgc_preview'] ) && '1' === (string) wp_unslash( $_GET['rwgc_preview'] ) ) {
-			$keys = array( 'country', 'language', 'locale', 'device_type', 'time_of_day', 'day_of_week', 'currency' );
+			$keys = array( 'country', 'language', 'locale', 'device_type', 'time_of_day', 'day_of_week', 'currency', 'weather_facet' );
 			foreach ( $keys as $k ) {
 				if ( isset( $_GET[ 'rwgc_' . $k ] ) ) {
 					$overrides[ $k ] = sanitize_text_field( wp_unslash( (string) $_GET[ 'rwgc_' . $k ] ) );
 				}
+			}
+			if ( isset( $_GET['rwgc_weather_facet'] ) && is_array( $_GET['rwgc_weather_facet'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				$parts = array_map(
+					static function ( $item ) {
+						return sanitize_key( (string) wp_unslash( $item ) );
+					},
+					wp_unslash( $_GET['rwgc_weather_facet'] ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				);
+				$overrides['weather_facet'] = implode( ',', array_filter( $parts ) );
 			}
 		}
 		$rwgc_preview_snapshot = function_exists( 'rwgc_resolve_preview_context' )

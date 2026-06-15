@@ -42,3 +42,7 @@ Portable JSON rule sets (`enabled`, `mode`, `match`, `rules[]` with nested `cond
 ## Schema example (reference)
 
 See product brief in task thread; stored keys: `schema_version`, `enabled`, `mode`, `match`, `rules`.
+
+## Weather facets (follow-up)
+
+Shopping-weather merchandising (`weather_facet` condition, product affinity, Woo/Elementor/Gutenberg widgets) is specified in **`docs/WEATHER-FACETS-MERCHANDISING-PLAN.md`**.

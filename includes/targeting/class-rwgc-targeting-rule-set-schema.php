@@ -44,6 +44,7 @@ class RWGC_Targeting_Rule_Set_Schema {
 		'time',
 		'day',
 		'date',
+		'weather_facet',
 		'weather_condition',
 		'temperature',
 		'precipitation_probability',
@@ -145,10 +146,16 @@ class RWGC_Targeting_Rule_Set_Schema {
 				'pro'         => true,
 				'description' => __( 'Clock-based windows using your selected timezone strategy.', 'reactwoo-geocore' ),
 			),
-			'weather_condition' => array(
-				'label'       => __( 'Weather', 'reactwoo-geocore' ),
+			'weather_facet' => array(
+				'label'       => __( 'Shopping weather', 'reactwoo-geocore' ),
 				'pro'         => true,
-				'description' => __( 'Normalized weather conditions (requires a BYOK weather provider).', 'reactwoo-geocore' ),
+				'description' => __( 'Wet, dry, hot, cold, windy, sunny — derived from your weather provider (GeoCore Pro).', 'reactwoo-geocore' ),
+			),
+			'weather_condition' => array(
+				'label'       => __( 'Weather (legacy)', 'reactwoo-geocore' ),
+				'pro'         => true,
+				'description' => __( 'Deprecated technical condition slug; prefer Shopping weather.', 'reactwoo-geocore' ),
+				'hidden'      => true,
 			),
 		);
 
@@ -331,8 +338,12 @@ class RWGC_Targeting_Rule_Set_Schema {
 			$library = RWGC_Visibility_Rule_Repository::get_library_picker_rows();
 		}
 
+		$weather_connected = (bool) apply_filters( 'rwgc_weather_targets_configured', false );
+
 		$base = array(
 			'pro'                  => self::is_pro_active(),
+			'weather_connected'    => $weather_connected,
+			'weather_facets'       => array(),
 			'site_url'             => home_url( '/' ),
 			'advanced_targeting'   => function_exists( 'rwgc_advanced_targeting_enabled' ) && rwgc_advanced_targeting_enabled(),
 			'visibility_library'   => $library,
