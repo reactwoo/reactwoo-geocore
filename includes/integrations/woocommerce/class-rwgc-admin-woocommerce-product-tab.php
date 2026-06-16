@@ -55,12 +55,7 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 			__( 'Weather Relevance', 'reactwoo-geocore' ),
 			__( 'Tag this product with the weather conditions it suits. GeoCore can use this for product boosts, recommendations, and weather-based merchandising.', 'reactwoo-geocore' )
 		);
-		/**
-		 * Render weather facet controls inside the GeoCore product tab.
-		 *
-		 * @param int $post_id Product ID.
-		 */
-		do_action( 'geocore_product_tab_weather', $post_id );
+		self::render_weather_section( $post_id );
 		do_action( 'geocore_product_tab_after_weather', $post_id );
 		self::render_section_close();
 
@@ -92,6 +87,32 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 		self::render_section_close();
 
 		echo '</div>';
+	}
+
+	/**
+	 * @param int $post_id Product ID.
+	 * @return void
+	 */
+	private static function render_weather_section( $post_id ) {
+		$post_id = absint( $post_id );
+
+		if ( class_exists( 'RWGCM_Admin_Product_Weather', false ) ) {
+			if ( method_exists( 'RWGCM_Admin_Product_Weather', 'render_weather_section' ) ) {
+				RWGCM_Admin_Product_Weather::render_weather_section( $post_id );
+				return;
+			}
+			if ( method_exists( 'RWGCM_Admin_Product_Weather', 'render_product_fields' ) ) {
+				RWGCM_Admin_Product_Weather::render_product_fields();
+				return;
+			}
+		}
+
+		/**
+		 * Render weather facet controls when Geo Commerce is unavailable.
+		 *
+		 * @param int $post_id Product ID.
+		 */
+		do_action( 'geocore_product_tab_weather', $post_id );
 	}
 
 	/**

@@ -3,6 +3,12 @@
 	font-family: dashicons;
 }
 
+/* Legacy Geo Commerce weather block still hooked to General on older builds. */
+#general_product_data .options_group.rwgcm-product-weather,
+#general_product_data .rwgcm-product-weather-suggest {
+	display: none !important;
+}
+
 #rwgc_geocore_product_data.rwgc-product-geocore-tab {
 	padding: 12px 16px 4px;
 }
@@ -100,6 +106,44 @@
 	font-size: 12px;
 	line-height: 1.35;
 	font-weight: 400;
+}
+
+/* Legacy Geo Commerce markup when bridged from General renderer. */
+#rwgc_geocore_product_data .options_group.rwgcm-product-weather {
+	padding: 0;
+	margin: 0;
+	border: 0;
+}
+
+#rwgc_geocore_product_data .rwgcm-product-weather .form-field,
+#rwgc_geocore_product_data .rwgcm-product-weather-facet {
+	float: none !important;
+	width: auto !important;
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+#rwgc_geocore_product_data .rwgcm-product-weather .rwgcm-product-weather-facet,
+#rwgc_geocore_product_data .rwgcm-product-weather-facet {
+	display: flex;
+	align-items: flex-start;
+	gap: 6px;
+}
+
+#rwgc_geocore_product_data .rwgcm-product-weather .form-field:first-child strong {
+	font-size: 13px;
+}
+
+#rwgc_geocore_product_data .rwgcm-weather-preview {
+	display: none;
+}
+
+#rwgc_geocore_product_data .rwgcm-product-weather .rwgcm-product-weather-facet,
+#rwgc_geocore_product_data p.rwgcm-product-weather-facet {
+	display: inline-flex;
+	width: calc(33.333% - 10px);
+	vertical-align: top;
+	margin: 0 10px 8px 0 !important;
 }
 
 #rwgc_geocore_product_data .rwgc-preview-weather-grid {
