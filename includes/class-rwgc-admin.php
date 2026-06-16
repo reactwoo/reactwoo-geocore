@@ -240,7 +240,7 @@ class RWGC_Admin {
 				'section'   => 'insights',
 				'route'     => 'insights-home',
 				'menu_slug' => 'rwgc-insights-hub',
-				'label'     => __( 'Overview', 'reactwoo-geocore' ),
+				'label'     => __( 'Capability map', 'reactwoo-geocore' ),
 				'order'     => 5,
 				'callback'  => array( 'RWGC_Admin_Section_Hubs', 'render_insights_hub' ),
 			)
@@ -416,6 +416,14 @@ class RWGC_Admin {
 			array( 'rwgc-design-system', 'rwgc-admin' ),
 			RWGC_VERSION
 		);
+		if ( false !== strpos( $hook, 'rwgc-insights-hub' ) ) {
+			wp_enqueue_style(
+				'rwgc-insights',
+				RWGC_URL . 'admin/css/rwgc-insights.css',
+				array( 'rwgc-suite' ),
+				RWGC_VERSION
+			);
+		}
 		if ( preg_match( '/(rwgc-suite-home|rwgc-getting-started|rwgc-workflow-variant|rwgc-suite-variants)/', $hook ) ) {
 			wp_enqueue_style(
 				'rwgc-suite-shell',

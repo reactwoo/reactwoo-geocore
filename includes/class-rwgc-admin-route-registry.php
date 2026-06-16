@@ -343,7 +343,7 @@ class RWGC_Admin_Route_Registry {
 				'menu_slug' => 'rwgc-insights-hub',
 				'section'   => 'insights',
 				'route'     => 'insights-home',
-				'label'     => __( 'Overview', 'reactwoo-geocore' ),
+				'label'     => __( 'Capability map', 'reactwoo-geocore' ),
 				'order'     => 5,
 			),
 			array(

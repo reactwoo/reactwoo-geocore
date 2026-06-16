@@ -97,6 +97,8 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-section-hubs.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-settings-nav.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-ui.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-insights.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-insights-ui.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-module-registry.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-onboarding.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-workflows.php';
@@ -188,6 +190,7 @@ class RWGC_Plugin {
 			RWGC_Platform_Sync_Status::init();
 			RWGC_Platform_Integrations::init();
 			RWGC_Suite_Admin::init();
+			RWGC_Insights::init();
 			RWGC_Admin::init();
 		}
 

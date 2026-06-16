@@ -1,0 +1,213 @@
+/**
+ * Capability + Intelligence Centre dashboard styles.
+ *
+ * @package ReactWooGeoCore
+ */
+
+.rwgc-insights-dashboard .rwgc-suite-page-header__subtitle {
+	max-width: 42rem;
+}
+
+.rwgc-insights-health {
+	margin: 1.25rem 0 1.75rem;
+}
+
+.rwgc-insights-health .rwgc-suite-stat-grid {
+	grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+}
+
+.rwgc-insights-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1.7fr) minmax(16rem, 0.9fr);
+	gap: 1.25rem;
+	margin-bottom: 1.5rem;
+}
+
+.rwgc-insights-satellite-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+	gap: 1rem;
+}
+
+.rwgc-insights-satellite {
+	background: var(--rwgc-surface, #fff);
+	border: 1px solid var(--rwgc-border, #dcdcde);
+	border-radius: var(--rwgc-radius-md, 8px);
+	padding: 1rem 1.1rem 1.1rem;
+	box-shadow: var(--rwgc-shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
+}
+
+.rwgc-insights-satellite__header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 0.75rem;
+	margin-bottom: 0.65rem;
+}
+
+.rwgc-insights-satellite__title {
+	margin: 0;
+	font-size: 1.05rem;
+	line-height: 1.3;
+}
+
+.rwgc-insights-satellite__summary {
+	margin: 0 0 0.85rem;
+	color: var(--rwgc-text-muted, #646970);
+}
+
+.rwgc-insights-satellite__metrics {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+	gap: 0.65rem;
+	margin-bottom: 0.85rem;
+}
+
+.rwgc-insights-satellite__metric {
+	background: var(--rwgc-surface-muted, #f6f7f7);
+	border-radius: var(--rwgc-radius-sm, 4px);
+	padding: 0.45rem 0.55rem;
+}
+
+.rwgc-insights-satellite__metric-label {
+	display: block;
+	font-size: 0.75rem;
+	color: var(--rwgc-text-muted, #646970);
+}
+
+.rwgc-insights-satellite__metric-value {
+	display: block;
+	font-weight: 600;
+	font-size: 0.95rem;
+}
+
+.rwgc-insights-satellite__subhead {
+	margin: 0 0 0.45rem;
+	font-size: 0.82rem;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	color: var(--rwgc-text-muted, #646970);
+}
+
+.rwgc-insights-capability-list {
+	margin: 0 0 0.85rem;
+	padding: 0;
+	list-style: none;
+}
+
+.rwgc-insights-capability-list__item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	padding: 0.28rem 0;
+	border-bottom: 1px solid var(--rwgc-border-light, #ececec);
+}
+
+.rwgc-insights-capability-list__item:last-child {
+	border-bottom: 0;
+}
+
+.rwgc-insights-capability-list__chip {
+	font-size: 0.72rem;
+	color: var(--rwgc-text-muted, #646970);
+}
+
+.rwgc-insights-missing-list {
+	margin: 0 0 0.85rem;
+	padding-left: 1.1rem;
+	color: var(--rwgc-text-muted, #646970);
+}
+
+.rwgc-insights-empty {
+	background: var(--rwgc-surface-muted, #f6f7f7);
+	border-radius: var(--rwgc-radius-sm, 4px);
+	padding: 0.75rem;
+	margin-bottom: 0.85rem;
+}
+
+.rwgc-insights-empty__type {
+	margin: 0 0 0.25rem;
+	font-size: 0.72rem;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--rwgc-text-muted, #646970);
+}
+
+.rwgc-insights-empty__title {
+	margin: 0 0 0.35rem;
+	font-weight: 600;
+}
+
+.rwgc-insights-empty__body {
+	margin: 0;
+	color: var(--rwgc-text-muted, #646970);
+}
+
+.rwgc-insights-panel {
+	margin-bottom: 1rem;
+}
+
+.rwgc-insights-recommendations {
+	display: grid;
+	gap: 0.75rem;
+}
+
+.rwgc-insights-recommendation {
+	border-left: 3px solid var(--rwgc-accent, #2271b1);
+	padding-left: 0.75rem;
+}
+
+.rwgc-insights-recommendation__title {
+	margin: 0 0 0.25rem;
+	font-size: 0.95rem;
+}
+
+.rwgc-insights-recommendation__provider,
+.rwgc-insights-recommendation__reason {
+	margin: 0;
+	font-size: 0.85rem;
+	color: var(--rwgc-text-muted, #646970);
+}
+
+.rwgc-insights-checklist {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.rwgc-insights-checklist__item {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5rem;
+	padding: 0.35rem 0;
+}
+
+.rwgc-insights-checklist__mark {
+	flex: 0 0 auto;
+	width: 1rem;
+}
+
+.rwgc-insights-activity {
+	margin-top: 1.5rem;
+}
+
+.rwgc-insights-section-title {
+	margin: 0 0 0.65rem;
+	font-size: 1rem;
+}
+
+.rwgc-insights-activity__list {
+	margin: 0;
+	padding-left: 1.1rem;
+}
+
+.rwgc-insights-reports {
+	margin-top: 1.5rem;
+}
+
+@media (max-width: 960px) {
+	.rwgc-insights-layout {
+		grid-template-columns: 1fr;
+	}
+}

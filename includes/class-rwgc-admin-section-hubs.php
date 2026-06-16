@@ -79,11 +79,10 @@ class RWGC_Admin_Section_Hubs {
 	 * @return void
 	 */
 	public static function render_insights_hub() {
-		if ( ! class_exists( 'RWGC_Admin', false ) || ! RWGC_Admin::can_manage() ) {
+		if ( ! class_exists( 'RWGC_Insights', false ) ) {
 			return;
 		}
-		$cards = self::get_hub_cards( 'insights', 'rwgc-insights-hub' );
-		include RWGC_PATH . 'admin/views/insights-hub-page.php';
+		RWGC_Insights::render_dashboard();
 	}
 
 	/**
