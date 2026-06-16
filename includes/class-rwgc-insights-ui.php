@@ -57,6 +57,175 @@ class RWGC_Insights_UI {
 	}
 
 	/**
+	 * Compact horizontal health chips (Capability Map).
+	 *
+	 * @param array<int, array<string, mixed>> $chips Chip rows.
+	 * @return void
+	 */
+	public static function render_health_chips( array $chips ) {
+		if ( empty( $chips ) ) {
+			return;
+		}
+		echo '<div class="rwgc-insights-health-chips" role="list">';
+		foreach ( $chips as $chip ) {
+			if ( ! is_array( $chip ) || empty( $chip['label'] ) ) {
+				continue;
+			}
+			$tone  = isset( $chip['tone'] ) ? sanitize_key( (string) $chip['tone'] ) : 'neutral';
+			$value = isset( $chip['value'] ) ? (string) $chip['value'] : '';
+			echo '<div class="rwgc-insights-health-chip rwgc-insights-health-chip--' . esc_attr( $tone ) . '" role="listitem">';
+			echo '<span class="rwgc-insights-health-chip__label">' . esc_html( (string) $chip['label'] ) . '</span>';
+			echo '<span class="rwgc-insights-health-chip__value">' . esc_html( $value ) . '</span>';
+			echo '</div>';
+		}
+		echo '</div>';
+	}
+
+	/**
+	 * Short product card for the Capability Map grid.
+	 *
+	 * @param array<string, mixed> $provider Normalized provider row.
+	 * @return void
+	 */
+	public static function render_compact_product_card( array $provider ) {
+		if ( empty( $provider['label'] ) ) {
+			return;
+		}
+
+		$status   = isset( $provider['status'] ) ? (string) $provider['status'] : 'inactive';
+		$metric   = self::get_provider_primary_metric( $provider );
+		$warning  = self::get_provider_primary_warning( $provider );
+		$cta      = self::get_provider_primary_action( $provider );
+		$details  = class_exists( 'RWGC_Insights', false )
+			? RWGC_Insights::get_provider_details_url( (string) $provider['id'] )
+			: '';
+
+		echo '<article class="rwgc-insights-product-card rwgc-insights-product-card--' . esc_attr( sanitize_key( $status ) ) . '" role="listitem">';
+		echo '<header class="rwgc-insights-product-card__header">';
+		echo '<h3 class="rwgc-insights-product-card__title">' . esc_html( (string) $provider['label'] ) . '</h3>';
+		self::render_status_badge( $status );
+		echo '</header>';
+
+		if ( ! empty( $provider['summary'] ) ) {
+			$summary = wp_trim_words( (string) $provider['summary'], 18, '…' );
+			echo '<p class="rwgc-insights-product-card__summary">' . esc_html( $summary ) . '</p>';
+		}
+
+		if ( '' !== $metric ) {
+			echo '<p class="rwgc-insights-product-card__metric">' . esc_html( $metric ) . '</p>';
+		}
+
+		if ( '' !== $warning ) {
+			echo '<p class="rwgc-insights-product-card__warning">' . esc_html( $warning ) . '</p>';
+		}
+
+		echo '<footer class="rwgc-insights-product-card__footer">';
+		if ( is_array( $cta ) && ! empty( $cta['url'] ) && ! empty( $cta['label'] ) ) {
+			$primary = ! empty( $cta['primary'] ) ? ' button-primary' : '';
+			echo '<a class="button' . esc_attr( $primary ) . '" href="' . esc_url( (string) $cta['url'] ) . '">' . esc_html( (string) $cta['label'] ) . '</a>';
+		}
+		if ( '' !== $details ) {
+			echo '<a class="rwgc-insights-product-card__details" href="' . esc_url( $details ) . '">' . esc_html__( 'View details', 'reactwoo-geocore' ) . '</a>';
+		}
+		echo '</footer>';
+		echo '</article>';
+	}
+
+	/**
+	 * @param array<string, mixed> $provider Provider row.
+	 * @return string
+	 */
+	public static function get_provider_primary_metric( array $provider ) {
+		if ( ! empty( $provider['metrics'] ) && is_array( $provider['metrics'] ) ) {
+			foreach ( $provider['metrics'] as $metric ) {
+				if ( ! is_array( $metric ) || empty( $metric['label'] ) ) {
+					continue;
+				}
+				$value = isset( $metric['value'] ) ? (string) $metric['value'] : '';
+				if ( '' === $value || '—' === $value ) {
+					continue;
+				}
+				return sprintf(
+					/* translators: 1: metric value, 2: metric label */
+					__( '%1$s · %2$s', 'reactwoo-geocore' ),
+					$value,
+					(string) $metric['label']
+				);
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * @param array<string, mixed> $provider Provider row.
+	 * @return string
+	 */
+	public static function get_provider_primary_warning( array $provider ) {
+		if ( ! empty( $provider['missing_setup'] ) && is_array( $provider['missing_setup'] ) ) {
+			return (string) $provider['missing_setup'][0];
+		}
+		if ( 'missing' === ( $provider['status'] ?? '' ) ) {
+			return __( 'Not installed', 'reactwoo-geocore' );
+		}
+		if ( 'requires_license' === ( $provider['status'] ?? '' ) ) {
+			return __( 'Requires licence activation', 'reactwoo-geocore' );
+		}
+		return '';
+	}
+
+	/**
+	 * @param array<string, mixed> $provider Provider row.
+	 * @return array<string, mixed>
+	 */
+	public static function get_provider_primary_action( array $provider ) {
+		if ( empty( $provider['actions'] ) || ! is_array( $provider['actions'] ) ) {
+			return array();
+		}
+		foreach ( $provider['actions'] as $action ) {
+			if ( ! is_array( $action ) || empty( $action['url'] ) || empty( $action['label'] ) ) {
+				continue;
+			}
+			if ( ! empty( $action['primary'] ) ) {
+				return $action;
+			}
+		}
+		$first = $provider['actions'][0];
+		return is_array( $first ) ? $first : array();
+	}
+
+	/**
+	 * Top opportunities preview with link to full tab.
+	 *
+	 * @param array<int, array<string, mixed>> $recommendations Recommendation rows.
+	 * @param string                           $view_all_url     URL for full list.
+	 * @return void
+	 */
+	public static function render_opportunities_preview( array $recommendations, $view_all_url = '' ) {
+		echo '<section class="rwgc-insights-opportunities" aria-labelledby="rwgc-insights-opportunities-title">';
+		echo '<div class="rwgc-insights-opportunities__head">';
+		echo '<h2 id="rwgc-insights-opportunities-title" class="rwgc-insights-section-title">' . esc_html__( 'Top opportunities', 'reactwoo-geocore' ) . '</h2>';
+		if ( '' !== $view_all_url ) {
+			echo '<a class="rwgc-insights-opportunities__more" href="' . esc_url( $view_all_url ) . '">' . esc_html__( 'View all', 'reactwoo-geocore' ) . '</a>';
+		}
+		echo '</div>';
+
+		if ( empty( $recommendations ) ) {
+			echo '<p class="description">' . esc_html__( 'Your capability map looks healthy. Check individual products for optional improvements.', 'reactwoo-geocore' ) . '</p>';
+			echo '</section>';
+			return;
+		}
+
+		echo '<div class="rwgc-insights-recommendations rwgc-insights-recommendations--compact">';
+		foreach ( $recommendations as $rec ) {
+			if ( ! is_array( $rec ) ) {
+				continue;
+			}
+			self::render_recommendation_card( $rec );
+		}
+		echo '</div></section>';
+	}
+
+	/**
 	 * Health summary metric card.
 	 *
 	 * @param array<string, mixed> $card Card row.

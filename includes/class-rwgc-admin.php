@@ -249,6 +249,39 @@ class RWGC_Admin {
 		self::register_app_route(
 			array(
 				'section'   => 'insights',
+				'route'     => 'insights-readiness',
+				'menu_slug' => 'rwgc-insights-readiness',
+				'label'     => __( 'Setup & readiness', 'reactwoo-geocore' ),
+				'order'     => 8,
+				'callback'  => array( 'RWGC_Insights', 'render_readiness_page' ),
+			)
+		);
+
+		self::register_app_route(
+			array(
+				'section'   => 'insights',
+				'route'     => 'ai-opportunities',
+				'menu_slug' => 'rwgc-insights-ai',
+				'label'     => __( 'AI opportunities', 'reactwoo-geocore' ),
+				'order'     => 10,
+				'callback'  => array( 'RWGC_Insights', 'render_ai_opportunities_page' ),
+			)
+		);
+
+		self::register_app_route(
+			array(
+				'section'   => 'insights',
+				'route'     => 'provider-detail',
+				'menu_slug' => 'rwgc-insights-provider-detail',
+				'label'     => __( 'Product details', 'reactwoo-geocore' ),
+				'order'     => 99,
+				'callback'  => array( 'RWGC_Insights', 'render_provider_detail' ),
+			)
+		);
+
+		self::register_app_route(
+			array(
+				'section'   => 'insights',
 				'route'     => 'geo-reports',
 				'menu_slug' => 'rwgc-usage',
 				'label'     => __( 'Geo insights', 'reactwoo-geocore' ),
@@ -416,7 +449,7 @@ class RWGC_Admin {
 			array( 'rwgc-design-system', 'rwgc-admin' ),
 			RWGC_VERSION
 		);
-		if ( false !== strpos( $hook, 'rwgc-insights-hub' ) ) {
+		if ( preg_match( '/(rwgc-insights|rwgc-usage|rwgcm-attribution)/', $hook ) ) {
 			wp_enqueue_style(
 				'rwgc-insights',
 				RWGC_URL . 'admin/css/rwgc-insights.css',

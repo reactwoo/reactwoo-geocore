@@ -11,8 +11,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $rwgo_active = class_exists( 'RWGC_Admin_UI', false ) && RWGC_Admin_UI::is_plugin_active( 'reactwoo-geo-optimise/reactwoo-geo-optimise.php' );
 ?>
-<div class="wrap rwgc-wrap rwgc-suite">
+<div class="wrap rwgc-wrap rwgc-suite rwgc-insights-dashboard">
 	<?php RWGC_Admin_UI::render_page_header( __( 'Experience performance', 'reactwoo-geocore' ), __( 'Experiment outcomes, winners, and conversion reporting.', 'reactwoo-geocore' ) ); ?>
+	<?php
+	if ( class_exists( 'RWGC_Insights_Nav', false ) ) {
+		RWGC_Insights_Nav::render( 'rwgc-insights-experiments' );
+	}
+	?>
 	<div class="rwgc-card">
 		<?php if ( $rwgo_active ) : ?>
 			<p class="description"><?php esc_html_e( 'Open Geo Optimise reports for experiment performance. Primary experiment management stays under Experiences.', 'reactwoo-geocore' ); ?></p>

@@ -8,6 +8,137 @@
 	max-width: 42rem;
 }
 
+.rwgc-insights-nav {
+	margin: 0 0 1rem;
+	flex-wrap: wrap;
+}
+
+.rwgc-insights-dashboard--compact .rwgc-insights-health {
+	margin: 0 0 1rem;
+}
+
+.rwgc-insights-health-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.rwgc-insights-health-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45rem;
+	padding: 0.35rem 0.65rem;
+	border-radius: 999px;
+	background: var(--rwgc-surface-muted, #f6f7f7);
+	border: 1px solid var(--rwgc-border-light, #ececec);
+	font-size: 0.82rem;
+}
+
+.rwgc-insights-health-chip--success {
+	border-color: #b8e6bf;
+	background: #edfaef;
+}
+
+.rwgc-insights-health-chip--warning {
+	border-color: #f0d58c;
+	background: #fff8e5;
+}
+
+.rwgc-insights-health-chip__label {
+	color: var(--rwgc-text-muted, #646970);
+}
+
+.rwgc-insights-health-chip__value {
+	font-weight: 600;
+}
+
+.rwgc-insights-product-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+	gap: 0.75rem;
+	margin-bottom: 1rem;
+}
+
+.rwgc-insights-product-card {
+	background: var(--rwgc-surface, #fff);
+	border: 1px solid var(--rwgc-border, #dcdcde);
+	border-radius: var(--rwgc-radius-md, 8px);
+	padding: 0.85rem 0.95rem;
+	box-shadow: var(--rwgc-shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
+}
+
+.rwgc-insights-product-card__header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 0.5rem;
+	margin-bottom: 0.45rem;
+}
+
+.rwgc-insights-product-card__title {
+	margin: 0;
+	font-size: 0.98rem;
+	line-height: 1.25;
+}
+
+.rwgc-insights-product-card__summary,
+.rwgc-insights-product-card__metric,
+.rwgc-insights-product-card__warning {
+	margin: 0 0 0.35rem;
+	font-size: 0.85rem;
+	color: var(--rwgc-text-muted, #646970);
+}
+
+.rwgc-insights-product-card__warning {
+	color: #9a6700;
+}
+
+.rwgc-insights-product-card__footer {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-top: 0.55rem;
+}
+
+.rwgc-insights-product-card__footer .button {
+	font-size: 0.82rem;
+	line-height: 1.4;
+	min-height: 28px;
+	padding: 0 10px;
+}
+
+.rwgc-insights-product-card__details {
+	font-size: 0.82rem;
+}
+
+.rwgc-insights-opportunities {
+	margin: 0.75rem 0 1rem;
+}
+
+.rwgc-insights-opportunities__head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0.75rem;
+	margin-bottom: 0.35rem;
+}
+
+.rwgc-insights-opportunities__more {
+	font-size: 0.85rem;
+}
+
+.rwgc-insights-recommendations--compact .rwgc-insights-recommendation {
+	padding-left: 0.65rem;
+}
+
+.rwgc-insights-readiness-grid {
+	display: grid;
+	grid-template-columns: minmax(16rem, 0.9fr) minmax(0, 1.4fr);
+	gap: 1rem;
+	align-items: start;
+}
+
 .rwgc-insights-health {
 	margin: 1.25rem 0 1.75rem;
 }
@@ -208,6 +339,10 @@
 
 @media (max-width: 960px) {
 	.rwgc-insights-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.rwgc-insights-readiness-grid {
 		grid-template-columns: 1fr;
 	}
 }

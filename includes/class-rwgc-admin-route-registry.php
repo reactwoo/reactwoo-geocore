@@ -347,6 +347,20 @@ class RWGC_Admin_Route_Registry {
 				'order'     => 5,
 			),
 			array(
+				'menu_slug' => 'rwgc-insights-readiness',
+				'section'   => 'insights',
+				'route'     => 'insights-readiness',
+				'label'     => __( 'Setup & readiness', 'reactwoo-geocore' ),
+				'order'     => 8,
+			),
+			array(
+				'menu_slug' => 'rwgc-insights-ai',
+				'section'   => 'insights',
+				'route'     => 'ai-opportunities',
+				'label'     => __( 'AI opportunities', 'reactwoo-geocore' ),
+				'order'     => 10,
+			),
+			array(
 				'menu_slug' => 'rwgc-usage',
 				'section'   => 'insights',
 				'route'     => 'geo-reports',
@@ -555,7 +569,7 @@ class RWGC_Admin_Route_Registry {
 		if ( 0 === strpos( $slug, 'rwgcp-' ) ) {
 			return 'integrations';
 		}
-		if ( in_array( $slug, array( 'rwgc-usage', 'rwgc-usage-audience', 'rwgc-usage-campaign', 'rwgc-insights-experiments' ), true ) ) {
+		if ( in_array( $slug, array( 'rwgc-usage', 'rwgc-usage-audience', 'rwgc-usage-campaign', 'rwgc-insights-experiments', 'rwgc-insights-readiness', 'rwgc-insights-ai', 'rwgc-insights-provider-detail', 'rwgcm-attribution' ), true ) ) {
 			return 'insights';
 		}
 		if ( in_array( $slug, array( 'rwgc-commerce-hub' ), true ) ) {

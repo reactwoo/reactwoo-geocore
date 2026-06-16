@@ -251,6 +251,166 @@ class RWGC_Insights {
 	}
 
 	/**
+	 * Compact semantic health chips for the Capability Map overview.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public static function get_platform_health_chips() {
+		$providers = self::get_providers();
+		$by_id     = array();
+		foreach ( $providers as $p ) {
+			$by_id[ (string) $p['id'] ] = $p;
+		}
+
+		$maxmind      = class_exists( 'RWGC_MaxMind', false ) ? RWGC_MaxMind::get_status() : array();
+		$targeting_on = (bool) RWGC_Settings::get( 'enable_targeting', 0 );
+		$detected     = ! empty( $maxmind['exists'] );
+
+		$active_satellites = 0;
+		foreach ( array( 'geocore-pro', 'geo-commerce', 'geo-optimise', 'geo-ai' ) as $sid ) {
+			if ( ! isset( $by_id[ $sid ] ) || 'missing' === $by_id[ $sid ]['status'] ) {
+				continue;
+			}
+			if ( in_array( $by_id[ $sid ]['status'], array( 'active', 'no_data', 'inactive' ), true ) ) {
+				++$active_satellites;
+			}
+		}
+
+		$setup_remaining = self::count_setup_tasks_remaining();
+		$optimise        = isset( $by_id['geo-optimise'] ) ? $by_id['geo-optimise'] : array();
+		$ai              = isset( $by_id['geo-ai'] ) ? $by_id['geo-ai'] : array();
+		$exp_active      = self::metric_value( $optimise, __( 'Active tests', 'reactwoo-geocore' ), '0' );
+		$ai_sync         = self::metric_value( $ai, __( 'Last sync', 'reactwoo-geocore' ), __( 'Never', 'reactwoo-geocore' ) );
+		$ai_installed    = isset( $by_id['geo-ai'] ) && 'missing' !== $by_id['geo-ai']['status'];
+
+		$geo_working = $detected && ( $targeting_on || self::count_published_visibility_rules() > 0 );
+		$chips       = array(
+			array(
+				'id'    => 'geo_targeting',
+				'label' => __( 'Geo targeting', 'reactwoo-geocore' ),
+				'value' => $geo_working
+					? __( 'Working', 'reactwoo-geocore' )
+					: ( $detected ? __( 'Needs rules', 'reactwoo-geocore' ) : __( 'Needs setup', 'reactwoo-geocore' ) ),
+				'tone'  => $geo_working ? 'success' : 'warning',
+			),
+			array(
+				'id'    => 'satellites',
+				'label' => __( 'Satellites', 'reactwoo-geocore' ),
+				'value' => $active_satellites > 0
+					/* translators: %d: satellite count */
+					? sprintf( _n( '%d active', '%d active', $active_satellites, 'reactwoo-geocore' ), $active_satellites )
+					: __( 'None active', 'reactwoo-geocore' ),
+				'tone'  => $active_satellites > 0 ? 'success' : 'neutral',
+			),
+			array(
+				'id'    => 'setup',
+				'label' => __( 'Setup tasks', 'reactwoo-geocore' ),
+				'value' => 0 === $setup_remaining
+					? __( 'Complete', 'reactwoo-geocore' )
+					/* translators: %d: pending task count */
+					: sprintf( _n( '%d remaining', '%d remaining', $setup_remaining, 'reactwoo-geocore' ), $setup_remaining ),
+				'tone'  => 0 === $setup_remaining ? 'success' : 'warning',
+			),
+		);
+
+		if ( $ai_installed ) {
+			$ai_ok = __( 'Never', 'reactwoo-geocore' ) !== $ai_sync && '—' !== $ai_sync;
+			$chips[] = array(
+				'id'    => 'ai_sync',
+				'label' => __( 'AI sync', 'reactwoo-geocore' ),
+				'value' => $ai_ok ? __( 'Enabled', 'reactwoo-geocore' ) : __( 'Not synced', 'reactwoo-geocore' ),
+				'tone'  => $ai_ok ? 'success' : 'warning',
+			);
+		}
+
+		$exp_count = is_numeric( $exp_active ) ? (int) $exp_active : 0;
+		$chips[]   = array(
+			'id'    => 'experiments',
+			'label' => __( 'Experiments', 'reactwoo-geocore' ),
+			'value' => $exp_count > 0
+				/* translators: %d: running experiment count */
+				? sprintf( _n( '%d running', '%d running', $exp_count, 'reactwoo-geocore' ), $exp_count )
+				: __( 'None running', 'reactwoo-geocore' ),
+			'tone'  => $exp_count > 0 ? 'success' : 'neutral',
+		);
+
+		return $chips;
+	}
+
+	/**
+	 * Pending setup checklist items.
+	 *
+	 * @return int
+	 */
+	public static function count_setup_tasks_remaining() {
+		$count = 0;
+		foreach ( self::get_data_readiness() as $item ) {
+			if ( empty( $item['done'] ) ) {
+				++$count;
+			}
+		}
+		return $count;
+	}
+
+	/**
+	 * Admin URL for full provider detail view.
+	 *
+	 * @param string $provider_id Provider id slug.
+	 * @return string
+	 */
+	public static function get_provider_details_url( $provider_id ) {
+		$provider_id = sanitize_key( (string) $provider_id );
+		if ( function_exists( 'rw_geo_app_url' ) ) {
+			return add_query_arg( 'provider', $provider_id, rw_geo_app_url( 'insights', 'rwgc-insights-provider-detail' ) );
+		}
+		return add_query_arg(
+			array(
+				'page'     => 'rwgc-insights-provider-detail',
+				'provider' => $provider_id,
+			),
+			admin_url( 'admin.php' )
+		);
+	}
+
+	/**
+	 * Find a provider row by id.
+	 *
+	 * @param string $provider_id Provider id.
+	 * @return array<string, mixed>|null
+	 */
+	public static function get_provider_by_id( $provider_id ) {
+		$provider_id = sanitize_key( (string) $provider_id );
+		foreach ( self::get_providers() as $provider ) {
+			if ( isset( $provider['id'] ) && (string) $provider['id'] === $provider_id ) {
+				return $provider;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * AI-focused recommendations for the AI Opportunities tab.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public static function get_ai_recommendations() {
+		$all = self::get_recommendations( 20 );
+		$ai  = array();
+		foreach ( $all as $rec ) {
+			$provider_id = isset( $rec['provider_id'] ) ? (string) $rec['provider_id'] : '';
+			if ( 'geo-ai' === $provider_id ) {
+				$ai[] = $rec;
+				continue;
+			}
+			$haystack = strtolower( (string) ( $rec['label'] ?? '' ) . ' ' . (string) ( $rec['reason'] ?? '' ) );
+			if ( false !== strpos( $haystack, 'ai' ) || false !== strpos( $haystack, 'sync' ) || false !== strpos( $haystack, 'intelligence' ) ) {
+				$ai[] = $rec;
+			}
+		}
+		return $ai;
+	}
+
+	/**
 	 * Top health summary cards for the Insights dashboard.
 	 *
 	 * @return array<int, array<string, mixed>>
@@ -591,14 +751,59 @@ class RWGC_Insights {
 		}
 
 		$providers       = self::get_providers();
-		$health          = self::get_health_row();
-		$recommendations = self::get_recommendations();
-		$readiness       = self::get_data_readiness();
+		$health          = self::get_platform_health_chips();
+		$recommendations = self::get_recommendations( 3 );
 		$activity        = class_exists( 'RWGC_Onboarding', false ) ? RWGC_Onboarding::get_activity() : array();
-		$report_links    = class_exists( 'RWGC_Admin_Section_Hubs', false )
-			? RWGC_Admin_Section_Hubs::get_hub_cards( 'insights', 'rwgc-insights-hub' )
-			: array();
 
 		include RWGC_PATH . 'admin/views/insights-capability-page.php';
+	}
+
+	/**
+	 * Setup & readiness tab.
+	 *
+	 * @return void
+	 */
+	public static function render_readiness_page() {
+		if ( ! class_exists( 'RWGC_Admin', false ) || ! RWGC_Admin::can_manage() ) {
+			return;
+		}
+
+		$readiness = self::get_data_readiness();
+		$providers = self::get_providers();
+
+		include RWGC_PATH . 'admin/views/insights-readiness-page.php';
+	}
+
+	/**
+	 * AI opportunities tab.
+	 *
+	 * @return void
+	 */
+	public static function render_ai_opportunities_page() {
+		if ( ! class_exists( 'RWGC_Admin', false ) || ! RWGC_Admin::can_manage() ) {
+			return;
+		}
+
+		$recommendations = self::get_ai_recommendations();
+		$ai_provider     = self::get_provider_by_id( 'geo-ai' );
+
+		include RWGC_PATH . 'admin/views/insights-ai-opportunities-page.php';
+	}
+
+	/**
+	 * Full provider capability detail (progressive disclosure).
+	 *
+	 * @return void
+	 */
+	public static function render_provider_detail() {
+		if ( ! class_exists( 'RWGC_Admin', false ) || ! RWGC_Admin::can_manage() ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$provider_id = isset( $_GET['provider'] ) ? sanitize_key( wp_unslash( $_GET['provider'] ) ) : '';
+		$provider    = '' !== $provider_id ? self::get_provider_by_id( $provider_id ) : null;
+
+		include RWGC_PATH . 'admin/views/insights-provider-detail-page.php';
 	}
 }
