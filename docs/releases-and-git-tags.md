@@ -80,7 +80,31 @@ git push origin main "vVERSION"
 
 **CI:** Tests run on **pull requests** to `main`, not on every push to `main`, so release pushes do not spawn a redundant (and sometimes failing) test run before the tag publish workflow.
 
-## 3. Staging / R2 / LocalWP
+## 2b. R2 + updates API publish (Geo suite — all product repos)
+
+This is the **plugin release pipeline** for **Geo Core**, **GeoCore Pro**, **Geo AI**, **Geo Optimise**, **Geo Commerce**, **Geo Elementor**, and other ReactWoo products that ship zips via Cloudflare R2. It is **not** the same as deploying **`reactwoo-api`** or **`react-license`** on the cPanel host.
+
+**On tag `v*` (each plugin repo’s `publish-update.yml`):**
+
+1. Build zip (`npm run package:zip` / `scripts/package_zip.py`).
+2. Upload to R2: `aws s3 cp … s3://{R2_BUCKET}/plugins/{slug}/{version}/{slug}.zip`.
+3. Register metadata: `POST https://api.reactwoo.com/api/v5/updates/publish` with **`Authorization: Bearer <UPDATES_PUBLISH_TOKEN>`**.
+
+**No `git` runs on the server for this path.** GitHub Actions does not SSH to cPanel and does not `git pull` on `api.reactwoo.com`. Orbi’s “password authentication is not supported for Git operations” message in **`api.reactwoo.com/logs/err.log`** refers only to the **API self-deploy webhook** (`POST /api/v5/deploy` → `git fetch`), not to Geo plugin R2 publishes.
+
+| GitHub org/repo secret | Role |
+|------------------------|------|
+| **`R2_ACCESS_KEY_ID`**, **`R2_SECRET_ACCESS_KEY`**, **`R2_ENDPOINT`**, **`R2_BUCKET`** | Upload plugin zip to Cloudflare R2 |
+| **`UPDATES_PUBLISH_TOKEN`** | Bearer token for **`/api/v5/updates/publish`** — must match **`UPDATES_PUBLISH_TOKEN`** in **`api.reactwoo.com` `.env`** |
+
+**Not used for R2 publish:** WordPress application passwords, GitHub account passwords, **`GITHUB_DEPLOY_TOKEN`** (that PAT is only for **`reactwoo-api`** server-side `git fetch` on deploy webhook).
+
+**Product slugs** (examples): `reactwoo-geocore`, `reactwoo-geocore-pro`, `reactwoo-geo-ai`, `reactwoo-geo-optimise`, `reactwoo-geo-commerce`, `geo-elementor`. Each repo sets **`PLUGIN_SLUG`** in its workflow.
+
+**Customer sites** later call **`POST /api/v5/updates/check`** with a **license JWT** (paid products) or without (free slugs in **`UPDATES_FREE_SLUGS`**, e.g. Geo Core + Flow). That is separate from CI publish auth.
+
+Details: **`reactwoo-api/docs/PRODUCTION-SERVER.md`** §6 (plugin updates).
+
 
 - **GitHub:** After `git push`, staging can **`git fetch --tags`** and **`git checkout vVERSION`** (or merge `main`) in the clone used to zip the plugin for LocalWP or upload to R2.
 - **Zip manually:** Checkout the tag, zip the plugin folder (contents at zip root as WordPress expects), install on staging.
