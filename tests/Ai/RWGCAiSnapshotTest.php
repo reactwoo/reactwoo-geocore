@@ -61,6 +61,25 @@ class RWGCAiSnapshotTest extends TestCase {
 		$this->assertMatchesRegularExpression( '/^[a-f0-9]{64}$/', $hash_a );
 	}
 
+	public function test_compute_hash_ignores_generated_at_gmt_at_any_depth() {
+		$payload_a = $this->sample_payload();
+		$payload_b = $this->sample_payload();
+		$payload_a['generated_at_gmt'] = '2026-01-01T00:00:00+00:00';
+		$payload_b['generated_at_gmt'] = '2026-06-08T18:30:00+00:00';
+		$payload_a['capability_insights'] = array(
+			'generated_at_gmt' => '2026-01-01 00:00:00',
+			'health'           => array( 'score' => 80 ),
+		);
+		$payload_b['capability_insights'] = array(
+			'generated_at_gmt' => '2026-06-08 18:30:00',
+			'health'           => array( 'score' => 80 ),
+		);
+		$this->assertSame(
+			RWGC_AI_Snapshot_Schema::compute_hash( $payload_a ),
+			RWGC_AI_Snapshot_Schema::compute_hash( $payload_b )
+		);
+	}
+
 	public function test_strip_sensitive_removes_excluded_fields_recursively() {
 		$dirty = array(
 			'site' => array(

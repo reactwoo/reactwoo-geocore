@@ -23,6 +23,16 @@ class RWGC_AI_Snapshot_Schema {
 	 *
 	 * @var string[]
 	 */
+	/**
+	 * Keys omitted from {@see compute_hash()} at any depth (timestamps, hash field).
+	 *
+	 * @var string[]
+	 */
+	const HASH_EXCLUDE_KEYS = array(
+		'snapshot_hash',
+		'generated_at_gmt',
+	);
+
 	const TOP_LEVEL_KEYS = array(
 		'schema_version',
 		'generated_at_gmt',
@@ -196,14 +206,35 @@ class RWGC_AI_Snapshot_Schema {
 	}
 
 	/**
-	 * Stable SHA-256 hash of canonical JSON (excludes snapshot_hash key).
+	 * Remove hash-volatile keys recursively before hashing.
+	 *
+	 * @param mixed $value Payload node.
+	 * @return mixed
+	 */
+	public static function strip_hash_volatile_fields( $value ) {
+		if ( ! is_array( $value ) ) {
+			return $value;
+		}
+
+		$out = array();
+		foreach ( $value as $key => $child ) {
+			if ( in_array( (string) $key, self::HASH_EXCLUDE_KEYS, true ) ) {
+				continue;
+			}
+			$out[ $key ] = self::strip_hash_volatile_fields( $child );
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Stable SHA-256 hash of canonical JSON (excludes snapshot_hash and generated_at_gmt).
 	 *
 	 * @param array<string, mixed> $payload Snapshot payload.
 	 * @return string 64-char hex hash.
 	 */
 	public static function compute_hash( array $payload ) {
-		$copy = $payload;
-		unset( $copy['snapshot_hash'] );
+		$copy = self::strip_hash_volatile_fields( $payload );
 		$json = wp_json_encode( $copy, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 		if ( ! is_string( $json ) ) {
 			$json = '{}';
