@@ -19,10 +19,20 @@
 	};
 
 	function assistantBubble( text ) {
-		return $( '<div>', {
+		var $bubble = $( '<div>', {
 			class: 'rwgc-targeting-assistant__bubble rwgc-targeting-assistant__bubble--assistant',
-			html: '<span class="rwgc-targeting-assistant__who">' + ( i18n.assistantName || 'Geo Assistant' ) + '</span><span class="rwgc-targeting-assistant__text">' + text + '</span>',
 		} );
+
+		$bubble.append( $( '<span>', {
+			class: 'rwgc-targeting-assistant__who',
+			text: i18n.assistantName || 'Geo Assistant',
+		} ) );
+		$bubble.append( $( '<span>', {
+			class: 'rwgc-targeting-assistant__text',
+			text: text,
+		} ) );
+
+		return $bubble;
 	}
 
 	function userBubble( text ) {
