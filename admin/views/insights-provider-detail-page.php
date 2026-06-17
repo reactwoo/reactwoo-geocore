@@ -13,6 +13,7 @@ $provider = isset( $provider ) && is_array( $provider ) ? $provider : null;
 $back_url = class_exists( 'RWGC_Insights_Nav', false )
 	? RWGC_Insights_Nav::get_url( 'rwgc-insights-hub' )
 	: admin_url( 'admin.php?page=rwgc-insights-hub' );
+$platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
 ?>
 <div class="wrap rwgc-wrap rwgc-suite rwgc-insights-dashboard">
 	<?php
@@ -30,7 +31,7 @@ $back_url = class_exists( 'RWGC_Insights_Nav', false )
 	}
 	?>
 	<?php
-	if ( class_exists( 'RWGC_Insights_Nav', false ) ) {
+	if ( ! $platform_shell && class_exists( 'RWGC_Insights_Nav', false ) ) {
 		RWGC_Insights_Nav::render( 'rwgc-insights-hub' );
 	}
 	?>

@@ -11,9 +11,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $cards           = isset( $cards ) && is_array( $cards ) ? $cards : array();
 $optimise_active = class_exists( 'RWGO_Plugin', false );
-$exp_status      = class_exists( 'RWGC_Capability_Registry', false )
-	? RWGC_Capability_Registry::get_status( 'experiences' )
-	: array( 'state' => $optimise_active ? 'available' : 'not_installed' );
+$ai_suggestion   = class_exists( 'RWGC_Geo_AI_Suggestions', false )
+	? RWGC_Geo_AI_Suggestions::get_for_context( 'experiences' )
+	: null;
 ?>
 <div class="wrap rwgc-wrap rwgc-suite">
 	<?php
@@ -23,13 +23,19 @@ $exp_status      = class_exists( 'RWGC_Capability_Registry', false )
 	);
 	?>
 
+	<?php
+	if ( class_exists( 'RWGC_Geo_AI_Suggestions', false ) ) {
+		RWGC_Geo_AI_Suggestions::render_inline( $ai_suggestion );
+	}
+	?>
+
 	<?php if ( ! $optimise_active ) : ?>
 		<div class="rwgc-card rwgc-experiences-locked">
 			<h2><?php esc_html_e( 'Experiences require Geo Optimise', 'reactwoo-geocore' ); ?></h2>
-			<p class="description"><?php esc_html_e( 'Use Experiences to split traffic, measure conversions, and choose winning versions.', 'reactwoo-geocore' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Split traffic, measure conversions, and choose winning versions.', 'reactwoo-geocore' ); ?></p>
 			<p>
-				<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ); ?>"><?php esc_html_e( 'Install Geo Optimise', 'reactwoo-geocore' ); ?></a>
-				<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ); ?>" style="margin-left:8px;"><?php esc_html_e( 'Learn more', 'reactwoo-geocore' ); ?></a>
+				<a class="button button-primary rwgc-geo-btn" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ); ?>"><?php esc_html_e( 'Install', 'reactwoo-geocore' ); ?></a>
+				<a class="rwgc-geo-link" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ); ?>" style="margin-left:0.65rem;"><?php esc_html_e( 'Learn more', 'reactwoo-geocore' ); ?></a>
 			</p>
 		</div>
 	<?php else : ?>

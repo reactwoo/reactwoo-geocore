@@ -124,6 +124,9 @@ class RWGC_Admin_Targeting_Nav {
 	 * @return void
 	 */
 	public static function render_tabs( $current ) {
+		if ( function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell() ) {
+			return;
+		}
 		if ( ! class_exists( 'RWGC_Admin_Route_Registry', false ) ) {
 			return;
 		}

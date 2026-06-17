@@ -41,7 +41,7 @@ if ( $has_pro && class_exists( 'RWGCP_Google_Integration', false ) ) {
 	} elseif ( 'campaign' === $rwgc_insights_mode ) {
 		$rwgc_insights_nav_slug = 'rwgc-usage-campaign';
 	}
-	if ( class_exists( 'RWGC_Insights_Nav', false ) ) {
+	if ( ! $rwgc_platform_shell && class_exists( 'RWGC_Insights_Nav', false ) ) {
 		RWGC_Insights_Nav::render( $rwgc_insights_nav_slug );
 	} elseif ( ! $rwgc_platform_shell ) {
 		RWGC_Admin::render_inner_nav( $rwgc_insights_nav_slug );

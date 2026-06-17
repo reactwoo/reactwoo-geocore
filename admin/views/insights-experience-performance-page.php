@@ -9,12 +9,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$rwgo_active = class_exists( 'RWGC_Admin_UI', false ) && RWGC_Admin_UI::is_plugin_active( 'reactwoo-geo-optimise/reactwoo-geo-optimise.php' );
+$rwgo_active    = class_exists( 'RWGC_Admin_UI', false ) && RWGC_Admin_UI::is_plugin_active( 'reactwoo-geo-optimise/reactwoo-geo-optimise.php' );
+$platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
 ?>
 <div class="wrap rwgc-wrap rwgc-suite rwgc-insights-dashboard">
 	<?php RWGC_Admin_UI::render_page_header( __( 'Experience performance', 'reactwoo-geocore' ), __( 'Experiment outcomes, winners, and conversion reporting.', 'reactwoo-geocore' ) ); ?>
 	<?php
-	if ( class_exists( 'RWGC_Insights_Nav', false ) ) {
+	if ( ! $platform_shell && class_exists( 'RWGC_Insights_Nav', false ) ) {
 		RWGC_Insights_Nav::render( 'rwgc-insights-experiments' );
 	}
 	?>

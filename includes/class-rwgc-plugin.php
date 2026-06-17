@@ -100,6 +100,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-insights.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-insights-ui.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-insights-nav.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-geo-ai-suggestions.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-capability-registry.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-targeting-nav.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-targeting-variants.php';

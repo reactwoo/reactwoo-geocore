@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $readiness = isset( $readiness ) && is_array( $readiness ) ? $readiness : array();
 $providers = isset( $providers ) && is_array( $providers ) ? $providers : array();
+$platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
 ?>
 <div class="wrap rwgc-wrap rwgc-suite rwgc-insights-dashboard">
 	<?php
@@ -20,7 +21,7 @@ $providers = isset( $providers ) && is_array( $providers ) ? $providers : array(
 	);
 	?>
 	<?php
-	if ( class_exists( 'RWGC_Insights_Nav', false ) ) {
+	if ( ! $platform_shell && class_exists( 'RWGC_Insights_Nav', false ) ) {
 		RWGC_Insights_Nav::render( 'rwgc-insights-readiness' );
 	}
 	?>

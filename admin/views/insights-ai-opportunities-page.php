@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $recommendations = isset( $recommendations ) && is_array( $recommendations ) ? $recommendations : array();
 $ai_provider     = isset( $ai_provider ) && is_array( $ai_provider ) ? $ai_provider : null;
+$platform_shell  = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
 ?>
 <div class="wrap rwgc-wrap rwgc-suite rwgc-insights-dashboard">
 	<?php
@@ -20,7 +21,7 @@ $ai_provider     = isset( $ai_provider ) && is_array( $ai_provider ) ? $ai_provi
 	);
 	?>
 	<?php
-	if ( class_exists( 'RWGC_Insights_Nav', false ) ) {
+	if ( ! $platform_shell && class_exists( 'RWGC_Insights_Nav', false ) ) {
 		RWGC_Insights_Nav::render( 'rwgc-insights-ai' );
 	}
 	?>

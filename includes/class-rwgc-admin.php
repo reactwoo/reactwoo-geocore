@@ -481,13 +481,37 @@ class RWGC_Admin {
 		}
 		if ( preg_match( '/(rwgc-targeting|rwgc-suite-variants|rwgc-workflow-variant|rwgc-visibility-rules)/', $hook ) ) {
 			wp_enqueue_style(
+				'rwgc-platform-ui',
+				RWGC_URL . 'admin/css/rwgc-platform-ui.css',
+				array( 'rwgc-suite' ),
+				RWGC_VERSION
+			);
+			wp_enqueue_style(
 				'rwgc-targeting',
 				RWGC_URL . 'admin/css/rwgc-targeting.css',
+				array( 'rwgc-platform-ui' ),
+				RWGC_VERSION
+			);
+		}
+		if ( preg_match( '/(rwgc-insights|rwgc-usage|rwgcm-attribution|rwgc-experiences)/', $hook ) ) {
+			wp_enqueue_style(
+				'rwgc-platform-ui',
+				RWGC_URL . 'admin/css/rwgc-platform-ui.css',
 				array( 'rwgc-suite' ),
 				RWGC_VERSION
 			);
 		}
 		if ( false !== strpos( $hook, 'rwgc-targeting-hub' ) ) {
+			$pages     = class_exists( 'RWGC_Page_Version', false ) ? RWGC_Page_Version::get_page_choices( 80 ) : array();
+			$countries = array();
+			if ( class_exists( 'RWGC_Countries', false ) ) {
+				foreach ( RWGC_Countries::get_options() as $code => $name ) {
+					$countries[] = array(
+						'code' => (string) $code,
+						'name' => (string) $name,
+					);
+				}
+			}
 			wp_enqueue_script(
 				'rwgc-targeting-assistant',
 				RWGC_URL . 'admin/js/rwgc-targeting-assistant.js',
@@ -502,16 +526,33 @@ class RWGC_Admin {
 					'capabilities' => class_exists( 'RWGC_Capability_Registry', false )
 						? RWGC_Capability_Registry::export_for_assistant()
 						: array(),
+					'pages'        => $pages,
+					'countries'    => $countries,
 					'i18n'         => array(
-						'opening'       => __( 'What would you like to do?', 'reactwoo-geocore' ),
-						'goalVariant'   => __( 'Show a different page', 'reactwoo-geocore' ),
-						'goalRule'      => __( 'Show or hide content', 'reactwoo-geocore' ),
-						'goalExperience'=> __( 'Create an Experience', 'reactwoo-geocore' ),
-						'whoSees'       => __( 'Who should see this version?', 'reactwoo-geocore' ),
-						'country'       => __( 'Country', 'reactwoo-geocore' ),
-						'included'      => __( 'Included', 'reactwoo-geocore' ),
-						'expLockTitle'  => __( 'Experiences require Geo Optimise', 'reactwoo-geocore' ),
-						'expLockBody'   => __( 'Use Experiences to split traffic, measure conversions, and choose winning versions.', 'reactwoo-geocore' ),
+						'assistantName'  => __( 'Geo Assistant', 'reactwoo-geocore' ),
+						'opening'        => __( 'Hi, what would you like to target?', 'reactwoo-geocore' ),
+						'goalVariant'    => __( 'Show a different page', 'reactwoo-geocore' ),
+						'goalRule'       => __( 'Show or hide content', 'reactwoo-geocore' ),
+						'goalExperience' => __( 'Create an Experience', 'reactwoo-geocore' ),
+						'whichPage'      => __( 'Great. Which page should we create a version for?', 'reactwoo-geocore' ),
+						'whoSees'        => __( 'Who should see this version?', 'reactwoo-geocore' ),
+						'whichCountry'   => __( 'Which country should see the new page?', 'reactwoo-geocore' ),
+						'havePage'       => __( 'Do you already have a page for this country?', 'reactwoo-geocore' ),
+						'country'        => __( 'Country', 'reactwoo-geocore' ),
+						'included'       => __( 'Included', 'reactwoo-geocore' ),
+						'choosePage'     => __( 'Choose a page…', 'reactwoo-geocore' ),
+						'chooseCountry'  => __( 'Choose a country…', 'reactwoo-geocore' ),
+						'continue'       => __( 'Continue', 'reactwoo-geocore' ),
+						'methodExisting' => __( 'Use existing page', 'reactwoo-geocore' ),
+						'methodDuplicate'=> __( 'Duplicate original page', 'reactwoo-geocore' ),
+						'methodBlank'    => __( 'Create blank page', 'reactwoo-geocore' ),
+						'reviewTemplate' => __( 'Visitors in %2$s will see a new page. Everyone else will see %1$s.', 'reactwoo-geocore' ),
+						'activate'       => __( 'Continue setup', 'reactwoo-geocore' ),
+						'preview'        => __( 'Preview', 'reactwoo-geocore' ),
+						'statusReady'    => __( 'Ready', 'reactwoo-geocore' ),
+						'statusInProgress'=> __( 'In progress', 'reactwoo-geocore' ),
+						'expLockTitle'   => __( 'Experiences require Geo Optimise', 'reactwoo-geocore' ),
+						'expLockBody'    => __( 'Use Experiences to split traffic, measure conversions, and choose winning versions.', 'reactwoo-geocore' ),
 					),
 				)
 			);

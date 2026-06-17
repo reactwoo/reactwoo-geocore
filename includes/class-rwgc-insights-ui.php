@@ -21,6 +21,189 @@ class RWGC_Insights_UI {
 	 * @return void
 	 */
 	public static function render_status_badge( $status ) {
+		self::render_short_badge( $status );
+	}
+
+	/**
+	 * Short status badge for dashboard cards.
+	 *
+	 * @param string $status Provider status slug.
+	 * @return void
+	 */
+	public static function render_short_badge( $status ) {
+		$status = sanitize_key( (string) $status );
+		$map    = array(
+			'active'              => array( 'label' => __( 'Active', 'reactwoo-geocore' ), 'tone' => 'success' ),
+			'inactive'            => array( 'label' => __( 'Needs setup', 'reactwoo-geocore' ), 'tone' => 'warning' ),
+			'missing'             => array( 'label' => __( 'Not installed', 'reactwoo-geocore' ), 'tone' => 'neutral' ),
+			'requires_license'    => array( 'label' => __( 'Locked', 'reactwoo-geocore' ), 'tone' => 'locked' ),
+			'requires_dependency' => array( 'label' => __( 'Locked', 'reactwoo-geocore' ), 'tone' => 'locked' ),
+			'planned'             => array( 'label' => __( 'Planned', 'reactwoo-geocore' ), 'tone' => 'neutral' ),
+			'no_data'             => array( 'label' => __( 'No data', 'reactwoo-geocore' ), 'tone' => 'warning' ),
+		);
+		$row = isset( $map[ $status ] ) ? $map[ $status ] : array( 'label' => $status, 'tone' => 'neutral' );
+		echo '<span class="rwgc-geo-badge rwgc-geo-badge--' . esc_attr( $row['tone'] ) . '" title="' . esc_attr( self::badge_tooltip( $status ) ) . '">' . esc_html( $row['label'] ) . '</span>';
+	}
+
+	/**
+	 * @param string $status Status slug.
+	 * @return string
+	 */
+	private static function badge_tooltip( $status ) {
+		$tips = array(
+			'active'           => __( 'Working on this site.', 'reactwoo-geocore' ),
+			'inactive'         => __( 'Installed but needs configuration.', 'reactwoo-geocore' ),
+			'no_data'          => __( 'No data has been collected yet.', 'reactwoo-geocore' ),
+			'requires_license' => __( 'Requires licence activation.', 'reactwoo-geocore' ),
+			'missing'          => __( 'Product is not installed.', 'reactwoo-geocore' ),
+		);
+		return isset( $tips[ $status ] ) ? $tips[ $status ] : '';
+	}
+
+	/**
+	 * Satellite dashboard card — one primary CTA + View details link.
+	 *
+	 * @param array<string, mixed> $provider Provider row.
+	 * @return void
+	 */
+	public static function render_satellite_dashboard_card( array $provider ) {
+		if ( empty( $provider['label'] ) ) {
+			return;
+		}
+
+		$status  = isset( $provider['status'] ) ? (string) $provider['status'] : 'inactive';
+		$metric  = self::get_dashboard_metric_line( $provider );
+		$cta     = self::get_dashboard_primary_action( $provider );
+		$details = class_exists( 'RWGC_Insights', false )
+			? RWGC_Insights::get_provider_details_url( (string) $provider['id'] )
+			: '';
+		$summary = ! empty( $provider['summary'] ) ? wp_trim_words( (string) $provider['summary'], 14, '…' ) : '';
+
+		echo '<article class="rwgc-insights-dash-card rwgc-insights-dash-card--' . esc_attr( sanitize_key( $status ) ) . '">';
+		echo '<header class="rwgc-insights-dash-card__head">';
+		echo '<h3 class="rwgc-insights-dash-card__title">' . esc_html( (string) $provider['label'] ) . '</h3>';
+		self::render_short_badge( $status );
+		echo '</header>';
+		if ( '' !== $summary ) {
+			echo '<p class="rwgc-insights-dash-card__summary">' . esc_html( $summary ) . '</p>';
+		}
+		if ( '' !== $metric ) {
+			echo '<p class="rwgc-insights-dash-card__metric">' . esc_html( $metric ) . '</p>';
+		}
+		echo '<footer class="rwgc-insights-dash-card__foot">';
+		if ( is_array( $cta ) && ! empty( $cta['url'] ) && ! empty( $cta['label'] ) ) {
+			echo '<a class="button button-primary rwgc-geo-btn" href="' . esc_url( (string) $cta['url'] ) . '">' . esc_html( (string) $cta['label'] ) . '</a>';
+		}
+		if ( '' !== $details ) {
+			echo '<a class="rwgc-geo-link rwgc-insights-dash-card__details" href="' . esc_url( $details ) . '">' . esc_html__( 'View details', 'reactwoo-geocore' ) . '</a>';
+		}
+		echo '</footer></article>';
+	}
+
+	/**
+	 * @param array<string, mixed> $provider Provider row.
+	 * @return string
+	 */
+	public static function get_dashboard_metric_line( array $provider ) {
+		$id = isset( $provider['id'] ) ? (string) $provider['id'] : '';
+		if ( ! empty( $provider['metrics'] ) && is_array( $provider['metrics'] ) ) {
+			foreach ( $provider['metrics'] as $metric ) {
+				if ( ! is_array( $metric ) || empty( $metric['label'] ) ) {
+					continue;
+				}
+				$value = isset( $metric['value'] ) ? (string) $metric['value'] : '';
+				if ( '' === $value || '—' === $value ) {
+					continue;
+				}
+				return sprintf(
+					/* translators: 1: value, 2: label */
+					__( '%1$s %2$s', 'reactwoo-geocore' ),
+					$value,
+					strtolower( (string) $metric['label'] )
+				);
+			}
+		}
+		if ( 'geo-ai' === $id ) {
+			return __( 'Sync not enabled', 'reactwoo-geocore' );
+		}
+		return '';
+	}
+
+	/**
+	 * @param array<string, mixed> $provider Provider row.
+	 * @return array<string, mixed>
+	 */
+	public static function get_dashboard_primary_action( array $provider ) {
+		$id = isset( $provider['id'] ) ? (string) $provider['id'] : '';
+		if ( 'geo-core' === $id ) {
+			return array(
+				'url'     => function_exists( 'rw_geo_app_url' ) ? rw_geo_app_url( 'targeting', 'rwgc-targeting-hub' ) : admin_url( 'admin.php?page=rwgc-targeting-hub' ),
+				'label'   => __( 'Manage', 'reactwoo-geocore' ),
+				'primary' => true,
+			);
+		}
+
+		$action = self::get_provider_primary_action( $provider );
+		if ( empty( $action['label'] ) ) {
+			return $action;
+		}
+		$short = array(
+			'Manage rules'           => __( 'Manage', 'reactwoo-geocore' ),
+			'MaxMind settings'       => __( 'Configure', 'reactwoo-geocore' ),
+			'Run site audit'         => __( 'Enable sync', 'reactwoo-geocore' ),
+			'Open experiments'       => __( 'View', 'reactwoo-geocore' ),
+			'Open experiment reports'=> __( 'View reports', 'reactwoo-geocore' ),
+			'Create your first rule' => __( 'Create', 'reactwoo-geocore' ),
+		);
+		$label = (string) $action['label'];
+		if ( isset( $short[ $label ] ) ) {
+			$action['label'] = $short[ $label ];
+		}
+		return $action;
+	}
+
+	/**
+	 * Compact numbered top actions list.
+	 *
+	 * @param array<int, array<string, mixed>> $recommendations Rows.
+	 * @return void
+	 */
+	public static function render_top_actions( array $recommendations ) {
+		echo '<section class="rwgc-insights-top-actions" aria-labelledby="rwgc-insights-top-actions-title">';
+		echo '<h2 id="rwgc-insights-top-actions-title" class="rwgc-insights-section-title">' . esc_html__( 'Top actions', 'reactwoo-geocore' ) . '</h2>';
+		if ( empty( $recommendations ) ) {
+			echo '<p class="description">' . esc_html__( 'Nothing urgent right now.', 'reactwoo-geocore' ) . '</p></section>';
+			return;
+		}
+		echo '<ol class="rwgc-insights-top-actions__list">';
+		$n = 0;
+		foreach ( $recommendations as $rec ) {
+			if ( ! is_array( $rec ) || empty( $rec['label'] ) || $n >= 3 ) {
+				continue;
+			}
+			++$n;
+			$provider = isset( $rec['provider_label'] ) ? (string) $rec['provider_label'] : '';
+			echo '<li class="rwgc-insights-top-actions__item">';
+			echo '<div class="rwgc-insights-top-actions__text">';
+			if ( '' !== $provider ) {
+				echo '<span class="rwgc-insights-top-actions__product">' . esc_html( $provider ) . '</span> ';
+			}
+			echo '<strong>' . esc_html( (string) $rec['label'] ) . '</strong>';
+			if ( ! empty( $rec['reason'] ) ) {
+				echo '<span class="rwgc-insights-top-actions__reason"> — ' . esc_html( (string) $rec['reason'] ) . '</span>';
+			}
+			echo '</div></li>';
+		}
+		echo '</ol></section>';
+	}
+
+	/**
+	 * Status badge for capability / provider states (legacy full labels).
+	 *
+	 * @param string $status Provider status slug.
+	 * @return void
+	 */
+	public static function render_status_badge_legacy( $status ) {
 		$status = sanitize_key( (string) $status );
 		$labels = array(
 			'active'              => __( 'Active', 'reactwoo-geocore' ),

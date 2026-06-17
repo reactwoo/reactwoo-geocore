@@ -28,6 +28,7 @@ $links = array(
 		'capability'  => 'advanced_rules',
 	),
 );
+$platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
 ?>
 <div class="wrap rwgc-wrap rwgc-suite rwgc-targeting-advanced">
 	<?php
@@ -37,7 +38,7 @@ $links = array(
 	);
 	?>
 	<?php
-	if ( class_exists( 'RWGC_Admin_Targeting_Nav', false ) ) {
+	if ( ! $platform_shell && class_exists( 'RWGC_Admin_Targeting_Nav', false ) ) {
 		RWGC_Admin_Targeting_Nav::render_tabs( 'rwgc-targeting-advanced' );
 	}
 	?>

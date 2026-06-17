@@ -12,7 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 $variant_rows = class_exists( 'RWGC_Admin_Targeting_Variants', false )
 	? RWGC_Admin_Targeting_Variants::get_table_rows()
 	: array();
-$create_url   = admin_url( 'admin.php?page=rwgc-workflow-variant' );
+$create_url     = admin_url( 'admin.php?page=rwgc-workflow-variant' );
+$platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
 ?>
 <div class="wrap rwgc-wrap rwgc-suite rwgc-targeting-variants">
 	<?php
@@ -22,7 +23,7 @@ $create_url   = admin_url( 'admin.php?page=rwgc-workflow-variant' );
 	);
 	?>
 	<?php
-	if ( class_exists( 'RWGC_Admin_Targeting_Nav', false ) ) {
+	if ( ! $platform_shell && class_exists( 'RWGC_Admin_Targeting_Nav', false ) ) {
 		RWGC_Admin_Targeting_Nav::render_tabs( 'rwgc-suite-variants' );
 	}
 	?>
