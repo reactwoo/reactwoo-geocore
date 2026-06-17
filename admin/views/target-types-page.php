@@ -19,8 +19,8 @@ $help                    = isset( $rwgc_portable_ctx['help_urls'] ) && is_array(
 
 $quick_actions = array(
 	array(
-		'url'     => admin_url( 'admin.php?page=rwgc-suite-variants' ),
-		'label'   => __( 'Page versions', 'reactwoo-geocore' ),
+		'url'     => function_exists( 'rw_geo_app_url' ) ? rw_geo_app_url( 'targeting', 'rwgc-suite-variants' ) : admin_url( 'admin.php?page=rwgc-suite-variants' ),
+		'label'   => __( 'Variants', 'reactwoo-geocore' ),
 		'primary' => true,
 	),
 );

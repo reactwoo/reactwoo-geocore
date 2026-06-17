@@ -43,8 +43,19 @@ class RWGC_Admin_Section_Hubs {
 		if ( ! class_exists( 'RWGC_Admin', false ) || ! RWGC_Admin::can_manage() ) {
 			return;
 		}
-		$cards = self::get_hub_cards( 'targeting', 'rwgc-targeting-hub' );
-		include RWGC_PATH . 'admin/views/targeting-hub-page.php';
+		include RWGC_PATH . 'admin/views/targeting-assistant-page.php';
+	}
+
+	/**
+	 * Targeting → Advanced secondary tools.
+	 *
+	 * @return void
+	 */
+	public static function render_targeting_advanced() {
+		if ( ! class_exists( 'RWGC_Admin', false ) || ! RWGC_Admin::can_manage() ) {
+			return;
+		}
+		include RWGC_PATH . 'admin/views/targeting-advanced-page.php';
 	}
 
 	/**
@@ -172,7 +183,7 @@ class RWGC_Admin_Section_Hubs {
 			'rwgc-targeting-audiences'=> __( 'Audience definitions for targeting eligibility and reporting.', 'reactwoo-geocore' ),
 			'rwgc-targeting-campaigns'=> __( 'Campaign references used by targeting and attribution workflows.', 'reactwoo-geocore' ),
 			'rwgc-target-types'       => __( 'Condition catalog and targeting simulation reference.', 'reactwoo-geocore' ),
-			'rwgc-suite-variants'     => __( 'Experiment and A/B test variants from Geo Optimise.', 'reactwoo-geocore' ),
+			'rwgc-suite-variants'     => __( 'Country page variants — deterministic routing by visitor context.', 'reactwoo-geocore' ),
 			'geo-elementor-rules'     => __( 'Dynamic content by pages, sections, widgets, templates, and popups.', 'reactwoo-geocore' ),
 			'geo-elementor'           => __( 'Elementor integration and compatibility status.', 'reactwoo-geocore' ),
 			'geo-content'             => __( 'Geo Content blocks and shortcode-driven experiences.', 'reactwoo-geocore' ),

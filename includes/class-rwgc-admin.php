@@ -139,12 +139,23 @@ class RWGC_Admin {
 			);
 			self::register_app_route(
 				array(
-					'section'   => 'experiences',
+					'section'   => 'targeting',
 					'route'     => 'variants',
 					'menu_slug' => 'rwgc-suite-variants',
 					'label'     => __( 'Variants', 'reactwoo-geocore' ),
-					'order'     => 10,
+					'order'     => 15,
 					'callback'  => array( 'RWGC_Suite_Admin', 'render_suite_variants' ),
+				)
+			);
+			self::register_app_route(
+				array(
+					'section'        => 'targeting',
+					'route'          => 'variant-wizard',
+					'menu_slug'      => 'rwgc-workflow-variant',
+					'label'          => __( 'Create variant', 'reactwoo-geocore' ),
+					'order'          => 90,
+					'is_section_nav' => false,
+					'callback'       => array( 'RWGC_Suite_Admin', 'render_workflow_variant' ),
 				)
 			);
 		}
@@ -176,9 +187,20 @@ class RWGC_Admin {
 				'section'   => 'targeting',
 				'route'     => 'targeting-home',
 				'menu_slug' => 'rwgc-targeting-hub',
-				'label'     => __( 'Overview', 'reactwoo-geocore' ),
+				'label'     => __( 'Assistant', 'reactwoo-geocore' ),
 				'order'     => 5,
 				'callback'  => array( 'RWGC_Admin_Section_Hubs', 'render_targeting_hub' ),
+			)
+		);
+
+		self::register_app_route(
+			array(
+				'section'   => 'targeting',
+				'route'     => 'advanced',
+				'menu_slug' => 'rwgc-targeting-advanced',
+				'label'     => __( 'Advanced', 'reactwoo-geocore' ),
+				'order'     => 35,
+				'callback'  => array( 'RWGC_Admin_Section_Hubs', 'render_targeting_advanced' ),
 			)
 		);
 
@@ -455,6 +477,43 @@ class RWGC_Admin {
 				RWGC_URL . 'admin/css/rwgc-insights.css',
 				array( 'rwgc-suite' ),
 				RWGC_VERSION
+			);
+		}
+		if ( preg_match( '/(rwgc-targeting|rwgc-suite-variants|rwgc-workflow-variant|rwgc-visibility-rules)/', $hook ) ) {
+			wp_enqueue_style(
+				'rwgc-targeting',
+				RWGC_URL . 'admin/css/rwgc-targeting.css',
+				array( 'rwgc-suite' ),
+				RWGC_VERSION
+			);
+		}
+		if ( false !== strpos( $hook, 'rwgc-targeting-hub' ) ) {
+			wp_enqueue_script(
+				'rwgc-targeting-assistant',
+				RWGC_URL . 'admin/js/rwgc-targeting-assistant.js',
+				array( 'jquery' ),
+				RWGC_VERSION,
+				true
+			);
+			wp_localize_script(
+				'rwgc-targeting-assistant',
+				'rwgcTargetingAssistant',
+				array(
+					'capabilities' => class_exists( 'RWGC_Capability_Registry', false )
+						? RWGC_Capability_Registry::export_for_assistant()
+						: array(),
+					'i18n'         => array(
+						'opening'       => __( 'What would you like to do?', 'reactwoo-geocore' ),
+						'goalVariant'   => __( 'Show a different page', 'reactwoo-geocore' ),
+						'goalRule'      => __( 'Show or hide content', 'reactwoo-geocore' ),
+						'goalExperience'=> __( 'Create an Experience', 'reactwoo-geocore' ),
+						'whoSees'       => __( 'Who should see this version?', 'reactwoo-geocore' ),
+						'country'       => __( 'Country', 'reactwoo-geocore' ),
+						'included'      => __( 'Included', 'reactwoo-geocore' ),
+						'expLockTitle'  => __( 'Experiences require Geo Optimise', 'reactwoo-geocore' ),
+						'expLockBody'   => __( 'Use Experiences to split traffic, measure conversions, and choose winning versions.', 'reactwoo-geocore' ),
+					),
+				)
 			);
 		}
 		if ( preg_match( '/(rwgc-suite-home|rwgc-getting-started|rwgc-workflow-variant|rwgc-suite-variants)/', $hook ) ) {
@@ -877,7 +936,6 @@ class RWGC_Admin {
 
 		$items = array(
 			'rwgc-dashboard'      => __( 'Overview', 'reactwoo-geocore' ),
-			'rwgc-suite-variants' => __( 'Page versions', 'reactwoo-geocore' ),
 			'rwgc-target-types'   => __( 'Rule builder', 'reactwoo-geocore' ),
 			'rwgc-usage'          => __( 'Geo reports', 'reactwoo-geocore' ),
 			'rwgc-tools'          => __( 'Tools', 'reactwoo-geocore' ),

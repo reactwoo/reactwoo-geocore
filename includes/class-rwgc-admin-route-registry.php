@@ -294,43 +294,53 @@ class RWGC_Admin_Route_Registry {
 				'menu_slug' => 'rwgc-targeting-hub',
 				'section'   => 'targeting',
 				'route'     => 'targeting-home',
-				'label'     => __( 'Overview', 'reactwoo-geocore' ),
+				'label'     => __( 'Assistant', 'reactwoo-geocore' ),
 				'order'     => 5,
+			),
+			array(
+				'menu_slug' => 'rwgc-suite-variants',
+				'section'   => 'targeting',
+				'route'     => 'variants',
+				'label'     => __( 'Variants', 'reactwoo-geocore' ),
+				'order'     => 15,
 			),
 			array(
 				'menu_slug' => 'rwgc-visibility-rules',
 				'section'   => 'targeting',
 				'route'     => 'rules',
 				'label'     => __( 'Rules', 'reactwoo-geocore' ),
-				'order'     => 10,
-			),
-			array(
-				'menu_slug' => 'rwgc-target-types',
-				'section'   => 'targeting',
-				'route'     => 'geo-conditions',
-				'label'     => __( 'Geo conditions', 'reactwoo-geocore' ),
-				'order'     => 30,
-			),
-			array(
-				'menu_slug' => 'rwgc-targeting-audiences',
-				'section'   => 'targeting',
-				'route'     => 'audiences',
-				'label'     => __( 'Audiences', 'reactwoo-geocore' ),
 				'order'     => 20,
 			),
 			array(
-				'menu_slug' => 'rwgc-targeting-campaigns',
+				'menu_slug' => 'rwgc-targeting-advanced',
 				'section'   => 'targeting',
-				'route'     => 'campaigns',
-				'label'     => __( 'Campaigns', 'reactwoo-geocore' ),
-				'order'     => 25,
+				'route'     => 'advanced',
+				'label'     => __( 'Advanced', 'reactwoo-geocore' ),
+				'order'     => 35,
 			),
 			array(
-				'menu_slug'      => 'rwgc-suite-variants',
-				'section'        => 'experiences',
-				'route'          => 'variants',
-				'label'          => __( 'Variants', 'reactwoo-geocore' ),
-				'order'          => 10,
+				'menu_slug'      => 'rwgc-targeting-audiences',
+				'section'        => 'targeting',
+				'route'          => 'audiences',
+				'label'          => __( 'Audiences', 'reactwoo-geocore' ),
+				'order'          => 40,
+				'is_section_nav' => false,
+			),
+			array(
+				'menu_slug'      => 'rwgc-targeting-campaigns',
+				'section'        => 'targeting',
+				'route'          => 'campaigns',
+				'label'          => __( 'Campaigns', 'reactwoo-geocore' ),
+				'order'          => 45,
+				'is_section_nav' => false,
+			),
+			array(
+				'menu_slug'      => 'rwgc-target-types',
+				'section'        => 'targeting',
+				'route'          => 'geo-conditions',
+				'label'          => __( 'Geo conditions', 'reactwoo-geocore' ),
+				'order'          => 50,
+				'is_section_nav' => false,
 			),
 			array(
 				'menu_slug' => 'rwgc-experiences-hub',
@@ -578,10 +588,10 @@ class RWGC_Admin_Route_Registry {
 		if ( in_array( $slug, array( 'rwgc-integrations-hub', 'rwgc-integrations-gutenberg', 'rwgc-integrations-woocommerce' ), true ) ) {
 			return 'integrations';
 		}
-		if ( in_array( $slug, array( 'rwgc-target-types', 'rwgc-visibility-rules', 'rwgc-targeting-hub', 'rwgc-targeting-audiences', 'rwgc-targeting-campaigns' ), true ) ) {
+		if ( in_array( $slug, array( 'rwgc-target-types', 'rwgc-visibility-rules', 'rwgc-targeting-hub', 'rwgc-targeting-audiences', 'rwgc-targeting-campaigns', 'rwgc-suite-variants', 'rwgc-targeting-advanced', 'rwgc-workflow-variant' ), true ) ) {
 			return 'targeting';
 		}
-		if ( in_array( $slug, array( 'rwgc-experiences-hub', 'rwgc-suite-variants' ), true ) ) {
+		if ( in_array( $slug, array( 'rwgc-experiences-hub' ), true ) ) {
 			return 'experiences';
 		}
 		if ( in_array( $slug, array( 'rwgc-getting-started', 'rwgc-suite-home' ), true ) ) {

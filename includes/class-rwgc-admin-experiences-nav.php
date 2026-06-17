@@ -21,7 +21,6 @@ class RWGC_Admin_Experiences_Nav {
 	 */
 	public static function get_hub_slugs() {
 		$slugs = array(
-			'rwgc-suite-variants',
 			'geo-elementor-rules',
 			'geo-content',
 			'rwgo-dashboard',
@@ -91,12 +90,14 @@ class RWGC_Admin_Experiences_Nav {
 			'geo-content'         => __( 'Geo content', 'reactwoo-geocore' ),
 			'rwgo-dashboard'      => __( 'Experiments', 'reactwoo-geocore' ),
 			'rwgo-reports'        => __( 'Reports', 'reactwoo-geocore' ),
-			'rwgc-suite-variants' => __( 'Variants', 'reactwoo-geocore' ),
 		);
 
 		foreach ( $routes as $slug => $route ) {
 			if ( ( $route['section'] ?? '' ) !== 'experiences' ) {
 				continue;
+			}
+			if ( 'rwgc-experiences-hub' === $slug ) {
+				$routes[ $slug ]['is_section_nav'] = false;
 			}
 			if ( isset( $labels[ $slug ] ) ) {
 				$routes[ $slug ]['label'] = $labels[ $slug ];

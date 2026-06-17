@@ -100,6 +100,9 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-insights.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-insights-ui.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-insights-nav.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-capability-registry.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-admin-targeting-nav.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-admin-targeting-variants.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-module-registry.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-onboarding.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-workflows.php';
@@ -193,6 +196,7 @@ class RWGC_Plugin {
 			RWGC_Suite_Admin::init();
 			RWGC_Insights::init();
 			RWGC_Insights_Nav::init();
+			RWGC_Admin_Targeting_Nav::init();
 			RWGC_Admin::init();
 		}
 

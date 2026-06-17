@@ -99,9 +99,17 @@ class RWGC_Insights {
 		}
 		if ( $rule_count <= 0 ) {
 			$recommendations[] = array(
-				'label'    => __( 'Create your first rule', 'reactwoo-geocore' ),
+				'label'    => __( 'Create your first country variant or content rule', 'reactwoo-geocore' ),
 				'priority' => 2,
-				'reason'   => __( 'Targeting and visibility start with a saved rule.', 'reactwoo-geocore' ),
+				'reason'   => __( 'Targeting decides who sees what — start with a country variant or rule.', 'reactwoo-geocore' ),
+			);
+		}
+		$variant_count = self::count_page_variants();
+		if ( $variant_count > 0 && ! class_exists( 'RWGO_Plugin', false ) ) {
+			$recommendations[] = array(
+				'label'    => __( 'Test which page performs better', 'reactwoo-geocore' ),
+				'priority' => 4,
+				'reason'   => __( 'You have country variants. Use Geo Optimise Experiences to split traffic and measure winners.', 'reactwoo-geocore' ),
 			);
 		}
 

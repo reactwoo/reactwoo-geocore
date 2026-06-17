@@ -99,7 +99,7 @@ class RWGC_Suite_Admin {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
-		include RWGC_PATH . 'admin/views/suite-variants.php';
+		include RWGC_PATH . 'admin/views/targeting-variants-page.php';
 	}
 
 	/**
