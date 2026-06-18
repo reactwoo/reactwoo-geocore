@@ -32,17 +32,20 @@
 		( detected.intents || [] ).forEach( function ( row ) {
 			$wrap.append( chip( row.label || row.key, 'intent' ) );
 		} );
+		( detected.keywords || [] ).forEach( function ( row ) {
+			$wrap.append( chip( row.text, row.type || 'keyword' ) );
+		} );
+		if ( detected.source_targeting && detected.source_targeting.label ) {
+			$wrap.append( chip( detected.source_targeting.label, 'source-targeting' ) );
+		}
 		( detected.entities || [] ).forEach( function ( row ) {
-			if ( row.type === 'country' && detected.variant_groups && detected.variant_groups.length ) {
+			if ( row.type === 'country' && ( ( detected.variant_groups && detected.variant_groups.length ) || ( detected.source_targeting && detected.source_targeting.label ) ) ) {
 				return;
 			}
 			$wrap.append( chip( row.label || row.value, row.type || 'entity' ) );
 		} );
 		( detected.variant_groups || [] ).forEach( function ( row ) {
 			$wrap.append( chip( row.label, 'variant-group' ) );
-		} );
-		( detected.keywords || [] ).forEach( function ( row ) {
-			$wrap.append( chip( row.text, row.type || 'keyword' ) );
 		} );
 		return $wrap;
 	}
@@ -58,7 +61,7 @@
 	function userBubble( text, detected ) {
 		var $bubble = $( '<div>', { class: 'rwgc-targeting-assistant__bubble rwgc-targeting-assistant__bubble--user' } );
 		$bubble.append( $( '<div>', { class: 'rwgc-targeting-assistant__bubble-body', text: text } ) );
-		if ( detected && ( ( detected.variant_groups && detected.variant_groups.length ) || ( detected.entities && detected.entities.length ) || ( detected.keywords && detected.keywords.length ) || ( detected.intents && detected.intents.length ) ) ) {
+		if ( detected && ( ( detected.source_targeting && detected.source_targeting.label ) || ( detected.variant_groups && detected.variant_groups.length ) || ( detected.entities && detected.entities.length ) || ( detected.keywords && detected.keywords.length ) || ( detected.intents && detected.intents.length ) ) ) {
 			$bubble.append( $( '<div>', { class: 'rwgc-targeting-assistant__detected-label', text: i18n.detectedLabel || 'Detected:' } ) );
 			$bubble.append( renderChips( detected ) );
 		}
@@ -119,7 +122,10 @@
 		$plan.removeClass( 'rwgc-is-hidden' ).empty();
 
 		var title = i18n.setupPlan || 'Targeting plan';
-		if ( proposal.intent === 'create_geo_variants' ) {
+		if ( proposal.intent === 'create_geo_variant_plan' ) {
+			var planRef = proposal.params && proposal.params.source_page_ref ? proposal.params.source_page_ref : '';
+			title = planRef ? ( String( planRef ).charAt( 0 ).toUpperCase() + String( planRef ).slice( 1 ) + ' targeting plan' ) : ( i18n.setupPlan || 'Targeting plan' );
+		} else if ( proposal.intent === 'create_geo_variants' ) {
 			var pageRef = proposal.params && proposal.params.source_page_ref ? proposal.params.source_page_ref : ( proposal.params && proposal.params.page_ref ? proposal.params.page_ref : '' );
 			title = pageRef ? ( String( pageRef ).charAt( 0 ).toUpperCase() + String( pageRef ).slice( 1 ) + ' variants' ) : ( i18n.setupVariants || 'Page variants' );
 		} else if ( proposal.params && proposal.params.page_ref ) {
