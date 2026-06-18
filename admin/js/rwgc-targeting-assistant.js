@@ -33,7 +33,13 @@
 			$wrap.append( chip( row.label || row.key, 'intent' ) );
 		} );
 		( detected.entities || [] ).forEach( function ( row ) {
+			if ( row.type === 'country' && detected.variant_groups && detected.variant_groups.length ) {
+				return;
+			}
 			$wrap.append( chip( row.label || row.value, row.type || 'entity' ) );
+		} );
+		( detected.variant_groups || [] ).forEach( function ( row ) {
+			$wrap.append( chip( row.label, 'variant-group' ) );
 		} );
 		( detected.keywords || [] ).forEach( function ( row ) {
 			$wrap.append( chip( row.text, row.type || 'keyword' ) );
@@ -52,7 +58,7 @@
 	function userBubble( text, detected ) {
 		var $bubble = $( '<div>', { class: 'rwgc-targeting-assistant__bubble rwgc-targeting-assistant__bubble--user' } );
 		$bubble.append( $( '<div>', { class: 'rwgc-targeting-assistant__bubble-body', text: text } ) );
-		if ( detected && ( ( detected.entities && detected.entities.length ) || ( detected.keywords && detected.keywords.length ) ) ) {
+		if ( detected && ( ( detected.variant_groups && detected.variant_groups.length ) || ( detected.entities && detected.entities.length ) || ( detected.keywords && detected.keywords.length ) || ( detected.intents && detected.intents.length ) ) ) {
 			$bubble.append( $( '<div>', { class: 'rwgc-targeting-assistant__detected-label', text: i18n.detectedLabel || 'Detected:' } ) );
 			$bubble.append( renderChips( detected ) );
 		}
@@ -112,10 +118,22 @@
 		$hint.addClass( 'rwgc-is-hidden' );
 		$plan.removeClass( 'rwgc-is-hidden' ).empty();
 
-		var title = proposal.params && proposal.params.page_ref ? proposal.params.page_ref : ( i18n.setupPlan || 'Targeting plan' );
+		var title = i18n.setupPlan || 'Targeting plan';
+		if ( proposal.intent === 'create_geo_variants' ) {
+			var pageRef = proposal.params && proposal.params.source_page_ref ? proposal.params.source_page_ref : ( proposal.params && proposal.params.page_ref ? proposal.params.page_ref : '' );
+			title = pageRef ? ( String( pageRef ).charAt( 0 ).toUpperCase() + String( pageRef ).slice( 1 ) + ' variants' ) : ( i18n.setupVariants || 'Page variants' );
+		} else if ( proposal.params && proposal.params.page_ref ) {
+			title = proposal.params.page_ref;
+		}
 		$plan.append( $( '<h3>' ).text( title ) );
 
-		if ( proposal.steps && proposal.steps.length ) {
+		if ( proposal.setup_summary ) {
+			proposal.setup_summary.split( '\n' ).forEach( function ( line ) {
+				if ( line ) {
+					$plan.append( $( '<p>' ).text( line ) );
+				}
+			} );
+		} else if ( proposal.steps && proposal.steps.length ) {
 			proposal.steps.forEach( function ( step, idx ) {
 				$plan.append(
 					$( '<div>', { class: 'rwgc-geo-setup-variant' } ).append(
@@ -185,11 +203,14 @@
 		var phrase = $( '#rwgc-targeting-phrase' ).val();
 		phrase = phrase ? String( phrase ).trim() : '';
 		if ( ! phrase || ! cfg.previewUrl ) {
+			state.preview = null;
+			++state.previewSeq;
 			updateLivePreview( null );
 			return;
 		}
 		state.previewTimer = setTimeout( function () {
 			var seq = ++state.previewSeq;
+			state.preview = null;
 			$( '#rwgc-targeting-detecting' ).removeClass( 'rwgc-is-hidden' );
 			apiPost( cfg.previewUrl, { message: phrase, context: buildContext() } )
 				.done( function ( data ) {
@@ -218,9 +239,11 @@
 			return;
 		}
 
+		++state.previewSeq;
 		var detected = state.preview && state.preview.detected ? state.preview.detected : null;
 		appendUser( phrase, detected );
 		$( '#rwgc-targeting-phrase' ).val( '' );
+		state.preview = null;
 		updateLivePreview( null );
 
 		var $loading = assistantBubble( '<p>' + esc( i18n.checking || 'Checking what Geo Core can build…' ) + '</p>' );
