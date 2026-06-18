@@ -512,6 +512,7 @@ class RWGC_Admin {
 					);
 				}
 			}
+			wp_enqueue_style( 'dashicons' );
 			wp_enqueue_script(
 				'rwgc-targeting-assistant',
 				RWGC_URL . 'admin/js/rwgc-targeting-assistant.js',
@@ -519,58 +520,46 @@ class RWGC_Admin {
 				RWGC_VERSION,
 				true
 			);
+			$bundle_status = class_exists( 'RWGA_Intelligence_Sync_Service', false )
+				? RWGA_Intelligence_Sync_Service::get_status()
+				: array();
 			wp_localize_script(
 				'rwgc-targeting-assistant',
 				'rwgcTargetingAssistant',
 				array(
-					'restUrl'        => esc_url_raw( rest_url( 'reactwoo-geocore/v1/targeting/interpret' ) ),
-					'restNonce'      => wp_create_nonce( 'wp_rest' ),
-					'geoAiAvailable' => did_action( 'rwga_loaded' ) > 0,
-					'capabilities' => class_exists( 'RWGC_Capability_Registry', false )
+					'previewUrl'      => esc_url_raw( rest_url( 'geo-ai/v1/interpret/preview' ) ),
+					'interpretUrl'    => esc_url_raw( rest_url( 'geo-ai/v1/interpret' ) ),
+					'executeUrl'      => esc_url_raw( rest_url( 'geo-ai/v1/interpret/execute' ) ),
+					'bundleUrl'       => esc_url_raw( rest_url( 'geo-ai/v1/intelligence/command/bundle' ) ),
+					'restNonce'       => wp_create_nonce( 'wp_rest' ),
+					'previewDebounce' => 600,
+					'geoAiAvailable'  => did_action( 'rwga_loaded' ) > 0,
+					'bundleStatus'    => $bundle_status,
+					'capabilities'    => class_exists( 'RWGC_Capability_Registry', false )
 						? RWGC_Capability_Registry::export_for_assistant()
 						: array(),
-					'pages'        => $pages,
-					'countries'    => $countries,
-					'i18n'         => array(
+					'pages'           => $pages,
+					'countries'       => $countries,
+					'keywordHints'      => self::get_assistant_keyword_hints(),
+					'i18n'              => array(
 						'assistantName'   => __( 'Geo Assistant', 'reactwoo-geocore' ),
-						'opening'         => __( 'Describe what you want to show and to whom in the box below — or pick a quick start when I ask.', 'reactwoo-geocore' ),
-						'goalVariant'     => __( 'Show a different page', 'reactwoo-geocore' ),
-						'goalRule'        => __( 'Show or hide content', 'reactwoo-geocore' ),
-						'goalExperience'  => __( 'Create an Experience', 'reactwoo-geocore' ),
-						'whichPage'       => __( 'Which page should we create a version for?', 'reactwoo-geocore' ),
-						'whoSees'         => __( 'Who should see this version?', 'reactwoo-geocore' ),
-						'whichCountry'    => __( 'Which country should see the new page?', 'reactwoo-geocore' ),
-						'havePage'        => __( 'Do you already have a page for this country?', 'reactwoo-geocore' ),
-						'country'         => __( 'Country', 'reactwoo-geocore' ),
-						'included'        => __( 'Included', 'reactwoo-geocore' ),
+						'opening'         => __( 'Tell me what you want to target. I can detect countries, devices, pages, variants, weather, campaigns, URLs, popups and product rules.', 'reactwoo-geocore' ),
+						'detectedLabel'   => __( 'Detected:', 'reactwoo-geocore' ),
+						'livePreview'     => __( 'Likely intent', 'reactwoo-geocore' ),
+						'checking'        => __( 'Checking what Geo Core can build…', 'reactwoo-geocore' ),
+						'createSetup'     => __( 'Create setup', 'reactwoo-geocore' ),
+						'editSetup'       => __( 'Edit setup', 'reactwoo-geocore' ),
+						'showDebug'       => __( 'Show debug', 'reactwoo-geocore' ),
+						'cancel'          => __( 'Cancel', 'reactwoo-geocore' ),
 						'choosePage'      => __( 'Choose a page…', 'reactwoo-geocore' ),
-						'chooseCountry'   => __( 'Choose a country…', 'reactwoo-geocore' ),
-						'continue'        => __( 'Continue', 'reactwoo-geocore' ),
-						'methodExisting'  => __( 'Use existing page', 'reactwoo-geocore' ),
-						'methodDuplicate' => __( 'Duplicate original page', 'reactwoo-geocore' ),
-						'methodBlank'     => __( 'Create blank page', 'reactwoo-geocore' ),
-						'reviewTemplate'  => __( 'Visitors in %2$s will see a new page. Everyone else will see %1$s.', 'reactwoo-geocore' ),
-						'activate'        => __( 'Continue setup', 'reactwoo-geocore' ),
-						'preview'         => __( 'Preview', 'reactwoo-geocore' ),
-						'statusReady'     => __( 'Ready', 'reactwoo-geocore' ),
-						'statusInProgress'=> __( 'In progress', 'reactwoo-geocore' ),
-						'expLockTitle'    => __( 'Experiences require Geo Optimise', 'reactwoo-geocore' ),
-						'expLockBody'     => __( 'Use Experiences to split traffic, measure conversions, and choose winning versions.', 'reactwoo-geocore' ),
-						'interpret'       => __( 'Interpret', 'reactwoo-geocore' ),
-						'startOver'       => __( 'Start over', 'reactwoo-geocore' ),
-						'interpreting'    => __( 'Interpreting…', 'reactwoo-geocore' ),
-						'geoAiRequired'   => __( 'Natural-language commands require ReactWoo Geo AI. You can still use the quick-start buttons below.', 'reactwoo-geocore' ),
-						'enterPhrase'     => __( 'Type what you want to target first.', 'reactwoo-geocore' ),
-						'needPage'        => __( 'Which page should this apply to?', 'reactwoo-geocore' ),
-						'lowConfidence'   => __( 'I am not fully confident about that command. Please confirm or adjust the details below.', 'reactwoo-geocore' ),
-						'proposalReady'   => __( 'Here is what I understood:', 'reactwoo-geocore' ),
-						'deviceLabel'     => __( 'Device', 'reactwoo-geocore' ),
-						'logicAnd'        => __( 'AND', 'reactwoo-geocore' ),
-						'logicOr'         => __( 'OR', 'reactwoo-geocore' ),
-						'conditionsLabel' => __( 'Targeting conditions', 'reactwoo-geocore' ),
-						'notPrefix'       => __( 'NOT ', 'reactwoo-geocore' ),
-						'loggedInYes'     => __( 'Logged in', 'reactwoo-geocore' ),
-						'loggedInNo'      => __( 'Logged out', 'reactwoo-geocore' ),
+						'pageLabel'       => __( 'Page', 'reactwoo-geocore' ),
+						'variantLabel'    => __( 'Variant', 'reactwoo-geocore' ),
+						'setupPlan'       => __( 'Targeting plan', 'reactwoo-geocore' ),
+						'statusPending'   => __( 'Pending confirmation', 'reactwoo-geocore' ),
+						'statusConfirmed' => __( 'Confirmed', 'reactwoo-geocore' ),
+						'setupConfirmed'  => __( 'Setup confirmed. Continue in the workflow.', 'reactwoo-geocore' ),
+						'geoAiRequired'   => __( 'Natural-language commands require ReactWoo Geo AI.', 'reactwoo-geocore' ),
+						'lowConfidence'   => __( 'Could not interpret that command.', 'reactwoo-geocore' ),
 					),
 				)
 			);
@@ -601,6 +590,43 @@ class RWGC_Admin {
 		);
 
 		// Rule builder + playground: RWGC_Targeting_Rule_Builder_Assets::enqueue_targeting_admin().
+	}
+
+	/**
+	 * Keyword/capability hint groups for the targeting assistant cloud.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public static function get_assistant_keyword_hints() {
+		return array(
+			array(
+				'label' => __( 'Actions', 'reactwoo-geocore' ),
+				'items' => array(
+					array( 'label' => __( 'create variant', 'reactwoo-geocore' ), 'insert' => __( 'Create a variant of this page for ', 'reactwoo-geocore' ) ),
+					array( 'label' => __( 'show', 'reactwoo-geocore' ), 'insert' => __( 'Show this only in ', 'reactwoo-geocore' ) ),
+					array( 'label' => __( 'hide', 'reactwoo-geocore' ), 'insert' => __( 'Hide this from ', 'reactwoo-geocore' ) ),
+					array( 'label' => __( 'diagnose', 'reactwoo-geocore' ), 'insert' => __( 'Why is this not showing?', 'reactwoo-geocore' ) ),
+				),
+			),
+			array(
+				'label' => __( 'Conditions', 'reactwoo-geocore' ),
+				'items' => array(
+					array( 'label' => __( 'country', 'reactwoo-geocore' ), 'insert' => 'Australia' ),
+					array( 'label' => __( 'device', 'reactwoo-geocore' ), 'insert' => 'mobile' ),
+					array( 'label' => __( 'weather', 'reactwoo-geocore' ), 'insert' => __( 'when the weather is raining', 'reactwoo-geocore' ) ),
+					array( 'label' => __( 'campaign', 'reactwoo-geocore' ), 'insert' => 'utm_source ' ),
+				),
+			),
+			array(
+				'label' => __( 'Examples', 'reactwoo-geocore' ),
+				'items' => array(
+					array( 'label' => 'Australia', 'insert' => 'Australia' ),
+					array( 'label' => 'France', 'insert' => 'France' ),
+					array( 'label' => 'Germany', 'insert' => 'Germany' ),
+					array( 'label' => 'homepage', 'insert' => 'homepage' ),
+				),
+			),
+		);
 	}
 
 	/**
