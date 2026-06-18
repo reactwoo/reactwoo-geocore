@@ -21,11 +21,28 @@
 		proposal: null,
 	};
 
-	function assistantBubble( text ) {
-		return $( '<div>', {
+	function escapeHtml( value ) {
+		return $( '<div>' ).text( value === undefined || value === null ? '' : String( value ) ).html();
+	}
+
+	function assistantBubble( text, allowHtml ) {
+		var $bubble = $( '<div>', {
 			class: 'rwgc-targeting-assistant__bubble rwgc-targeting-assistant__bubble--assistant',
-			html: '<span class="rwgc-targeting-assistant__who">' + ( i18n.assistantName || 'Geo Assistant' ) + '</span><span class="rwgc-targeting-assistant__text">' + text + '</span>',
 		} );
+		var $text = $( '<span>', { class: 'rwgc-targeting-assistant__text' } );
+		if ( allowHtml ) {
+			$text.html( text );
+		} else {
+			$text.text( text );
+		}
+		$bubble.append(
+			$( '<span>', {
+				class: 'rwgc-targeting-assistant__who',
+				text: i18n.assistantName || 'Geo Assistant',
+			} ),
+			$text
+		);
+		return $bubble;
 	}
 
 	function userBubble( text ) {
@@ -59,6 +76,16 @@
 	function appendAssistant( text, $controls ) {
 		var $thread = $( '#rwgc-targeting-thread' );
 		$thread.append( assistantBubble( text ) );
+		clearStep();
+		if ( $controls && $controls.length ) {
+			$( '#rwgc-targeting-step' ).append( $controls );
+		}
+		scrollThread();
+	}
+
+	function appendAssistantHtml( html, $controls ) {
+		var $thread = $( '#rwgc-targeting-thread' );
+		$thread.append( assistantBubble( html, true ) );
 		clearStep();
 		if ( $controls && $controls.length ) {
 			$( '#rwgc-targeting-step' ).append( $controls );
@@ -236,40 +263,40 @@
 		var chips = [];
 		proposal.conditions.forEach( function ( cond, idx ) {
 			if ( idx > 0 ) {
-				chips.push( '<span class="rwgc-targeting-assistant__logic">' + joinLabel + '</span>' );
+				chips.push( '<span class="rwgc-targeting-assistant__logic">' + escapeHtml( joinLabel ) + '</span>' );
 			}
-			chips.push( '<span class="rwgc-targeting-assistant__cond-chip">' + formatConditionChip( cond ) + '</span>' );
+			chips.push( '<span class="rwgc-targeting-assistant__cond-chip">' + escapeHtml( formatConditionChip( cond ) ) + '</span>' );
 		} );
-		return '<div class="rwgc-targeting-assistant__conditions" aria-label="' + ( i18n.conditionsLabel || 'Targeting conditions' ) + '">' + chips.join( '' ) + '</div>';
+		return '<div class="rwgc-targeting-assistant__conditions" aria-label="' + escapeHtml( i18n.conditionsLabel || 'Targeting conditions' ) + '">' + chips.join( '' ) + '</div>';
 	}
 
 	function proposalListHtml( proposal ) {
 		var params = proposal.params || {};
 		var rows = [];
 		if ( proposal.summary ) {
-			rows.push( '<li>' + proposal.summary + '</li>' );
+			rows.push( '<li>' + escapeHtml( proposal.summary ) + '</li>' );
 		}
 		if ( proposal.compound && proposal.conditions && proposal.conditions.length ) {
 			rows.push( '<li>' + conditionListHtml( proposal ) + '</li>' );
 		}
 		if ( proposal.intent ) {
-			rows.push( '<li><strong>Intent:</strong> ' + proposal.intent + '</li>' );
+			rows.push( '<li><strong>Intent:</strong> ' + escapeHtml( proposal.intent ) + '</li>' );
 		}
 		if ( proposal.matched_action ) {
-			rows.push( '<li><strong>Action:</strong> ' + proposal.matched_action + '</li>' );
+			rows.push( '<li><strong>Action:</strong> ' + escapeHtml( proposal.matched_action ) + '</li>' );
 		}
 		if ( params.countries && params.countries.length ) {
-			rows.push( '<li><strong>Countries:</strong> ' + params.countries.join( ', ' ) + '</li>' );
+			rows.push( '<li><strong>Countries:</strong> ' + params.countries.map( escapeHtml ).join( ', ' ) + '</li>' );
 		}
 		if ( params.device ) {
-			rows.push( '<li><strong>' + ( i18n.deviceLabel || 'Device' ) + ':</strong> ' + params.device + '</li>' );
+			rows.push( '<li><strong>' + escapeHtml( i18n.deviceLabel || 'Device' ) + ':</strong> ' + escapeHtml( params.device ) + '</li>' );
 		}
 		if ( proposal.confidence ) {
 			rows.push( '<li><strong>Confidence:</strong> ' + Math.round( proposal.confidence * 100 ) + '%</li>' );
 		}
 		if ( proposal.warnings && proposal.warnings.length ) {
 			proposal.warnings.forEach( function ( w ) {
-				rows.push( '<li class="rwgc-targeting-assistant__warning">' + w + '</li>' );
+				rows.push( '<li class="rwgc-targeting-assistant__warning">' + escapeHtml( w ) + '</li>' );
 			} );
 		}
 		return '<ul class="rwgc-targeting-assistant__proposal">' + rows.join( '' ) + '</ul>';
@@ -542,11 +569,11 @@
 					return;
 				}
 				applyProposalToState( proposal, phrase );
-				var intro = ( i18n.proposalReady || 'Here is what I understood:' ) + proposalListHtml( proposal );
+				var intro = escapeHtml( i18n.proposalReady || 'Here is what I understood:' ) + proposalListHtml( proposal );
 				if ( proposal.confidence && proposal.confidence < 0.7 ) {
-					intro = ( i18n.lowConfidence || '' ) + proposalListHtml( proposal );
+					intro = escapeHtml( i18n.lowConfidence || '' ) + proposalListHtml( proposal );
 				}
-				appendAssistant( intro, proposalReviewActions() );
+				appendAssistantHtml( intro, proposalReviewActions() );
 			} )
 			.fail( function ( xhr ) {
 				var msg = i18n.geoAiRequired || 'Could not interpret that command.';

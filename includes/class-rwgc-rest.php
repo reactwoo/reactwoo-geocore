@@ -98,12 +98,12 @@ class RWGC_REST {
 	}
 
 	/**
-	 * Targeting assistant: editors who can manage pages.
+	 * Targeting assistant: users who can access protected Geo Core admin screens.
 	 *
 	 * @return bool
 	 */
 	public static function permissions_targeting_assistant() {
-		return current_user_can( 'edit_pages' );
+		return class_exists( 'RWGC_Admin', false ) && RWGC_Admin::can_manage();
 	}
 
 	/**
@@ -164,10 +164,6 @@ class RWGC_REST {
 		 * @param array<string,mixed> $context Resolved admin context.
 		 */
 		$result = apply_filters( 'rwgc_targeting_interpret_result', $result, $phrase, $context );
-
-		if ( function_exists( 'rwgc_get_portable_targeting_editor_context' ) ) {
-			$result['editor_context'] = rwgc_get_portable_targeting_editor_context();
-		}
 
 		return rest_ensure_response( $result );
 	}
