@@ -530,6 +530,7 @@ class RWGC_Admin {
 					'previewUrl'      => esc_url_raw( rest_url( 'geo-ai/v1/interpret/preview' ) ),
 					'interpretUrl'    => esc_url_raw( rest_url( 'geo-ai/v1/interpret' ) ),
 					'executeUrl'      => esc_url_raw( rest_url( 'geo-ai/v1/interpret/execute' ) ),
+					'learningEventUrl' => esc_url_raw( rest_url( 'geo-ai/v1/intelligence/command/learning-event' ) ),
 					'bundleUrl'       => esc_url_raw( rest_url( 'geo-ai/v1/intelligence/command/bundle' ) ),
 					'restNonce'       => wp_create_nonce( 'wp_rest' ),
 					'previewDebounce' => 600,

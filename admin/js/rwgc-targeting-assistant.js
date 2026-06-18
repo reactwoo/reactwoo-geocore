@@ -171,6 +171,9 @@
 	function formatProposalHtml( response ) {
 		var proposal = response.proposal || {};
 		var html = '<p><strong>' + esc( response.message || proposal.summary || '' ) + '</strong></p>';
+		if ( response.badge || proposal.interpretation_badge ) {
+			html += '<p><em class="rwgc-targeting-assistant__badge">' + esc( response.badge || proposal.interpretation_badge ) + '</em></p>';
+		}
 		if ( proposal.steps && proposal.steps.length ) {
 			html += '<ol class="rwgc-targeting-assistant__steps">';
 			proposal.steps.forEach( function ( step ) {
@@ -287,6 +290,23 @@
 			} );
 	}
 
+	function recordLearningFeedback( outcome ) {
+		if ( ! cfg.learningEventUrl || ! state.proposal ) {
+			return;
+		}
+		var proposal = state.proposal;
+		apiPost( cfg.learningEventUrl, {
+			raw_phrase: proposal.original_message || '',
+			normalised_phrase: proposal.original_message || '',
+			intent_key: proposal.intent || '',
+			action_key: proposal.matched_action || '',
+			params: proposal.params || {},
+			confidence: proposal.confidence || 0,
+			outcome: outcome,
+			approved_by_user: outcome === 'executed' || outcome === 'accepted',
+		} );
+	}
+
 	function executeProposal() {
 		if ( ! state.proposalId || ! cfg.executeUrl ) {
 			goWorkflowFromProposal();
@@ -294,6 +314,7 @@
 		}
 		apiPost( cfg.executeUrl, { proposal_id: state.proposalId } )
 			.done( function ( response ) {
+				recordLearningFeedback( 'executed' );
 				var result = response && response.result ? response.result : {};
 				if ( result.redirect_steps && result.redirect_steps.length ) {
 					persistPortableAndGo( result.redirect_steps[0].url );
@@ -431,6 +452,7 @@
 			} else if ( 'debug' === action ) {
 				showDebug();
 			} else if ( 'cancel' === action ) {
+				recordLearningFeedback( 'rejected' );
 				start();
 			}
 		} );
