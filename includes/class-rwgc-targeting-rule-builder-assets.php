@@ -201,7 +201,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 		$selector = esc_js( (string) $selector );
 		$get_mode = $get_mode_js ? $get_mode_js : "'show_if'";
 		$extra    = $extra_options_js ? ',' . $extra_options_js : '';
-		return "(function(){function rwgcRbTryMount(){var t=document.querySelector('{$selector}');if(!t||!window.ReactWooRuleBuilder||t.getAttribute('data-rwgc-rb-mounted')){return;}window.ReactWooRuleBuilder.mount({textarea:t,getMode:function(){return {$get_mode};}{$extra}});}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',rwgcRbTryMount);}else{rwgcRbTryMount();}})();";
+		return "(function(){function rwgcAssistantPrefill(t){try{var raw=sessionStorage.getItem('rwgc_targeting_assistant_portable');if(!raw||!t){return;}var data=JSON.parse(raw);if(!data||!data.portable_rule_set){return;}t.value=JSON.stringify(data.portable_rule_set,null,2);sessionStorage.removeItem('rwgc_targeting_assistant_portable');}catch(e){}}function rwgcRbTryMount(){var t=document.querySelector('{$selector}');if(!t||!window.ReactWooRuleBuilder||t.getAttribute('data-rwgc-rb-mounted')){return;}rwgcAssistantPrefill(t);window.ReactWooRuleBuilder.mount({textarea:t,getMode:function(){return {$get_mode};}{$extra}});}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',rwgcRbTryMount);}else{rwgcRbTryMount();}})();";
 	}
 
 	/**

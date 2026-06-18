@@ -50,6 +50,43 @@ $platform_shell     = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses
 				<div class="rwgc-geo-assistant-panel__body">
 					<div class="rwgc-targeting-assistant__thread" id="rwgc-targeting-thread" aria-live="polite"></div>
 					<div class="rwgc-targeting-assistant__step" id="rwgc-targeting-step"></div>
+					<div class="rwgc-targeting-assistant__composer" id="rwgc-targeting-composer">
+						<label class="rwgc-targeting-assistant__composer-label" for="rwgc-targeting-phrase"><?php esc_html_e( 'Describe your targeting goal', 'reactwoo-geocore' ); ?></label>
+						<textarea
+							id="rwgc-targeting-phrase"
+							class="rwgc-targeting-assistant__phrase"
+							rows="2"
+							placeholder="<?php esc_attr_e( 'Example: Show a different version of the homepage in Australia for mobile users', 'reactwoo-geocore' ); ?>"
+						></textarea>
+						<div class="rwgc-targeting-assistant__composer-context">
+							<div class="rwgc-targeting-assistant__composer-field">
+								<label for="rwgc-composer-page"><?php esc_html_e( 'Page (optional)', 'reactwoo-geocore' ); ?></label>
+								<select id="rwgc-composer-page" class="rwgc-targeting-assistant__select">
+									<option value=""><?php esc_html_e( 'Detect from phrase or choose…', 'reactwoo-geocore' ); ?></option>
+								</select>
+							</div>
+							<div class="rwgc-targeting-assistant__composer-field">
+								<label for="rwgc-composer-country"><?php esc_html_e( 'Country (optional)', 'reactwoo-geocore' ); ?></label>
+								<select id="rwgc-composer-country" class="rwgc-targeting-assistant__select">
+									<option value=""><?php esc_html_e( 'Detect from phrase…', 'reactwoo-geocore' ); ?></option>
+								</select>
+							</div>
+							<div class="rwgc-targeting-assistant__composer-field">
+								<label for="rwgc-composer-device"><?php esc_html_e( 'Device (optional)', 'reactwoo-geocore' ); ?></label>
+								<select id="rwgc-composer-device" class="rwgc-targeting-assistant__select">
+									<option value=""><?php esc_html_e( 'Any / detect from phrase…', 'reactwoo-geocore' ); ?></option>
+									<option value="mobile"><?php esc_html_e( 'Mobile', 'reactwoo-geocore' ); ?></option>
+									<option value="desktop"><?php esc_html_e( 'Desktop', 'reactwoo-geocore' ); ?></option>
+									<option value="tablet"><?php esc_html_e( 'Tablet', 'reactwoo-geocore' ); ?></option>
+								</select>
+							</div>
+						</div>
+						<div class="rwgc-targeting-assistant__composer-actions">
+							<button type="button" class="button button-primary rwgc-geo-btn" id="rwgc-targeting-interpret-btn"><?php esc_html_e( 'Interpret', 'reactwoo-geocore' ); ?></button>
+							<button type="button" class="button" id="rwgc-targeting-reset-btn"><?php esc_html_e( 'Start over', 'reactwoo-geocore' ); ?></button>
+						</div>
+						<p class="description rwgc-targeting-assistant__composer-hint"><?php esc_html_e( 'Type a goal in plain language, or use the quick-start buttons when the assistant asks.', 'reactwoo-geocore' ); ?></p>
+					</div>
 				</div>
 			</div>
 		</div>

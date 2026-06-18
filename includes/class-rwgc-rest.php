@@ -75,6 +75,101 @@ class RWGC_REST {
 				),
 			)
 		);
+
+		register_rest_route(
+			'reactwoo-geocore/v1',
+			'/targeting/interpret',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( __CLASS__, 'post_targeting_interpret' ),
+				'permission_callback' => array( __CLASS__, 'permissions_targeting_assistant' ),
+				'args'                => array(
+					'phrase'  => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_textarea_field',
+					),
+					'context' => array(
+						'default' => array(),
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Targeting assistant: editors who can manage pages.
+	 *
+	 * @return bool
+	 */
+	public static function permissions_targeting_assistant() {
+		return current_user_can( 'edit_pages' );
+	}
+
+	/**
+	 * POST natural-language phrase → structured targeting proposal (Geo AI interpreter).
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public static function post_targeting_interpret( $request ) {
+		if ( ! class_exists( 'RWGA_Local_Intent_Interpreter', false ) ) {
+			return new WP_Error(
+				'rwgc_geo_ai_required',
+				__( 'Install and activate ReactWoo Geo AI to use natural-language targeting commands.', 'reactwoo-geocore' ),
+				array( 'status' => 503 )
+			);
+		}
+
+		$phrase  = trim( (string) $request->get_param( 'phrase' ) );
+		$context = $request->get_param( 'context' );
+		if ( ! is_array( $context ) ) {
+			$context = array();
+		}
+
+		if ( class_exists( 'RWGA_Context_Resolver', false ) ) {
+			$context = RWGA_Context_Resolver::resolve( $context );
+		}
+
+		if ( function_exists( 'rwgc_get_portable_targeting_editor_context' ) ) {
+			$editor_ctx = rwgc_get_portable_targeting_editor_context();
+			if ( is_array( $editor_ctx ) ) {
+				$context['pro'] = ! empty( $editor_ctx['pro'] );
+			}
+		}
+
+		$result = RWGA_Local_Intent_Interpreter::interpret( $phrase, $context );
+
+		if ( ! empty( $context['country_override'] ) && is_string( $context['country_override'] ) ) {
+			if ( empty( $result['params'] ) || ! is_array( $result['params'] ) ) {
+				$result['params'] = array();
+			}
+			if ( empty( $result['params']['countries'] ) ) {
+				$result['params']['countries'] = array( strtoupper( $context['country_override'] ) );
+			}
+		}
+		if ( ! empty( $context['device_override'] ) && is_string( $context['device_override'] ) ) {
+			if ( empty( $result['params'] ) || ! is_array( $result['params'] ) ) {
+				$result['params'] = array();
+			}
+			if ( empty( $result['params']['device'] ) ) {
+				$result['params']['device'] = sanitize_key( $context['device_override'] );
+			}
+		}
+		/**
+		 * Filter targeting assistant interpretation before returning to the admin UI.
+		 *
+		 * @param array<string,mixed> $result  Interpretation payload.
+		 * @param string              $phrase  Raw user phrase.
+		 * @param array<string,mixed> $context Resolved admin context.
+		 */
+		$result = apply_filters( 'rwgc_targeting_interpret_result', $result, $phrase, $context );
+
+		if ( function_exists( 'rwgc_get_portable_targeting_editor_context' ) ) {
+			$result['editor_context'] = rwgc_get_portable_targeting_editor_context();
+		}
+
+		return rest_ensure_response( $result );
 	}
 
 	/**
