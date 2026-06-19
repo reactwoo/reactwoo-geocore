@@ -213,7 +213,7 @@ class RWGC_Plugin {
 		RWGC_REST::init();
 		RWGC_Upsells::init();
 
-		add_action( 'init', array( __CLASS__, 'register_satellite_updater' ), 1 );
+		add_action( 'init', array( __CLASS__, 'register_satellite_updater' ), 2 );
 	}
 
 	/**

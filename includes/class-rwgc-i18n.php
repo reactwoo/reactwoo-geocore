@@ -35,7 +35,7 @@ class RWGC_I18n {
 	private static $init_hook_added = false;
 
 	/**
-	 * Queue textdomain load on the earliest {@see init} pass (before Elementor init priority 0).
+	 * Queue textdomain load on {@see init} priority 1 (WP 6.7+ requires init or later; avoid priority -1 JIT notices).
 	 *
 	 * Satellites call this from {@see plugins_loaded} priority 6 so Geo Core has defined this class
 	 * even when their main file parsed before reactwoo-geocore.php.
@@ -54,7 +54,7 @@ class RWGC_I18n {
 
 		if ( ! self::$init_hook_added ) {
 			self::$init_hook_added = true;
-			add_action( 'init', array( __CLASS__, 'load_all_bootstrapped' ), -1 );
+			add_action( 'init', array( __CLASS__, 'load_all_bootstrapped' ), 1 );
 		}
 	}
 
