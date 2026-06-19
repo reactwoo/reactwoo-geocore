@@ -156,16 +156,38 @@
 		$( '#rwgc-targeting-summary dd[data-key="status"]' ).text( status || i18n.statusPending || 'Pending confirmation' ).removeClass( 'is-empty' );
 	}
 
-	function proposalActions( proposalId ) {
+	function proposalActions( proposalId, proposal ) {
+		proposal = proposal || state.proposal || {};
+		var ready = responseCanExecute( proposal );
 		var $wrap = $( '<div>', { class: 'rwgc-targeting-assistant__actions' } );
+		if ( ready ) {
+			$wrap.append(
+				$( '<button>', { type: 'button', class: 'button button-primary rwgc-geo-btn', text: i18n.createSetup || 'Create setup', 'data-action': 'confirm' } )
+			);
+		} else {
+			if ( proposal.suggested_options && proposal.suggested_options.length ) {
+				$wrap.append(
+					$( '<button>', { type: 'button', class: 'button button-primary rwgc-geo-btn', text: i18n.useSplit || 'Yes, use this split', 'data-action': 'use_split' } )
+				);
+			}
+			$wrap.append(
+				$( '<button>', { type: 'button', class: 'button rwgc-geo-btn', text: i18n.clarifySplit || 'Clarify split', 'data-action': 'clarify' } )
+			);
+		}
 		$wrap.append(
-			$( '<button>', { type: 'button', class: 'button button-primary rwgc-geo-btn', text: i18n.createSetup || 'Create setup', 'data-action': 'confirm' } ),
 			$( '<button>', { type: 'button', class: 'button rwgc-geo-btn', text: i18n.editSetup || 'Edit setup', 'data-action': 'edit' } ),
 			$( '<button>', { type: 'button', class: 'button rwgc-geo-btn', text: i18n.showDebug || 'Show debug', 'data-action': 'debug' } ),
 			$( '<button>', { type: 'button', class: 'button-link rwgc-geo-btn', text: i18n.cancel || 'Cancel', 'data-action': 'cancel' } )
 		);
 		$wrap.data( 'proposal-id', proposalId );
 		return $wrap;
+	}
+
+	function responseCanExecute( proposal ) {
+		if ( typeof proposal.can_execute === 'boolean' ) {
+			return proposal.can_execute;
+		}
+		return proposal.proposal_ready !== false;
 	}
 
 	function formatProposalHtml( response ) {
@@ -275,10 +297,13 @@
 					return;
 				}
 				state.proposal = response.proposal || null;
+				if ( typeof response.can_execute === 'boolean' && state.proposal ) {
+					state.proposal.can_execute = response.can_execute;
+				}
 				state.proposalId = response.proposal_id || '';
 				state.debug = response.debug || null;
 				updateSetupPanel( state.proposal, i18n.statusPending || 'Pending confirmation' );
-				appendAssistant( formatProposalHtml( response ), proposalActions( state.proposalId ) );
+				appendAssistant( formatProposalHtml( response ), proposalActions( state.proposalId, state.proposal ) );
 			} )
 			.fail( function ( xhr ) {
 				$loading.remove();
