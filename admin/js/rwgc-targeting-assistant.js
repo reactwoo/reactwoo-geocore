@@ -234,13 +234,20 @@
 		var actions = response.actions || [];
 		var $wrap = $( '<div>', { class: 'rwgc-targeting-assistant__actions' } );
 		var hasInferred = !!( response.inferred_plan || proposal.inferred_plan );
+		var ready = responseCanExecute( proposal );
 
 		if ( actions.length ) {
 			actions.forEach( function ( row ) {
 				var key = row.key || '';
+				if ( 'confirm' === key && ! ready ) {
+					return;
+				}
 				var primary = ( 'confirm' === key || ( 'use_split' === key && hasInferred ) );
 				if ( 'use_split' === key && ! hasInferred ) {
 					return;
+				}
+				if ( 'clarify' === key ) {
+					key = hasInferred ? 'edit_split' : 'choose_split';
 				}
 				$wrap.append(
 					$( '<button>', {
@@ -251,8 +258,12 @@
 					} )
 				);
 			} );
-		} else {
-			var ready = responseCanExecute( proposal );
+			if ( $wrap.children().length ) {
+				$wrap.data( 'proposal-id', proposalId );
+				return $wrap;
+			}
+		}
+		if ( ! actions.length || ! $wrap.children().length ) {
 			if ( ready ) {
 				$wrap.append(
 					$( '<button>', { type: 'button', class: 'button button-primary rwgc-geo-btn', text: i18n.createSetup || 'Create setup', 'data-action': 'confirm' } )
@@ -287,10 +298,16 @@
 	}
 
 	function responseCanExecute( proposal ) {
+		if ( ! proposal ) {
+			return false;
+		}
 		if ( typeof proposal.can_execute === 'boolean' ) {
 			return proposal.can_execute;
 		}
-		return proposal.proposal_ready !== false;
+		if ( typeof proposal.proposal_ready === 'boolean' ) {
+			return proposal.proposal_ready;
+		}
+		return false;
 	}
 
 	function formatProposalHtml( response ) {
@@ -474,14 +491,18 @@
 			context: buildContext(),
 			debug: true,
 		} ).done( function ( response ) {
-			recordLearningFeedback( 'accepted_inferred_split', {
-				source: source,
-				params: inferred,
-				inferred_plan: inferred,
-			} );
 			if ( response && response.success ) {
+				recordLearningFeedback( 'accepted_inferred_split', {
+					source: source,
+					params: inferred,
+					inferred_plan: inferred,
+				} );
 				applyInterpretResponse( response );
+			} else {
+				showExecutionError( executionErrorMessage( response ) );
 			}
+		} ).fail( function ( xhr ) {
+			showExecutionError( executionErrorMessage( xhr ) );
 		} );
 	}
 
@@ -509,12 +530,20 @@
 	}
 
 	function executeProposal() {
+		if ( ! responseCanExecute( state.proposal ) ) {
+			showExecutionError( i18n.proposalNotReady || i18n.executionFailed || 'This setup needs confirmation before it can be created.' );
+			return;
+		}
 		if ( ! state.proposalId || ! cfg.executeUrl ) {
-			goWorkflowFromProposal();
+			showExecutionError( i18n.executionFailed || 'Setup could not be created. Please review the plan and try again.' );
 			return;
 		}
 		apiPost( cfg.executeUrl, { proposal_id: state.proposalId } )
 			.done( function ( response ) {
+				if ( response && response.success === false ) {
+					showExecutionError( executionErrorMessage( response ) );
+					return;
+				}
 				recordLearningFeedback( 'executed' );
 				var result = response && response.result ? response.result : {};
 				if ( result.redirect_steps && result.redirect_steps.length ) {
@@ -525,9 +554,24 @@
 				appendAssistant( esc( result.message || i18n.setupConfirmed || 'Setup confirmed.' ) );
 				updateSetupPanel( state.proposal, i18n.statusConfirmed || 'Confirmed' );
 			} )
-			.fail( function () {
-				goWorkflowFromProposal();
+			.fail( function ( xhr ) {
+				showExecutionError( executionErrorMessage( xhr ) );
 			} );
+	}
+
+	function executionErrorMessage( response ) {
+		if ( response && response.responseJSON && response.responseJSON.message ) {
+			return response.responseJSON.message;
+		}
+		if ( response && response.message ) {
+			return response.message;
+		}
+		return i18n.executionFailed || 'Setup could not be created. Please review the plan and try again.';
+	}
+
+	function showExecutionError( message ) {
+		appendAssistant( '<p>' + esc( message ) + '</p>' );
+		updateSetupPanel( state.proposal, i18n.statusNeedsConfirmation || 'Needs confirmation' );
 	}
 
 	function persistPortableAndGo( url ) {
@@ -653,6 +697,8 @@
 			} else if ( 'use_split' === action ) {
 				confirmInferredSplit();
 			} else if ( 'ask_ai' === action ) {
+				askAiToCheck();
+			} else if ( 'choose_split' === action || 'clarify' === action ) {
 				askAiToCheck();
 			} else if ( 'edit' === action || 'edit_split' === action || 'edit_manually' === action ) {
 				showEditPanel();

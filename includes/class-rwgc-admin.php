@@ -569,6 +569,8 @@ class RWGC_Admin {
 						'statusNeedsConfirmation' => __( 'Needs confirmation', 'reactwoo-geocore' ),
 						'statusConfirmed' => __( 'Confirmed', 'reactwoo-geocore' ),
 						'setupConfirmed'  => __( 'Setup confirmed. Continue in the workflow.', 'reactwoo-geocore' ),
+						'executionFailed' => __( 'Setup could not be created. Please review the plan and try again.', 'reactwoo-geocore' ),
+						'proposalNotReady' => __( 'This setup needs confirmation before it can be created.', 'reactwoo-geocore' ),
 						'geoAiRequired'   => __( 'Natural-language commands require ReactWoo Geo AI.', 'reactwoo-geocore' ),
 						'lowConfidence'   => __( 'Could not interpret that command.', 'reactwoo-geocore' ),
 					),
