@@ -11,6 +11,8 @@
 		proposalId: '',
 		preview: null,
 		debug: null,
+		lastMessage: '',
+		lastResponse: null,
 		previewTimer: null,
 		previewSeq: 0,
 		sendSeq: 0,
@@ -103,6 +105,54 @@
 		$panel.removeClass( 'rwgc-is-hidden' ).html( html ).append( renderChips( data.detected ) );
 	}
 
+	function setupStatusLabel( response, proposal ) {
+		if ( response && response.status === 'needs_clarification' ) {
+			return i18n.statusNeedsConfirmation || 'Needs confirmation';
+		}
+		if ( proposal && proposal.can_execute === false ) {
+			return i18n.statusNeedsConfirmation || 'Needs confirmation';
+		}
+		return i18n.statusPending || 'Pending confirmation';
+	}
+
+	function renderInferredPlanHtml( inferredPlan ) {
+		if ( ! inferredPlan ) {
+			return '';
+		}
+		var html = '<div class="rwgc-targeting-assistant__inferred-plan-wrap">';
+		html += '<p><strong>' + esc( i18n.thinkYouMean || 'I think you mean:' ) + '</strong></p>';
+		html += '<ul class="rwgc-targeting-assistant__inferred-plan">';
+		if ( inferredPlan.source_targeting ) {
+			var source = inferredPlan.source_targeting;
+			html += '<li><strong>' + esc( source.label || 'Original homepage' ) + '</strong><ul>';
+			html += '<li>' + esc( ( source.countries && source.countries.length > 1 ? 'Countries: ' : 'Country: ' ) + ( source.countries || [] ).join( ', ' ) ) + '</li>';
+			if ( source.weather ) {
+				if ( source.weather.mode === 'any' ) {
+					html += '<li>' + esc( 'Weather: All weather conditions' ) + '</li>';
+				} else if ( source.weather.condition ) {
+					html += '<li>' + esc( 'Weather: ' + source.weather.condition ) + '</li>';
+				}
+			}
+			html += '</ul></li>';
+		}
+		( inferredPlan.variants || [] ).forEach( function ( variant, idx ) {
+			html += '<li><strong>' + esc( variant.label || ( ( i18n.variantLabel || 'Variant' ) + ' ' + ( idx + 1 ) ) ) + '</strong><ul>';
+			html += '<li>' + esc( ( variant.countries && variant.countries.length > 1 ? 'Countries: ' : 'Country: ' ) + ( variant.countries || [] ).join( ' + ' ) ) + '</li>';
+			if ( variant.weather ) {
+				if ( variant.weather.mode === 'any' ) {
+					html += '<li>' + esc( 'Weather: All weather conditions' ) + '</li>';
+				} else if ( variant.weather.condition ) {
+					html += '<li>' + esc( 'Weather: ' + variant.weather.condition ) + '</li>';
+				}
+			}
+			html += '</ul></li>';
+		} );
+		html += '</ul>';
+		html += '<p><strong>' + esc( i18n.isCorrect || 'Is this correct?' ) + '</strong></p>';
+		html += '</div>';
+		return html;
+	}
+
 	function updateSetupPanel( proposal, status ) {
 		var $empty = $( '#rwgc-targeting-setup-empty' );
 		var $hint = $( '#rwgc-targeting-setup-hint' );
@@ -139,6 +189,13 @@
 					$plan.append( $( '<p>' ).text( line ) );
 				}
 			} );
+		} else if ( proposal.inferred_plan ) {
+			renderInferredPlanHtml( proposal.inferred_plan ).replace( /<[^>]+>/g, '\n' ).split( '\n' ).forEach( function ( line ) {
+				line = line.trim();
+				if ( line ) {
+					$plan.append( $( '<p>' ).text( line ) );
+				}
+			} );
 		} else if ( proposal.steps && proposal.steps.length ) {
 			proposal.steps.forEach( function ( step, idx ) {
 				$plan.append(
@@ -156,29 +213,75 @@
 		$( '#rwgc-targeting-summary dd[data-key="status"]' ).text( status || i18n.statusPending || 'Pending confirmation' ).removeClass( 'is-empty' );
 	}
 
-	function proposalActions( proposalId, proposal ) {
-		proposal = proposal || state.proposal || {};
-		var ready = responseCanExecute( proposal );
+	function actionLabel( key, fallback ) {
+		var map = {
+			confirm: i18n.createSetup || 'Create setup',
+			edit: i18n.editSetup || 'Edit setup',
+			debug: i18n.showDebug || 'Show debug',
+			cancel: i18n.cancel || 'Cancel',
+			use_split: i18n.useSplit || 'Yes, use this split',
+			edit_split: i18n.editSplit || 'Edit split',
+			ask_ai: i18n.askAiCheck || i18n.askAi || 'Ask AI to check',
+			choose_split: i18n.chooseSplit || 'Choose split',
+			edit_manually: i18n.editManually || 'Edit manually',
+		};
+		return map[ key ] || fallback || key;
+	}
+
+	function proposalActions( proposalId, response ) {
+		response = response || state.lastResponse || {};
+		var proposal = ( response.proposal || state.proposal || {} );
+		var actions = response.actions || [];
 		var $wrap = $( '<div>', { class: 'rwgc-targeting-assistant__actions' } );
-		if ( ready ) {
-			$wrap.append(
-				$( '<button>', { type: 'button', class: 'button button-primary rwgc-geo-btn', text: i18n.createSetup || 'Create setup', 'data-action': 'confirm' } )
-			);
+		var hasInferred = !!( response.inferred_plan || proposal.inferred_plan );
+
+		if ( actions.length ) {
+			actions.forEach( function ( row ) {
+				var key = row.key || '';
+				var primary = ( 'confirm' === key || ( 'use_split' === key && hasInferred ) );
+				if ( 'use_split' === key && ! hasInferred ) {
+					return;
+				}
+				$wrap.append(
+					$( '<button>', {
+						type: 'button',
+						class: 'button rwgc-geo-btn' + ( primary ? ' button-primary' : '' ) + ( 'cancel' === key ? ' button-link' : '' ),
+						text: row.label || actionLabel( key, key ),
+						'data-action': key,
+					} )
+				);
+			} );
 		} else {
-			if ( proposal.suggested_options && proposal.suggested_options.length ) {
+			var ready = responseCanExecute( proposal );
+			if ( ready ) {
+				$wrap.append(
+					$( '<button>', { type: 'button', class: 'button button-primary rwgc-geo-btn', text: i18n.createSetup || 'Create setup', 'data-action': 'confirm' } )
+				);
+			} else if ( hasInferred ) {
 				$wrap.append(
 					$( '<button>', { type: 'button', class: 'button button-primary rwgc-geo-btn', text: i18n.useSplit || 'Yes, use this split', 'data-action': 'use_split' } )
 				);
 			}
+			if ( ! ready ) {
+				$wrap.append(
+					$( '<button>', { type: 'button', class: 'button rwgc-geo-btn', text: hasInferred ? ( i18n.editSplit || 'Edit split' ) : ( i18n.chooseSplit || 'Choose split' ), 'data-action': hasInferred ? 'edit_split' : 'choose_split' } )
+				);
+			}
+			if ( response.ai_available ) {
+				$wrap.append(
+					$( '<button>', { type: 'button', class: 'button rwgc-geo-btn', text: hasInferred ? ( i18n.askAiCheck || 'Ask AI to check' ) : ( i18n.askAi || 'Ask AI' ), 'data-action': 'ask_ai' } )
+				);
+			}
+			if ( ready ) {
+				$wrap.append(
+					$( '<button>', { type: 'button', class: 'button rwgc-geo-btn', text: i18n.editSetup || 'Edit setup', 'data-action': 'edit' } ),
+					$( '<button>', { type: 'button', class: 'button rwgc-geo-btn', text: i18n.showDebug || 'Show debug', 'data-action': 'debug' } )
+				);
+			}
 			$wrap.append(
-				$( '<button>', { type: 'button', class: 'button rwgc-geo-btn', text: i18n.clarifySplit || 'Clarify split', 'data-action': 'clarify' } )
+				$( '<button>', { type: 'button', class: 'button-link rwgc-geo-btn', text: i18n.cancel || 'Cancel', 'data-action': 'cancel' } )
 			);
 		}
-		$wrap.append(
-			$( '<button>', { type: 'button', class: 'button rwgc-geo-btn', text: i18n.editSetup || 'Edit setup', 'data-action': 'edit' } ),
-			$( '<button>', { type: 'button', class: 'button rwgc-geo-btn', text: i18n.showDebug || 'Show debug', 'data-action': 'debug' } ),
-			$( '<button>', { type: 'button', class: 'button-link rwgc-geo-btn', text: i18n.cancel || 'Cancel', 'data-action': 'cancel' } )
-		);
 		$wrap.data( 'proposal-id', proposalId );
 		return $wrap;
 	}
@@ -192,11 +295,18 @@
 
 	function formatProposalHtml( response ) {
 		var proposal = response.proposal || {};
-		var html = '<p><strong>' + esc( response.message || proposal.summary || '' ) + '</strong></p>';
+		var message = response.message || proposal.summary || '';
+		var html = '<p><strong>' + esc( message.split( '\n\n' )[0] || message ) + '</strong></p>';
+		var inferred = response.inferred_plan || proposal.inferred_plan;
+		if ( inferred && response.status === 'needs_clarification' ) {
+			html += renderInferredPlanHtml( inferred );
+		} else if ( inferred ) {
+			html += renderInferredPlanHtml( inferred );
+		}
 		if ( response.badge || proposal.interpretation_badge ) {
 			html += '<p><em class="rwgc-targeting-assistant__badge">' + esc( response.badge || proposal.interpretation_badge ) + '</em></p>';
 		}
-		if ( proposal.steps && proposal.steps.length ) {
+		if ( proposal.steps && proposal.steps.length && responseCanExecute( proposal ) ) {
 			html += '<ol class="rwgc-targeting-assistant__steps">';
 			proposal.steps.forEach( function ( step ) {
 				html += '<li>' + esc( step.label || '' ) + '</li>';
@@ -211,6 +321,21 @@
 			html += '</ul>';
 		}
 		return html;
+	}
+
+	function applyInterpretResponse( response ) {
+		state.lastResponse = response;
+		state.proposal = response.proposal || null;
+		if ( typeof response.can_execute === 'boolean' && state.proposal ) {
+			state.proposal.can_execute = response.can_execute;
+		}
+		if ( response.inferred_plan && state.proposal ) {
+			state.proposal.inferred_plan = response.inferred_plan;
+		}
+		state.proposalId = response.proposal_id || '';
+		state.debug = response.debug || null;
+		updateSetupPanel( state.proposal, setupStatusLabel( response, state.proposal ) );
+		appendAssistant( formatProposalHtml( response ), proposalActions( state.proposalId, response ) );
 	}
 
 	function buildContext() {
@@ -272,6 +397,7 @@
 
 		++state.previewSeq;
 		var detected = state.preview && state.preview.detected ? state.preview.detected : null;
+		state.lastMessage = phrase;
 		appendUser( phrase, detected );
 		$( '#rwgc-targeting-phrase' ).val( '' );
 		state.preview = null;
@@ -297,13 +423,7 @@
 					return;
 				}
 				state.proposal = response.proposal || null;
-				if ( typeof response.can_execute === 'boolean' && state.proposal ) {
-					state.proposal.can_execute = response.can_execute;
-				}
-				state.proposalId = response.proposal_id || '';
-				state.debug = response.debug || null;
-				updateSetupPanel( state.proposal, i18n.statusPending || 'Pending confirmation' );
-				appendAssistant( formatProposalHtml( response ), proposalActions( state.proposalId, state.proposal ) );
+				applyInterpretResponse( response );
 			} )
 			.fail( function ( xhr ) {
 				$loading.remove();
@@ -315,20 +435,76 @@
 			} );
 	}
 
-	function recordLearningFeedback( outcome ) {
+	function recordLearningFeedback( outcome, extra ) {
 		if ( ! cfg.learningEventUrl || ! state.proposal ) {
 			return;
 		}
+		extra = extra || {};
 		var proposal = state.proposal;
-		apiPost( cfg.learningEventUrl, {
-			raw_phrase: proposal.original_message || '',
-			normalised_phrase: proposal.original_message || '',
+		var payload = {
+			raw_phrase: proposal.original_message || state.lastMessage || '',
+			normalised_phrase: proposal.original_message || state.lastMessage || '',
 			intent_key: proposal.intent || '',
 			action_key: proposal.matched_action || '',
-			params: proposal.params || {},
+			params: extra.params || proposal.params || {},
 			confidence: proposal.confidence || 0,
 			outcome: outcome,
-			approved_by_user: outcome === 'executed' || outcome === 'accepted',
+			approved_by_user: outcome === 'executed' || outcome === 'accepted' || outcome === 'accepted_inferred_split' || outcome === 'accepted_ai_split',
+			interpretation_source: extra.source || proposal.interpretation_source || ( state.lastResponse && state.lastResponse.source ) || '',
+		};
+		if ( extra.correction ) {
+			payload.correction = extra.correction;
+		}
+		if ( proposal.inferred_plan || ( state.lastResponse && state.lastResponse.inferred_plan ) ) {
+			payload.inferred_plan = extra.inferred_plan || proposal.inferred_plan || state.lastResponse.inferred_plan;
+		}
+		apiPost( cfg.learningEventUrl, payload );
+	}
+
+	function confirmInferredSplit() {
+		var inferred = ( state.proposal && state.proposal.inferred_plan ) || ( state.lastResponse && state.lastResponse.inferred_plan );
+		if ( ! inferred || ! cfg.confirmSplitUrl ) {
+			return;
+		}
+		var source = ( state.lastResponse && state.lastResponse.source ) || ( state.proposal && state.proposal.interpretation_source ) || 'local_parser';
+		apiPost( cfg.confirmSplitUrl, {
+			message: state.lastMessage || ( state.proposal && state.proposal.original_message ) || '',
+			inferred_plan: inferred,
+			source: source,
+			context: buildContext(),
+			debug: true,
+		} ).done( function ( response ) {
+			recordLearningFeedback( 'accepted_inferred_split', {
+				source: source,
+				params: inferred,
+				inferred_plan: inferred,
+			} );
+			if ( response && response.success ) {
+				applyInterpretResponse( response );
+			}
+		} );
+	}
+
+	function askAiToCheck() {
+		var phrase = state.lastMessage || ( state.proposal && state.proposal.original_message ) || '';
+		if ( ! phrase || ! cfg.interpretUrl ) {
+			return;
+		}
+		var $loading = assistantBubble( '<p>' + esc( i18n.askAiCheck || 'Ask AI to check' ) + '…</p>' );
+		$loading.addClass( 'is-loading' );
+		$( '#rwgc-targeting-thread' ).append( $loading );
+		scrollThread();
+		apiPost( cfg.interpretUrl, {
+			message: phrase,
+			context: Object.assign( {}, buildContext(), { force_ai: true } ),
+			debug: true,
+		} ).done( function ( response ) {
+			$loading.remove();
+			if ( response && response.success ) {
+				applyInterpretResponse( response );
+			}
+		} ).fail( function () {
+			$loading.remove();
 		} );
 	}
 
@@ -435,6 +611,8 @@
 		state.proposalId = '';
 		state.preview = null;
 		state.debug = null;
+		state.lastMessage = '';
+		state.lastResponse = null;
 		$( '#rwgc-targeting-thread' ).empty();
 		$( '#rwgc-targeting-phrase' ).val( '' );
 		updateLivePreview( null );
@@ -472,7 +650,11 @@
 			var action = $( this ).data( 'action' );
 			if ( 'confirm' === action ) {
 				executeProposal();
-			} else if ( 'edit' === action ) {
+			} else if ( 'use_split' === action ) {
+				confirmInferredSplit();
+			} else if ( 'ask_ai' === action ) {
+				askAiToCheck();
+			} else if ( 'edit' === action || 'edit_split' === action || 'edit_manually' === action ) {
 				showEditPanel();
 			} else if ( 'debug' === action ) {
 				showDebug();
@@ -496,9 +678,17 @@
 				if ( match.length && state.proposal.params ) {
 					state.proposal.params.page_ref = match[0].title;
 				}
-				updateSetupPanel( state.proposal, i18n.statusPending || 'Pending confirmation' );
+				updateSetupPanel( state.proposal, setupStatusLabel( state.lastResponse, state.proposal ) );
 			}
 			$( '#rwgc-targeting-edit-panel' ).addClass( 'rwgc-is-hidden' ).prop( 'hidden', true );
+			if ( state.lastResponse && state.lastResponse.inferred_plan ) {
+				recordLearningFeedback( 'corrected', {
+					correction: {
+						original: state.lastResponse.inferred_plan,
+						corrected: state.proposal.params || {},
+					},
+				} );
+			}
 		} );
 	} );
 }( jQuery ) );
