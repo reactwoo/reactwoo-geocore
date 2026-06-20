@@ -510,11 +510,15 @@
 
 	function executeProposal() {
 		if ( ! state.proposalId || ! cfg.executeUrl ) {
-			goWorkflowFromProposal();
+			showExecutionError();
 			return;
 		}
 		apiPost( cfg.executeUrl, { proposal_id: state.proposalId } )
 			.done( function ( response ) {
+				if ( ! response || ! response.success ) {
+					showExecutionError( response && response.message ? response.message : '' );
+					return;
+				}
 				recordLearningFeedback( 'executed' );
 				var result = response && response.result ? response.result : {};
 				if ( result.redirect_steps && result.redirect_steps.length ) {
@@ -525,9 +529,14 @@
 				appendAssistant( esc( result.message || i18n.setupConfirmed || 'Setup confirmed.' ) );
 				updateSetupPanel( state.proposal, i18n.statusConfirmed || 'Confirmed' );
 			} )
-			.fail( function () {
-				goWorkflowFromProposal();
+			.fail( function ( xhr ) {
+				showExecutionError( xhr && xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '' );
 			} );
+	}
+
+	function showExecutionError( message ) {
+		appendAssistant( esc( message || i18n.setupFailed || 'Setup could not be confirmed. Please try again.' ) );
+		updateSetupPanel( state.proposal, i18n.statusNeedsConfirmation || 'Needs confirmation' );
 	}
 
 	function persistPortableAndGo( url ) {

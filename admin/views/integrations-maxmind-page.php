@@ -15,9 +15,10 @@ $status       = isset( $status ) && is_array( $status ) ? $status : RWGC_MaxMind
 $data         = isset( $data ) && is_array( $data ) ? $data : ( class_exists( 'RWGC_API', false ) ? RWGC_API::get_visitor_data() : array() );
 $page_url     = function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' );
 $settings_url = admin_url( 'admin.php?page=rwgc-settings' );
+$can_manage   = class_exists( 'RWGC_Admin', false ) ? RWGC_Admin::can_manage() : current_user_can( 'manage_options' );
 
 // Handle maintenance actions (update DB, clear cache).
-if ( isset( $_GET['rwgc_action'], $_GET['_wpnonce'] ) && current_user_can( 'manage_options' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+if ( isset( $_GET['rwgc_action'], $_GET['_wpnonce'] ) && $can_manage ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	$action = sanitize_key( wp_unslash( $_GET['rwgc_action'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	if ( in_array( $action, array( 'clear_cache', 'update_db' ), true ) && wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'rwgc_maxmind_action_' . $action ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( 'clear_cache' === $action && class_exists( 'RWGC_Cache', false ) ) {
