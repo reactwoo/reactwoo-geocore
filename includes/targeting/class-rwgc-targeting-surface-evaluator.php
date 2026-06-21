@@ -224,9 +224,11 @@ class RWGC_Targeting_Surface_Evaluator {
 		}
 
 		if ( $visibility_on ) {
-			$set             = null;
-			$portable_match  = true;
-			$library_rule_id = 0;
+			$set                 = null;
+			$portable_match      = true;
+			$portable_unresolved = false;
+			$portable_configured = self::uses_portable_rules( $settings ) || self::has_resolved_portable_config( $settings );
+			$library_rule_id     = 0;
 			if ( ! empty( $settings['rwgc_visibility_rule_library'] ) ) {
 				$library_rule_id = absint( $settings['rwgc_visibility_rule_library'] );
 			} elseif ( ! empty( $settings['rwgc_applied_visibility_rule_id'] ) ) {
@@ -260,25 +262,32 @@ class RWGC_Targeting_Surface_Evaluator {
 					$snapshot         = RWGC_Context_Resolver::resolve_current();
 					$portable_match   = RWGC_Rule_Evaluator::matches( $set, $snapshot );
 				}
-			} elseif ( self::uses_portable_rules( $settings ) || self::has_resolved_portable_config( $settings ) ) {
-				$portable_match = true;
-				$result['reason'] = 'visibility_rules_empty';
+			} elseif ( $portable_configured ) {
+				$portable_match      = false;
+				$portable_unresolved = true;
+				$result['reason']    = 'visibility_rules_unresolved';
 			}
 			$result['portable_match'] = $portable_match;
 			$rules_mode               = self::get_visibility_rules_mode( $settings, is_array( $set ) ? $set : null );
 			$result['visibility_mode'] = $rules_mode;
-			$visibility_show          = function_exists( 'rwgc_visibility_mode_allows_render' )
-				? rwgc_visibility_mode_allows_render( $rules_mode, $portable_match )
-				: $portable_match;
+			if ( $portable_unresolved ) {
+				$visibility_show = false;
+			} else {
+				$visibility_show = function_exists( 'rwgc_visibility_mode_allows_render' )
+					? rwgc_visibility_mode_allows_render( $rules_mode, $portable_match )
+					: $portable_match;
+			}
 			$should_render            = $should_render && $visibility_show;
-			$result['reason']         = $country_on ? 'country_and_visibility_rules' : 'visibility_rules';
+			if ( ! $portable_unresolved ) {
+				$result['reason'] = $country_on ? 'country_and_visibility_rules' : 'visibility_rules';
+			}
 		}
 
 		$rules_match = true;
 		if ( $country_on && ! empty( self::parse_countries( $settings ) ) ) {
 			$rules_match = $rules_match && $result['country_match'];
 		}
-		if ( $visibility_on && isset( $set ) && is_array( $set ) ) {
+		if ( $visibility_on && ( ( isset( $set ) && is_array( $set ) ) || ( isset( $portable_configured ) && $portable_configured ) ) ) {
 			$rules_match = $rules_match && $result['portable_match'];
 		}
 
