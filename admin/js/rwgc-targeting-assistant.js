@@ -13,6 +13,8 @@
 		debug: null,
 		lastMessage: '',
 		lastResponse: null,
+		ambiguities: null,
+		aiInterpretation: null,
 		previewTimer: null,
 		previewSeq: 0,
 		sendSeq: 0,
@@ -106,13 +108,92 @@
 	}
 
 	function setupStatusLabel( response, proposal ) {
-		if ( response && response.status === 'needs_clarification' ) {
+		if ( response && ( response.status === 'needs_confirmation' || response.status === 'needs_clarification' ) ) {
 			return i18n.statusNeedsConfirmation || 'Needs confirmation';
 		}
 		if ( proposal && proposal.can_execute === false ) {
 			return i18n.statusNeedsConfirmation || 'Needs confirmation';
 		}
 		return i18n.statusPending || 'Pending confirmation';
+	}
+
+	function locationOptionLabel( value ) {
+		if ( ! value ) {
+			return '';
+		}
+		if ( value === 'GB' ) {
+			return i18n.useUkCountry || 'United Kingdom country targeting';
+		}
+		if ( String( value ).indexOf( 'region:' ) === 0 ) {
+			var region = String( value ).slice( 7 ).replace( /[-_]/g, ' ' );
+			return region.charAt( 0 ).toUpperCase() + region.slice( 1 ) + ' region targeting';
+		}
+		return value + ' country targeting';
+	}
+
+	function audienceOptionLabel( value ) {
+		if ( value === 'any_audience' ) {
+			return i18n.anyAudience || 'Any audience';
+		}
+		if ( value === 'selected_audience_groups' ) {
+			return i18n.selectedAudiences || 'Choose audience groups';
+		}
+		return value;
+	}
+
+	function renderAmbiguitiesHtml( response ) {
+		var ambiguities = response.ambiguities || ( response.proposal && response.proposal.ambiguities ) || [];
+		var aiInterp = response.ai_interpretation || ( response.proposal && response.proposal.ai_interpretation );
+		if ( ! ambiguities.length && ! aiInterp ) {
+			return '';
+		}
+		var html = '<div class="rwgc-targeting-assistant__ambiguity-wrap">';
+		if ( aiInterp && aiInterp.likely_meaning ) {
+			html += '<p><strong>' + esc( i18n.intelligenceThinks || 'The intelligence layer thinks you mean:' ) + '</strong></p>';
+			html += '<p>' + esc( aiInterp.likely_meaning ) + '</p>';
+		}
+		if ( ambiguities.length ) {
+			html += '<ul class="rwgc-targeting-assistant__ambiguity-list">';
+			ambiguities.forEach( function ( row ) {
+				html += '<li><strong>' + esc( row.field || '' ) + ':</strong> ' + esc( row.raw || '' );
+				if ( row.likely ) {
+					html += ' → <em>' + esc( row.field === 'location' ? locationOptionLabel( row.likely ) : audienceOptionLabel( row.likely ) ) + '</em>';
+				}
+				if ( row.question ) {
+					html += '<br><span class="description">' + esc( row.question ) + '</span>';
+				}
+				html += '</li>';
+			} );
+			html += '</ul>';
+		}
+		if ( aiInterp && aiInterp.reason ) {
+			html += '<p><strong>' + esc( i18n.whyAsking || 'Why I’m asking:' ) + '</strong></p>';
+			html += '<p>' + esc( aiInterp.reason ) + '</p>';
+		} else if ( ambiguities.length ) {
+			var notes = [];
+			ambiguities.forEach( function ( row ) {
+				( row.notes || [] ).forEach( function ( note ) {
+					notes.push( note );
+				} );
+			} );
+			if ( notes.length ) {
+				html += '<p><strong>' + esc( i18n.whyAsking || 'Why I’m asking:' ) + '</strong></p><ul>';
+				notes.forEach( function ( note ) {
+					html += '<li>' + esc( note ) + '</li>';
+				} );
+				html += '</ul>';
+			}
+		}
+		if ( aiInterp && aiInterp.proposal_draft && aiInterp.proposal_draft.rule && aiInterp.proposal_draft.rule.conditions ) {
+			html += '<p><strong>' + esc( i18n.thinkYouMean || 'Proposed conditions:' ) + '</strong></p><ul>';
+			aiInterp.proposal_draft.rule.conditions.forEach( function ( cond ) {
+				html += '<li>' + esc( cond.label || cond.type || '' ) + '</li>';
+			} );
+			html += '</ul>';
+		}
+		html += '<p><strong>' + esc( i18n.isInterpretationCorrect || 'Is this interpretation correct?' ) + '</strong></p>';
+		html += '</div>';
+		return html;
 	}
 
 	function renderInferredPlanHtml( inferredPlan ) {
@@ -222,8 +303,11 @@
 			use_split: i18n.useSplit || 'Yes, use this split',
 			edit_split: i18n.editSplit || 'Edit split',
 			ask_ai: i18n.askAiCheck || i18n.askAi || 'Ask AI to check',
+			ask_ai_again: i18n.askAiAgain || 'Ask AI again',
 			choose_split: i18n.chooseSplit || 'Choose split',
 			edit_manually: i18n.editManually || 'Edit manually',
+			accept_likely_interpretation: i18n.useInterpretation || 'Use this interpretation',
+			edit_ambiguities: i18n.chooseLocationAudience || 'Choose location/audience',
 		};
 		return map[ key ] || fallback || key;
 	}
@@ -234,12 +318,16 @@
 		var actions = response.actions || [];
 		var $wrap = $( '<div>', { class: 'rwgc-targeting-assistant__actions' } );
 		var hasInferred = !!( response.inferred_plan || proposal.inferred_plan );
+		var hasAmbiguity = response.status === 'needs_confirmation' || !!( response.ambiguities && response.ambiguities.length );
 
 		if ( actions.length ) {
 			actions.forEach( function ( row ) {
 				var key = row.key || '';
-				var primary = ( 'confirm' === key || ( 'use_split' === key && hasInferred ) );
+				var primary = ( 'confirm' === key || 'accept_likely_interpretation' === key || ( 'use_split' === key && hasInferred ) );
 				if ( 'use_split' === key && ! hasInferred ) {
+					return;
+				}
+				if ( 'accept_likely_interpretation' === key && ! hasAmbiguity ) {
 					return;
 				}
 				$wrap.append(
@@ -297,11 +385,15 @@
 		var proposal = response.proposal || {};
 		var message = response.message || proposal.summary || '';
 		var html = '<p><strong>' + esc( message.split( '\n\n' )[0] || message ) + '</strong></p>';
-		var inferred = response.inferred_plan || proposal.inferred_plan;
-		if ( inferred && response.status === 'needs_clarification' ) {
-			html += renderInferredPlanHtml( inferred );
-		} else if ( inferred ) {
-			html += renderInferredPlanHtml( inferred );
+		if ( response.status === 'needs_confirmation' || ( response.ambiguities && response.ambiguities.length ) ) {
+			html += renderAmbiguitiesHtml( response );
+		} else {
+			var inferred = response.inferred_plan || proposal.inferred_plan;
+			if ( inferred && response.status === 'needs_clarification' ) {
+				html += renderInferredPlanHtml( inferred );
+			} else if ( inferred ) {
+				html += renderInferredPlanHtml( inferred );
+			}
 		}
 		if ( response.badge || proposal.interpretation_badge ) {
 			html += '<p><em class="rwgc-targeting-assistant__badge">' + esc( response.badge || proposal.interpretation_badge ) + '</em></p>';
@@ -331,6 +423,12 @@
 		}
 		if ( response.inferred_plan && state.proposal ) {
 			state.proposal.inferred_plan = response.inferred_plan;
+		}
+		if ( response.ambiguities ) {
+			state.ambiguities = response.ambiguities;
+		}
+		if ( response.ai_interpretation ) {
+			state.aiInterpretation = response.ai_interpretation;
 		}
 		state.proposalId = response.proposal_id || '';
 		state.debug = response.debug || null;
@@ -449,7 +547,7 @@
 			params: extra.params || proposal.params || {},
 			confidence: proposal.confidence || 0,
 			outcome: outcome,
-			approved_by_user: outcome === 'executed' || outcome === 'accepted' || outcome === 'accepted_inferred_split' || outcome === 'accepted_ai_split',
+			approved_by_user: outcome === 'executed' || outcome === 'accepted' || outcome === 'accepted_inferred_split' || outcome === 'accepted_ai_split' || outcome === 'accepted_likely_interpretation',
 			interpretation_source: extra.source || proposal.interpretation_source || ( state.lastResponse && state.lastResponse.source ) || '',
 		};
 		if ( extra.correction ) {
@@ -458,7 +556,77 @@
 		if ( proposal.inferred_plan || ( state.lastResponse && state.lastResponse.inferred_plan ) ) {
 			payload.inferred_plan = extra.inferred_plan || proposal.inferred_plan || state.lastResponse.inferred_plan;
 		}
+		if ( state.ambiguities && state.ambiguities.length ) {
+			payload.ambiguities = state.ambiguities;
+		}
+		if ( state.aiInterpretation ) {
+			payload.ai_likely_interpretation = state.aiInterpretation;
+		}
+		if ( extra.user_confirmed_interpretation ) {
+			payload.user_confirmed_interpretation = extra.user_confirmed_interpretation;
+		}
 		apiPost( cfg.learningEventUrl, payload );
+	}
+
+	function buildInterpretationPayload( resolutions ) {
+		resolutions = resolutions || {};
+		var ambiguities = ( state.ambiguities || ( state.lastResponse && state.lastResponse.ambiguities ) || [] ).map( function ( row ) {
+			var copy = Object.assign( {}, row );
+			if ( resolutions[ copy.field ] ) {
+				copy.likely = resolutions[ copy.field ];
+			}
+			return copy;
+		} );
+		return {
+			message: state.lastMessage || ( state.proposal && state.proposal.original_message ) || '',
+			ambiguities: ambiguities,
+			resolutions: resolutions,
+			ai_interpretation: state.aiInterpretation || ( state.lastResponse && state.lastResponse.ai_interpretation ) || {},
+			base: {
+				conditions: state.proposal && state.proposal.conditions ? state.proposal.conditions : [],
+				condition_match: state.proposal && state.proposal.condition_match ? state.proposal.condition_match : 'all',
+			},
+			source: ( state.lastResponse && state.lastResponse.source ) || ( state.proposal && state.proposal.interpretation_source ) || 'local_parser',
+			context: buildContext(),
+			debug: true,
+		};
+	}
+
+	function confirmInterpretation( resolutions ) {
+		if ( ! cfg.confirmInterpretationUrl ) {
+			return;
+		}
+		var payload = buildInterpretationPayload( resolutions || {} );
+		apiPost( cfg.confirmInterpretationUrl, payload ).done( function ( response ) {
+			recordLearningFeedback( 'accepted_likely_interpretation', {
+				source: payload.source,
+				user_confirmed_interpretation: {
+					resolutions: payload.resolutions,
+					ambiguities: payload.ambiguities,
+				},
+			} );
+			if ( response && response.success ) {
+				state.ambiguities = null;
+				state.aiInterpretation = null;
+				applyInterpretResponse( response );
+			}
+		} );
+	}
+
+	function collectAmbiguityResolutionsFromForm() {
+		var resolutions = {};
+		$( '#rwgc-targeting-edit-fields [data-ambiguity-field]' ).each( function () {
+			var field = $( this ).data( 'ambiguity-field' );
+			var value = $( this ).val();
+			if ( field && value ) {
+				resolutions[ field ] = value;
+			}
+		} );
+		var logic = $( '#rwgc-edit-logic' ).val();
+		if ( state.proposal ) {
+			state.proposal.condition_match = logic || state.proposal.condition_match || 'all';
+		}
+		return resolutions;
 	}
 
 	function confirmInferredSplit() {
@@ -568,6 +736,11 @@
 
 	function showEditPanel() {
 		var proposal = state.proposal;
+		var ambiguities = state.ambiguities || ( state.lastResponse && state.lastResponse.ambiguities ) || [];
+		if ( ambiguities.length ) {
+			showAmbiguityEditPanel( ambiguities );
+			return;
+		}
 		if ( ! proposal ) {
 			return;
 		}
@@ -582,6 +755,51 @@
 		}
 		$fields.append( $( '<label>' ).text( i18n.pageLabel || 'Page' ).attr( 'for', 'rwgc-edit-page' ), $page );
 		$( '#rwgc-targeting-edit-panel' ).removeClass( 'rwgc-is-hidden' ).prop( 'hidden', false );
+	}
+
+	function showAmbiguityEditPanel( ambiguities ) {
+		var $panel = $( '#rwgc-targeting-edit-panel' );
+		$panel.find( 'h3' ).text( i18n.editInterpretation || 'Edit interpretation' );
+		$panel.find( '#rwgc-targeting-edit-save' ).text( i18n.applyInterpretation || 'Apply interpretation' );
+		var $fields = $( '#rwgc-targeting-edit-fields' ).empty();
+		var draft = ( state.aiInterpretation && state.aiInterpretation.proposal_draft ) || {};
+		var targetLabel = ( draft.target && draft.target.label ) || ( state.proposal && state.proposal.params && state.proposal.params.page_ref ) || 'Home page';
+		$fields.append( $( '<p>' ).append( $( '<strong>' ).text( 'Target' ), document.createTextNode( ' ' + targetLabel ) ) );
+
+		ambiguities.forEach( function ( row ) {
+			var field = row.field || '';
+			var $group = $( '<div>', { class: 'rwgc-targeting-assistant__edit-group' } );
+			$group.append( $( '<label>' ).text( field === 'location' ? ( i18n.locationLabel || 'Location' ) : ( i18n.audienceLabel || 'Audience' ) ) );
+			$group.append( $( '<p>', { class: 'description' } ).text( ( i18n.detectedPrefix || 'Detected:' ) + ' ' + ( row.raw || '' ) ) );
+			var $select = $( '<select>', { class: 'widefat', 'data-ambiguity-field': field } );
+			( row.alternatives || [] ).forEach( function ( alt ) {
+				var label = field === 'location' ? locationOptionLabel( alt ) : audienceOptionLabel( alt );
+				$select.append( $( '<option>', { value: alt, text: label } ) );
+			} );
+			$select.append( $( '<option>', { value: '', text: i18n.removeCondition || 'Remove condition' } ) );
+			if ( row.likely ) {
+				$select.val( row.likely );
+			}
+			$group.append( $select );
+			$fields.append( $group );
+		} );
+
+		if ( draft.rule && draft.rule.conditions ) {
+			draft.rule.conditions.forEach( function ( cond ) {
+				if ( cond.type === 'weather_condition' ) {
+					$fields.append( $( '<p>' ).append( $( '<strong>' ).text( i18n.weatherLabel || 'Weather' ), document.createTextNode( ' ' + ( cond.label || '' ) ) ) );
+				}
+			} );
+		}
+
+		var $logic = $( '<select>', { id: 'rwgc-edit-logic', class: 'widefat' } );
+		$logic.append( $( '<option>', { value: 'all', text: i18n.matchAll || 'Match all conditions' } ) );
+		$logic.append( $( '<option>', { value: 'any', text: i18n.matchAny || 'Match any condition' } ) );
+		if ( draft.rule && draft.rule.logic ) {
+			$logic.val( draft.rule.logic );
+		}
+		$fields.append( $( '<label>', { 'for': 'rwgc-edit-logic' } ).text( i18n.logicLabel || 'Logic' ), $logic );
+		$panel.removeClass( 'rwgc-is-hidden' ).prop( 'hidden', false );
 	}
 
 	function buildHintCloud() {
@@ -613,6 +831,8 @@
 		state.debug = null;
 		state.lastMessage = '';
 		state.lastResponse = null;
+		state.ambiguities = null;
+		state.aiInterpretation = null;
 		$( '#rwgc-targeting-thread' ).empty();
 		$( '#rwgc-targeting-phrase' ).val( '' );
 		updateLivePreview( null );
@@ -650,11 +870,13 @@
 			var action = $( this ).data( 'action' );
 			if ( 'confirm' === action ) {
 				executeProposal();
+			} else if ( 'accept_likely_interpretation' === action ) {
+				confirmInterpretation();
 			} else if ( 'use_split' === action ) {
 				confirmInferredSplit();
-			} else if ( 'ask_ai' === action ) {
+			} else if ( 'ask_ai' === action || 'ask_ai_again' === action ) {
 				askAiToCheck();
-			} else if ( 'edit' === action || 'edit_split' === action || 'edit_manually' === action ) {
+			} else if ( 'edit' === action || 'edit_split' === action || 'edit_manually' === action || 'edit_ambiguities' === action ) {
 				showEditPanel();
 			} else if ( 'debug' === action ) {
 				showDebug();
@@ -669,6 +891,16 @@
 		} );
 
 		$( '#rwgc-targeting-edit-save' ).on( 'click', function () {
+			var ambiguities = state.ambiguities || ( state.lastResponse && state.lastResponse.ambiguities ) || [];
+			if ( ambiguities.length ) {
+				var resolutions = collectAmbiguityResolutionsFromForm();
+				$( '#rwgc-targeting-edit-panel' ).addClass( 'rwgc-is-hidden' ).prop( 'hidden', true );
+				confirmInterpretation( resolutions );
+				recordLearningFeedback( 'corrected', {
+					user_confirmed_interpretation: { resolutions: resolutions },
+				} );
+				return;
+			}
 			var pageId = parseInt( $( '#rwgc-edit-page' ).val(), 10 );
 			if ( state.proposal && pageId ) {
 				state.proposal.resolved_target = { type: 'page', id: pageId };
