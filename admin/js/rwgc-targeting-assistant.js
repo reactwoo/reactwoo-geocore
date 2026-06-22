@@ -319,11 +319,15 @@
 		var $wrap = $( '<div>', { class: 'rwgc-targeting-assistant__actions' } );
 		var hasInferred = !!( response.inferred_plan || proposal.inferred_plan );
 		var hasAmbiguity = response.status === 'needs_confirmation' || !!( response.ambiguities && response.ambiguities.length );
+		var ready = responseCanExecute( proposal );
 
 		if ( actions.length ) {
 			actions.forEach( function ( row ) {
 				var key = row.key || '';
 				var primary = ( 'confirm' === key || 'accept_likely_interpretation' === key || ( 'use_split' === key && hasInferred ) );
+				if ( 'confirm' === key && ! ready ) {
+					return;
+				}
 				if ( 'use_split' === key && ! hasInferred ) {
 					return;
 				}
@@ -340,7 +344,6 @@
 				);
 			} );
 		} else {
-			var ready = responseCanExecute( proposal );
 			if ( ready ) {
 				$wrap.append(
 					$( '<button>', { type: 'button', class: 'button button-primary rwgc-geo-btn', text: i18n.createSetup || 'Create setup', 'data-action': 'confirm' } )
@@ -375,10 +378,16 @@
 	}
 
 	function responseCanExecute( proposal ) {
+		if ( ! proposal ) {
+			return false;
+		}
 		if ( typeof proposal.can_execute === 'boolean' ) {
 			return proposal.can_execute;
 		}
-		return proposal.proposal_ready !== false;
+		if ( typeof proposal.proposal_ready === 'boolean' ) {
+			return proposal.proposal_ready;
+		}
+		return false;
 	}
 
 	function formatProposalHtml( response ) {
@@ -570,10 +579,17 @@
 
 	function buildInterpretationPayload( resolutions ) {
 		resolutions = resolutions || {};
+		var aiInterpretation = state.aiInterpretation || ( state.lastResponse && state.lastResponse.ai_interpretation ) || {};
+		var draftRule = aiInterpretation && aiInterpretation.proposal_draft && aiInterpretation.proposal_draft.rule ? aiInterpretation.proposal_draft.rule : {};
+		var baseConditions = state.proposal && state.proposal.conditions && state.proposal.conditions.length ? state.proposal.conditions : ( draftRule.conditions || [] );
+		var baseConditionMatch = state.proposal && state.proposal.condition_match ? state.proposal.condition_match : ( draftRule.logic || 'all' );
 		var ambiguities = ( state.ambiguities || ( state.lastResponse && state.lastResponse.ambiguities ) || [] ).map( function ( row ) {
 			var copy = Object.assign( {}, row );
-			if ( resolutions[ copy.field ] ) {
+			if ( Object.prototype.hasOwnProperty.call( resolutions, copy.field ) ) {
 				copy.likely = resolutions[ copy.field ];
+				if ( ! resolutions[ copy.field ] ) {
+					delete copy.likely;
+				}
 			}
 			return copy;
 		} );
@@ -581,10 +597,10 @@
 			message: state.lastMessage || ( state.proposal && state.proposal.original_message ) || '',
 			ambiguities: ambiguities,
 			resolutions: resolutions,
-			ai_interpretation: state.aiInterpretation || ( state.lastResponse && state.lastResponse.ai_interpretation ) || {},
+			ai_interpretation: aiInterpretation,
 			base: {
-				conditions: state.proposal && state.proposal.conditions ? state.proposal.conditions : [],
-				condition_match: state.proposal && state.proposal.condition_match ? state.proposal.condition_match : 'all',
+				conditions: baseConditions,
+				condition_match: baseConditionMatch,
 			},
 			source: ( state.lastResponse && state.lastResponse.source ) || ( state.proposal && state.proposal.interpretation_source ) || 'local_parser',
 			context: buildContext(),
@@ -618,8 +634,8 @@
 		$( '#rwgc-targeting-edit-fields [data-ambiguity-field]' ).each( function () {
 			var field = $( this ).data( 'ambiguity-field' );
 			var value = $( this ).val();
-			if ( field && value ) {
-				resolutions[ field ] = value;
+			if ( field ) {
+				resolutions[ field ] = value == null ? '' : String( value );
 			}
 		} );
 		var logic = $( '#rwgc-edit-logic' ).val();
@@ -678,11 +694,15 @@
 
 	function executeProposal() {
 		if ( ! state.proposalId || ! cfg.executeUrl ) {
-			goWorkflowFromProposal();
+			showExecutionError();
 			return;
 		}
 		apiPost( cfg.executeUrl, { proposal_id: state.proposalId } )
 			.done( function ( response ) {
+				if ( ! response || ! response.success ) {
+					showExecutionError( response && response.message ? response.message : '' );
+					return;
+				}
 				recordLearningFeedback( 'executed' );
 				var result = response && response.result ? response.result : {};
 				if ( result.redirect_steps && result.redirect_steps.length ) {
@@ -693,9 +713,14 @@
 				appendAssistant( esc( result.message || i18n.setupConfirmed || 'Setup confirmed.' ) );
 				updateSetupPanel( state.proposal, i18n.statusConfirmed || 'Confirmed' );
 			} )
-			.fail( function () {
-				goWorkflowFromProposal();
+			.fail( function ( xhr ) {
+				showExecutionError( xhr && xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '' );
 			} );
+	}
+
+	function showExecutionError( message ) {
+		appendAssistant( esc( message || i18n.setupFailed || 'Setup could not be confirmed. Please try again.' ) );
+		updateSetupPanel( state.proposal, i18n.statusNeedsConfirmation || 'Needs confirmation' );
 	}
 
 	function persistPortableAndGo( url ) {
