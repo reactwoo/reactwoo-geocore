@@ -253,7 +253,9 @@
 		$plan.removeClass( 'rwgc-is-hidden' ).empty();
 
 		var title = i18n.setupPlan || 'Targeting plan';
-		if ( proposal.intent === 'create_geo_variant_plan' ) {
+		if ( proposal.interpretation_plan && proposal.interpretation_plan.actions && proposal.interpretation_plan.actions.length ) {
+			title = i18n.setupPlan || 'Setup';
+		} else if ( proposal.intent === 'create_geo_variant_plan' ) {
 			var planRef = proposal.params && proposal.params.source_page_ref ? proposal.params.source_page_ref : '';
 			title = planRef ? ( String( planRef ).charAt( 0 ).toUpperCase() + String( planRef ).slice( 1 ) + ' targeting plan' ) : ( i18n.setupPlan || 'Targeting plan' );
 		} else if ( proposal.intent === 'create_geo_variants' ) {
@@ -269,6 +271,28 @@
 				if ( line ) {
 					$plan.append( $( '<p>' ).text( line ) );
 				}
+			} );
+		} else if ( proposal.interpretation_plan && proposal.interpretation_plan.actions && proposal.interpretation_plan.actions.length ) {
+			var actions = proposal.interpretation_plan.actions;
+			$plan.append( $( '<p>' ).text( actions.length + ' ' + ( actions.length === 1 ? ( i18n.actionDetected || 'action detected' ) : ( i18n.actionsDetected || 'actions detected' ) ) ) );
+			actions.forEach( function ( action, idx ) {
+				var loc = '';
+				if ( action.conditions ) {
+					if ( action.conditions.regions && action.conditions.regions.length ) {
+						loc = action.conditions.regions.join( ', ' );
+					} else if ( action.conditions.countries && action.conditions.countries.length ) {
+						loc = action.conditions.countries.join( ' + ' );
+					}
+				}
+				var block = $( '<div>', { class: 'rwgc-geo-setup-action' } );
+				block.append( $( '<strong>' ).text( ( idx + 1 ) + '. ' + ( action.target && action.target.label ? action.target.label : 'Action' ) ) );
+				if ( action.type ) {
+					block.append( $( '<p>' ).text( String( action.type ).replace( /_/g, ' ' ) ) );
+				}
+				if ( loc ) {
+					block.append( $( '<p>' ).text( ( i18n.locationLabel || 'Location' ) + ': ' + loc ) );
+				}
+				$plan.append( block );
 			} );
 		} else if ( proposal.inferred_plan ) {
 			renderInferredPlanHtml( proposal.inferred_plan ).replace( /<[^>]+>/g, '\n' ).split( '\n' ).forEach( function ( line ) {
