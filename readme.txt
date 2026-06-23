@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.75
+Stable tag: 1.8.76
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.76 =
+* **Targeting Assistant — review layout overhaul:** The detailed action review cards now render full-width in the main content area directly below the chat, and the right sidebar becomes a compact sticky "mission control" panel: action/attention counts, a per-action status list (e.g. "Needs target, campaign, audience" or "Blocked by target from Action 1") with jump links to each card, the shared-target resolver, and the final Resolve/Create CTA. Targets shared by several actions are shown once and resolving them applies to every linked action. Responsive: the sidebar collapses to a top summary bar on medium screens and the CTA sticks to the bottom on mobile. Requires ReactWoo Geo AI 0.4.119+.
 
 = 1.8.75 =
 * **Targeting Assistant — create the setup for real:** "Create setup" now submits the user's field-level card resolutions to the assistant execute endpoint and renders the result inline: created **draft** visibility rules (with edit links and any conversion warnings), manual follow-up steps (page variants / original-targeting wiring), preview-only actions and anything that could not be created automatically. If the server still finds unresolved required fields, the panel re-renders the affected cards with a "Needs resolution" status instead of proceeding. Requires ReactWoo Geo AI 0.4.118+ for the server-side executor.
