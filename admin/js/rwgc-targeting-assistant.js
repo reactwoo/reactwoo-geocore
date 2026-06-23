@@ -18,6 +18,7 @@
 		previewTimer: null,
 		previewSeq: 0,
 		sendSeq: 0,
+		cardResolutions: {},
 	};
 
 	function esc( text ) {
@@ -263,6 +264,508 @@
 		return html;
 	}
 
+	/* ---- Action review cards --------------------------------------------- */
+
+	function actionTypeLabel( type ) {
+		var map = {
+			update_campaign_targeting: i18n.cardTypeUpdateCampaign || 'Update campaign targeting',
+			update_original_targeting: i18n.cardTypeUpdateOriginal || 'Update targeting',
+			create_variant: i18n.cardTypeCreateVariant || 'Create variant',
+			update_variant: i18n.cardTypeUpdateVariant || 'Update variant',
+			create_rule: i18n.cardTypeCreateRule || 'Create rule',
+			update_rule: i18n.cardTypeUpdateRule || 'Update rule',
+			hide: i18n.cardTypeHide || 'Hide',
+			show: i18n.cardTypeShow || 'Show',
+			create_test: i18n.cardTypeTest || 'Preview / test',
+			diagnose: i18n.cardTypeTest || 'Preview / test',
+		};
+		return map[ type ] || ( type ? String( type ).replace( /_/g, ' ' ) : ( i18n.cardActionWord || 'Action' ) );
+	}
+
+	function cardKey( idx ) {
+		return 'card_' + idx;
+	}
+
+	function fieldKey( idx, field, raw ) {
+		return cardKey( idx ) + '|' + field + '|' + ( raw || '' );
+	}
+
+	function isCardRemoved( idx ) {
+		return !! state.cardResolutions[ 'removed_' + cardKey( idx ) ];
+	}
+
+	function fieldResolution( idx, field, raw ) {
+		return state.cardResolutions[ fieldKey( idx, field, raw ) ] || null;
+	}
+
+	function requiresField( card, field ) {
+		return ( ( card && card.requiredResolutions ) || [] ).some( function ( r ) {
+			return r.field === field;
+		} );
+	}
+
+	function remainingForCard( idx, card ) {
+		if ( isCardRemoved( idx ) ) {
+			return 0;
+		}
+		var n = 0;
+		( ( card && card.requiredResolutions ) || [] ).forEach( function ( req ) {
+			if ( ! fieldResolution( idx, req.field, req.raw ) ) {
+				n++;
+			}
+		} );
+		return n;
+	}
+
+	function remainingResolutions( proposal ) {
+		var total = 0;
+		( ( proposal && proposal.action_cards ) || [] ).forEach( function ( card, idx ) {
+			total += remainingForCard( idx, card );
+		} );
+		return total;
+	}
+
+	function statusText( status ) {
+		var map = {
+			not_found: i18n.cardNotFound || 'Not found',
+			not_defined: i18n.cardNotFound || 'Not found',
+			ambiguous: i18n.cardAmbiguous || 'Possible matches found',
+			inherited_unresolved: i18n.cardInheritedUnresolved || 'Inherited target is not defined',
+			registry_unavailable: i18n.cardUnverified || 'Could not be verified automatically',
+			sync_unavailable: i18n.cardSyncUnavailable || 'No synced list available yet',
+			matched: i18n.cardMatched || 'Matched',
+		};
+		return map[ status ] || ( status ? String( status ).replace( /_/g, ' ' ) : '' );
+	}
+
+	function summariseConditions( grp ) {
+		var parts = [];
+		grp = grp || {};
+		if ( grp.countries && grp.countries.length ) {
+			parts.push( ( i18n.cardCountries || 'Countries' ) + ': ' + grp.countries.join( ', ' ) );
+		}
+		if ( grp.regions && grp.regions.length ) {
+			parts.push( ( i18n.cardRegions || 'Regions' ) + ': ' + grp.regions.join( ', ' ) );
+		}
+		if ( grp.devices && grp.devices.length ) {
+			parts.push( ( i18n.cardDevices || 'Devices' ) + ': ' + grp.devices.join( ', ' ) );
+		}
+		if ( grp.utm && grp.utm.length ) {
+			parts.push( 'UTM: ' + grp.utm.map( function ( u ) {
+				return ( u.key || '' ) + '=' + ( u.value || '' );
+			} ).join( ', ' ) );
+		}
+		if ( grp.urls && grp.urls.length ) {
+			parts.push( 'URL: ' + grp.urls.join( ', ' ) );
+		}
+		if ( grp.weather && grp.weather.length ) {
+			parts.push( ( i18n.cardWeather || 'Weather' ) + ': ' + grp.weather.join( ', ' ) );
+		}
+		if ( grp.visitorStates && grp.visitorStates.length ) {
+			parts.push( ( i18n.cardVisitor || 'Visitor' ) + ': ' + grp.visitorStates.join( ', ' ) );
+		}
+		return parts.join( ' · ' );
+	}
+
+	function conditionRow( label, text ) {
+		return $( '<div>', { class: 'rwgc-geo-card__cond' } ).append(
+			$( '<span>', { class: 'rwgc-geo-card__cond-label' } ).text( label ),
+			$( '<span>', { class: 'rwgc-geo-card__cond-value' } ).text( text )
+		);
+	}
+
+	function fieldActionButton( idx, field, raw, act ) {
+		var labels = {
+			choose_campaign: i18n.cardChooseCampaign || 'Choose campaign',
+			ignore_campaign: i18n.cardIgnore || 'Ignore',
+			refresh_campaigns: i18n.cardRefresh || 'Refresh synced',
+			choose_audience: i18n.cardChooseAudience || 'Choose audience',
+			ignore_audience: i18n.cardIgnore || 'Ignore',
+			refresh_audiences: i18n.cardRefresh || 'Refresh synced',
+			choose_target: i18n.cardChooseTarget || 'Choose page/category',
+			search_targets: i18n.cardSearchTargets || 'Search',
+			remove_action: i18n.cardRemoveAction || 'Remove action',
+		};
+		var map = {
+			ignore_campaign: 'ignore_field',
+			ignore_audience: 'ignore_field',
+			refresh_campaigns: 'refresh',
+			refresh_audiences: 'refresh',
+			choose_campaign: 'choose_manual',
+			choose_audience: 'choose_manual',
+			choose_target: 'toggle_picker',
+			search_targets: 'toggle_picker',
+			remove_action: 'remove_action',
+		};
+		return $( '<button>', {
+			type: 'button',
+			class: 'button rwgc-geo-card__act' + ( act === 'remove_action' ? ' rwgc-geo-card__act--danger' : '' ),
+			text: labels[ act ] || act,
+			'data-card-action': map[ act ] || act,
+			'data-card': idx,
+			'data-field': field,
+			'data-raw': raw || '',
+		} );
+	}
+
+	function targetPicker( idx, raw, suggestions ) {
+		var $wrap = $( '<div>', { class: 'rwgc-geo-card__picker rwgc-is-hidden', 'data-picker-card': idx } );
+		var $sel = $( '<select>', { class: 'rwgc-geo-card__picker-select' } );
+		$sel.append( $( '<option>', { value: '', text: i18n.cardPickerPlaceholder || 'Select a page or category…' } ) );
+		( suggestions || [] ).forEach( function ( s ) {
+			$sel.append( $( '<option>', { value: 'sug:' + ( s.id || '' ) + ':' + s.name, text: s.name } ) );
+		} );
+		( cfg.pages || [] ).forEach( function ( p ) {
+			$sel.append( $( '<option>', { value: 'page:' + p.id + ':' + p.title, text: p.title } ) );
+		} );
+		$wrap.append( $sel );
+		$wrap.append( $( '<button>', {
+			type: 'button',
+			class: 'button rwgc-geo-card__picker-use',
+			text: i18n.cardUse || 'Use',
+			'data-card-action': 'use_picker',
+			'data-card': idx,
+			'data-field': 'target',
+			'data-raw': raw || '',
+		} ) );
+		return $wrap;
+	}
+
+	function fieldBlock( idx, opts ) {
+		var $b = $( '<div>', { class: 'rwgc-geo-card__field' } );
+		$b.append( $( '<span>', { class: 'rwgc-geo-card__field-label' } ).text( opts.label ) );
+
+		if ( opts.resolved ) {
+			$b.append( $( '<span>', { class: 'rwgc-geo-card__field-value' } ).text( opts.resolved ) );
+			$b.append( $( '<span>', { class: 'rwgc-geo-card__field-ok' } ).text( i18n.cardMatched || 'Matched' ) );
+			return $b;
+		}
+
+		var resolution = fieldResolution( idx, opts.field, opts.value );
+		if ( resolution ) {
+			$b.append( $( '<span>', { class: 'rwgc-geo-card__field-value' } ).text( opts.value || '—' ) );
+			var label = resolution.kind === 'ignored'
+				? ( i18n.cardIgnored || 'Ignored' )
+				: ( ( i18n.cardSetTo || 'Set to' ) + ' ' + resolution.label );
+			$b.append( $( '<span>', { class: 'rwgc-geo-card__field-ok' } ).text( label ) );
+			$b.append( $( '<button>', {
+				type: 'button',
+				class: 'button-link rwgc-geo-card__undo',
+				text: i18n.cardUndo || 'Undo',
+				'data-card-action': 'undo_field',
+				'data-card': idx,
+				'data-field': opts.field,
+				'data-raw': opts.value || '',
+			} ) );
+			return $b;
+		}
+
+		$b.append( $( '<span>', { class: 'rwgc-geo-card__field-value' } ).text( opts.value || '—' ) );
+		$b.append( $( '<span>', { class: 'rwgc-geo-card__field-status' } ).text( statusText( opts.status ) ) );
+
+		if ( opts.suggestions && opts.suggestions.length ) {
+			var $sug = $( '<div>', { class: 'rwgc-geo-card__suggestions' } );
+			opts.suggestions.forEach( function ( s ) {
+				$sug.append( $( '<button>', {
+					type: 'button',
+					class: 'button rwgc-geo-card__chip',
+					text: s.name + ( s.source ? ' — ' + s.source : '' ),
+					'data-card-action': 'choose_suggestion',
+					'data-card': idx,
+					'data-field': opts.field,
+					'data-raw': opts.value || '',
+					'data-id': s.id || '',
+					'data-label': s.name,
+				} ) );
+			} );
+			$b.append( $sug );
+		}
+
+		if ( opts.actions && opts.actions.length ) {
+			var $acts = $( '<div>', { class: 'rwgc-geo-card__field-actions' } );
+			opts.actions.forEach( function ( act ) {
+				$acts.append( fieldActionButton( idx, opts.field, opts.value, act ) );
+			} );
+			$b.append( $acts );
+		}
+
+		if ( 'target' === opts.field ) {
+			$b.append( targetPicker( idx, opts.value, opts.suggestions ) );
+		}
+
+		return $b;
+	}
+
+	function renderCard( card, idx ) {
+		var removed = isCardRemoved( idx );
+		var $card = $( '<div>', { class: 'rwgc-geo-card' + ( removed ? ' rwgc-geo-card--removed' : '' ) } );
+
+		var remaining = remainingForCard( idx, card );
+		var $head = $( '<div>', { class: 'rwgc-geo-card__head' } );
+		$head.append( $( '<strong>' ).text( ( i18n.cardActionWord || 'Action' ) + ' ' + ( idx + 1 ) + ' — ' + actionTypeLabel( card.type ) ) );
+		var badgeKind = removed ? 'removed' : ( remaining > 0 ? 'warn' : 'ok' );
+		var badgeLabel = removed
+			? ( i18n.cardActionRemoved || 'Removed' )
+			: ( remaining > 0 ? ( i18n.cardNeedsResolution || 'Needs resolution' ) : ( i18n.cardReady || 'Ready' ) );
+		$head.append( $( '<span>', { class: 'rwgc-geo-card__badge rwgc-geo-card__badge--' + badgeKind } ).text( badgeLabel ) );
+		$card.append( $head );
+
+		if ( removed ) {
+			$card.append( $( '<button>', {
+				type: 'button',
+				class: 'button-link rwgc-geo-card__undo',
+				text: i18n.cardRestore || 'Restore action',
+				'data-card-action': 'restore_action',
+				'data-card': idx,
+			} ) );
+			return $card;
+		}
+
+		var t = card.target || {};
+		if ( t.raw || ( t.resolved && t.resolved.name ) ) {
+			var targetValue = ( t.inherited && t.inheritedFrom )
+				? ( ( i18n.cardSameAs || 'Same as' ) + ' ' + t.inheritedFrom )
+				: t.raw;
+			$card.append( fieldBlock( idx, {
+				field: 'target',
+				label: i18n.cardTargetLabel || 'Target',
+				value: targetValue,
+				status: t.status,
+				resolved: t.resolved ? t.resolved.name : '',
+				suggestions: t.suggestions || [],
+				actions: requiresField( card, 'target' ) ? [ 'choose_target', 'search_targets', 'remove_action' ] : [],
+			} ) );
+		}
+
+		if ( card.campaign ) {
+			$card.append( fieldBlock( idx, {
+				field: 'campaign',
+				label: i18n.campaignLabel || 'Campaign',
+				value: card.campaign.raw,
+				status: card.campaign.status,
+				resolved: card.campaign.resolved ? card.campaign.resolved.name : '',
+				suggestions: card.campaign.suggestions || [],
+				actions: requiresField( card, 'campaign' ) ? [ 'choose_campaign', 'ignore_campaign', 'refresh_campaigns' ] : [],
+			} ) );
+		}
+
+		( card.audiences || [] ).forEach( function ( a ) {
+			$card.append( fieldBlock( idx, {
+				field: 'audience',
+				label: i18n.audienceLabel || 'Audience',
+				value: a.raw,
+				status: a.status,
+				resolved: a.resolved ? a.resolved.name : '',
+				suggestions: a.suggestions || [],
+				actions: ( a.status && 'matched' !== a.status ) ? [ 'choose_audience', 'ignore_audience', 'refresh_audiences' ] : [],
+			} ) );
+		} );
+
+		var incText = summariseConditions( card.conditions && card.conditions.include );
+		if ( incText ) {
+			$card.append( conditionRow( i18n.cardInclude || 'Include', incText ) );
+		}
+		var excText = summariseConditions( card.conditions && card.conditions.exclude );
+		if ( excText ) {
+			$card.append( conditionRow( i18n.cardExclude || 'Exclude', excText ) );
+		}
+
+		( card.warnings || [] ).forEach( function ( w ) {
+			$card.append( $( '<p>', { class: 'rwgc-geo-card__warning' } ).text( w ) );
+		} );
+
+		$card.append( $( '<div>', { class: 'rwgc-geo-card__row-actions' } ).append(
+			$( '<button>', {
+				type: 'button',
+				class: 'button-link rwgc-geo-card__act--danger',
+				text: i18n.cardRemoveAction || 'Remove action',
+				'data-card-action': 'remove_action',
+				'data-card': idx,
+			} )
+		) );
+
+		return $card;
+	}
+
+	function renderActionCards( proposal, $plan ) {
+		var cards = proposal.action_cards || [];
+		$plan.append( $( '<h3>' ).text( i18n.setupHeading || 'Setup' ) );
+
+		var detectedCount = cards.filter( function ( c, i ) {
+			return ! isCardRemoved( i );
+		} ).length;
+		$plan.append( $( '<p>', { class: 'rwgc-geo-card__count' } ).text(
+			detectedCount + ' ' + ( detectedCount === 1 ? ( i18n.actionDetected || 'action detected' ) : ( i18n.actionsDetected || 'actions detected' ) )
+		) );
+
+		var remaining = remainingResolutions( proposal );
+		if ( remaining > 0 ) {
+			$plan.append( $( '<p>', { class: 'rwgc-geo-card__attention' } ).text(
+				remaining + ' ' + ( remaining === 1 ? ( i18n.fieldNeedsAttention || 'field needs attention' ) : ( i18n.fieldsNeedAttention || 'fields need attention' ) )
+			) );
+		} else {
+			$plan.append( $( '<p>', { class: 'rwgc-geo-card__ready-note' } ).text( i18n.allResolved || 'All fields resolved' ) );
+		}
+
+		cards.forEach( function ( card, idx ) {
+			$plan.append( renderCard( card, idx ) );
+		} );
+
+		var $footer = $( '<div>', { class: 'rwgc-geo-card__footer' } );
+		if ( remaining > 0 ) {
+			$footer.append( $( '<button>', {
+				type: 'button',
+				class: 'button button-primary rwgc-geo-btn',
+				disabled: 'disabled',
+				text: ( i18n.continueAfter || 'Resolve' ) + ' ' + remaining + ' ' + ( remaining === 1 ? ( i18n.itemWord || 'item' ) : ( i18n.itemsWord || 'items' ) ),
+			} ) );
+		} else {
+			$footer.append( $( '<button>', {
+				type: 'button',
+				class: 'button button-primary rwgc-geo-btn',
+				text: i18n.createSetup || 'Create setup',
+				'data-card-action': 'create_setup',
+			} ) );
+		}
+		$plan.append( $footer );
+	}
+
+	function rerenderCards() {
+		if ( state.proposal ) {
+			updateSetupPanel( state.proposal, setupStatusLabel( state.lastResponse, state.proposal ) );
+		}
+	}
+
+	function collectCardResolutions() {
+		var out = [];
+		var cards = ( state.proposal && state.proposal.action_cards ) || [];
+		cards.forEach( function ( card, idx ) {
+			if ( isCardRemoved( idx ) ) {
+				out.push( { card: idx, action: 'remove_action' } );
+				return;
+			}
+			( ( card && card.requiredResolutions ) || [] ).forEach( function ( req ) {
+				var res = fieldResolution( idx, req.field, req.raw );
+				if ( res ) {
+					out.push( {
+						card: idx,
+						field: req.field,
+						raw: req.raw,
+						action: res.kind === 'ignored' ? 'ignore' : 'choose',
+						id: res.id || '',
+						label: res.label || '',
+					} );
+				}
+			} );
+		} );
+		return out;
+	}
+
+	function handleCardAction( $btn ) {
+		var action = $btn.data( 'card-action' );
+		var idx = parseInt( $btn.data( 'card' ), 10 );
+		var field = $btn.data( 'field' );
+		var raw = $btn.data( 'raw' ) != null ? String( $btn.data( 'raw' ) ) : '';
+
+		if ( 'choose_suggestion' === action ) {
+			state.cardResolutions[ fieldKey( idx, field, raw ) ] = {
+				kind: 'chosen',
+				id: $btn.data( 'id' ) || '',
+				label: $btn.data( 'label' ) || '',
+			};
+			rerenderCards();
+		} else if ( 'ignore_field' === action ) {
+			state.cardResolutions[ fieldKey( idx, field, raw ) ] = { kind: 'ignored' };
+			rerenderCards();
+		} else if ( 'undo_field' === action ) {
+			delete state.cardResolutions[ fieldKey( idx, field, raw ) ];
+			rerenderCards();
+		} else if ( 'remove_action' === action ) {
+			state.cardResolutions[ 'removed_' + cardKey( idx ) ] = true;
+			rerenderCards();
+		} else if ( 'restore_action' === action ) {
+			delete state.cardResolutions[ 'removed_' + cardKey( idx ) ];
+			rerenderCards();
+		} else if ( 'toggle_picker' === action ) {
+			$( '.rwgc-geo-card__picker[data-picker-card="' + idx + '"]' ).toggleClass( 'rwgc-is-hidden' );
+		} else if ( 'use_picker' === action ) {
+			var $sel = $( '.rwgc-geo-card__picker[data-picker-card="' + idx + '"] .rwgc-geo-card__picker-select' );
+			var val = String( $sel.val() || '' );
+			if ( ! val ) {
+				return;
+			}
+			var parts = val.split( ':' );
+			state.cardResolutions[ fieldKey( idx, field, raw ) ] = {
+				kind: 'chosen',
+				id: parts[1] || '',
+				label: parts.slice( 2 ).join( ':' ) || $sel.find( 'option:selected' ).text(),
+			};
+			rerenderCards();
+		} else if ( 'choose_manual' === action ) {
+			var entered = window.prompt( i18n.cardEnterExact || 'Enter the exact name to use:', raw );
+			if ( entered && entered.trim() ) {
+				state.cardResolutions[ fieldKey( idx, field, raw ) ] = {
+					kind: 'chosen',
+					id: '',
+					label: entered.trim(),
+				};
+				rerenderCards();
+			}
+		} else if ( 'refresh' === action ) {
+			if ( state.lastMessage ) {
+				sendMessage( state.lastMessage );
+			}
+		} else if ( 'create_setup' === action ) {
+			finalizeCardSetup();
+		}
+	}
+
+	function cardResolutionsToFieldMap() {
+		var map = {};
+		var cards = ( state.proposal && state.proposal.action_cards ) || [];
+		cards.forEach( function ( card, idx ) {
+			if ( isCardRemoved( idx ) ) {
+				return;
+			}
+			( ( card && card.requiredResolutions ) || [] ).forEach( function ( req ) {
+				var res = fieldResolution( idx, req.field, req.raw );
+				if ( res && 'chosen' === res.kind && res.label ) {
+					// Server resolution path keys by field name; the last chosen
+					// value per field wins for re-interpretation.
+					map[ req.field ] = res.label;
+				}
+			} );
+		} );
+		return map;
+	}
+
+	function finalizeCardSetup() {
+		// If the server already produced an executable proposal, run it directly.
+		if ( state.proposalId ) {
+			executeProposal();
+			return;
+		}
+		// Otherwise push the user's resolutions back through the interpreter so the
+		// chosen synced entities / locations are applied server-side, then execute.
+		var resolutions = cardResolutionsToFieldMap();
+		if ( cfg.confirmInterpretationUrl ) {
+			var payload = buildInterpretationPayload( resolutions );
+			payload.card_resolutions = collectCardResolutions();
+			apiPost( cfg.confirmInterpretationUrl, payload ).done( function ( response ) {
+				if ( response && response.success ) {
+					state.ambiguities = null;
+					state.aiInterpretation = null;
+					applyInterpretResponse( response );
+					if ( responseCanExecute( state.proposal ) && state.proposalId ) {
+						executeProposal();
+					}
+				}
+			} );
+			return;
+		}
+		executeProposal();
+	}
+
 	function updateSetupPanel( proposal, status ) {
 		var $empty = $( '#rwgc-targeting-setup-empty' );
 		var $hint = $( '#rwgc-targeting-setup-hint' );
@@ -280,6 +783,15 @@
 		$empty.addClass( 'rwgc-is-hidden' );
 		$hint.addClass( 'rwgc-is-hidden' );
 		$plan.removeClass( 'rwgc-is-hidden' ).empty();
+
+		if ( proposal.action_cards && proposal.action_cards.length ) {
+			renderActionCards( proposal, $plan );
+			$summary.removeClass( 'rwgc-is-hidden' );
+			$( '#rwgc-targeting-summary dd[data-key="status"]' )
+				.text( status || i18n.statusPending || 'Pending confirmation' )
+				.removeClass( 'is-empty' );
+			return;
+		}
 
 		var title = i18n.setupPlan || 'Targeting plan';
 		if ( proposal.interpretation_plan && proposal.interpretation_plan.actions && proposal.interpretation_plan.actions.length ) {
@@ -373,6 +885,17 @@
 		var hasInferred = !!( response.inferred_plan || proposal.inferred_plan );
 		var hasAmbiguity = response.status === 'needs_confirmation' || !!( response.ambiguities && response.ambiguities.length );
 
+		// Action review cards own the primary controls (resolve / create) inside
+		// the setup panel, so the chat bubble only offers secondary actions.
+		if ( proposal.action_cards && proposal.action_cards.length ) {
+			$wrap.append(
+				$( '<button>', { type: 'button', class: 'button rwgc-geo-btn', text: i18n.showDebug || 'Show debug', 'data-action': 'debug' } ),
+				$( '<button>', { type: 'button', class: 'button-link rwgc-geo-btn', text: i18n.cancel || 'Cancel', 'data-action': 'cancel' } )
+			);
+			$wrap.data( 'proposal-id', proposalId );
+			return $wrap;
+		}
+
 		if ( actions.length ) {
 			actions.forEach( function ( row ) {
 				var key = row.key || '';
@@ -437,6 +960,26 @@
 	function formatProposalHtml( response ) {
 		var proposal = response.proposal || {};
 		var message = response.message || proposal.summary || '';
+
+		// Card flow: state the action count and how many fields still need work,
+		// instead of asking the user to accept a guessed interpretation.
+		if ( proposal.action_cards && proposal.action_cards.length ) {
+			var count = proposal.action_cards.length;
+			var attention = remainingResolutions( proposal );
+			var line = ( i18n.foundActionsPrefix || 'I found' ) + ' ' + count + ' ' +
+				( count === 1 ? ( i18n.actionWord2 || 'action' ) : ( i18n.actionsWord2 || 'actions' ) ) + '.';
+			if ( attention > 0 ) {
+				line += ' ' + attention + ' ' +
+					( attention === 1 ? ( i18n.fieldNeedsAttention || 'field needs attention' ) : ( i18n.fieldsNeedAttention || 'fields need attention' ) ) +
+					' ' + ( i18n.beforeCreate || 'before this can be created.' );
+			} else {
+				line += ' ' + ( i18n.allResolvedReady || 'Everything is resolved — you can create the setup.' );
+			}
+			var cardHtml = '<p><strong>' + esc( line ) + '</strong></p>';
+			cardHtml += '<p class="description">' + esc( i18n.reviewInPanel || 'Review and resolve each action in the setup panel on the right.' ) + '</p>';
+			return cardHtml;
+		}
+
 		var html = '<p><strong>' + esc( message.split( '\n\n' )[0] || message ) + '</strong></p>';
 		if ( response.status === 'needs_confirmation' || ( response.ambiguities && response.ambiguities.length ) ) {
 			html += renderAmbiguitiesHtml( response );
@@ -471,6 +1014,7 @@
 	function applyInterpretResponse( response ) {
 		state.lastResponse = response;
 		state.proposal = response.proposal || null;
+		state.cardResolutions = {};
 		if ( typeof response.can_execute === 'boolean' && state.proposal ) {
 			state.proposal.can_execute = response.can_execute;
 		}
@@ -734,7 +1278,7 @@
 			goWorkflowFromProposal();
 			return;
 		}
-		apiPost( cfg.executeUrl, { proposal_id: state.proposalId } )
+		apiPost( cfg.executeUrl, { proposal_id: state.proposalId, resolutions: collectCardResolutions() } )
 			.done( function ( response ) {
 				recordLearningFeedback( 'executed' );
 				var result = response && response.result ? response.result : {};
@@ -932,6 +1476,7 @@
 		state.lastResponse = null;
 		state.ambiguities = null;
 		state.aiInterpretation = null;
+		state.cardResolutions = {};
 		$( '#rwgc-targeting-thread' ).empty();
 		$( '#rwgc-targeting-phrase' ).val( '' );
 		updateLivePreview( null );
@@ -983,6 +1528,10 @@
 				recordLearningFeedback( 'rejected' );
 				start();
 			}
+		} );
+
+		$( '#rwgc-targeting-setup-plan' ).on( 'click', '[data-card-action]', function () {
+			handleCardAction( $( this ) );
 		} );
 
 		$( '#rwgc-targeting-debug-close, #rwgc-targeting-edit-cancel' ).on( 'click', function () {

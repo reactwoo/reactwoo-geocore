@@ -582,3 +582,185 @@
 		grid-template-columns: 1fr;
 	}
 }
+
+/* ---- Action review cards -------------------------------------------------- */
+
+.rwgc-geo-card__count {
+	margin: 0.25rem 0 0;
+	font-weight: 600;
+}
+
+.rwgc-geo-card__attention {
+	margin: 0.1rem 0 0.75rem;
+	color: #b54708;
+	font-weight: 600;
+}
+
+.rwgc-geo-card__ready-note {
+	margin: 0.1rem 0 0.75rem;
+	color: #027a48;
+	font-weight: 600;
+}
+
+.rwgc-geo-card {
+	border: 1px solid #e2e4e7;
+	border-radius: 8px;
+	padding: 0.85rem 0.95rem;
+	margin-bottom: 0.75rem;
+	background: #fff;
+}
+
+.rwgc-geo-card--removed {
+	opacity: 0.6;
+	background: #f6f7f7;
+}
+
+.rwgc-geo-card__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	margin-bottom: 0.6rem;
+}
+
+.rwgc-geo-card__badge {
+	font-size: 0.72rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	padding: 0.15rem 0.5rem;
+	border-radius: 999px;
+	white-space: nowrap;
+}
+
+.rwgc-geo-card__badge--warn {
+	background: #fef0c7;
+	color: #b54708;
+}
+
+.rwgc-geo-card__badge--ok {
+	background: #d1fadf;
+	color: #027a48;
+}
+
+.rwgc-geo-card__badge--removed {
+	background: #eaecf0;
+	color: #667085;
+}
+
+.rwgc-geo-card__field {
+	padding: 0.5rem 0;
+	border-top: 1px solid #f0f1f3;
+}
+
+.rwgc-geo-card__field-label {
+	display: block;
+	font-size: 0.72rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: #667085;
+	margin-bottom: 0.15rem;
+}
+
+.rwgc-geo-card__field-value {
+	display: inline-block;
+	font-weight: 600;
+	margin-right: 0.5rem;
+}
+
+.rwgc-geo-card__field-status {
+	display: inline-block;
+	color: #b54708;
+	font-size: 0.85rem;
+}
+
+.rwgc-geo-card__field-ok {
+	display: inline-block;
+	color: #027a48;
+	font-size: 0.85rem;
+	font-weight: 600;
+}
+
+.rwgc-geo-card__suggestions,
+.rwgc-geo-card__field-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+	margin-top: 0.4rem;
+}
+
+.rwgc-geo-card__chip.button,
+.rwgc-geo-card__act.button {
+	border-radius: 6px;
+	height: auto;
+	padding: 0.2rem 0.6rem;
+	font-size: 0.82rem;
+	line-height: 1.5;
+}
+
+.rwgc-geo-card__chip.button {
+	background: #eff8ff;
+	border-color: #b2ddff;
+	color: #175cd3;
+}
+
+.rwgc-geo-card__act--danger {
+	color: #b42318;
+}
+
+.rwgc-geo-card__undo {
+	margin-left: 0.4rem;
+}
+
+.rwgc-geo-card__picker {
+	display: flex;
+	gap: 0.35rem;
+	margin-top: 0.4rem;
+}
+
+.rwgc-geo-card__picker-select {
+	border-radius: 6px;
+	max-width: 16rem;
+}
+
+.rwgc-geo-card__picker-use.button {
+	border-radius: 6px;
+}
+
+.rwgc-geo-card__cond {
+	padding: 0.35rem 0;
+	border-top: 1px solid #f0f1f3;
+	font-size: 0.88rem;
+}
+
+.rwgc-geo-card__cond-label {
+	font-weight: 700;
+	text-transform: uppercase;
+	font-size: 0.7rem;
+	letter-spacing: 0.04em;
+	color: #667085;
+	margin-right: 0.4rem;
+}
+
+.rwgc-geo-card__warning {
+	margin: 0.4rem 0 0;
+	color: #b54708;
+	font-size: 0.85rem;
+}
+
+.rwgc-geo-card__row-actions {
+	margin-top: 0.5rem;
+	display: flex;
+	justify-content: flex-end;
+}
+
+.rwgc-geo-card__footer {
+	margin-top: 0.75rem;
+	display: flex;
+	gap: 0.5rem;
+}
+
+.rwgc-geo-card__footer .button[disabled] {
+	cursor: not-allowed;
+}
