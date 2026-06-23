@@ -330,7 +330,7 @@
 			ask_ai_again: i18n.askAiAgain || 'Ask AI again',
 			choose_split: i18n.chooseSplit || 'Choose split',
 			edit_manually: i18n.editManually || 'Edit manually',
-			accept_likely_interpretation: i18n.useInterpretation || 'Use this interpretation',
+			accept_likely_interpretation: i18n.useInterpretation || 'This looks correct',
 			edit_ambiguities: i18n.chooseLocationAudience || 'Choose location/audience',
 		};
 		return map[ key ] || fallback || key;
@@ -758,6 +758,30 @@
 		$( '#rwgc-targeting-debug-panel' ).removeClass( 'rwgc-is-hidden' ).prop( 'hidden', false );
 	}
 
+	function editTargetLabel( proposal ) {
+		if ( ! proposal ) {
+			return '';
+		}
+		if ( proposal.resolved_target && proposal.resolved_target.label ) {
+			return proposal.resolved_target.label;
+		}
+		var plan = proposal.interpretation_plan;
+		if ( plan && plan.actions && plan.actions.length === 1 && plan.actions[0].target && plan.actions[0].target.label ) {
+			return plan.actions[0].target.label;
+		}
+		if ( proposal.params && proposal.params.page_ref ) {
+			return proposal.params.page_ref;
+		}
+		return '';
+	}
+
+	function editContextLine( labelText, targetText ) {
+		var $line = $( '<p>', { class: 'rwgc-targeting-assistant__edit-context' } );
+		$line.append( document.createTextNode( labelText + ' ' ) );
+		$line.append( $( '<strong>' ).text( targetText ) );
+		return $line;
+	}
+
 	function showEditPanel() {
 		var proposal = state.proposal;
 		var ambiguities = state.ambiguities || ( state.lastResponse && state.lastResponse.ambiguities ) || [];
@@ -768,7 +792,18 @@
 		if ( ! proposal ) {
 			return;
 		}
+		var $panel = $( '#rwgc-targeting-edit-panel' );
+		$panel.find( 'h3' ).text( i18n.editSetup || 'Edit setup' );
+		$panel.find( '.rwgc-targeting-assistant__edit-inner > .description' ).text( i18n.editSetupHint || 'Adjust detected values before confirming.' );
+		$panel.find( '#rwgc-targeting-edit-save' ).text( i18n.applyChanges || 'Apply changes' );
 		var $fields = $( '#rwgc-targeting-edit-fields' ).empty();
+
+		var contextLabel = editTargetLabel( proposal );
+		if ( contextLabel ) {
+			$fields.append( editContextLine( i18n.editingFor || 'You are editing:', contextLabel ) );
+		}
+
+		var $group = $( '<div>', { class: 'rwgc-targeting-assistant__edit-group' } );
 		var $page = $( '<select>', { id: 'rwgc-edit-page', class: 'widefat' } );
 		$page.append( $( '<option>', { value: '', text: i18n.choosePage || 'Choose a page…' } ) );
 		( cfg.pages || [] ).forEach( function ( p ) {
@@ -777,23 +812,35 @@
 		if ( proposal.resolved_target && proposal.resolved_target.id ) {
 			$page.val( String( proposal.resolved_target.id ) );
 		}
-		$fields.append( $( '<label>' ).text( i18n.pageLabel || 'Page' ).attr( 'for', 'rwgc-edit-page' ), $page );
-		$( '#rwgc-targeting-edit-panel' ).removeClass( 'rwgc-is-hidden' ).prop( 'hidden', false );
+		$group.append(
+			$( '<label>', { 'for': 'rwgc-edit-page', class: 'rwgc-targeting-assistant__edit-label' } ).text( i18n.pageLabel || 'Page' ),
+			$page
+		);
+		$fields.append( $group );
+		$panel.removeClass( 'rwgc-is-hidden' ).prop( 'hidden', false );
 	}
 
 	function showAmbiguityEditPanel( ambiguities ) {
 		var $panel = $( '#rwgc-targeting-edit-panel' );
 		$panel.find( 'h3' ).text( i18n.editInterpretation || 'Edit interpretation' );
+		$panel.find( '.rwgc-targeting-assistant__edit-inner > .description' ).text( i18n.editInterpretationHint || 'Choose the right location or audience for each action below.' );
 		$panel.find( '#rwgc-targeting-edit-save' ).text( i18n.applyInterpretation || 'Apply interpretation' );
 		var $fields = $( '#rwgc-targeting-edit-fields' ).empty();
 		var draft = ( state.aiInterpretation && state.aiInterpretation.proposal_draft ) || {};
 		var targetLabel = ( draft.target && draft.target.label ) || ( state.proposal && state.proposal.params && state.proposal.params.page_ref ) || 'Home page';
-		$fields.append( $( '<p>' ).append( $( '<strong>' ).text( 'Target' ), document.createTextNode( ' ' + targetLabel ) ) );
+		$fields.append( editContextLine( i18n.choosingFor || 'Choosing for:', targetLabel ) );
 
 		ambiguities.forEach( function ( row ) {
 			var field = row.field || '';
 			var $group = $( '<div>', { class: 'rwgc-targeting-assistant__edit-group' } );
-			$group.append( $( '<label>' ).text( field === 'location' ? ( i18n.locationLabel || 'Location' ) : ( i18n.audienceLabel || 'Audience' ) ) );
+			var fieldLabel = field === 'location' ? ( i18n.locationLabel || 'Location' ) : ( i18n.audienceLabel || 'Audience' );
+			var rowScope = row.target_label || row.action_label || targetLabel;
+			var $head = $( '<div>', { class: 'rwgc-targeting-assistant__edit-head' } );
+			$head.append( $( '<span>', { class: 'rwgc-targeting-assistant__edit-label' } ).text( fieldLabel ) );
+			if ( rowScope ) {
+				$head.append( $( '<span>', { class: 'rwgc-targeting-assistant__edit-scope' } ).text( ( i18n.forScope || 'for' ) + ' ' + rowScope ) );
+			}
+			$group.append( $head );
 			$group.append( $( '<p>', { class: 'description' } ).text( ( i18n.detectedPrefix || 'Detected:' ) + ' ' + ( row.raw || '' ) ) );
 			var $select = $( '<select>', { class: 'widefat', 'data-ambiguity-field': field } );
 			( row.alternatives || [] ).forEach( function ( alt ) {

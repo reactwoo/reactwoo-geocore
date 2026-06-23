@@ -250,7 +250,87 @@
 	width: 100%;
 	max-height: 80vh;
 	overflow: auto;
-	padding: 1rem 1.25rem;
+	padding: 1.25rem 1.5rem;
+}
+
+.rwgc-targeting-assistant__edit-inner h3 {
+	margin: 0 0 0.35rem;
+	font-size: 1.05rem;
+}
+
+.rwgc-targeting-assistant__edit-inner > .description {
+	margin: 0 0 1.1rem;
+	color: #50575e;
+}
+
+/* Spacing between the title/description and the fields/select block. */
+#rwgc-targeting-edit-fields {
+	margin-top: 0.25rem;
+}
+
+.rwgc-targeting-assistant__edit-context {
+	margin: 0 0 1.1rem;
+	padding: 0.6rem 0.8rem;
+	background: #f6f7f7;
+	border: 1px solid var(--rwgc-border, #dcdcde);
+	border-radius: 8px;
+	font-size: 0.85rem;
+	color: #1d2327;
+}
+
+.rwgc-targeting-assistant__edit-group {
+	margin-bottom: 1.15rem;
+}
+
+.rwgc-targeting-assistant__edit-group:last-of-type {
+	margin-bottom: 0.5rem;
+}
+
+.rwgc-targeting-assistant__edit-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.4rem;
+	margin-bottom: 0.5rem;
+}
+
+/* Selection step label — clearer than plain bold text. */
+.rwgc-targeting-assistant__edit-label,
+#rwgc-targeting-edit-fields label {
+	display: inline-block;
+	margin-bottom: 0.4rem;
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: #2271b1;
+}
+
+.rwgc-targeting-assistant__edit-head .rwgc-targeting-assistant__edit-label {
+	margin-bottom: 0;
+}
+
+.rwgc-targeting-assistant__edit-scope {
+	font-size: 0.82rem;
+	font-weight: 400;
+	color: #50575e;
+}
+
+#rwgc-targeting-edit-fields select,
+#rwgc-targeting-edit-fields .widefat {
+	border-radius: 6px;
+}
+
+/* Slight radius on modal actions/buttons. */
+.rwgc-targeting-assistant__edit-inner .button,
+.rwgc-targeting-assistant__debug-inner .button {
+	border-radius: 6px;
+}
+
+.rwgc-targeting-assistant__edit-inner p:last-child {
+	display: flex;
+	gap: 0.5rem;
+	margin-bottom: 0;
 }
 
 .rwgc-targeting-assistant__debug-head {
