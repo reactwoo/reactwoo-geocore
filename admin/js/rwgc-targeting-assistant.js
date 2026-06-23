@@ -612,6 +612,7 @@
 		} );
 
 		var $footer = $( '<div>', { class: 'rwgc-geo-card__footer' } );
+		var canExecute = responseCanExecute( proposal );
 		if ( remaining > 0 ) {
 			$footer.append( $( '<button>', {
 				type: 'button',
@@ -619,12 +620,19 @@
 				disabled: 'disabled',
 				text: ( i18n.continueAfter || 'Resolve' ) + ' ' + remaining + ' ' + ( remaining === 1 ? ( i18n.itemWord || 'item' ) : ( i18n.itemsWord || 'items' ) ),
 			} ) );
-		} else {
+		} else if ( canExecute || cfg.confirmInterpretationUrl ) {
 			$footer.append( $( '<button>', {
 				type: 'button',
 				class: 'button button-primary rwgc-geo-btn',
 				text: i18n.createSetup || 'Create setup',
 				'data-card-action': 'create_setup',
+			} ) );
+		} else {
+			$footer.append( $( '<button>', {
+				type: 'button',
+				class: 'button button-primary rwgc-geo-btn',
+				disabled: 'disabled',
+				text: i18n.statusNeedsConfirmation || 'Needs confirmation',
 			} ) );
 		}
 		$plan.append( $footer );
@@ -741,7 +749,7 @@
 
 	function finalizeCardSetup() {
 		// If the server already produced an executable proposal, run it directly.
-		if ( state.proposalId ) {
+		if ( state.proposalId && responseCanExecute( state.proposal || {} ) ) {
 			executeProposal();
 			return;
 		}
@@ -763,7 +771,11 @@
 			} );
 			return;
 		}
-		executeProposal();
+		if ( responseCanExecute( state.proposal || {} ) ) {
+			executeProposal();
+			return;
+		}
+		appendAssistant( esc( i18n.statusNeedsConfirmation || 'Needs confirmation' ) );
 	}
 
 	function updateSetupPanel( proposal, status ) {
@@ -1274,6 +1286,11 @@
 	}
 
 	function executeProposal() {
+		if ( ! responseCanExecute( state.proposal || {} ) ) {
+			appendAssistant( esc( i18n.statusNeedsConfirmation || 'Needs confirmation' ) );
+			updateSetupPanel( state.proposal, i18n.statusNeedsConfirmation || 'Needs confirmation' );
+			return;
+		}
 		if ( ! state.proposalId || ! cfg.executeUrl ) {
 			goWorkflowFromProposal();
 			return;
@@ -1290,8 +1307,13 @@
 				appendAssistant( esc( result.message || i18n.setupConfirmed || 'Setup confirmed.' ) );
 				updateSetupPanel( state.proposal, i18n.statusConfirmed || 'Confirmed' );
 			} )
-			.fail( function () {
-				goWorkflowFromProposal();
+			.fail( function ( xhr ) {
+				var msg = i18n.setupExecuteFailed || 'Could not create the setup. Please review the unresolved items and try again.';
+				if ( xhr.responseJSON && xhr.responseJSON.message ) {
+					msg = xhr.responseJSON.message;
+				}
+				appendAssistant( esc( msg ) );
+				updateSetupPanel( state.proposal, i18n.statusNeedsConfirmation || 'Needs confirmation' );
 			} );
 	}
 
