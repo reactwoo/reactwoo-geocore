@@ -576,6 +576,8 @@ class RWGC_Admin {
 						'removeCondition' => __( 'Remove condition', 'reactwoo-geocore' ),
 						'locationLabel'   => __( 'Location', 'reactwoo-geocore' ),
 						'audienceLabel'   => __( 'Audience', 'reactwoo-geocore' ),
+						'campaignLabel'   => __( 'Campaign', 'reactwoo-geocore' ),
+						'actionWord'      => __( 'Action', 'reactwoo-geocore' ),
 						'weatherLabel'    => __( 'Weather', 'reactwoo-geocore' ),
 						'logicLabel'      => __( 'Logic', 'reactwoo-geocore' ),
 						'matchAll'        => __( 'Match all conditions', 'reactwoo-geocore' ),

@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.72
+Stable tag: 1.8.73
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.73 =
+* **Targeting Assistant:** Clarification rows now name the action they belong to. The "Choose location/audience" panel and chat show "for Action N · <target>" per unresolved audience/campaign, and campaign clarifications render with a Campaign label.
 
 = 1.8.72 =
 * **Targeting Assistant:** UI polish — padding between the edit title and select block, rounded action buttons and selects, clearer (non-bold) selection-step labels, and edit/clarify panels now state which action or rule the location/audience selection is for. Renamed the confirm action to “This looks correct”.

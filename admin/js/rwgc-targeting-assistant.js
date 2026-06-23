@@ -141,6 +141,31 @@
 		return value;
 	}
 
+	function ambiguityFieldLabel( field ) {
+		if ( field === 'location' ) {
+			return i18n.locationLabel || 'Location';
+		}
+		if ( field === 'campaign' ) {
+			return i18n.campaignLabel || 'Campaign';
+		}
+		return i18n.audienceLabel || 'Audience';
+	}
+
+	function ambiguityRowScope( row, fallback ) {
+		var parts = [];
+		if ( row.action_index ) {
+			parts.push( ( i18n.actionWord || 'Action' ) + ' ' + row.action_index );
+		}
+		var target = row.target_label || row.action_label || '';
+		if ( target ) {
+			parts.push( target );
+		}
+		if ( parts.length ) {
+			return parts.join( ' · ' );
+		}
+		return fallback || '';
+	}
+
 	function renderAmbiguitiesHtml( response ) {
 		var ambiguities = response.ambiguities || ( response.proposal && response.proposal.ambiguities ) || [];
 		var aiInterp = response.ai_interpretation || ( response.proposal && response.proposal.ai_interpretation );
@@ -155,7 +180,11 @@
 		if ( ambiguities.length ) {
 			html += '<ul class="rwgc-targeting-assistant__ambiguity-list">';
 			ambiguities.forEach( function ( row ) {
-				html += '<li><strong>' + esc( row.field || '' ) + ':</strong> ' + esc( row.raw || '' );
+				html += '<li><strong>' + esc( ambiguityFieldLabel( row.field || '' ) ) + ':</strong> ' + esc( row.raw || '' );
+				var scope = ambiguityRowScope( row, '' );
+				if ( scope ) {
+					html += ' <span class="description">(' + esc( ( i18n.forScope || 'for' ) + ' ' + scope ) + ')</span>';
+				}
 				if ( row.likely ) {
 					html += ' → <em>' + esc( row.field === 'location' ? locationOptionLabel( row.likely ) : audienceOptionLabel( row.likely ) ) + '</em>';
 				}
@@ -833,10 +862,9 @@
 		ambiguities.forEach( function ( row ) {
 			var field = row.field || '';
 			var $group = $( '<div>', { class: 'rwgc-targeting-assistant__edit-group' } );
-			var fieldLabel = field === 'location' ? ( i18n.locationLabel || 'Location' ) : ( i18n.audienceLabel || 'Audience' );
-			var rowScope = row.target_label || row.action_label || targetLabel;
 			var $head = $( '<div>', { class: 'rwgc-targeting-assistant__edit-head' } );
-			$head.append( $( '<span>', { class: 'rwgc-targeting-assistant__edit-label' } ).text( fieldLabel ) );
+			$head.append( $( '<span>', { class: 'rwgc-targeting-assistant__edit-label' } ).text( ambiguityFieldLabel( field ) ) );
+			var rowScope = ambiguityRowScope( row, targetLabel );
 			if ( rowScope ) {
 				$head.append( $( '<span>', { class: 'rwgc-targeting-assistant__edit-scope' } ).text( ( i18n.forScope || 'for' ) + ' ' + rowScope ) );
 			}
