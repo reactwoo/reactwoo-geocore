@@ -764,3 +764,44 @@
 .rwgc-geo-card__footer .button[disabled] {
 	cursor: not-allowed;
 }
+
+.rwgc-geo-result__message {
+	font-weight: 600;
+	margin: 0 0 0.6rem;
+}
+
+.rwgc-geo-result__row {
+	padding: 0.45rem 0.6rem;
+	border-radius: 6px;
+	margin-bottom: 0.4rem;
+	font-size: 0.88rem;
+	border: 1px solid #e4e7ec;
+}
+
+.rwgc-geo-result__row--ok {
+	border-color: #aee0c0;
+	background: #f3fbf6;
+}
+
+.rwgc-geo-result__row--manual {
+	border-color: #f5d28a;
+	background: #fffaf0;
+}
+
+.rwgc-geo-result__row--attention {
+	border-color: #f1aeae;
+	background: #fef3f2;
+}
+
+.rwgc-geo-result__row--preview {
+	border-color: #c7d2ec;
+	background: #f5f8ff;
+	color: #475467;
+}
+
+.rwgc-geo-result__warn {
+	display: block;
+	margin-top: 0.25rem;
+	color: #b54708;
+	font-size: 0.82rem;
+}

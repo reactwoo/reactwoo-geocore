@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.74
+Stable tag: 1.8.75
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.75 =
+* **Targeting Assistant — create the setup for real:** "Create setup" now submits the user's field-level card resolutions to the assistant execute endpoint and renders the result inline: created **draft** visibility rules (with edit links and any conversion warnings), manual follow-up steps (page variants / original-targeting wiring), preview-only actions and anything that could not be created automatically. If the server still finds unresolved required fields, the panel re-renders the affected cards with a "Needs resolution" status instead of proceeding. Requires ReactWoo Geo AI 0.4.118+ for the server-side executor.
 
 = 1.8.74 =
 * **Targeting Assistant — action review cards:** The setup panel now renders one review card per detected action instead of a flat summary. Each card shows the action type, target, operation, include/exclude conditions, warnings and the status of its campaign, audience and page/category target. Unknown campaigns, audiences and targets are shown as unresolved with field-level controls right inside the card — selectable suggestion chips, Ignore, Refresh synced, Choose page/category (with an inline page picker) and Remove action — instead of a single global "Choose location/audience" button. "Same category page" shows the inherited target it points to. The panel header reports how many actions were detected and how many fields still need attention, and the primary button stays disabled ("Resolve N items") until every required mapping is resolved, ignored, edited or its action removed — only then does "Create setup" appear.

@@ -1282,17 +1282,83 @@
 			.done( function ( response ) {
 				recordLearningFeedback( 'executed' );
 				var result = response && response.result ? response.result : {};
+				// Legacy redirect path (Geo Core executor not available).
 				if ( result.redirect_steps && result.redirect_steps.length ) {
 					persistPortableAndGo( result.redirect_steps[0].url );
+					return;
+				}
+				if ( result.created_rules || result.manual_steps || result.preview_only || result.needs_attention ) {
+					renderExecutionSummary( result );
 					return;
 				}
 				goWorkflowFromProposal();
 				appendAssistant( esc( result.message || i18n.setupConfirmed || 'Setup confirmed.' ) );
 				updateSetupPanel( state.proposal, i18n.statusConfirmed || 'Confirmed' );
 			} )
-			.fail( function () {
+			.fail( function ( jqxhr ) {
+				var data = jqxhr && jqxhr.responseJSON && jqxhr.responseJSON.data ? jqxhr.responseJSON.data : {};
+				if ( data.requires_resolution && data.action_cards ) {
+					if ( state.proposal ) {
+						state.proposal.action_cards = data.action_cards;
+						state.proposal.fields_needing_attention = data.fields_needing_attention || 0;
+						state.proposal.requires_resolution = true;
+					}
+					state.cardResolutions = {};
+					var msg = ( jqxhr.responseJSON && jqxhr.responseJSON.message ) || i18n.cardResolveRemaining || 'Some fields still need resolving.';
+					appendAssistant( esc( msg ) );
+					updateSetupPanel( state.proposal, i18n.statusNeedsResolution || 'Needs resolution' );
+					return;
+				}
 				goWorkflowFromProposal();
 			} );
+	}
+
+	function renderExecutionSummary( result ) {
+		var $plan = $( '#rwgc-targeting-setup-plan' );
+		$( '#rwgc-targeting-setup-empty' ).addClass( 'rwgc-is-hidden' );
+		$( '#rwgc-targeting-setup-hint' ).addClass( 'rwgc-is-hidden' );
+		$plan.removeClass( 'rwgc-is-hidden' ).empty();
+
+		var $wrap = $( '<div>', { class: 'rwgc-geo-result' } );
+		$wrap.append( $( '<p>', { class: 'rwgc-geo-result__message' } ).text( result.message || '' ) );
+
+		( result.created_rules || [] ).forEach( function ( rule ) {
+			var $row = $( '<div>', { class: 'rwgc-geo-result__row rwgc-geo-result__row--ok' } );
+			if ( rule.edit_url ) {
+				$row.append( $( '<a>', { href: rule.edit_url, target: '_blank', rel: 'noopener' } ).text( rule.title || ( 'Rule #' + rule.id ) ) );
+			} else {
+				$row.append( document.createTextNode( rule.title || ( 'Rule #' + rule.id ) ) );
+			}
+			( rule.warnings || [] ).forEach( function ( w ) {
+				$row.append( $( '<span>', { class: 'rwgc-geo-result__warn' } ).text( w ) );
+			} );
+			$wrap.append( $row );
+		} );
+
+		( result.manual_steps || [] ).forEach( function ( step ) {
+			$wrap.append(
+				$( '<div>', { class: 'rwgc-geo-result__row rwgc-geo-result__row--manual' } )
+					.text( ( step.label ? step.label + ' — ' : '' ) + ( step.reason || '' ) )
+			);
+		} );
+
+		( result.needs_attention || [] ).forEach( function ( item ) {
+			$wrap.append(
+				$( '<div>', { class: 'rwgc-geo-result__row rwgc-geo-result__row--attention' } )
+					.text( ( item.label ? item.label + ' — ' : '' ) + ( item.reason || '' ) )
+			);
+		} );
+
+		( result.preview_only || [] ).forEach( function ( item ) {
+			$wrap.append(
+				$( '<div>', { class: 'rwgc-geo-result__row rwgc-geo-result__row--preview' } )
+					.text( ( item.label || '' ) + ' — ' + ( i18n.cardPreviewSkipped || 'preview only, nothing created' ) )
+			);
+		} );
+
+		$plan.append( $wrap );
+		$( '#rwgc-targeting-summary' ).removeClass( 'rwgc-is-hidden' );
+		appendAssistant( esc( result.message || i18n.setupConfirmed || 'Setup confirmed.' ) );
 	}
 
 	function persistPortableAndGo( url ) {
