@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.77
+Stable tag: 1.8.78
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.78 =
+* **Targeting Assistant — Action Review + Resolution Hub journey:** Each detected action now renders as an editable card with a NEEDS RESOLUTION / READY status pill, a Match-all/Match-any logic toggle, and a grid of condition cards (location, weather, audience, device, URL, UTM, visitor) using Dashicons. Ambiguous and incomplete conditions show inline resolution options — e.g. England → *United Kingdom country* / *England region* / *Remove*, and "audience matches any" → *Any audience* / *Choose audience groups* / *Remove* — that update the card, the Resolution Hub, the create-gating, and the outgoing payload immediately. The chat now shows a source badge (Local smart action / Learned interpretation / AI-assisted / Needs clarification), a target + conditions breakdown, and a "Review action" button; confirmed condition choices are recorded as learning events. All styling is local CSS (no external CDNs/fonts). Requires ReactWoo Geo AI 0.4.121+.
 
 = 1.8.76 =
 * **Targeting Assistant — review layout overhaul:** The detailed action review cards now render full-width in the main content area directly below the chat, and the right sidebar becomes a compact sticky "mission control" panel: action/attention counts, a per-action status list (e.g. "Needs target, campaign, audience" or "Blocked by target from Action 1") with jump links to each card, the shared-target resolver, and the final Resolve/Create CTA. Targets shared by several actions are shown once and resolving them applies to every linked action. Responsive: the sidebar collapses to a top summary bar on medium screens and the CTA sticks to the bottom on mobile. Requires ReactWoo Geo AI 0.4.119+.

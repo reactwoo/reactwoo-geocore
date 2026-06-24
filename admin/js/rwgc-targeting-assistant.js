@@ -19,6 +19,7 @@
 		previewSeq: 0,
 		sendSeq: 0,
 		cardResolutions: {},
+		cardLogic: {},
 	};
 
 	function esc( text ) {
@@ -496,22 +497,178 @@
 		return $b;
 	}
 
+	function dashicon( name ) {
+		return $( '<span>', { class: 'dashicons dashicons-' + ( name || 'marker' ), 'aria-hidden': 'true' } );
+	}
+
+	function conditionTypeLabel( type ) {
+		var map = {
+			location: i18n.locationLabel || 'Location',
+			weather: i18n.cardWeather || 'Weather',
+			audience: i18n.audienceLabel || 'Audience',
+			device: i18n.cardDevices || 'Device',
+			url: 'URL',
+			utm: 'UTM',
+			visitor: i18n.cardVisitor || 'Visitor',
+		};
+		return map[ type ] || ( type ? String( type ).replace( /_/g, ' ' ) : '' );
+	}
+
+	// Which server resolution field a condition row maps to (only some types are
+	// resolvable inline; the rest are display-only).
+	function conditionResolutionField( type ) {
+		if ( type === 'location' ) {
+			return 'location';
+		}
+		if ( type === 'audience' ) {
+			return 'audience';
+		}
+		return '';
+	}
+
+	function conditionOptionButton( idx, field, raw, opt ) {
+		var kind = 'choose';
+		var id = '';
+		if ( opt.key === 'remove' || opt.key === 'any_audience' ) {
+			kind = 'ignore';
+		} else if ( opt.picker || opt.key === 'choose_audiences' ) {
+			kind = 'pick_manual';
+		} else if ( opt.key === 'refresh' ) {
+			kind = 'refresh';
+		} else if ( opt.value && opt.value.type && opt.value.code ) {
+			id = opt.value.type + ':' + opt.value.code;
+		}
+		return $( '<button>', {
+			type: 'button',
+			class: 'button rwgc-resolution-option' + ( opt.key === 'remove' ? ' rwgc-resolution-option--danger' : '' ),
+			text: opt.label || opt.key,
+			'data-card-action': 'choose_condition',
+			'data-card': idx,
+			'data-field': field,
+			'data-raw': raw || '',
+			'data-kind': kind,
+			'data-id': id,
+			'data-label': opt.label || '',
+		} );
+	}
+
+	function renderConditionCard( card, idx, row ) {
+		var field = conditionResolutionField( row.type );
+		var resolution = field ? fieldResolution( idx, field, row.raw ) : null;
+		var resolved = ( row.status === 'valid' ) || !! resolution;
+
+		var $cc = $( '<div>', {
+			class: 'rwgc-condition-card' + ( resolved ? '' : ' rwgc-condition-card--warning' ),
+		} );
+
+		var $head = $( '<div>', { class: 'rwgc-condition-card__head' } );
+		$head.append( dashicon( row.icon ) );
+		var $meta = $( '<div>', { class: 'rwgc-condition-card__meta' } );
+		var label = conditionTypeLabel( row.type ) + ( row.mode === 'exclude' ? ' (' + ( i18n.cardExclude || 'Exclude' ) + ')' : '' );
+		$meta.append( $( '<span>', { class: 'rwgc-condition-card__type' } ).text( label ) );
+
+		var valueText = row.label || row.raw || '';
+		if ( resolution ) {
+			valueText = resolution.kind === 'ignored'
+				? ( i18n.anyAudience && row.type === 'audience' ? i18n.anyAudience : ( i18n.cardIgnored || 'Removed' ) )
+				: ( resolution.label || valueText );
+		}
+		$meta.append( $( '<span>', { class: 'rwgc-condition-card__value' } ).text( valueText ) );
+		$head.append( $meta );
+
+		var pillKind = resolved ? 'ready' : 'needs-resolution';
+		var pillText = resolved ? ( i18n.statusValid || 'Valid' ) : ( i18n.statusNeedsAttention || 'Needs attention' );
+		$head.append( $( '<span>', { class: 'rwgc-status-pill rwgc-status-pill--' + pillKind } ).text( pillText ) );
+		$cc.append( $head );
+
+		if ( ! resolved && row.warning ) {
+			$cc.append( $( '<p>', { class: 'rwgc-condition-card__warning' } ).text( row.warning ) );
+		}
+
+		if ( resolution ) {
+			$cc.append( $( '<button>', {
+				type: 'button',
+				class: 'button-link rwgc-geo-card__undo',
+				text: i18n.cardUndo || 'Undo',
+				'data-card-action': 'undo_field',
+				'data-card': idx,
+				'data-field': field,
+				'data-raw': row.raw || '',
+			} ) );
+			return $cc;
+		}
+
+		if ( ! resolved && field && row.resolution_options && row.resolution_options.length ) {
+			var $opts = $( '<div>', { class: 'rwgc-condition-card__options' } );
+			row.resolution_options.forEach( function ( opt ) {
+				$opts.append( conditionOptionButton( idx, field, row.raw, opt ) );
+			} );
+			$cc.append( $opts );
+		}
+
+		return $cc;
+	}
+
+	function renderConditionRows( card, idx ) {
+		var rows = card.condition_rows || [];
+		if ( ! rows.length ) {
+			return null;
+		}
+		var $section = $( '<div>', { class: 'rwgc-action-card__section' } );
+		$section.append( $( '<p>', { class: 'rwgc-action-card__section-label' } ).text( i18n.includeConditions || 'Conditions' ) );
+		var $grid = $( '<div>', { class: 'rwgc-condition-grid' } );
+		rows.forEach( function ( row ) {
+			$grid.append( renderConditionCard( card, idx, row ) );
+		} );
+		$section.append( $grid );
+		return $section;
+	}
+
+	function cardLogicOperator( card, idx ) {
+		if ( state.cardLogic[ idx ] ) {
+			return state.cardLogic[ idx ];
+		}
+		return ( card.logic && card.logic.operator ) || 'AND';
+	}
+
+	function renderLogicSection( card, idx ) {
+		var op = cardLogicOperator( card, idx );
+		var $section = $( '<div>', { class: 'rwgc-action-card__section rwgc-action-card__section--logic' } );
+		$section.append( $( '<p>', { class: 'rwgc-action-card__section-label' } ).text( i18n.logicLabel || 'Logic' ) );
+		var $toggle = $( '<div>', { class: 'rwgc-logic-toggle' } );
+		[
+			{ key: 'AND', label: i18n.matchAll || 'Match all conditions' },
+			{ key: 'OR', label: i18n.matchAny || 'Match any condition' },
+		].forEach( function ( choice ) {
+			$toggle.append( $( '<button>', {
+				type: 'button',
+				class: 'button rwgc-logic-toggle__btn' + ( op === choice.key ? ' is-active' : '' ),
+				text: choice.label,
+				'data-card-action': 'set_logic',
+				'data-card': idx,
+				'data-id': choice.key,
+			} ) );
+		} );
+		$section.append( $toggle );
+		return $section;
+	}
+
 	function renderCard( card, idx ) {
 		var removed = isCardRemoved( idx );
 		var $card = $( '<div>', {
-			class: 'rwgc-geo-card' + ( removed ? ' rwgc-geo-card--removed' : '' ),
+			class: 'rwgc-geo-card rwgc-action-card' + ( removed ? ' rwgc-geo-card--removed' : '' ),
 			id: 'rwgc-geo-card-' + idx,
 			'data-card-index': idx,
 		} );
 
 		var remaining = remainingForCard( idx, card );
-		var $head = $( '<div>', { class: 'rwgc-geo-card__head' } );
+		var $head = $( '<div>', { class: 'rwgc-geo-card__head rwgc-action-card__header' } );
 		$head.append( $( '<strong>' ).text( ( i18n.cardActionWord || 'Action' ) + ' ' + ( idx + 1 ) + ' — ' + actionTypeLabel( card.type ) ) );
-		var badgeKind = removed ? 'removed' : ( remaining > 0 ? 'warn' : 'ok' );
-		var badgeLabel = removed
+		var pillKind = removed ? 'removed' : ( remaining > 0 ? 'needs-resolution' : 'ready' );
+		var pillLabel = removed
 			? ( i18n.cardActionRemoved || 'Removed' )
-			: ( remaining > 0 ? ( i18n.cardNeedsResolution || 'Needs resolution' ) : ( i18n.cardReady || 'Ready' ) );
-		$head.append( $( '<span>', { class: 'rwgc-geo-card__badge rwgc-geo-card__badge--' + badgeKind } ).text( badgeLabel ) );
+			: ( remaining > 0 ? ( i18n.cardNeedsResolution || 'Needs resolution' ) : ( i18n.cardReady || 'Ready to create' ) );
+		$head.append( $( '<span>', { class: 'rwgc-status-pill rwgc-status-pill--' + pillKind } ).text( pillLabel ) );
 		$card.append( $head );
 
 		if ( removed ) {
@@ -553,25 +710,11 @@
 			} ) );
 		}
 
-		( card.audiences || [] ).forEach( function ( a ) {
-			$card.append( fieldBlock( idx, {
-				field: 'audience',
-				label: i18n.audienceLabel || 'Audience',
-				value: a.raw,
-				status: a.status,
-				resolved: a.resolved ? a.resolved.name : '',
-				suggestions: a.suggestions || [],
-				actions: ( a.status && 'matched' !== a.status ) ? [ 'choose_audience', 'ignore_audience', 'refresh_audiences' ] : [],
-			} ) );
-		} );
+		$card.append( renderLogicSection( card, idx ) );
 
-		var incText = summariseConditions( card.conditions && card.conditions.include );
-		if ( incText ) {
-			$card.append( conditionRow( i18n.cardInclude || 'Include', incText ) );
-		}
-		var excText = summariseConditions( card.conditions && card.conditions.exclude );
-		if ( excText ) {
-			$card.append( conditionRow( i18n.cardExclude || 'Exclude', excText ) );
+		var $rows = renderConditionRows( card, idx );
+		if ( $rows ) {
+			$card.append( $rows );
 		}
 
 		( card.warnings || [] ).forEach( function ( w ) {
@@ -658,11 +801,35 @@
 			target: i18n.fieldTarget || 'target',
 			campaign: i18n.fieldCampaign || 'campaign',
 			audience: i18n.fieldAudience || 'audience',
+			location: i18n.fieldLocation || 'location',
 		};
 		var names = fields.map( function ( f ) {
 			return labelMap[ f ] || f;
 		} );
 		return { kind: 'warn', text: ( i18n.needsWord || 'Needs' ) + ' ' + names.join( ', ' ) };
+	}
+
+	function resolvedSummary( card, idx ) {
+		var parts = [];
+		var t = card.target || {};
+		var tres = fieldResolution( idx, 'target', t.raw );
+		var targetText = tres ? ( tres.label || t.raw ) : ( ( t.resolved && t.resolved.name ) || t.raw || '' );
+		if ( targetText ) {
+			parts.push( targetText );
+		}
+		( card.condition_rows || [] ).forEach( function ( row ) {
+			var field = conditionResolutionField( row.type );
+			var res = field ? fieldResolution( idx, field, row.raw ) : null;
+			if ( res ) {
+				parts.push( res.kind === 'ignored'
+					? ( row.type === 'audience' ? ( i18n.anyAudience || 'Any audience' ) : '' )
+					: ( res.label || '' ) );
+			} else if ( row.status === 'valid' ) {
+				parts.push( row.label || row.raw );
+			}
+		} );
+		parts.push( cardLogicOperator( card, idx ) === 'OR' ? ( i18n.matchAny || 'Match any' ) : ( i18n.matchAll || 'Match all' ) );
+		return parts.filter( function ( p ) { return p; } ).join( ' · ' );
 	}
 
 	function sharedTargetResolved( group ) {
@@ -769,6 +936,12 @@
 				( i18n.cardActionWord || 'Action' ) + ' ' + ( idx + 1 ) + ' — ' + actionTypeLabel( card.type )
 			) );
 			$row.append( $( '<span>', { class: 'rwgc-geo-rail__action-status' } ).text( line.text ) );
+			if ( line.kind === 'ok' ) {
+				var summary = resolvedSummary( card, idx );
+				if ( summary ) {
+					$row.append( $( '<span>', { class: 'rwgc-geo-rail__action-summary' } ).text( summary ) );
+				}
+			}
 			$list.append( $row );
 		} );
 		$rail.append( $list );
@@ -837,8 +1010,37 @@
 					} );
 				}
 			} );
+			if ( state.cardLogic[ idx ] ) {
+				out.push( { card: idx, field: 'logic', action: 'set', id: state.cardLogic[ idx ] } );
+			}
 		} );
 		return out;
+	}
+
+	// Persist a confirmed condition mapping so the assistant can suggest it next
+	// time the same raw phrase is seen.
+	function recordConditionLearning( idx, field, raw, res ) {
+		if ( ! cfg.learningEventUrl || ! res ) {
+			return;
+		}
+		var mapping = res.kind === 'ignored'
+			? { type: field, mode: 'any' }
+			: { type: field, value: res.id || res.label || '' };
+		apiPost( cfg.learningEventUrl, {
+			raw_phrase: state.lastMessage || '',
+			normalised_phrase: raw || '',
+			intent_key: ( state.proposal && state.proposal.intent ) || '',
+			action_key: ( state.proposal && state.proposal.matched_action ) || '',
+			outcome: 'confirmed',
+			approved_by_user: true,
+			interpretation_source: ( state.lastResponse && state.lastResponse.source ) || 'local_parser',
+			correction: {
+				field: field,
+				raw: raw || '',
+				confirmed_mapping: mapping,
+				context: field + '_condition',
+			},
+		} );
 	}
 
 	function handleCardAction( $btn ) {
@@ -847,7 +1049,35 @@
 		var field = $btn.data( 'field' );
 		var raw = $btn.data( 'raw' ) != null ? String( $btn.data( 'raw' ) ) : '';
 
-		if ( 'choose_suggestion' === action ) {
+		if ( 'choose_condition' === action ) {
+			var ckind = String( $btn.data( 'kind' ) || 'choose' );
+			if ( 'refresh' === ckind ) {
+				if ( state.lastMessage ) {
+					sendMessage( state.lastMessage );
+				}
+				return;
+			}
+			if ( 'ignore' === ckind ) {
+				state.cardResolutions[ fieldKey( idx, field, raw ) ] = { kind: 'ignored' };
+			} else if ( 'pick_manual' === ckind ) {
+				var picked = window.prompt( i18n.cardEnterExact || 'Enter the exact name to use:', '' );
+				if ( ! picked || ! picked.trim() ) {
+					return;
+				}
+				state.cardResolutions[ fieldKey( idx, field, raw ) ] = { kind: 'chosen', id: '', label: picked.trim() };
+			} else {
+				state.cardResolutions[ fieldKey( idx, field, raw ) ] = {
+					kind: 'chosen',
+					id: $btn.data( 'id' ) || '',
+					label: $btn.data( 'label' ) || '',
+				};
+			}
+			recordConditionLearning( idx, field, raw, state.cardResolutions[ fieldKey( idx, field, raw ) ] );
+			rerenderCards();
+		} else if ( 'set_logic' === action ) {
+			state.cardLogic[ idx ] = String( $btn.data( 'id' ) || 'AND' );
+			rerenderCards();
+		} else if ( 'choose_suggestion' === action ) {
 			state.cardResolutions[ fieldKey( idx, field, raw ) ] = {
 				kind: 'chosen',
 				id: $btn.data( 'id' ) || '',
@@ -1106,6 +1336,14 @@
 		// the setup panel, so the chat bubble only offers secondary actions.
 		if ( proposal.action_cards && proposal.action_cards.length ) {
 			$wrap.append(
+				$( '<button>', { type: 'button', class: 'button button-primary rwgc-geo-btn', text: i18n.reviewAction || 'Review action', 'data-action': 'review_action' } )
+			);
+			if ( response.ai_available ) {
+				$wrap.append(
+					$( '<button>', { type: 'button', class: 'button rwgc-geo-btn', text: i18n.askAiCheck || 'Ask AI to check', 'data-action': 'ask_ai' } )
+				);
+			}
+			$wrap.append(
 				$( '<button>', { type: 'button', class: 'button rwgc-geo-btn', text: i18n.showDebug || 'Show debug', 'data-action': 'debug' } ),
 				$( '<button>', { type: 'button', class: 'button-link rwgc-geo-btn', text: i18n.cancel || 'Cancel', 'data-action': 'cancel' } )
 			);
@@ -1174,6 +1412,49 @@
 		return proposal.proposal_ready !== false;
 	}
 
+	function sourceBadgeHtml( source ) {
+		var map = {
+			local_parser: { label: i18n.sourceLocal || 'Local smart action', kind: 'local' },
+			local_memory: { label: i18n.sourceLearned || 'Learned interpretation', kind: 'learned' },
+			remote_memory: { label: i18n.sourceLearned || 'Learned interpretation', kind: 'learned' },
+			ai_fallback: { label: i18n.sourceAi || 'AI-assisted interpretation', kind: 'ai' },
+			clarification: { label: i18n.sourceClarify || 'Needs clarification', kind: 'clarify' },
+		};
+		var badge = map[ source ] || map.local_parser;
+		return '<p><span class="rwgc-source-badge rwgc-source-badge--' + badge.kind + '">' + esc( badge.label ) + '</span></p>';
+	}
+
+	function chatActionBreakdown( proposal ) {
+		var cards = proposal.action_cards || [];
+		if ( cards.length !== 1 ) {
+			return '';
+		}
+		var card = cards[0];
+		var html = '<ul class="rwgc-chat-breakdown">';
+		var t = card.target || {};
+		html += '<li><strong>' + esc( i18n.cardTargetLabel || 'Target' ) + ':</strong> ' + esc( ( t.resolved && t.resolved.name ) || t.raw || '—' ) + '</li>';
+		var detected = [];
+		var needs = [];
+		( card.condition_rows || [] ).forEach( function ( row ) {
+			detected.push( conditionTypeLabel( row.type ) + ': ' + ( row.label || row.raw ) );
+			if ( row.status !== 'valid' && row.warning ) {
+				needs.push( row.warning );
+			}
+		} );
+		if ( detected.length ) {
+			html += '<li><strong>' + esc( i18n.conditionsDetected || 'Conditions detected' ) + ':</strong> ' + esc( detected.join( ' · ' ) ) + '</li>';
+		}
+		html += '</ul>';
+		if ( needs.length ) {
+			html += '<p><strong>' + esc( i18n.needConfirmationFor || 'I need confirmation for:' ) + '</strong></p><ul class="rwgc-chat-breakdown">';
+			needs.forEach( function ( n ) {
+				html += '<li>' + esc( n ) + '</li>';
+			} );
+			html += '</ul>';
+		}
+		return html;
+	}
+
 	function formatProposalHtml( response ) {
 		var proposal = response.proposal || {};
 		var message = response.message || proposal.summary || '';
@@ -1192,8 +1473,10 @@
 			} else {
 				line += ' ' + ( i18n.allResolvedReady || 'Everything is resolved — you can create the setup.' );
 			}
-			var cardHtml = '<p><strong>' + esc( line ) + '</strong></p>';
-			cardHtml += '<p class="description">' + esc( i18n.reviewInPanel || 'Review and resolve each action in the setup panel on the right.' ) + '</p>';
+			var cardHtml = sourceBadgeHtml( response.source );
+			cardHtml += '<p><strong>' + esc( line ) + '</strong></p>';
+			cardHtml += chatActionBreakdown( proposal );
+			cardHtml += '<p class="description">' + esc( i18n.reviewInPanel || 'Review and resolve each action in the Action Review panel below.' ) + '</p>';
 			return cardHtml;
 		}
 
@@ -1232,6 +1515,7 @@
 		state.lastResponse = response;
 		state.proposal = response.proposal || null;
 		state.cardResolutions = {};
+		state.cardLogic = {};
 		if ( typeof response.can_execute === 'boolean' && state.proposal ) {
 			state.proposal.can_execute = response.can_execute;
 		}
@@ -1760,6 +2044,7 @@
 		state.ambiguities = null;
 		state.aiInterpretation = null;
 		state.cardResolutions = {};
+		state.cardLogic = {};
 		$( '#rwgc-targeting-thread' ).empty();
 		$( '#rwgc-targeting-phrase' ).val( '' );
 		updateLivePreview( null );
@@ -1797,6 +2082,8 @@
 			var action = $( this ).data( 'action' );
 			if ( 'confirm' === action ) {
 				executeProposal();
+			} else if ( 'review_action' === action ) {
+				jumpToCard( 0 );
 			} else if ( 'accept_likely_interpretation' === action ) {
 				confirmInterpretation();
 			} else if ( 'use_split' === action ) {

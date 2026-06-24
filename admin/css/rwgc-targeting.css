@@ -1029,3 +1029,221 @@
 	color: #b54708;
 	font-size: 0.82rem;
 }
+
+/* ============================================================
+   Action Review + Resolution Hub journey (v2 design system)
+   Local CSS translation of the GeoTarget design concept.
+   ============================================================ */
+
+.rwgc-action-card {
+	border: 1px solid #d3e0f5;
+	border-radius: 14px;
+	background: #ffffff;
+	box-shadow: 0 1px 2px rgba(11, 28, 48, 0.06);
+	padding: 0;
+	overflow: hidden;
+	margin-bottom: 1rem;
+}
+
+.rwgc-action-card__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	padding: 0.85rem 1.1rem;
+	background: #f4f8ff;
+	border-bottom: 1px solid #e3ecfb;
+}
+
+.rwgc-action-card > .rwgc-geo-card__field,
+.rwgc-action-card > .rwgc-action-card__section,
+.rwgc-action-card > .rwgc-geo-card__warning,
+.rwgc-action-card > .rwgc-geo-card__row-actions {
+	padding-left: 1.1rem;
+	padding-right: 1.1rem;
+}
+
+.rwgc-action-card__section {
+	padding-top: 0.9rem;
+	padding-bottom: 0.4rem;
+}
+
+.rwgc-action-card__section-label {
+	margin: 0 0 0.5rem;
+	font-size: 0.7rem;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: #565e74;
+}
+
+/* Status pills ---------------------------------------------------------- */
+.rwgc-status-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	font-size: 0.66rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	padding: 0.2rem 0.55rem;
+	border-radius: 999px;
+	white-space: nowrap;
+}
+
+.rwgc-status-pill--needs-resolution {
+	background: #ffe2e0;
+	color: #ba1a1a;
+}
+
+.rwgc-status-pill--ready {
+	background: #d8f3e3;
+	color: #00603a;
+}
+
+.rwgc-status-pill--removed {
+	background: #eceef3;
+	color: #6b7280;
+}
+
+/* Condition grid + cards ------------------------------------------------ */
+.rwgc-condition-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+	gap: 0.6rem;
+}
+
+.rwgc-condition-card {
+	border: 1px solid #e3ecfb;
+	border-radius: 10px;
+	background: #fbfcff;
+	padding: 0.7rem 0.8rem;
+}
+
+.rwgc-condition-card--warning {
+	border-color: #f4c9c4;
+	background: #fff6f5;
+}
+
+.rwgc-condition-card__head {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5rem;
+}
+
+.rwgc-condition-card__head .dashicons {
+	color: #0052ff;
+	margin-top: 1px;
+}
+
+.rwgc-condition-card--warning .rwgc-condition-card__head .dashicons {
+	color: #ba1a1a;
+}
+
+.rwgc-condition-card__meta {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.rwgc-condition-card__type {
+	display: block;
+	font-size: 0.66rem;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: #8a93a6;
+}
+
+.rwgc-condition-card__value {
+	display: block;
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: #0b1c30;
+	word-break: break-word;
+}
+
+.rwgc-condition-card__warning {
+	margin: 0.5rem 0 0;
+	font-size: 0.8rem;
+	color: #b42318;
+}
+
+.rwgc-condition-card__options {
+	margin-top: 0.6rem;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+}
+
+.rwgc-resolution-option.button {
+	font-size: 0.78rem;
+	border-radius: 8px;
+	height: auto;
+	padding: 0.25rem 0.6rem;
+	line-height: 1.5;
+}
+
+.rwgc-resolution-option--danger.button {
+	color: #ba1a1a;
+	border-color: #f0c0bc;
+}
+
+/* Logic toggle ---------------------------------------------------------- */
+.rwgc-logic-toggle {
+	display: inline-flex;
+	gap: 0.3rem;
+	background: #eef3ff;
+	padding: 0.2rem;
+	border-radius: 10px;
+}
+
+.rwgc-logic-toggle__btn.button {
+	border: none;
+	background: transparent;
+	box-shadow: none;
+	border-radius: 8px;
+	font-size: 0.8rem;
+	height: auto;
+	padding: 0.25rem 0.7rem;
+	color: #3f465c;
+}
+
+.rwgc-logic-toggle__btn.is-active {
+	background: #0052ff;
+	color: #ffffff;
+}
+
+/* Chat source badge + breakdown ---------------------------------------- */
+.rwgc-source-badge {
+	display: inline-flex;
+	align-items: center;
+	font-size: 0.66rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	padding: 0.18rem 0.55rem;
+	border-radius: 999px;
+}
+
+.rwgc-source-badge--local { background: #e0e9ff; color: #003ec7; }
+.rwgc-source-badge--learned { background: #e3f7ec; color: #00603a; }
+.rwgc-source-badge--ai { background: #efe3ff; color: #5b21b6; }
+.rwgc-source-badge--clarify { background: #fff0d6; color: #92500a; }
+
+.rwgc-chat-breakdown {
+	margin: 0.35rem 0 0.5rem;
+	padding-left: 1.1rem;
+	font-size: 0.86rem;
+}
+
+.rwgc-chat-breakdown li {
+	margin-bottom: 0.2rem;
+}
+
+/* Resolution hub resolved summary ------------------------------------- */
+.rwgc-geo-rail__action-summary {
+	display: block;
+	margin-top: 0.25rem;
+	font-size: 0.76rem;
+	color: #475467;
+}
