@@ -24,8 +24,8 @@
 
 .rwgc-targeting-assistant {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
-	gap: 1rem;
+	grid-template-columns: minmax(0, 1fr) 320px;
+	gap: 24px;
 	align-items: start;
 }
 
@@ -38,9 +38,9 @@
 
 .rwgc-targeting-assistant__setup {
 	position: sticky;
-	top: 40px;
+	top: 96px;
 	align-self: start;
-	max-height: calc(100vh - 64px);
+	max-height: calc(100vh - 112px);
 	overflow-y: auto;
 }
 
@@ -775,6 +775,54 @@
 }
 
 .rwgc-geo-rail__shared-picker .rwgc-geo-card__picker-select {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.rwgc-geo-shared-targets {
+	margin: 0 0 1rem;
+	padding: 0.85rem 1rem;
+	border: 1px solid #fec84b;
+	background: #fffaeb;
+	border-radius: 10px;
+}
+
+.rwgc-geo-shared-targets--compact {
+	padding: 0.6rem 0.65rem;
+	margin-bottom: 0.85rem;
+}
+
+.rwgc-geo-shared-targets__title {
+	margin: 0 0 0.35rem;
+	font-weight: 700;
+	font-size: 0.85rem;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	color: #b54708;
+}
+
+.rwgc-geo-shared-targets__detected,
+.rwgc-geo-shared-targets__status,
+.rwgc-geo-shared-targets__used-label {
+	margin: 0.15rem 0;
+	font-size: 0.875rem;
+	color: #475467;
+}
+
+.rwgc-geo-shared-targets__used {
+	margin: 0.25rem 0 0.5rem 1rem;
+	padding: 0;
+	font-size: 0.875rem;
+	color: #344054;
+}
+
+.rwgc-geo-shared-targets__picker {
+	display: flex;
+	gap: 0.35rem;
+	margin-top: 0.5rem;
+}
+
+.rwgc-geo-shared-targets__picker .rwgc-geo-card__picker-select {
 	flex: 1 1 auto;
 	min-width: 0;
 }

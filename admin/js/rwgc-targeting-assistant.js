@@ -305,12 +305,15 @@
 		} );
 	}
 
-	function remainingForCard( idx, card ) {
+	function remainingForCard( idx, card, proposal ) {
 		if ( isCardRemoved( idx ) ) {
 			return 0;
 		}
 		var n = 0;
 		( ( card && card.requiredResolutions ) || [] ).forEach( function ( req ) {
+			if ( card.uses_shared_target && req.field === 'target' ) {
+				return;
+			}
 			if ( ! fieldResolution( idx, req.field, req.raw ) ) {
 				n++;
 			}
@@ -321,7 +324,12 @@
 	function remainingResolutions( proposal ) {
 		var total = 0;
 		( ( proposal && proposal.action_cards ) || [] ).forEach( function ( card, idx ) {
-			total += remainingForCard( idx, card );
+			total += remainingForCard( idx, card, proposal );
+		} );
+		( ( proposal && proposal.shared_targets ) || [] ).forEach( function ( group ) {
+			if ( ! sharedTargetResolved( group ) ) {
+				total++;
+			}
 		} );
 		return total;
 	}
@@ -661,13 +669,16 @@
 			'data-card-index': idx,
 		} );
 
-		var remaining = remainingForCard( idx, card );
+		var remaining = remainingForCard( idx, card, state.proposal );
 		var $head = $( '<div>', { class: 'rwgc-geo-card__head rwgc-action-card__header' } );
-		$head.append( $( '<strong>' ).text( ( i18n.cardActionWord || 'Action' ) + ' ' + ( idx + 1 ) + ' — ' + actionTypeLabel( card.type ) ) );
-		var pillKind = removed ? 'removed' : ( remaining > 0 ? 'needs-resolution' : 'ready' );
+		var cardTitle = card.label || actionTypeLabel( card.type );
+		$head.append( $( '<strong>' ).text( ( i18n.cardActionWord || 'Action' ) + ' ' + ( idx + 1 ) + ' — ' + cardTitle ) );
+		var pillKind = removed ? 'removed' : ( remaining > 0 || waitingForSharedTarget( state.proposal, idx, card ) ? 'needs-resolution' : 'ready' );
 		var pillLabel = removed
 			? ( i18n.cardActionRemoved || 'Removed' )
-			: ( remaining > 0 ? ( i18n.cardNeedsResolution || 'Needs resolution' ) : ( i18n.cardReady || 'Ready to create' ) );
+			: ( waitingForSharedTarget( state.proposal, idx, card )
+				? ( i18n.waitingSharedTarget || 'Waiting for shared target' )
+				: ( remaining > 0 ? ( i18n.cardNeedsResolution || 'Needs resolution' ) : ( i18n.cardReady || 'Ready to create' ) ) );
 		$head.append( $( '<span>', { class: 'rwgc-status-pill rwgc-status-pill--' + pillKind } ).text( pillLabel ) );
 		$card.append( $head );
 
@@ -683,7 +694,7 @@
 		}
 
 		var t = card.target || {};
-		if ( t.raw || ( t.resolved && t.resolved.name ) ) {
+		if ( ! card.uses_shared_target && ( t.raw || ( t.resolved && t.resolved.name ) ) ) {
 			var targetValue = ( t.inherited && t.inheritedFrom )
 				? ( ( i18n.cardSameAs || 'Same as' ) + ' ' + t.inheritedFrom )
 				: t.raw;
@@ -758,6 +769,8 @@
 		$head.append( $meta );
 		$plan.append( $head );
 
+		renderSharedTargets( proposal, $plan, false );
+
 		cards.forEach( function ( card, idx ) {
 			$plan.append( renderCard( card, idx ) );
 		} );
@@ -777,6 +790,9 @@
 	function actionStatusLine( proposal, card, idx ) {
 		if ( isCardRemoved( idx ) ) {
 			return { kind: 'removed', text: i18n.cardActionRemoved || 'Removed' };
+		}
+		if ( waitingForSharedTarget( proposal, idx, card ) ) {
+			return { kind: 'warn', text: i18n.waitingSharedTarget || 'Waiting for shared target' };
 		}
 		var t = card.target || {};
 		var targetUnresolved = requiresField( card, 'target' ) && ! fieldResolution( idx, 'target', t.raw );
@@ -843,22 +859,74 @@
 		return linked.length > 0;
 	}
 
-	function renderSharedTargets( proposal, $rail ) {
+	function hasUnresolvedSharedTarget( proposal ) {
+		return ( ( proposal && proposal.shared_targets ) || [] ).some( function ( group ) {
+			return ! sharedTargetResolved( group );
+		} );
+	}
+
+	function cardUsesSharedTarget( proposal, idx ) {
+		var groups = ( proposal && proposal.shared_targets ) || [];
+		for ( var g = 0; g < groups.length; g++ ) {
+			if ( ( groups[ g ].linkedActions || [] ).indexOf( idx + 1 ) >= 0 ) {
+				return groups[ g ];
+			}
+		}
+		return null;
+	}
+
+	function waitingForSharedTarget( proposal, idx, card ) {
+		if ( card && card.uses_shared_target ) {
+			var group = cardUsesSharedTarget( proposal, idx );
+			return group && ! sharedTargetResolved( group );
+		}
+		return false;
+	}
+
+	function sharedTargetActionLabels( proposal, group ) {
+		return ( group.linkedActions || [] ).map( function ( n ) {
+			var card = ( ( proposal && proposal.action_cards ) || [] )[ n - 1 ] || {};
+			var label = card.label || actionTypeLabel( card.type );
+			return ( i18n.cardActionWord || 'Action' ) + ' ' + n + ' — ' + label;
+		} );
+	}
+
+	function renderSharedTargets( proposal, $container, compact ) {
 		var groups = ( proposal.shared_targets || [] ).filter( function ( g ) {
 			return ! sharedTargetResolved( g );
 		} );
 		if ( ! groups.length ) {
 			return;
 		}
-		var $section = $( '<div>', { class: 'rwgc-geo-rail__shared' } );
+		var $section = $( '<div>', {
+			class: 'rwgc-geo-shared-targets' + ( compact ? ' rwgc-geo-shared-targets--compact' : '' ),
+			id: compact ? '' : 'rwgc-shared-target',
+		} );
 		groups.forEach( function ( group ) {
-			var $block = $( '<div>', { class: 'rwgc-geo-rail__shared-item' } );
-			$block.append( $( '<p>', { class: 'rwgc-geo-rail__shared-title' } ).text( i18n.sharedTargetTitle || 'Shared target' ) );
-			$block.append( $( '<p>', { class: 'rwgc-geo-rail__shared-raw' } ).text( '“' + ( group.raw || '' ) + '”' ) );
-			var used = ( group.linkedActions || [] ).map( function ( n ) {
-				return ( i18n.cardActionWord || 'Action' ) + ' ' + n;
-			} ).join( ', ' );
-			$block.append( $( '<p>', { class: 'rwgc-geo-rail__shared-used' } ).text( ( i18n.usedByActions || 'Used by' ) + ': ' + used ) );
+			var $block = $( '<div>', { class: 'rwgc-geo-shared-targets__item' } );
+			$block.append( $( '<p>', { class: 'rwgc-geo-shared-targets__title' } ).text( i18n.sharedTargetTitle || 'Shared Target' ) );
+			$block.append( $( '<p>', { class: 'rwgc-geo-shared-targets__detected' } ).html(
+				'<strong>' + esc( i18n.detectedPrefix || 'Detected:' ) + '</strong> ' + esc( group.raw || '' )
+			) );
+			if ( group.status ) {
+				$block.append( $( '<p>', { class: 'rwgc-geo-shared-targets__status' } ).text(
+					( i18n.possibleMatchesFound || 'Possible matches found' ) + ' — ' + statusText( group.status )
+				) );
+			}
+			var used = sharedTargetActionLabels( proposal, group );
+			if ( used.length ) {
+				$block.append( $( '<p>', { class: 'rwgc-geo-shared-targets__used-label' } ).text( i18n.usedByActions || 'This target will be used by:' ) );
+				var $used = $( '<ul>', { class: 'rwgc-geo-shared-targets__used' } );
+				used.forEach( function ( line ) {
+					$used.append( $( '<li>' ).text( line ) );
+				} );
+				$block.append( $used );
+			}
+
+			if ( compact ) {
+				$section.append( $block );
+				return;
+			}
 
 			var linkedAttr = ( group.linkedActions || [] ).join( ',' );
 			if ( group.suggestions && group.suggestions.length ) {
@@ -878,7 +946,7 @@
 				$block.append( $chips );
 			}
 
-			var $picker = $( '<div>', { class: 'rwgc-geo-rail__shared-picker' } );
+			var $picker = $( '<div>', { class: 'rwgc-geo-shared-targets__picker' } );
 			var $sel = $( '<select>', { class: 'rwgc-geo-card__picker-select' } );
 			$sel.append( $( '<option>', { value: '', text: i18n.cardPickerPlaceholder || 'Select a page or category…' } ) );
 			( group.suggestions || [] ).forEach( function ( s ) {
@@ -899,7 +967,7 @@
 			$block.append( $picker );
 			$section.append( $block );
 		} );
-		$rail.append( $section );
+		$container.append( $section );
 	}
 
 	function renderRail( proposal, $rail, status ) {
@@ -921,7 +989,7 @@
 		) );
 		$rail.append( $counts );
 
-		renderSharedTargets( proposal, $rail );
+		renderSharedTargets( proposal, $rail, true );
 
 		var $list = $( '<ol>', { class: 'rwgc-geo-rail__actions' } );
 		cards.forEach( function ( card, idx ) {
@@ -932,8 +1000,9 @@
 				role: 'button',
 				tabindex: 0,
 			} );
+			var cardTitle = card.label || actionTypeLabel( card.type );
 			$row.append( $( '<span>', { class: 'rwgc-geo-rail__action-title' } ).text(
-				( i18n.cardActionWord || 'Action' ) + ' ' + ( idx + 1 ) + ' — ' + actionTypeLabel( card.type )
+				( i18n.cardActionWord || 'Action' ) + ' ' + ( idx + 1 ) + ' — ' + cardTitle
 			) );
 			$row.append( $( '<span>', { class: 'rwgc-geo-rail__action-status' } ).text( line.text ) );
 			if ( line.kind === 'ok' ) {
@@ -947,7 +1016,14 @@
 		$rail.append( $list );
 
 		var $cta = $( '<div>', { class: 'rwgc-geo-rail__cta' } );
-		if ( remaining > 0 ) {
+		if ( hasUnresolvedSharedTarget( proposal ) ) {
+			$cta.append( $( '<button>', {
+				type: 'button',
+				class: 'button button-primary rwgc-geo-btn',
+				text: i18n.resolveSharedTarget || 'Resolve shared target',
+				'data-card-action': 'jump_shared_target',
+			} ) );
+		} else if ( remaining > 0 ) {
 			$cta.append( $( '<button>', {
 				type: 'button',
 				class: 'button button-primary rwgc-geo-btn',
@@ -958,7 +1034,7 @@
 			$cta.append( $( '<button>', {
 				type: 'button',
 				class: 'button button-primary rwgc-geo-btn',
-				text: i18n.createSetup || 'Create setup',
+				text: ( i18n.createNActions || 'Create {n} actions' ).replace( '{n}', String( detectedCount ) ),
 				'data-card-action': 'create_setup',
 			} ) );
 		}
@@ -1131,7 +1207,7 @@
 				label: $btn.data( 'label' ) || '',
 			} );
 		} else if ( 'use_shared_picker' === action ) {
-			var $ssel = $btn.closest( '.rwgc-geo-rail__shared-picker' ).find( '.rwgc-geo-card__picker-select' );
+			var $ssel = $btn.closest( '.rwgc-geo-shared-targets__picker, .rwgc-geo-rail__shared-picker' ).find( '.rwgc-geo-card__picker-select' );
 			var sval = String( $ssel.val() || '' );
 			if ( ! sval ) {
 				return;
@@ -1141,6 +1217,11 @@
 				id: sparts[1] || '',
 				label: sparts.slice( 2 ).join( ':' ) || $ssel.find( 'option:selected' ).text(),
 			} );
+		} else if ( 'jump_shared_target' === action ) {
+			var $target = $( '#rwgc-shared-target' );
+			if ( $target.length ) {
+				$target[ 0 ].scrollIntoView( { behavior: 'smooth', block: 'start' } );
+			}
 		} else if ( 'create_setup' === action ) {
 			finalizeCardSetup();
 		}
