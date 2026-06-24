@@ -129,10 +129,21 @@ class RWGC_Targeting_Surface_Evaluator {
 	 * @return string
 	 */
 	public static function get_visibility_rules_mode( array $settings, $rule_set = null ) {
-		$ui_mode = '';
+		// Dedicated visibility-rules mode wins when set explicitly in the builder.
 		if ( ! empty( $settings['rwgc_visibility_rules_mode'] ) ) {
-			$ui_mode = self::normalize_mode( (string) $settings['rwgc_visibility_rules_mode'] );
-		} elseif ( ! empty( $settings['rwgc_visibility_mode'] ) ) {
+			return self::normalize_mode( (string) $settings['rwgc_visibility_rules_mode'] );
+		}
+
+		// When a portable/library rule set is attached, its mode is authoritative.
+		// Surface-level rwgc_visibility_mode often targets the country layer only; treating
+		// it as hide_if here inverted show_if page rules so popups appeared site-wide when
+		// portable conditions did not match (e.g. page_version_url on /shop/).
+		if ( is_array( $rule_set ) && ! empty( $rule_set['mode'] ) ) {
+			return self::normalize_mode( (string) $rule_set['mode'] );
+		}
+
+		$ui_mode = '';
+		if ( ! empty( $settings['rwgc_visibility_mode'] ) ) {
 			$ui_mode = self::normalize_mode( (string) $settings['rwgc_visibility_mode'] );
 		}
 
@@ -140,19 +151,8 @@ class RWGC_Targeting_Surface_Evaluator {
 			return 'hide_if';
 		}
 
-		if ( is_array( $rule_set ) && ! empty( $rule_set['mode'] ) ) {
-			$json_mode = self::normalize_mode( (string) $rule_set['mode'] );
-			if ( 'hide_if' === $json_mode ) {
-				return 'hide_if';
-			}
-		}
-
 		if ( '' !== $ui_mode ) {
 			return $ui_mode;
-		}
-
-		if ( is_array( $rule_set ) && ! empty( $rule_set['mode'] ) ) {
-			return self::normalize_mode( (string) $rule_set['mode'] );
 		}
 
 		if ( ! empty( $settings['rwgc_geo_mode'] ) ) {
