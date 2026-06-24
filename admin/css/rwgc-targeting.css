@@ -22,14 +22,16 @@
 	max-width: 1320px;
 }
 
-.rwgc-targeting-assistant {
+.rwgc-targeting-assistant,
+.rwgc-targeting-workspace {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) 320px;
 	gap: 24px;
 	align-items: start;
 }
 
-.rwgc-targeting-assistant__main {
+.rwgc-targeting-assistant__main,
+.rwgc-targeting-main {
 	display: flex;
 	flex-direction: column;
 	gap: 1rem;
@@ -594,15 +596,18 @@
 
 /* Medium screens: rail collapses into a top summary bar, cards stay below chat. */
 @media (max-width: 1100px) {
-	.rwgc-targeting-assistant {
+	.rwgc-targeting-assistant,
+	.rwgc-targeting-workspace {
 		grid-template-columns: 1fr;
 	}
 
-	.rwgc-targeting-assistant__main {
+	.rwgc-targeting-assistant__main,
+	.rwgc-targeting-main {
 		order: 2;
 	}
 
-	.rwgc-targeting-assistant__setup {
+	.rwgc-targeting-assistant__setup,
+	.rwgc-resolution-hub {
 		order: 1;
 		position: static;
 		max-height: none;

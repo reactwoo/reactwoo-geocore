@@ -44,14 +44,14 @@ $platform_shell     = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses
 	?>
 
 	<div
-		class="rwgc-targeting-assistant"
+		class="rwgc-targeting-assistant rwgc-targeting-workspace"
 		id="rwgc-targeting-assistant"
 		data-variant-url="<?php echo esc_url( $variant_wizard_url ); ?>"
 		data-rules-url="<?php echo esc_url( $rules_create_url ); ?>"
 		data-experiences-url="<?php echo esc_url( $experiences_url ); ?>"
 		data-exp-state="<?php echo esc_attr( (string) ( $exp_status['state'] ?? '' ) ); ?>"
 	>
-		<div class="rwgc-targeting-assistant__main">
+		<div class="rwgc-targeting-assistant__main rwgc-targeting-main">
 			<div class="rwgc-targeting-assistant__chat">
 				<div class="rwgc-geo-assistant-panel">
 					<div class="rwgc-geo-assistant-panel__head"><?php esc_html_e( 'Geo Assistant', 'reactwoo-geocore' ); ?></div>
@@ -82,24 +82,24 @@ $platform_shell     = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses
 						</div>
 					</div>
 				</div>
-
-				<section class="rwgc-targeting-assistant__review rwgc-is-hidden" id="rwgc-targeting-review" aria-label="<?php esc_attr_e( 'Action review', 'reactwoo-geocore' ); ?>">
-					<div class="rwgc-geo-setup-plan" id="rwgc-targeting-setup-plan"></div>
-				</section>
 			</div>
 
-			<aside class="rwgc-targeting-assistant__setup rwgc-resolution-hub" aria-label="<?php esc_attr_e( 'Resolution hub', 'reactwoo-geocore' ); ?>">
-				<div class="rwgc-geo-setup-panel rwgc-geo-rail">
-					<h2 class="rwgc-geo-setup-panel__title"><?php esc_html_e( 'Resolution Hub', 'reactwoo-geocore' ); ?></h2>
-					<p class="rwgc-geo-setup-panel__empty" id="rwgc-targeting-setup-empty"><?php esc_html_e( 'No setup yet.', 'reactwoo-geocore' ); ?></p>
-					<p class="description rwgc-geo-setup-panel__hint" id="rwgc-targeting-setup-hint"><?php esc_html_e( 'Your interpreted targeting plan will appear here.', 'reactwoo-geocore' ); ?></p>
-					<div class="rwgc-geo-rail__body rwgc-is-hidden" id="rwgc-targeting-rail"></div>
-					<dl class="rwgc-geo-setup-rows rwgc-is-hidden" id="rwgc-targeting-summary">
-						<div class="rwgc-geo-setup-row"><dt><?php esc_html_e( 'Status', 'reactwoo-geocore' ); ?></dt><dd data-key="status" class="is-empty">—</dd></div>
-					</dl>
-				</div>
-			</aside>
+			<section class="rwgc-targeting-assistant__review rwgc-action-review rwgc-is-hidden" id="rwgc-targeting-review" aria-label="<?php esc_attr_e( 'Action review', 'reactwoo-geocore' ); ?>">
+				<div class="rwgc-geo-setup-plan" id="rwgc-targeting-setup-plan"></div>
+			</section>
 		</div>
+
+		<aside class="rwgc-targeting-assistant__setup rwgc-resolution-hub" aria-label="<?php esc_attr_e( 'Resolution hub', 'reactwoo-geocore' ); ?>">
+			<div class="rwgc-geo-setup-panel rwgc-geo-rail">
+				<h2 class="rwgc-geo-setup-panel__title"><?php esc_html_e( 'Resolution Hub', 'reactwoo-geocore' ); ?></h2>
+				<p class="rwgc-geo-setup-panel__empty" id="rwgc-targeting-setup-empty"><?php esc_html_e( 'No setup yet.', 'reactwoo-geocore' ); ?></p>
+				<p class="description rwgc-geo-setup-panel__hint" id="rwgc-targeting-setup-hint"><?php esc_html_e( 'Your interpreted targeting plan will appear here.', 'reactwoo-geocore' ); ?></p>
+				<div class="rwgc-geo-rail__body rwgc-is-hidden" id="rwgc-targeting-rail"></div>
+				<dl class="rwgc-geo-setup-rows rwgc-is-hidden" id="rwgc-targeting-summary">
+					<div class="rwgc-geo-setup-row"><dt><?php esc_html_e( 'Status', 'reactwoo-geocore' ); ?></dt><dd data-key="status" class="is-empty">—</dd></div>
+				</dl>
+			</div>
+		</aside>
 	</div>
 
 	<div class="rwgc-targeting-assistant__debug rwgc-is-hidden" id="rwgc-targeting-debug-panel" hidden>
