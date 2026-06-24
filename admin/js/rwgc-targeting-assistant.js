@@ -334,6 +334,127 @@
 		return total;
 	}
 
+	function cardsReadyCount( proposal ) {
+		var ready = 0;
+		( ( proposal && proposal.action_cards ) || [] ).forEach( function ( card, idx ) {
+			if ( isCardRemoved( idx ) ) {
+				return;
+			}
+			if ( 'ready' === ( card.status || '' ) && remainingForCard( idx, card, proposal ) === 0 ) {
+				ready++;
+			}
+		} );
+		return ready;
+	}
+
+	function firstUnresolvedCardIndex( proposal ) {
+		var cards = ( proposal && proposal.action_cards ) || [];
+		for ( var i = 0; i < cards.length; i++ ) {
+			if ( isCardRemoved( i ) ) {
+				continue;
+			}
+			if ( remainingForCard( i, cards[ i ], proposal ) > 0 ) {
+				return i;
+			}
+		}
+		if ( hasUnresolvedSharedTarget( proposal ) ) {
+			return 0;
+		}
+		return -1;
+	}
+
+	function isInvalidCreateRuleSplit( proposal ) {
+		if ( proposal && proposal.invalid_interpretation ) {
+			return true;
+		}
+		var cards = ( proposal && proposal.action_cards ) || [];
+		if ( cards.length <= 1 ) {
+			return false;
+		}
+		var phantom = { show: true, hide: true, update_original_targeting: true };
+		var hasPhantom = cards.some( function ( card ) {
+			return !!phantom[ card.type ];
+		} );
+		var phrase = ( state.lastMessage || ( proposal && proposal.original_message ) || '' ).toLowerCase();
+		return hasPhantom && /\bcreate\s+(?:a\s+)?(?:[\w-]+\s+)?rule\b/.test( phrase );
+	}
+
+	function hubNeedsLabels( proposal ) {
+		var labels = [];
+		( ( proposal && proposal.action_cards ) || [] ).forEach( function ( card, idx ) {
+			if ( isCardRemoved( idx ) ) {
+				return;
+			}
+			( ( card && card.requiredResolutions ) || [] ).forEach( function ( req ) {
+				if ( fieldResolution( idx, req.field, req.raw ) ) {
+					return;
+				}
+				var label = req.field === 'target'
+					? ( i18n.hubNeedTarget || 'Target page' )
+					: ( req.field === 'audience'
+						? ( i18n.hubNeedAudience || 'Audience segments' )
+						: ( req.field === 'campaign'
+							? ( i18n.hubNeedCampaign || 'Campaign' )
+							: ( req.field === 'location' ? ( i18n.hubNeedLocation || 'Location' ) : req.field ) ) );
+				if ( labels.indexOf( label ) === -1 ) {
+					labels.push( label );
+				}
+			} );
+		} );
+		if ( hasUnresolvedSharedTarget( proposal ) ) {
+			var sharedLabel = i18n.hubNeedTarget || 'Target page';
+			if ( labels.indexOf( sharedLabel ) === -1 ) {
+				labels.push( sharedLabel );
+			}
+		}
+		return labels;
+	}
+
+	function hubReadyLabels( proposal ) {
+		var labels = [];
+		var cards = ( proposal && proposal.action_cards ) || [];
+		if ( ! cards.length ) {
+			return labels;
+		}
+		var card = cards[ 0 ];
+		if ( isCardRemoved( 0 ) ) {
+			return labels;
+		}
+		( card.condition_rows || [] ).forEach( function ( row ) {
+			if ( row.status === 'valid' && row.label ) {
+				labels.push( row.label );
+			}
+		} );
+		return labels;
+	}
+
+	function primaryCreateRuleLabel( proposal ) {
+		var cards = ( ( proposal && proposal.action_cards ) || [] ).filter( function ( c, i ) {
+			return ! isCardRemoved( i );
+		} );
+		if ( 1 === cards.length && cards[ 0 ].type === 'create_rule' ) {
+			return i18n.createRule || 'Create rule';
+		}
+		return ( i18n.createNActions || 'Create {n} actions' ).replace( '{n}', String( cards.length ) );
+	}
+
+	function jumpToActionReview() {
+		var el = document.getElementById( 'rwgc-targeting-action-review' );
+		if ( ! el ) {
+			el = document.querySelector( '.rwgc-geo-review__head' );
+		}
+		if ( ! el ) {
+			return;
+		}
+		if ( el.scrollIntoView ) {
+			el.scrollIntoView( { behavior: 'smooth', block: 'start' } );
+		}
+		el.classList.add( 'rwgc-geo-card--flash' );
+		window.setTimeout( function () {
+			el.classList.remove( 'rwgc-geo-card--flash' );
+		}, 1200 );
+	}
+
 	function statusText( status ) {
 		var map = {
 			not_found: i18n.cardNotFound || 'Not found',
@@ -748,7 +869,7 @@
 	function renderActionCards( proposal, $plan ) {
 		var cards = proposal.action_cards || [];
 
-		var $head = $( '<header>', { class: 'rwgc-geo-review__head' } );
+		var $head = $( '<header>', { class: 'rwgc-geo-review__head', id: 'rwgc-targeting-action-review' } );
 		$head.append( $( '<h2>', { class: 'rwgc-geo-review__title' } ).text( i18n.actionReview || 'Action Review' ) );
 
 		var detectedCount = cards.filter( function ( c, i ) {
@@ -977,17 +1098,60 @@
 			return ! isCardRemoved( i );
 		} ).length;
 		var remaining = remainingResolutions( proposal );
+		var invalidSplit = isInvalidCreateRuleSplit( proposal );
+		var readyCount = cardsReadyCount( proposal );
+		var hubTitle = $( '<h3>', { class: 'rwgc-geo-rail__title' } ).text( i18n.resolutionHub || 'Resolution Hub' );
+		$rail.append( hubTitle );
 
 		var $counts = $( '<div>', { class: 'rwgc-geo-rail__counts' } );
-		$counts.append( $( '<p>', { class: 'rwgc-geo-rail__count' } ).text(
-			detectedCount + ' ' + ( detectedCount === 1 ? ( i18n.actionDetected || 'action detected' ) : ( i18n.actionsDetected || 'actions detected' ) )
-		) );
-		$counts.append( $( '<p>', { class: 'rwgc-geo-rail__attention' + ( remaining > 0 ? '' : ' is-ok' ) } ).text(
-			remaining > 0
-				? ( remaining + ' ' + ( remaining === 1 ? ( i18n.fieldNeedsAttention || 'field needs attention' ) : ( i18n.fieldsNeedAttention || 'fields need attention' ) ) )
-				: ( i18n.allResolved || 'All fields resolved' )
-		) );
+		if ( invalidSplit ) {
+			$counts.append( $( '<p>', { class: 'rwgc-geo-rail__invalid' } ).text(
+				( proposal.invalid_interpretation && proposal.invalid_interpretation.message )
+					? proposal.invalid_interpretation.message
+					: ( i18n.invalidCreateRuleSplit || 'This was split into multiple actions, but it looks like one rule. Ask AI to re-check?' )
+			) );
+		} else if ( remaining > 0 ) {
+			$counts.append( $( '<p>', { class: 'rwgc-geo-rail__count' } ).text(
+				detectedCount + ' ' + ( detectedCount === 1 ? ( i18n.actionDetected || 'action detected' ) : ( i18n.actionsDetected || 'actions detected' ) )
+			) );
+			$counts.append( $( '<p>', { class: 'rwgc-geo-rail__attention' } ).text(
+				remaining + ' ' + ( remaining === 1 ? ( i18n.fieldNeedsAttention || 'field needs attention' ) : ( i18n.fieldsNeedAttention || 'fields need attention' ) )
+			) );
+		} else {
+			$counts.append( $( '<p>', { class: 'rwgc-geo-rail__count is-ok' } ).text(
+				readyCount + ' ' + ( readyCount === 1 ? ( i18n.actionReady || 'action ready' ) : ( i18n.actionsReady || 'actions ready' ) )
+			) );
+		}
 		$rail.append( $counts );
+
+		if ( ! invalidSplit ) {
+			var needs = hubNeedsLabels( proposal );
+			var ready = hubReadyLabels( proposal );
+			if ( needs.length || ready.length ) {
+				var $hubLists = $( '<div>', { class: 'rwgc-geo-rail__hub-lists' } );
+				if ( needs.length ) {
+					var $needs = $( '<div>', { class: 'rwgc-geo-rail__hub-section' } );
+					$needs.append( $( '<p>', { class: 'rwgc-geo-rail__hub-label' } ).text( i18n.hubNeeds || 'Needs' ) );
+					var $needsUl = $( '<ul>', { class: 'rwgc-geo-rail__hub-items' } );
+					needs.forEach( function ( label ) {
+						$needsUl.append( $( '<li>' ).text( label ) );
+					} );
+					$needs.append( $needsUl );
+					$hubLists.append( $needs );
+				}
+				if ( ready.length ) {
+					var $ready = $( '<div>', { class: 'rwgc-geo-rail__hub-section' } );
+					$ready.append( $( '<p>', { class: 'rwgc-geo-rail__hub-label' } ).text( i18n.hubReady || 'Ready' ) );
+					var $readyUl = $( '<ul>', { class: 'rwgc-geo-rail__hub-items' } );
+					ready.forEach( function ( label ) {
+						$readyUl.append( $( '<li>' ).text( label ) );
+					} );
+					$ready.append( $readyUl );
+					$hubLists.append( $ready );
+				}
+				$rail.append( $hubLists );
+			}
+		}
 
 		renderSharedTargets( proposal, $rail, true );
 
@@ -1016,7 +1180,16 @@
 		$rail.append( $list );
 
 		var $cta = $( '<div>', { class: 'rwgc-geo-rail__cta' } );
-		if ( hasUnresolvedSharedTarget( proposal ) ) {
+		if ( invalidSplit ) {
+			if ( state.lastResponse && state.lastResponse.ai_available ) {
+				$cta.append( $( '<button>', {
+					type: 'button',
+					class: 'button button-primary rwgc-geo-btn',
+					text: i18n.askAiCheck || 'Ask AI to re-check',
+					'data-card-action': 'ask_ai_recheck',
+				} ) );
+			}
+		} else if ( hasUnresolvedSharedTarget( proposal ) ) {
 			$cta.append( $( '<button>', {
 				type: 'button',
 				class: 'button button-primary rwgc-geo-btn',
@@ -1027,17 +1200,35 @@
 			$cta.append( $( '<button>', {
 				type: 'button',
 				class: 'button button-primary rwgc-geo-btn',
-				disabled: 'disabled',
-				text: ( i18n.continueAfter || 'Resolve' ) + ' ' + remaining + ' ' + ( remaining === 1 ? ( i18n.itemWord || 'item' ) : ( i18n.itemsWord || 'items' ) ),
+				text: ( i18n.resolveItems || 'Resolve' ) + ' ' + remaining + ' ' + ( remaining === 1 ? ( i18n.itemWord || 'item' ) : ( i18n.itemsWord || 'items' ) ),
+				'data-card-action': 'resolve_items',
 			} ) );
 		} else {
 			$cta.append( $( '<button>', {
 				type: 'button',
 				class: 'button button-primary rwgc-geo-btn',
-				text: ( i18n.createNActions || 'Create {n} actions' ).replace( '{n}', String( detectedCount ) ),
+				text: primaryCreateRuleLabel( proposal ),
 				'data-card-action': 'create_setup',
 			} ) );
+			$cta.append( $( '<button>', {
+				type: 'button',
+				class: 'button rwgc-geo-btn',
+				text: i18n.editRule || 'Edit rule',
+				'data-card-action': 'review_items',
+			} ) );
 		}
+		$cta.append( $( '<button>', {
+			type: 'button',
+			class: 'button rwgc-geo-btn',
+			text: i18n.showDebug || 'Show debug',
+			'data-action': 'debug',
+		} ) );
+		$cta.append( $( '<button>', {
+			type: 'button',
+			class: 'button-link rwgc-geo-btn',
+			text: i18n.cancel || 'Cancel',
+			'data-action': 'cancel',
+		} ) );
 		$rail.append( $cta );
 
 		if ( status ) {
@@ -1223,8 +1414,21 @@
 				$target[ 0 ].scrollIntoView( { behavior: 'smooth', block: 'start' } );
 			}
 		} else if ( 'create_setup' === action ) {
+			if ( isInvalidCreateRuleSplit( state.proposal ) ) {
+				return;
+			}
+			if ( remainingResolutions( state.proposal ) > 0 ) {
+				jumpToActionReview();
+				jumpToCard( firstUnresolvedCardIndex( state.proposal ) );
+				return;
+			}
 			finalizeCardSetup();
-		}
+		} else if ( 'resolve_items' === action || 'review_items' === action ) {
+			jumpToActionReview();
+			var unresolved = firstUnresolvedCardIndex( state.proposal );
+			jumpToCard( unresolved >= 0 ? unresolved : 0 );
+		} else if ( 'ask_ai_recheck' === action ) {
+			askAiToCheck();
 	}
 
 	function applySharedTarget( linked, raw, chosen ) {
@@ -1487,6 +1691,20 @@
 	}
 
 	function responseCanExecute( proposal ) {
+		if ( proposal && proposal.invalid_interpretation ) {
+			return false;
+		}
+		if ( proposal && proposal.requires_resolution ) {
+			return false;
+		}
+		if ( proposal && proposal.action_cards && proposal.action_cards.length ) {
+			if ( remainingResolutions( proposal ) > 0 ) {
+				return false;
+			}
+			return proposal.action_cards.every( function ( card, idx ) {
+				return isCardRemoved( idx ) || 'ready' === ( card.status || '' );
+			} );
+		}
 		if ( typeof proposal.can_execute === 'boolean' ) {
 			return proposal.can_execute;
 		}
@@ -1856,6 +2074,11 @@
 	}
 
 	function executeProposal() {
+		if ( ! responseCanExecute( state.proposal ) ) {
+			jumpToActionReview();
+			jumpToCard( firstUnresolvedCardIndex( state.proposal ) );
+			return;
+		}
 		if ( ! state.proposalId || ! cfg.executeUrl ) {
 			goWorkflowFromProposal();
 			return;
@@ -2164,7 +2387,9 @@
 			if ( 'confirm' === action ) {
 				executeProposal();
 			} else if ( 'review_action' === action ) {
-				jumpToCard( 0 );
+				jumpToActionReview();
+				var unresolvedIdx = firstUnresolvedCardIndex( state.proposal );
+				jumpToCard( unresolvedIdx >= 0 ? unresolvedIdx : 0 );
 			} else if ( 'accept_likely_interpretation' === action ) {
 				confirmInterpretation();
 			} else if ( 'use_split' === action ) {
@@ -2183,6 +2408,16 @@
 
 		$( '#rwgc-targeting-setup-plan, #rwgc-targeting-rail' ).on( 'click', '[data-card-action]', function () {
 			handleCardAction( $( this ) );
+		} );
+
+		$( '#rwgc-targeting-rail' ).on( 'click', '[data-action]', function () {
+			var action = $( this ).data( 'action' );
+			if ( 'debug' === action ) {
+				showDebug();
+			} else if ( 'cancel' === action ) {
+				recordLearningFeedback( 'rejected' );
+				start();
+			}
 		} );
 
 		$( '#rwgc-targeting-rail' ).on( 'click', '.rwgc-geo-rail__action[data-jump]', function () {
