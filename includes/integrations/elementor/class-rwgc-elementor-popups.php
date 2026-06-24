@@ -24,6 +24,37 @@ class RWGC_Elementor_Popups {
 	private static $force_emitted_popup_bytes = array();
 
 	/**
+	 * Per-request memoization caches. Popup targeting is queried from many hooks
+	 * (wp_head, wp_enqueue_scripts, before/after_do_popup, several wp_footer
+	 * priorities); without caching each call re-runs unbounded get_posts() queries
+	 * and re-loads/renders Elementor popup documents, which spams the debug log and
+	 * can exhaust PHP memory on heavy pages.
+	 *
+	 * @var array<int, bool|null>
+	 */
+	private static $decision_cache = array();
+
+	/**
+	 * @var array<int, array<string, mixed>|null>
+	 */
+	private static $settings_cache = array();
+
+	/**
+	 * @var array<int, array<string, mixed>>
+	 */
+	private static $triggers_cache = array();
+
+	/**
+	 * @var array<int, array<string, mixed>>|null
+	 */
+	private static $config_map_cache = null;
+
+	/**
+	 * @var array<int|string, array<string, mixed>>|null
+	 */
+	private static $page_settings_map_cache = null;
+
+	/**
 	 * @return void
 	 */
 	public static function init() {
@@ -496,6 +527,22 @@ class RWGC_Elementor_Popups {
 			return null;
 		}
 
+		if ( array_key_exists( $popup_id, self::$decision_cache ) ) {
+			return self::$decision_cache[ $popup_id ];
+		}
+
+		self::$decision_cache[ $popup_id ] = self::evaluate_popup_should_display( $popup_id );
+
+		return self::$decision_cache[ $popup_id ];
+	}
+
+	/**
+	 * Resolve a popup visibility decision (uncached). Use {@see popup_should_display()}.
+	 *
+	 * @param int $popup_id Popup template ID.
+	 * @return bool|null True = show, false = hide, null = no geo targeting configured.
+	 */
+	private static function evaluate_popup_should_display( $popup_id ) {
 		$settings = self::get_popup_targeting_settings( $popup_id );
 		if ( null === $settings || ! class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
 			return null;
@@ -741,8 +788,13 @@ class RWGC_Elementor_Popups {
 	 * @return array<int, array<string, mixed>>
 	 */
 	private static function build_popup_config_map() {
+		if ( null !== self::$config_map_cache ) {
+			return self::$config_map_cache;
+		}
+
 		$map = self::collect_popup_page_settings_map();
 		if ( ! post_type_exists( 'geo_rule' ) ) {
+			self::$config_map_cache = $map;
 			return $map;
 		}
 
@@ -800,6 +852,8 @@ class RWGC_Elementor_Popups {
 				$map[ $popup_id ]['visibility_mode'] = $mode;
 			}
 		}
+
+		self::$config_map_cache = $map;
 
 		return $map;
 	}
@@ -979,6 +1033,22 @@ JS;
 			return array();
 		}
 
+		if ( isset( self::$triggers_cache[ $popup_id ] ) ) {
+			return self::$triggers_cache[ $popup_id ];
+		}
+
+		self::$triggers_cache[ $popup_id ] = self::resolve_popup_display_triggers( $popup_id );
+
+		return self::$triggers_cache[ $popup_id ];
+	}
+
+	/**
+	 * Resolve a popup's display triggers (uncached). Use {@see get_popup_display_triggers()}.
+	 *
+	 * @param int $popup_id Popup template ID.
+	 * @return array<string, mixed>
+	 */
+	private static function resolve_popup_display_triggers( $popup_id ) {
 		if ( did_action( 'elementor/loaded' ) && class_exists( '\ElementorPro\Modules\Popup\Module', false ) && class_exists( '\Elementor\Plugin', false ) ) {
 			$document = \Elementor\Plugin::$instance->documents->get( $popup_id );
 			if ( $document && method_exists( $document, 'get_display_settings' ) ) {
@@ -1012,6 +1082,22 @@ JS;
 			return null;
 		}
 
+		if ( array_key_exists( $popup_id, self::$settings_cache ) ) {
+			return self::$settings_cache[ $popup_id ];
+		}
+
+		self::$settings_cache[ $popup_id ] = self::resolve_popup_targeting_settings( $popup_id );
+
+		return self::$settings_cache[ $popup_id ];
+	}
+
+	/**
+	 * Merged Elementor popup page settings + linked legacy geo_rule (uncached).
+	 *
+	 * @param int $popup_id Popup template ID.
+	 * @return array<string, mixed>|null
+	 */
+	private static function resolve_popup_targeting_settings( $popup_id ) {
 		$settings = array();
 		$page     = self::get_popup_page_geo_settings( $popup_id );
 		if ( is_array( $page ) && ! empty( $page['enabled'] ) ) {
@@ -1180,6 +1266,10 @@ JS;
 	 * @return array<int|string, array{id:int,title:string,countries:array<int,string>,visibility_mode:string}>
 	 */
 	private static function collect_popup_page_settings_map() {
+		if ( null !== self::$page_settings_map_cache ) {
+			return self::$page_settings_map_cache;
+		}
+
 		$popups = get_posts(
 			array(
 				'post_type'      => 'elementor_library',
@@ -1220,6 +1310,8 @@ JS;
 				'uses_portable'     => ! empty( $settings['rwgc_use_portable_geo_targeting'] ) && 'yes' === (string) $settings['rwgc_use_portable_geo_targeting'],
 			);
 		}
+
+		self::$page_settings_map_cache = $out;
 
 		return $out;
 	}
