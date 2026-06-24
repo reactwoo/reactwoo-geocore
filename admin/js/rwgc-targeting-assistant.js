@@ -1429,6 +1429,7 @@
 			jumpToCard( unresolved >= 0 ? unresolved : 0 );
 		} else if ( 'ask_ai_recheck' === action ) {
 			askAiToCheck();
+		}
 	}
 
 	function applySharedTarget( linked, raw, chosen ) {
