@@ -389,13 +389,20 @@
 				if ( fieldResolution( idx, req.field, req.raw ) ) {
 					return;
 				}
-				var label = req.field === 'target'
-					? ( i18n.hubNeedTarget || 'Target page' )
-					: ( req.field === 'audience'
-						? ( i18n.hubNeedAudience || 'Audience segments' )
-						: ( req.field === 'campaign'
-							? ( i18n.hubNeedCampaign || 'Campaign' )
-							: ( req.field === 'location' ? ( i18n.hubNeedLocation || 'Location' ) : req.field ) ) );
+				var label = req.raw || req.field;
+				if ( req.field === 'target' ) {
+					label = card.target && card.target.type === 'popup'
+						? ( i18n.hubNeedPopup || 'Popup target' )
+						: ( i18n.hubNeedTarget || 'Target page' );
+				} else if ( req.field === 'audience' ) {
+					label = i18n.hubNeedAudience || 'Audience segments';
+				} else if ( req.field === 'campaign' ) {
+					label = i18n.hubNeedCampaign || 'Campaign';
+				} else if ( req.field === 'location' ) {
+					label = i18n.hubNeedLocation || 'Location';
+				} else if ( req.field === 'traffic_source' ) {
+					label = i18n.hubNeedTraffic || 'Google Ads mapping';
+				}
 				if ( labels.indexOf( label ) === -1 ) {
 					labels.push( label );
 				}
@@ -421,7 +428,19 @@
 			return labels;
 		}
 		( card.condition_rows || [] ).forEach( function ( row ) {
-			if ( row.status === 'valid' && row.label ) {
+			if ( row.type === 'condition_group' ) {
+				if ( row.children && row.children.length ) {
+					row.children.forEach( function ( child ) {
+						if ( child.status === 'valid' && child.label && labels.indexOf( child.label ) === -1 ) {
+							labels.push( child.label );
+						}
+					} );
+				} else if ( row.status === 'valid' && row.label ) {
+					labels.push( row.label );
+				}
+				return;
+			}
+			if ( row.status === 'valid' && row.label && labels.indexOf( row.label ) === -1 ) {
 				labels.push( row.label );
 			}
 		} );
@@ -712,6 +731,19 @@
 
 		if ( ! resolved && row.warning ) {
 			$cc.append( $( '<p>', { class: 'rwgc-condition-card__warning' } ).text( row.warning ) );
+		}
+
+		if ( row.type === 'condition_group' && row.children && row.children.length ) {
+			var $children = $( '<ul>', { class: 'rwgc-condition-card__children' } );
+			row.children.forEach( function ( child ) {
+				var childResolved = child.status === 'valid';
+				var childLine = child.label || child.type || '';
+				if ( ! childResolved ) {
+					childLine += ' — ' + ( i18n.statusNeedsAttention || 'Needs attention' );
+				}
+				$children.append( $( '<li>' ).text( childLine ) );
+			} );
+			$cc.append( $children );
 		}
 
 		if ( resolution ) {
