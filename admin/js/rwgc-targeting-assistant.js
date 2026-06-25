@@ -309,13 +309,34 @@
 		if ( isCardRemoved( idx ) ) {
 			return 0;
 		}
+		var seen = {};
 		var n = 0;
+		function bump( field, raw ) {
+			var key = field + '|' + ( raw || '' );
+			if ( seen[ key ] ) {
+				return;
+			}
+			if ( fieldResolution( idx, field, raw ) ) {
+				return;
+			}
+			seen[ key ] = true;
+			n++;
+		}
 		( ( card && card.requiredResolutions ) || [] ).forEach( function ( req ) {
 			if ( card.uses_shared_target && req.field === 'target' ) {
 				return;
 			}
-			if ( ! fieldResolution( idx, req.field, req.raw ) ) {
-				n++;
+			bump( req.field, req.raw );
+		} );
+		if ( ! card.uses_shared_target && card.target && card.target.status && 'matched' !== card.target.status && 'ignored' !== card.target.status ) {
+			bump( 'target', card.target.raw || card.target.label || '' );
+		}
+		( card.condition_rows || [] ).forEach( function ( row ) {
+			if ( ! row || row.is_note || row.status === 'valid' ) {
+				return;
+			}
+			if ( row.type === 'audience' ) {
+				bump( 'audience', row.raw );
 			}
 		} );
 		return n;
@@ -331,6 +352,10 @@
 				total++;
 			}
 		} );
+		var serverCount = parseInt( ( proposal && proposal.fields_needing_attention ) || 0, 10 );
+		if ( ! isNaN( serverCount ) && serverCount > total ) {
+			total = serverCount;
+		}
 		return total;
 	}
 
@@ -1727,7 +1752,7 @@
 		if ( proposal && proposal.invalid_interpretation ) {
 			return false;
 		}
-		if ( proposal && proposal.requires_resolution ) {
+		if ( proposal && ( proposal.requires_resolution || proposal.interpretation_status === 'needs_resolution' ) ) {
 			return false;
 		}
 		if ( proposal && proposal.action_cards && proposal.action_cards.length ) {
