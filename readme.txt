@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.87
+Stable tag: 1.8.88
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.88 =
+* **Geo Assistant Action Review UI:** Compact condition cards, resolution drawer for Google Ads mapping (no duplicate inline controls), wider workspace layout, improved Resolution Hub hierarchy, structured assistant bubble summary, consistent unresolved counts, and page scroll during review. Requires ReactWoo Geo AI 0.4.129+.
 
 = 1.8.82 =
 * **Elementor popups — close fix:** User dismiss (X, overlay, Escape) now persists for the session via `egp_closed_*` sessionStorage and Elementor disable storage. Page-load fallback stops retrying after close instead of clearing reopen block and forcing the popup open again.

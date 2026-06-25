@@ -20,6 +20,7 @@
 		sendSeq: 0,
 		cardResolutions: {},
 		cardLogic: {},
+		resolutionDrawer: null,
 	};
 
 	function esc( text ) {
@@ -76,7 +77,12 @@
 
 	function scrollThread() {
 		var el = document.getElementById( 'rwgc-targeting-thread' );
-		if ( el ) {
+		if ( ! el ) {
+			return;
+		}
+		var count = el.querySelectorAll( '.rwgc-targeting-assistant__bubble' ).length;
+		el.classList.toggle( 'rwgc-targeting-assistant__thread--long', count > 4 );
+		if ( el.classList.contains( 'rwgc-targeting-assistant__thread--long' ) ) {
 			el.scrollTop = el.scrollHeight;
 		}
 	}
@@ -353,7 +359,7 @@
 			}
 		} );
 		var serverCount = parseInt( ( proposal && proposal.fields_needing_attention ) || 0, 10 );
-		if ( ! isNaN( serverCount ) && serverCount > total ) {
+		if ( Object.keys( state.cardResolutions ).length === 0 && ! isNaN( serverCount ) && serverCount > total ) {
 			total = serverCount;
 		}
 		return total;
@@ -453,23 +459,57 @@
 			return labels;
 		}
 		( card.condition_rows || [] ).forEach( function ( row ) {
+			if ( effectiveRowStatus( row, 0 ) !== 'valid' ) {
+				return;
+			}
 			if ( row.type === 'condition_group' ) {
-				if ( row.children && row.children.length ) {
-					row.children.forEach( function ( child ) {
-						if ( child.status === 'valid' && child.label && labels.indexOf( child.label ) === -1 ) {
-							labels.push( child.label );
-						}
-					} );
-				} else if ( row.status === 'valid' && row.label ) {
+				if ( row.label && labels.indexOf( row.label ) === -1 ) {
 					labels.push( row.label );
 				}
 				return;
 			}
-			if ( row.status === 'valid' && row.label && labels.indexOf( row.label ) === -1 ) {
+			if ( row.label && labels.indexOf( row.label ) === -1 ) {
 				labels.push( row.label );
 			}
 		} );
 		return labels;
+	}
+
+	function hubReadyRuleSummary( proposal ) {
+		var cards = ( ( proposal && proposal.action_cards ) || [] ).filter( function ( c, i ) {
+			return ! isCardRemoved( i );
+		} );
+		if ( cards.length !== 1 ) {
+			return null;
+		}
+		var card = cards[ 0 ];
+		var include = [];
+		var exclude = [];
+		( card.condition_rows || [] ).forEach( function ( row ) {
+			if ( effectiveRowStatus( row, 0 ) !== 'valid' || row.is_note ) {
+				return;
+			}
+			if ( row.mode === 'exclude' ) {
+				if ( row.label && exclude.indexOf( row.label ) === -1 ) {
+					exclude.push( row.label );
+				}
+			} else if ( row.type === 'device' ) {
+				include.push( row.label || row.raw );
+			} else if ( row.type === 'page_type' ) {
+				include.push( row.label || row.raw );
+			} else if ( row.type === 'condition_group' ) {
+				include.push( row.label || row.raw );
+			} else if ( row.type === 'location' ) {
+				include.push( row.label || row.raw );
+			} else if ( row.label ) {
+				include.push( row.label );
+			}
+		} );
+		return {
+			target: ( card.target && ( card.target.resolved && card.target.resolved.name ) ) || ( card.target && card.target.raw ) || '',
+			include: include,
+			exclude: exclude,
+		};
 	}
 
 	function primaryCreateRuleLabel( proposal ) {
@@ -483,7 +523,7 @@
 	}
 
 	function jumpToActionReview() {
-		var el = document.getElementById( 'rwgc-targeting-action-review' );
+		var el = document.getElementById( 'rwgc-action-review' ) || document.getElementById( 'rwgc-targeting-action-review' );
 		if ( ! el ) {
 			el = document.querySelector( '.rwgc-geo-review__head' );
 		}
@@ -652,7 +692,13 @@
 		}
 
 		$b.append( $( '<span>', { class: 'rwgc-geo-card__field-value' } ).text( opts.value || '—' ) );
-		$b.append( $( '<span>', { class: 'rwgc-geo-card__field-status' } ).text( statusText( opts.status ) ) );
+		$b.append( $( '<span>', { class: 'rwgc-geo-card__field-status rwgc-status-pill rwgc-status-pill--needs-resolution' } ).text( statusText( opts.status ) ) );
+
+		if ( opts.isPopup && opts.actions && opts.actions.length ) {
+			$b.append( $( '<p>', { class: 'rwgc-geo-card__field-hint' } ).text(
+				i18n.popupTargetHint || 'This looks like a popup target. Choose the matching popup before creating the rule.'
+			) );
+		}
 
 		if ( opts.suggestions && opts.suggestions.length ) {
 			var $sug = $( '<div>', { class: 'rwgc-geo-card__suggestions' } );
@@ -678,14 +724,6 @@
 				$acts.append( fieldActionButton( idx, opts.field, opts.value, act ) );
 			} );
 			$b.append( $acts );
-		}
-
-		if ( opts.options && opts.options.length ) {
-			var $opts = $( '<div>', { class: 'rwgc-geo-card__field-actions rwgc-geo-card__field-options' } );
-			opts.options.forEach( function ( opt ) {
-				$opts.append( trafficOptionButton( idx, opts.field, opts.value, opt ) );
-			} );
-			$b.append( $opts );
 		}
 
 		if ( 'target' === opts.field ) {
@@ -762,6 +800,275 @@
 		return i18n.statusNeedsAttention || 'Needs attention';
 	}
 
+	function conditionTypeDisplayLabel( type ) {
+		if ( type === 'condition_group' ) {
+			return i18n.conditionGroupLabel || 'Condition group';
+		}
+		if ( type === 'page_type' ) {
+			return i18n.pageTypeLabel || 'Page type';
+		}
+		return conditionTypeLabel( type );
+	}
+
+	function effectiveChildStatus( child, idx, row ) {
+		if ( child.status === 'valid' ) {
+			return 'valid';
+		}
+		if ( child.type === 'traffic_source' ) {
+			var meta = conditionGroupResolution( row );
+			if ( fieldResolution( idx, 'traffic_source', meta.raw ) ) {
+				return 'valid';
+			}
+		}
+		return child.status;
+	}
+
+	function effectiveRowStatus( row, idx ) {
+		if ( row.type === 'condition_group' ) {
+			var children = row.children || [];
+			if ( children.length ) {
+				var allValid = true;
+				children.forEach( function ( child ) {
+					if ( effectiveChildStatus( child, idx, row ) !== 'valid' ) {
+						allValid = false;
+					}
+				} );
+				if ( allValid ) {
+					return 'valid';
+				}
+			}
+			var meta = conditionGroupResolution( row );
+			if ( meta.field && fieldResolution( idx, meta.field, meta.raw ) ) {
+				return 'valid';
+			}
+			return row.status;
+		}
+		var field = conditionResolutionField( row.type );
+		if ( field && fieldResolution( idx, field, row.raw ) ) {
+			return 'valid';
+		}
+		return row.status;
+	}
+
+	function conditionGroupSummary( row, idx ) {
+		var parts = [];
+		( row.children || [] ).forEach( function ( child ) {
+			var st = effectiveChildStatus( child, idx, row );
+			if ( st === 'valid' ) {
+				parts.push( ( child.label || child.type ) + ' is valid.' );
+			} else if ( st === 'needs_mapping' || child.type === 'traffic_source' ) {
+				parts.push( i18n.googleAdsNeedsMappingShort || 'Google Ads needs mapping.' );
+			} else {
+				parts.push( ( child.label || child.type ) + ' needs attention.' );
+			}
+		} );
+		return parts.join( ' ' );
+	}
+
+	function resolutionOptionsForField( card, field, raw ) {
+		var options = [];
+		( card.requiredResolutions || [] ).forEach( function ( req ) {
+			if ( req.field === field && ( ! raw || req.raw === raw ) && req.options && req.options.length ) {
+				options = req.options;
+			}
+		} );
+		if ( options.length ) {
+			return options;
+		}
+		( card.condition_rows || [] ).forEach( function ( row ) {
+			if ( row.resolution_options && row.resolution_options.length ) {
+				var meta = conditionGroupResolution( row );
+				if ( meta.field === field && ( ! raw || meta.raw === raw ) ) {
+					options = row.resolution_options;
+				}
+			}
+		} );
+		return options;
+	}
+
+	function openResolverForField( idx, field, raw ) {
+		var card = ( state.proposal && state.proposal.action_cards ) ? state.proposal.action_cards[ idx ] : null;
+		if ( ! card ) {
+			return;
+		}
+		var options = resolutionOptionsForField( card, field, raw );
+		var recommended = null;
+		options.forEach( function ( opt ) {
+			if ( opt.recommended ) {
+				recommended = opt;
+			}
+		} );
+		openResolutionDrawer( {
+			title: field === 'traffic_source'
+				? ( i18n.resolveGoogleAds || 'Resolve Google Ads mapping' )
+				: ( i18n.resolveField || 'Resolve' ),
+			detected: raw || ( field === 'traffic_source' ? ( i18n.trafficSourceLabel || 'Google Ads traffic' ) : field ),
+			why: field === 'traffic_source'
+				? ( i18n.googleAdsWhy || 'Geo Core needs to know how to recognise Google Ads traffic.' )
+				: '',
+			recommendedLabel: recommended ? recommended.label : '',
+			recommendedKey: recommended ? recommended.key : '',
+			options: options,
+			card: idx,
+			field: field,
+			raw: raw,
+		} );
+	}
+
+	function openFirstUnresolvedDrawer() {
+		var proposal = state.proposal;
+		if ( ! proposal || ! proposal.action_cards ) {
+			return false;
+		}
+		var cards = proposal.action_cards;
+		for ( var i = 0; i < cards.length; i++ ) {
+			if ( isCardRemoved( i ) ) {
+				continue;
+			}
+			var card = cards[ i ];
+			var reqs = ( card && card.requiredResolutions ) || [];
+			for ( var r = 0; r < reqs.length; r++ ) {
+				var req = reqs[ r ];
+				if ( fieldResolution( i, req.field, req.raw ) ) {
+					continue;
+				}
+				if ( req.field === 'traffic_source' ) {
+					jumpToCard( i );
+					openResolverForField( i, req.field, req.raw );
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	function ensureResolutionDrawer() {
+		var $drawer = $( '#rwgc-resolution-drawer' );
+		if ( ! $drawer.length ) {
+			$drawer = $( '<div>', {
+				id: 'rwgc-resolution-drawer',
+				class: 'rwgc-resolution-drawer rwgc-is-hidden',
+				'aria-hidden': 'true',
+			} );
+			$drawer.append( $( '<div>', { class: 'rwgc-resolution-drawer__backdrop', 'data-drawer-action': 'cancel' } ) );
+			$drawer.append( $( '<div>', { class: 'rwgc-resolution-drawer__panel', role: 'dialog', 'aria-modal': 'true' } ) );
+			$( 'body' ).append( $drawer );
+		}
+		return $drawer;
+	}
+
+	function closeResolutionDrawer() {
+		$( '#rwgc-resolution-drawer' ).addClass( 'rwgc-is-hidden' ).attr( 'aria-hidden', 'true' );
+		state.resolutionDrawer = null;
+	}
+
+	function openResolutionDrawer( opts ) {
+		opts = opts || {};
+		var $drawer = ensureResolutionDrawer();
+		var $panel = $drawer.find( '.rwgc-resolution-drawer__panel' );
+		$panel.empty();
+		state.resolutionDrawer = {
+			card: opts.card,
+			field: opts.field,
+			raw: opts.raw || '',
+			selected: opts.recommendedKey || '',
+		};
+
+		$panel.append( $( '<h3>', { class: 'rwgc-resolution-drawer__title' } ).text( opts.title || ( i18n.resolveField || 'Resolve' ) ) );
+		if ( opts.detected ) {
+			$panel.append( $( '<p>', { class: 'rwgc-resolution-drawer__label' } ).html(
+				'<strong>' + esc( i18n.drawerDetected || 'Detected' ) + ':</strong> ' + esc( opts.detected )
+			) );
+		}
+		if ( opts.why ) {
+			$panel.append( $( '<p>', { class: 'rwgc-resolution-drawer__why' } ).html(
+				'<strong>' + esc( i18n.drawerWhy || 'Why this needs resolution' ) + ':</strong> ' + esc( opts.why )
+			) );
+		}
+		if ( opts.recommendedLabel ) {
+			$panel.append( $( '<p>', { class: 'rwgc-resolution-drawer__recommended' } ).html(
+				'<strong>' + esc( i18n.drawerRecommended || 'Recommended' ) + ':</strong> ' + esc( opts.recommendedLabel )
+			) );
+		}
+
+		var $opts = $( '<div>', { class: 'rwgc-resolution-drawer__options' } );
+		( opts.options || [] ).forEach( function ( opt ) {
+			var $btn = $( '<button>', {
+				type: 'button',
+				class: 'button rwgc-resolution-option' + ( opt.recommended ? ' is-recommended' : '' ) + ( opt.key === 'remove_google_ads_condition' ? ' rwgc-resolution-option--danger' : '' ),
+				text: opt.label || opt.key,
+				'data-option-key': opt.key || '',
+			} );
+			if ( opt.recommended ) {
+				state.resolutionDrawer.selected = opt.key;
+				$btn.addClass( 'is-selected' );
+			}
+			$opts.append( $btn );
+		} );
+		$panel.append( $opts );
+
+		var $actions = $( '<div>', { class: 'rwgc-resolution-drawer__actions' } );
+		$actions.append( $( '<button>', {
+			type: 'button',
+			class: 'button button-primary',
+			text: opts.applyLabel || ( i18n.drawerApply || 'Apply mapping' ),
+			'data-drawer-action': 'apply',
+		} ) );
+		$actions.append( $( '<button>', {
+			type: 'button',
+			class: 'button button-link',
+			text: i18n.cancel || 'Cancel',
+			'data-drawer-action': 'cancel',
+		} ) );
+		$panel.append( $actions );
+
+		$drawer.removeClass( 'rwgc-is-hidden' ).attr( 'aria-hidden', 'false' );
+	}
+
+	function applyResolutionDrawer() {
+		var drawer = state.resolutionDrawer;
+		if ( ! drawer || ! drawer.selected ) {
+			return;
+		}
+		var opt = null;
+		var card = ( state.proposal && state.proposal.action_cards ) ? state.proposal.action_cards[ drawer.card ] : null;
+		if ( card ) {
+			resolutionOptionsForField( card, drawer.field, drawer.raw ).forEach( function ( row ) {
+				if ( row.key === drawer.selected ) {
+					opt = row;
+				}
+			} );
+		}
+		var kind = 'choose';
+		if ( drawer.selected === 'remove_google_ads_condition' ) {
+			kind = 'ignore';
+		} else if ( drawer.selected === 'configure_google_ads_mapping' ) {
+			kind = 'pick_manual';
+		}
+		if ( kind === 'ignore' ) {
+			state.cardResolutions[ fieldKey( drawer.card, drawer.field, drawer.raw ) ] = { kind: 'ignored' };
+		} else if ( kind === 'pick_manual' ) {
+			var picked = window.prompt( i18n.cardEnterExact || 'Enter the exact name to use:', '' );
+			if ( ! picked || ! picked.trim() ) {
+				return;
+			}
+			state.cardResolutions[ fieldKey( drawer.card, drawer.field, drawer.raw ) ] = {
+				kind: 'chosen',
+				id: drawer.selected,
+				label: picked.trim(),
+			};
+		} else {
+			state.cardResolutions[ fieldKey( drawer.card, drawer.field, drawer.raw ) ] = {
+				kind: 'chosen',
+				id: drawer.selected,
+				label: opt ? opt.label : drawer.selected,
+			};
+		}
+		recordConditionLearning( drawer.card, drawer.field, drawer.raw, state.cardResolutions[ fieldKey( drawer.card, drawer.field, drawer.raw ) ] );
+		closeResolutionDrawer();
+		rerenderCards();
+	}
+
 	function trafficOptionButton( idx, field, raw, opt ) {
 		var kind = 'choose';
 		if ( opt.key === 'remove_google_ads_condition' ) {
@@ -815,70 +1122,67 @@
 		var resolutionMeta = conditionGroupResolution( row );
 		var field = resolutionMeta.field;
 		var resolution = field ? fieldResolution( idx, field, resolutionMeta.raw ) : null;
-		var resolved = ( row.status === 'valid' ) || !! resolution;
+		var effStatus = effectiveRowStatus( row, idx );
+		var resolved = effStatus === 'valid';
 
-		var $cc = $( '<div>', {
-			class: 'rwgc-condition-card' + ( resolved ? '' : ' rwgc-condition-card--warning' ),
-		} );
+		var cardClass = 'rwgc-condition-card';
+		cardClass += resolved ? ' rwgc-condition-card--valid' : ' rwgc-condition-card--needs-resolution rwgc-condition-card--warning';
+
+		var $cc = $( '<div>', { class: cardClass } );
 
 		var $head = $( '<div>', { class: 'rwgc-condition-card__head' } );
 		$head.append( dashicon( row.icon ) );
 		var $meta = $( '<div>', { class: 'rwgc-condition-card__meta' } );
-		var label = conditionTypeLabel( row.type ) + ( row.mode === 'exclude' ? ' (' + ( i18n.cardExclude || 'Exclude' ) + ')' : '' );
-		$meta.append( $( '<span>', { class: 'rwgc-condition-card__type' } ).text( label ) );
-
-		var valueText = row.label || row.raw || '';
-		if ( resolution ) {
-			valueText = resolution.kind === 'ignored'
-				? ( i18n.anyAudience && row.type === 'audience' ? i18n.anyAudience : ( i18n.cardIgnored || 'Removed' ) )
-				: ( resolution.label || valueText );
+		var typeLabel = conditionTypeDisplayLabel( row.type );
+		if ( row.mode === 'exclude' ) {
+			typeLabel += ' (' + ( i18n.cardExclude || 'Exclude' ) + ')';
 		}
-		$meta.append( $( '<span>', { class: 'rwgc-condition-card__value' } ).text( valueText ) );
+		$meta.append( $( '<span>', { class: 'rwgc-condition-card__type' } ).text( typeLabel ) );
 		$head.append( $meta );
 
-		var pillKind = resolved ? 'ready' : 'needs-resolution';
-		var pillText = resolved ? ( i18n.statusValid || 'Valid' ) : ( i18n.statusNeedsAttention || 'Needs attention' );
+		var pillKind = resolved ? 'valid' : 'needs-resolution';
+		var pillText = resolved ? ( i18n.statusValid || 'Valid' ) : ( i18n.statusNeedsResolution || 'Needs resolution' );
 		$head.append( $( '<span>', { class: 'rwgc-status-pill rwgc-status-pill--' + pillKind } ).text( pillText ) );
 		$cc.append( $head );
 
-		if ( ! resolved && row.warning ) {
-			$cc.append( $( '<p>', { class: 'rwgc-condition-card__warning' } ).text( row.warning ) );
-		}
-
-		if ( row.type === 'condition_group' && row.children && row.children.length ) {
-			var $children = $( '<ul>', { class: 'rwgc-condition-card__children' } );
-			row.children.forEach( function ( child ) {
-				var childResolved = child.status === 'valid';
-				var childLine = child.label || child.type || '';
-				childLine += ' — ' + childStatusLabel( child.status );
-				$children.append( $( '<li>' ).text( childLine ) );
-			} );
-			$cc.append( $children );
-		}
-
+		var $body = $( '<div>', { class: 'rwgc-condition-card__summary' } );
+		var valueText = row.label || row.raw || '';
 		if ( resolution ) {
-			$cc.append( $( '<button>', {
+			valueText = resolution.kind === 'ignored'
+				? ( i18n.cardIgnored || 'Removed' )
+				: ( resolution.label || valueText );
+		}
+		$body.append( $( '<p>', { class: 'rwgc-condition-card__value' } ).text( valueText ) );
+		if ( row.type === 'condition_group' && row.children && row.children.length ) {
+			$body.append( $( '<p>', { class: 'rwgc-condition-card__child-summary' } ).text( conditionGroupSummary( row, idx ) ) );
+		}
+		$cc.append( $body );
+
+		if ( ! resolved && field ) {
+			var $footer = $( '<div>', { class: 'rwgc-condition-card__actions' } );
+			var resolveLabel = field === 'traffic_source'
+				? ( i18n.resolveGoogleAds || 'Resolve Google Ads mapping' )
+				: ( i18n.resolveField || 'Resolve' );
+			$footer.append( $( '<button>', {
+				type: 'button',
+				class: 'button button-secondary rwgc-condition-card__resolve',
+				text: resolveLabel,
+				'data-card-action': 'open_resolver',
+				'data-card': idx,
+				'data-field': field,
+				'data-raw': resolutionMeta.raw,
+			} ) );
+			$cc.append( $footer );
+		} else if ( resolution ) {
+			$cc.append( $( '<div>', { class: 'rwgc-condition-card__actions' } ).append( $( '<button>', {
 				type: 'button',
 				class: 'button-link rwgc-geo-card__undo',
 				text: i18n.cardUndo || 'Undo',
 				'data-card-action': 'undo_field',
 				'data-card': idx,
 				'data-field': field,
-				'data-raw': row.raw || '',
-			} ) );
-			return $cc;
-		}
-
-		if ( ! resolved && field && row.resolution_options && row.resolution_options.length ) {
-			var $opts = $( '<div>', { class: 'rwgc-condition-card__options' } );
-			row.resolution_options.forEach( function ( opt ) {
-				if ( field === 'traffic_source' ) {
-					$opts.append( trafficOptionButton( idx, field, resolutionMeta.raw, opt ) );
-				} else {
-					$opts.append( conditionOptionButton( idx, field, row.raw, opt ) );
-				}
-			} );
-			$cc.append( $opts );
+				'data-raw': resolutionMeta.raw,
+			} ) ) );
 		}
 
 		return $cc;
@@ -997,29 +1301,12 @@
 			} ) );
 		}
 
-		( card.requiredResolutions || [] ).forEach( function ( req ) {
-			if ( req.field !== 'traffic_source' || fieldResolution( idx, req.field, req.raw ) ) {
-				return;
-			}
-			$card.append( fieldBlock( idx, {
-				field: 'traffic_source',
-				label: i18n.trafficSourceLabel || 'Google Ads traffic',
-				value: req.raw,
-				status: req.status || 'needs_mapping',
-				options: req.options || [],
-				actions: [],
-			} ) );
-		} );
-
 		if ( card.confirmation_instruction && card.confirmation_instruction.requires_confirmation ) {
 			var $conf = $( '<div>', { class: 'rwgc-action-card__section rwgc-action-card__confirmation' } );
 			$conf.append( $( '<p>', { class: 'rwgc-action-card__section-label' } ).text( i18n.confirmationLabel || 'Confirmation' ) );
-			$conf.append( $( '<p>', { class: 'rwgc-action-card__confirmation-text' } ).text(
-				card.confirmation_instruction.display_text || card.confirmation_instruction.raw || ''
+			$conf.append( $( '<p>', { class: 'rwgc-action-card__confirmation-detail' } ).text(
+				card.confirmation_instruction.detail || ( i18n.confirmationDetail || 'Manual confirmation required before execution.' )
 			) );
-			if ( card.confirmation_instruction.detail ) {
-				$conf.append( $( '<p>', { class: 'rwgc-action-card__confirmation-detail' } ).text( card.confirmation_instruction.detail ) );
-			}
 			$card.append( $conf );
 		}
 
@@ -1050,7 +1337,7 @@
 	function renderActionCards( proposal, $plan ) {
 		var cards = proposal.action_cards || [];
 
-		var $head = $( '<header>', { class: 'rwgc-geo-review__head', id: 'rwgc-targeting-action-review' } );
+		var $head = $( '<header>', { class: 'rwgc-geo-review__head rwgc-action-review', id: 'rwgc-action-review' } );
 		$head.append( $( '<h2>', { class: 'rwgc-geo-review__title' } ).text( i18n.actionReview || 'Action Review' ) );
 
 		var detectedCount = cards.filter( function ( c, i ) {
@@ -1311,8 +1598,8 @@
 			if ( needs.length || ready.length ) {
 				var $hubLists = $( '<div>', { class: 'rwgc-geo-rail__hub-lists' } );
 				if ( needs.length ) {
-					var $needs = $( '<div>', { class: 'rwgc-geo-rail__hub-section' } );
-					$needs.append( $( '<p>', { class: 'rwgc-geo-rail__hub-label' } ).text( i18n.hubNeeds || 'Needs' ) );
+					var $needs = $( '<div>', { class: 'rwgc-geo-rail__hub-section rwgc-resolution-list' } );
+					$needs.append( $( '<p>', { class: 'rwgc-geo-rail__hub-label' } ).text( i18n.hubNeedsResolution || 'Needs resolution' ) );
 					var $needsUl = $( '<ul>', { class: 'rwgc-geo-rail__hub-items' } );
 					needs.forEach( function ( label ) {
 						$needsUl.append( $( '<li>' ).text( label ) );
@@ -1321,7 +1608,7 @@
 					$hubLists.append( $needs );
 				}
 				if ( ready.length ) {
-					var $ready = $( '<div>', { class: 'rwgc-geo-rail__hub-section' } );
+					var $ready = $( '<div>', { class: 'rwgc-geo-rail__hub-section rwgc-resolution-list' } );
 					$ready.append( $( '<p>', { class: 'rwgc-geo-rail__hub-label' } ).text( i18n.hubReady || 'Ready' ) );
 					var $readyUl = $( '<ul>', { class: 'rwgc-geo-rail__hub-items' } );
 					ready.forEach( function ( label ) {
@@ -1334,31 +1621,60 @@
 			}
 		}
 
-		renderSharedTargets( proposal, $rail, true );
-
-		var $list = $( '<ol>', { class: 'rwgc-geo-rail__actions' } );
-		cards.forEach( function ( card, idx ) {
-			var line = actionStatusLine( proposal, card, idx );
-			var $row = $( '<li>', {
-				class: 'rwgc-geo-rail__action rwgc-geo-rail__action--' + line.kind,
-				'data-jump': idx,
-				role: 'button',
-				tabindex: 0,
-			} );
-			var cardTitle = card.label || actionTypeLabel( card.type );
-			$row.append( $( '<span>', { class: 'rwgc-geo-rail__action-title' } ).text(
-				( i18n.cardActionWord || 'Action' ) + ' ' + ( idx + 1 ) + ' — ' + cardTitle
-			) );
-			$row.append( $( '<span>', { class: 'rwgc-geo-rail__action-status' } ).text( line.text ) );
-			if ( line.kind === 'ok' ) {
-				var summary = resolvedSummary( card, idx );
-				if ( summary ) {
-					$row.append( $( '<span>', { class: 'rwgc-geo-rail__action-summary' } ).text( summary ) );
+		if ( ! invalidSplit && remaining === 0 && cards.length === 1 ) {
+			var summary = hubReadyRuleSummary( proposal );
+			if ( summary ) {
+				var $summary = $( '<div>', { class: 'rwgc-geo-rail__rule-summary' } );
+				if ( summary.target ) {
+					$summary.append( $( '<p>', { class: 'rwgc-geo-rail__hub-label' } ).text( i18n.hubRule || 'Rule' ) );
+					$summary.append( $( '<p>', { class: 'rwgc-geo-rail__rule-target' } ).text( summary.target ) );
 				}
+				if ( summary.include.length ) {
+					$summary.append( $( '<p>', { class: 'rwgc-geo-rail__hub-label' } ).text( i18n.includeConditions || 'Include' ) );
+					var $inc = $( '<ul>', { class: 'rwgc-geo-rail__hub-items' } );
+					summary.include.forEach( function ( line ) {
+						$inc.append( $( '<li>' ).text( line ) );
+					} );
+					$summary.append( $inc );
+				}
+				if ( summary.exclude.length ) {
+					$summary.append( $( '<p>', { class: 'rwgc-geo-rail__hub-label' } ).text( i18n.cardExclude || 'Exclude' ) );
+					var $exc = $( '<ul>', { class: 'rwgc-geo-rail__hub-items' } );
+					summary.exclude.forEach( function ( line ) {
+						$exc.append( $( '<li>' ).text( line ) );
+					} );
+					$summary.append( $exc );
+				}
+				$rail.append( $summary );
 			}
-			$list.append( $row );
-		} );
-		$rail.append( $list );
+		} else if ( ! invalidSplit && cards.length > 1 ) {
+			renderSharedTargets( proposal, $rail, true );
+			var $list = $( '<ol>', { class: 'rwgc-geo-rail__actions' } );
+			cards.forEach( function ( card, idx ) {
+				var line = actionStatusLine( proposal, card, idx );
+				var $row = $( '<li>', {
+					class: 'rwgc-geo-rail__action rwgc-geo-rail__action--' + line.kind,
+					'data-jump': idx,
+					role: 'button',
+					tabindex: 0,
+				} );
+				var cardTitle = card.label || actionTypeLabel( card.type );
+				$row.append( $( '<span>', { class: 'rwgc-geo-rail__action-title' } ).text(
+					( i18n.cardActionWord || 'Action' ) + ' ' + ( idx + 1 ) + ' — ' + cardTitle
+				) );
+				$row.append( $( '<span>', { class: 'rwgc-geo-rail__action-status' } ).text( line.text ) );
+				if ( line.kind === 'ok' ) {
+					var cardSummary = resolvedSummary( card, idx );
+					if ( cardSummary ) {
+						$row.append( $( '<span>', { class: 'rwgc-geo-rail__action-summary' } ).text( cardSummary ) );
+					}
+				}
+				$list.append( $row );
+			} );
+			$rail.append( $list );
+		} else {
+			renderSharedTargets( proposal, $rail, true );
+		}
 
 		var $cta = $( '<div>', { class: 'rwgc-geo-rail__cta' } );
 		if ( invalidSplit ) {
@@ -1497,7 +1813,9 @@
 		var field = $btn.data( 'field' );
 		var raw = $btn.data( 'raw' ) != null ? String( $btn.data( 'raw' ) ) : '';
 
-		if ( 'choose_condition' === action ) {
+		if ( 'open_resolver' === action ) {
+			openResolverForField( idx, field, raw );
+		} else if ( 'choose_condition' === action ) {
 			var ckind = String( $btn.data( 'kind' ) || 'choose' );
 			if ( 'refresh' === ckind ) {
 				if ( state.lastMessage ) {
@@ -1608,6 +1926,9 @@
 			jumpToActionReview();
 			var unresolved = firstUnresolvedCardIndex( state.proposal );
 			jumpToCard( unresolved >= 0 ? unresolved : 0 );
+			if ( 'resolve_items' === action && ! openFirstUnresolvedDrawer() ) {
+				// Target and other inline resolvers stay on the action card.
+			}
 		} else if ( 'ask_ai_recheck' === action ) {
 			askAiToCheck();
 		}
@@ -1876,16 +2197,11 @@
 		if ( proposal && proposal.invalid_interpretation ) {
 			return false;
 		}
+		if ( proposal && proposal.action_cards && proposal.action_cards.length ) {
+			return remainingResolutions( proposal ) === 0;
+		}
 		if ( proposal && ( proposal.requires_resolution || proposal.interpretation_status === 'needs_resolution' ) ) {
 			return false;
-		}
-		if ( proposal && proposal.action_cards && proposal.action_cards.length ) {
-			if ( remainingResolutions( proposal ) > 0 ) {
-				return false;
-			}
-			return proposal.action_cards.every( function ( card, idx ) {
-				return isCardRemoved( idx ) || 'ready' === ( card.status || '' );
-			} );
 		}
 		if ( typeof proposal.can_execute === 'boolean' ) {
 			return proposal.can_execute;
@@ -1910,26 +2226,47 @@
 		if ( cards.length !== 1 ) {
 			return '';
 		}
-		var card = cards[0];
-		var html = '<ul class="rwgc-chat-breakdown">';
+		var card = cards[ 0 ];
+		var html = '';
 		var t = card.target || {};
-		html += '<li><strong>' + esc( i18n.cardTargetLabel || 'Target' ) + ':</strong> ' + esc( ( t.resolved && t.resolved.name ) || t.raw || '—' ) + '</li>';
-		var detected = [];
-		var needs = [];
+		html += '<p><strong>' + esc( i18n.cardTargetLabel || 'Target' ) + '</strong><br>' + esc( ( t.resolved && t.resolved.name ) || t.raw || '—' ) + '</p>';
+
+		var include = [];
+		var exclude = [];
 		( card.condition_rows || [] ).forEach( function ( row ) {
-			detected.push( conditionTypeLabel( row.type ) + ': ' + ( row.label || row.raw ) );
-			if ( row.status !== 'valid' && row.warning ) {
-				needs.push( row.warning );
+			if ( row.is_note ) {
+				return;
+			}
+			if ( row.mode === 'exclude' ) {
+				if ( row.label ) {
+					exclude.push( row.label );
+				}
+			} else if ( row.type === 'device' && row.label ) {
+				include.push( ( row.label.toLowerCase().indexOf( 'visitor' ) >= 0 ) ? row.label : ( row.label + ' visitors' ) );
+			} else if ( row.label ) {
+				include.push( row.label );
 			}
 		} );
-		if ( detected.length ) {
-			html += '<li><strong>' + esc( i18n.conditionsDetected || 'Conditions detected' ) + ':</strong> ' + esc( detected.join( ' · ' ) ) + '</li>';
+		if ( include.length ) {
+			html += '<p><strong>' + esc( i18n.cardInclude || 'Include' ) + '</strong></p><ul class="rwgc-chat-breakdown">';
+			include.forEach( function ( line ) {
+				html += '<li>' + esc( line ) + '</li>';
+			} );
+			html += '</ul>';
 		}
-		html += '</ul>';
+		if ( exclude.length ) {
+			html += '<p><strong>' + esc( i18n.cardExclude || 'Exclude' ) + '</strong></p><ul class="rwgc-chat-breakdown">';
+			exclude.forEach( function ( line ) {
+				html += '<li>' + esc( line ) + '</li>';
+			} );
+			html += '</ul>';
+		}
+
+		var needs = hubNeedsLabels( proposal );
 		if ( needs.length ) {
-			html += '<p><strong>' + esc( i18n.needConfirmationFor || 'I need confirmation for:' ) + '</strong></p><ul class="rwgc-chat-breakdown">';
-			needs.forEach( function ( n ) {
-				html += '<li>' + esc( n ) + '</li>';
+			html += '<p><strong>' + esc( i18n.hubNeedsResolution || 'Needs resolution' ) + '</strong></p><ul class="rwgc-chat-breakdown">';
+			needs.forEach( function ( label ) {
+				html += '<li>' + esc( label ) + '</li>';
 			} );
 			html += '</ul>';
 		}
@@ -1945,19 +2282,18 @@
 		if ( proposal.action_cards && proposal.action_cards.length ) {
 			var count = proposal.action_cards.length;
 			var attention = remainingResolutions( proposal );
-			var line = ( i18n.foundActionsPrefix || 'I found' ) + ' ' + count + ' ' +
-				( count === 1 ? ( i18n.actionWord2 || 'action' ) : ( i18n.actionsWord2 || 'actions' ) ) + '.';
-			if ( attention > 0 ) {
-				line += ' ' + attention + ' ' +
+			var line = ( i18n.foundRulePrefix || 'I found' ) + ' ' + count + ' ' +
+				( count === 1 ? ( i18n.ruleWord || 'rule' ) : ( i18n.rulesWord || 'rules' ) ) + ' ' + ( i18n.toCreateWord || 'to create' ) + '.';
+			if ( attention > 0 && count !== 1 ) {
+				line = ( i18n.foundActionsPrefix || 'I found' ) + ' ' + count + ' ' +
+					( count === 1 ? ( i18n.actionWord2 || 'action' ) : ( i18n.actionsWord2 || 'actions' ) ) + '. ' +
+					attention + ' ' +
 					( attention === 1 ? ( i18n.fieldNeedsAttention || 'field needs attention' ) : ( i18n.fieldsNeedAttention || 'fields need attention' ) ) +
 					' ' + ( i18n.beforeCreate || 'before this can be created.' );
-			} else {
-				line += ' ' + ( i18n.allResolvedReady || 'Everything is resolved — you can create the setup.' );
 			}
 			var cardHtml = sourceBadgeHtml( response.source );
 			cardHtml += '<p><strong>' + esc( line ) + '</strong></p>';
 			cardHtml += chatActionBreakdown( proposal );
-			cardHtml += '<p class="description">' + esc( i18n.reviewInPanel || 'Review and resolve each action in the Action Review panel below.' ) + '</p>';
 			return cardHtml;
 		}
 
@@ -2013,6 +2349,11 @@
 		state.debug = response.debug || null;
 		updateSetupPanel( state.proposal, setupStatusLabel( response, state.proposal ) );
 		appendAssistant( formatProposalHtml( response ), proposalActions( state.proposalId, response ) );
+		if ( state.proposal && state.proposal.action_cards && state.proposal.action_cards.length ) {
+			window.setTimeout( function () {
+				jumpToActionReview();
+			}, 120 );
+		}
 	}
 
 	function buildContext() {
@@ -2590,6 +2931,23 @@
 
 		$( '#rwgc-targeting-setup-plan, #rwgc-targeting-rail' ).on( 'click', '[data-card-action]', function () {
 			handleCardAction( $( this ) );
+		} );
+
+		$( 'body' ).on( 'click', '#rwgc-resolution-drawer [data-drawer-action]', function () {
+			var action = $( this ).data( 'drawer-action' );
+			if ( 'apply' === action ) {
+				applyResolutionDrawer();
+			} else if ( 'cancel' === action ) {
+				closeResolutionDrawer();
+			}
+		} ).on( 'click', '#rwgc-resolution-drawer [data-option-key]', function () {
+			var key = String( $( this ).data( 'option-key' ) || '' );
+			if ( ! state.resolutionDrawer ) {
+				return;
+			}
+			state.resolutionDrawer.selected = key;
+			$( '#rwgc-resolution-drawer .rwgc-resolution-option' ).removeClass( 'is-selected' );
+			$( this ).addClass( 'is-selected' );
 		} );
 
 		$( '#rwgc-targeting-rail' ).on( 'click', '[data-action]', function () {
