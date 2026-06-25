@@ -508,6 +508,8 @@
 			registry_unavailable: i18n.cardUnverified || 'Could not be verified automatically',
 			sync_unavailable: i18n.cardSyncUnavailable || 'No synced list available yet',
 			matched: i18n.cardMatched || 'Matched',
+			needs_mapping: i18n.statusNeedsMapping || 'Needs mapping',
+			needs_resolution: i18n.statusNeedsAttention || 'Needs attention',
 		};
 		return map[ status ] || ( status ? String( status ).replace( /_/g, ' ' ) : '' );
 	}
@@ -558,6 +560,8 @@
 			refresh_audiences: i18n.cardRefresh || 'Refresh synced',
 			choose_target: i18n.cardChooseTarget || 'Choose page/category',
 			search_targets: i18n.cardSearchTargets || 'Search',
+			choose_popup: i18n.cardChoosePopup || 'Choose popup',
+			search_popups: i18n.cardSearchPopups || 'Search popups',
 			remove_action: i18n.cardRemoveAction || 'Remove action',
 		};
 		var map = {
@@ -569,6 +573,8 @@
 			choose_audience: 'choose_manual',
 			choose_target: 'toggle_picker',
 			search_targets: 'toggle_picker',
+			choose_popup: 'toggle_picker',
+			search_popups: 'toggle_picker',
 			remove_action: 'remove_action',
 		};
 		return $( '<button>', {
@@ -582,16 +588,27 @@
 		} );
 	}
 
-	function targetPicker( idx, raw, suggestions ) {
+	function targetPicker( idx, raw, suggestions, isPopup ) {
 		var $wrap = $( '<div>', { class: 'rwgc-geo-card__picker rwgc-is-hidden', 'data-picker-card': idx } );
 		var $sel = $( '<select>', { class: 'rwgc-geo-card__picker-select' } );
-		$sel.append( $( '<option>', { value: '', text: i18n.cardPickerPlaceholder || 'Select a page or category…' } ) );
+		$sel.append( $( '<option>', {
+			value: '',
+			text: isPopup
+				? ( i18n.cardPopupPickerPlaceholder || 'Select a popup…' )
+				: ( i18n.cardPickerPlaceholder || 'Select a page or category…' ),
+		} ) );
 		( suggestions || [] ).forEach( function ( s ) {
 			$sel.append( $( '<option>', { value: 'sug:' + ( s.id || '' ) + ':' + s.name, text: s.name } ) );
 		} );
-		( cfg.pages || [] ).forEach( function ( p ) {
-			$sel.append( $( '<option>', { value: 'page:' + p.id + ':' + p.title, text: p.title } ) );
-		} );
+		if ( isPopup ) {
+			( cfg.popups || [] ).forEach( function ( p ) {
+				$sel.append( $( '<option>', { value: 'popup:' + p.id + ':' + p.title, text: p.title } ) );
+			} );
+		} else {
+			( cfg.pages || [] ).forEach( function ( p ) {
+				$sel.append( $( '<option>', { value: 'page:' + p.id + ':' + p.title, text: p.title } ) );
+			} );
+		}
 		$wrap.append( $sel );
 		$wrap.append( $( '<button>', {
 			type: 'button',
@@ -663,8 +680,16 @@
 			$b.append( $acts );
 		}
 
+		if ( opts.options && opts.options.length ) {
+			var $opts = $( '<div>', { class: 'rwgc-geo-card__field-actions rwgc-geo-card__field-options' } );
+			opts.options.forEach( function ( opt ) {
+				$opts.append( trafficOptionButton( idx, opts.field, opts.value, opt ) );
+			} );
+			$b.append( $opts );
+		}
+
 		if ( 'target' === opts.field ) {
-			$b.append( targetPicker( idx, opts.value, opts.suggestions ) );
+			$b.append( targetPicker( idx, opts.value, opts.suggestions, !!opts.isPopup ) );
 		}
 
 		return $b;
@@ -696,24 +721,85 @@
 		if ( type === 'audience' ) {
 			return 'audience';
 		}
+		if ( type === 'traffic_source' ) {
+			return 'traffic_source';
+		}
 		return '';
+	}
+
+	function conditionGroupResolution( row ) {
+		if ( row.type !== 'condition_group' || ! row.children || ! row.children.length ) {
+			return {
+				field: conditionResolutionField( row.type ),
+				raw: row.raw || '',
+			};
+		}
+		var trafficChild = null;
+		row.children.forEach( function ( child ) {
+			if ( child.type === 'traffic_source' && child.status !== 'valid' ) {
+				trafficChild = child;
+			}
+		} );
+		if ( trafficChild ) {
+			return {
+				field: 'traffic_source',
+				raw: trafficChild.label || row.raw || '',
+			};
+		}
+		return {
+			field: conditionResolutionField( row.type ),
+			raw: row.raw || '',
+		};
+	}
+
+	function childStatusLabel( status ) {
+		if ( status === 'valid' ) {
+			return i18n.statusValid || 'Valid';
+		}
+		if ( status === 'needs_mapping' ) {
+			return i18n.statusNeedsMapping || 'Needs mapping';
+		}
+		return i18n.statusNeedsAttention || 'Needs attention';
+	}
+
+	function trafficOptionButton( idx, field, raw, opt ) {
+		var kind = 'choose';
+		if ( opt.key === 'remove_google_ads_condition' ) {
+			kind = 'ignore';
+		} else if ( opt.key === 'configure_google_ads_mapping' ) {
+			kind = 'pick_manual';
+		}
+		return $( '<button>', {
+			type: 'button',
+			class: 'button rwgc-resolution-option' + ( opt.recommended ? ' is-recommended' : '' ) + ( opt.key === 'remove_google_ads_condition' ? ' rwgc-resolution-option--danger' : '' ),
+			text: opt.label || opt.key,
+			'data-card-action': 'choose_condition',
+			'data-card': idx,
+			'data-field': field,
+			'data-raw': raw || '',
+			'data-kind': kind,
+			'data-id': opt.key || '',
+			'data-label': opt.label || '',
+		} );
 	}
 
 	function conditionOptionButton( idx, field, raw, opt ) {
 		var kind = 'choose';
 		var id = '';
-		if ( opt.key === 'remove' || opt.key === 'any_audience' ) {
+		if ( opt.key === 'remove' || opt.key === 'any_audience' || opt.key === 'remove_google_ads_condition' ) {
 			kind = 'ignore';
-		} else if ( opt.picker || opt.key === 'choose_audiences' ) {
+		} else if ( opt.picker || opt.key === 'choose_audiences' || opt.key === 'configure_google_ads_mapping' ) {
 			kind = 'pick_manual';
 		} else if ( opt.key === 'refresh' ) {
 			kind = 'refresh';
 		} else if ( opt.value && opt.value.type && opt.value.code ) {
 			id = opt.value.type + ':' + opt.value.code;
+		} else if ( opt.key ) {
+			id = opt.key;
 		}
 		return $( '<button>', {
 			type: 'button',
-			class: 'button rwgc-resolution-option' + ( opt.key === 'remove' ? ' rwgc-resolution-option--danger' : '' ),
+			class: 'button rwgc-resolution-option' + ( opt.recommended ? ' is-recommended' : '' ) + ( opt.key === 'remove' || opt.key === 'remove_google_ads_condition' ? ' rwgc-resolution-option--danger' : '' ),
 			text: opt.label || opt.key,
 			'data-card-action': 'choose_condition',
 			'data-card': idx,
@@ -726,8 +812,9 @@
 	}
 
 	function renderConditionCard( card, idx, row ) {
-		var field = conditionResolutionField( row.type );
-		var resolution = field ? fieldResolution( idx, field, row.raw ) : null;
+		var resolutionMeta = conditionGroupResolution( row );
+		var field = resolutionMeta.field;
+		var resolution = field ? fieldResolution( idx, field, resolutionMeta.raw ) : null;
 		var resolved = ( row.status === 'valid' ) || !! resolution;
 
 		var $cc = $( '<div>', {
@@ -763,9 +850,7 @@
 			row.children.forEach( function ( child ) {
 				var childResolved = child.status === 'valid';
 				var childLine = child.label || child.type || '';
-				if ( ! childResolved ) {
-					childLine += ' — ' + ( i18n.statusNeedsAttention || 'Needs attention' );
-				}
+				childLine += ' — ' + childStatusLabel( child.status );
 				$children.append( $( '<li>' ).text( childLine ) );
 			} );
 			$cc.append( $children );
@@ -787,7 +872,11 @@
 		if ( ! resolved && field && row.resolution_options && row.resolution_options.length ) {
 			var $opts = $( '<div>', { class: 'rwgc-condition-card__options' } );
 			row.resolution_options.forEach( function ( opt ) {
-				$opts.append( conditionOptionButton( idx, field, row.raw, opt ) );
+				if ( field === 'traffic_source' ) {
+					$opts.append( trafficOptionButton( idx, field, resolutionMeta.raw, opt ) );
+				} else {
+					$opts.append( conditionOptionButton( idx, field, row.raw, opt ) );
+				}
 			} );
 			$cc.append( $opts );
 		}
@@ -876,6 +965,14 @@
 			var targetValue = ( t.inherited && t.inheritedFrom )
 				? ( ( i18n.cardSameAs || 'Same as' ) + ' ' + t.inheritedFrom )
 				: t.raw;
+			var targetReq = ( card.requiredResolutions || [] ).find( function ( r ) {
+				return r.field === 'target';
+			} );
+			var targetActions = targetReq && targetReq.actions && targetReq.actions.length
+				? targetReq.actions
+				: ( t.type === 'popup'
+					? [ 'choose_popup', 'search_popups', 'remove_action' ]
+					: [ 'choose_target', 'search_targets', 'remove_action' ] );
 			$card.append( fieldBlock( idx, {
 				field: 'target',
 				label: i18n.cardTargetLabel || 'Target',
@@ -883,7 +980,8 @@
 				status: t.status,
 				resolved: t.resolved ? t.resolved.name : '',
 				suggestions: t.suggestions || [],
-				actions: requiresField( card, 'target' ) ? [ 'choose_target', 'search_targets', 'remove_action' ] : [],
+				actions: requiresField( card, 'target' ) ? targetActions : [],
+				isPopup: t.type === 'popup',
 			} ) );
 		}
 
@@ -897,6 +995,32 @@
 				suggestions: card.campaign.suggestions || [],
 				actions: requiresField( card, 'campaign' ) ? [ 'choose_campaign', 'ignore_campaign', 'refresh_campaigns' ] : [],
 			} ) );
+		}
+
+		( card.requiredResolutions || [] ).forEach( function ( req ) {
+			if ( req.field !== 'traffic_source' || fieldResolution( idx, req.field, req.raw ) ) {
+				return;
+			}
+			$card.append( fieldBlock( idx, {
+				field: 'traffic_source',
+				label: i18n.trafficSourceLabel || 'Google Ads traffic',
+				value: req.raw,
+				status: req.status || 'needs_mapping',
+				options: req.options || [],
+				actions: [],
+			} ) );
+		} );
+
+		if ( card.confirmation_instruction && card.confirmation_instruction.requires_confirmation ) {
+			var $conf = $( '<div>', { class: 'rwgc-action-card__section rwgc-action-card__confirmation' } );
+			$conf.append( $( '<p>', { class: 'rwgc-action-card__section-label' } ).text( i18n.confirmationLabel || 'Confirmation' ) );
+			$conf.append( $( '<p>', { class: 'rwgc-action-card__confirmation-text' } ).text(
+				card.confirmation_instruction.display_text || card.confirmation_instruction.raw || ''
+			) );
+			if ( card.confirmation_instruction.detail ) {
+				$conf.append( $( '<p>', { class: 'rwgc-action-card__confirmation-detail' } ).text( card.confirmation_instruction.detail ) );
+			}
+			$card.append( $conf );
 		}
 
 		$card.append( renderLogicSection( card, idx ) );

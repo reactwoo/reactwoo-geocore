@@ -503,6 +503,31 @@ class RWGC_Admin {
 		}
 		if ( false !== strpos( $hook, 'rwgc-targeting-hub' ) ) {
 			$pages     = class_exists( 'RWGC_Page_Version', false ) ? RWGC_Page_Version::get_page_choices( 80 ) : array();
+			$popups    = array();
+			if ( post_type_exists( 'elementor_library' ) ) {
+				$popup_posts = get_posts(
+					array(
+						'post_type'      => 'elementor_library',
+						'post_status'    => array( 'publish', 'draft', 'private' ),
+						'posts_per_page' => 80,
+						'meta_query'     => array(
+							array(
+								'key'   => '_elementor_template_type',
+								'value' => 'popup',
+							),
+						),
+					)
+				);
+				foreach ( $popup_posts as $popup_post ) {
+					if ( ! $popup_post instanceof WP_Post ) {
+						continue;
+					}
+					$popups[] = array(
+						'id'    => (int) $popup_post->ID,
+						'title' => (string) get_the_title( $popup_post ),
+					);
+				}
+			}
 			$countries = array();
 			if ( class_exists( 'RWGC_Countries', false ) ) {
 				foreach ( RWGC_Countries::get_options() as $code => $name ) {
@@ -542,6 +567,7 @@ class RWGC_Admin {
 						? RWGC_Capability_Registry::export_for_assistant()
 						: array(),
 					'pages'           => $pages,
+					'popups'          => $popups,
 					'countries'       => $countries,
 					'keywordHints'      => self::get_assistant_keyword_hints(),
 					'i18n'              => array(
@@ -669,12 +695,15 @@ class RWGC_Admin {
 						'cardChooseCampaign' => __( 'Choose campaign', 'reactwoo-geocore' ),
 						'cardChooseAudience' => __( 'Choose audience', 'reactwoo-geocore' ),
 						'cardChooseTarget' => __( 'Choose page/category', 'reactwoo-geocore' ),
+						'cardChoosePopup'  => __( 'Choose popup', 'reactwoo-geocore' ),
+						'cardSearchPopups' => __( 'Search popups', 'reactwoo-geocore' ),
 						'cardSearchTargets' => __( 'Search', 'reactwoo-geocore' ),
 						'cardIgnore'      => __( 'Ignore', 'reactwoo-geocore' ),
 						'cardRefresh'     => __( 'Refresh synced', 'reactwoo-geocore' ),
 						'cardRemoveAction' => __( 'Remove action', 'reactwoo-geocore' ),
 						'cardUse'         => __( 'Use', 'reactwoo-geocore' ),
 						'cardPickerPlaceholder' => __( 'Select a page or category…', 'reactwoo-geocore' ),
+						'cardPopupPickerPlaceholder' => __( 'Select a popup…', 'reactwoo-geocore' ),
 						'cardEnterExact'  => __( 'Enter the exact name to use:', 'reactwoo-geocore' ),
 						'cardTypeUpdateCampaign' => __( 'Update campaign targeting', 'reactwoo-geocore' ),
 						'cardTypeUpdateOriginal' => __( 'Update targeting', 'reactwoo-geocore' ),
@@ -695,6 +724,9 @@ class RWGC_Admin {
 						'statusNeedsConfirmation' => __( 'Needs confirmation', 'reactwoo-geocore' ),
 						'statusConfirmed' => __( 'Confirmed', 'reactwoo-geocore' ),
 						'statusNeedsResolution' => __( 'Needs resolution', 'reactwoo-geocore' ),
+						'statusNeedsMapping'    => __( 'Needs mapping', 'reactwoo-geocore' ),
+						'confirmationLabel'     => __( 'Confirmation', 'reactwoo-geocore' ),
+						'trafficSourceLabel'    => __( 'Google Ads traffic', 'reactwoo-geocore' ),
 						'cardResolveRemaining' => __( 'Some fields still need resolving before this setup can be created.', 'reactwoo-geocore' ),
 						'cardPreviewSkipped' => __( 'preview only, nothing created', 'reactwoo-geocore' ),
 						'setupConfirmed'  => __( 'Setup confirmed. Continue in the workflow.', 'reactwoo-geocore' ),
