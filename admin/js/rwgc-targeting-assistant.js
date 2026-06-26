@@ -371,7 +371,7 @@
 			if ( isCardRemoved( idx ) ) {
 				return;
 			}
-			if ( 'ready' === ( card.status || '' ) && remainingForCard( idx, card, proposal ) === 0 ) {
+			if ( remainingForCard( idx, card, proposal ) === 0 ) {
 				ready++;
 			}
 		} );
@@ -506,10 +506,22 @@
 			}
 		} );
 		return {
-			target: ( card.target && ( card.target.resolved && card.target.resolved.name ) ) || ( card.target && card.target.raw ) || '',
+			target: resolvedTargetLabel( card, 0 ),
 			include: include,
 			exclude: exclude,
 		};
+	}
+
+	function resolvedTargetLabel( card, idx ) {
+		var t = ( card && card.target ) || {};
+		var res = fieldResolution( idx, 'target', t.raw || t.label || '' );
+		if ( res && res.kind !== 'ignored' && res.label ) {
+			return res.label;
+		}
+		if ( t.resolved && t.resolved.name ) {
+			return t.resolved.name;
+		}
+		return t.raw || t.label || '';
 	}
 
 	function primaryCreateRuleLabel( proposal ) {
@@ -850,19 +862,36 @@
 		return row.status;
 	}
 
+	function conditionGroupChildLine( child, idx, row ) {
+		var label = child.label || child.type || '';
+		var st = effectiveChildStatus( child, idx, row );
+		if ( st === 'valid' ) {
+			return label + ': ' + ( i18n.childStatusValid || 'valid' );
+		}
+		if ( child.type === 'traffic_source' || st === 'needs_mapping' ) {
+			return label + ': ' + ( i18n.childNeedsMapping || 'needs mapping' );
+		}
+		return label + ': ' + ( i18n.childNeedsAttention || 'needs attention' );
+	}
+
 	function conditionGroupSummary( row, idx ) {
 		var parts = [];
 		( row.children || [] ).forEach( function ( child ) {
-			var st = effectiveChildStatus( child, idx, row );
-			if ( st === 'valid' ) {
-				parts.push( ( child.label || child.type ) + ' is valid.' );
-			} else if ( st === 'needs_mapping' || child.type === 'traffic_source' ) {
-				parts.push( i18n.googleAdsNeedsMappingShort || 'Google Ads needs mapping.' );
-			} else {
-				parts.push( ( child.label || child.type ) + ' needs attention.' );
-			}
+			parts.push( conditionGroupChildLine( child, idx, row ) );
 		} );
 		return parts.join( ' ' );
+	}
+
+	function renderConditionGroupChildren( row, idx ) {
+		var $list = $( '<ul>', { class: 'rwgc-condition-card__children' } );
+		( row.children || [] ).forEach( function ( child ) {
+			var st = effectiveChildStatus( child, idx, row );
+			var $item = $( '<li>', {
+				class: 'rwgc-condition-card__child rwgc-condition-card__child--' + ( st === 'valid' ? 'valid' : 'needs-resolution' ),
+			} ).text( conditionGroupChildLine( child, idx, row ) );
+			$list.append( $item );
+		} );
+		return $list;
 	}
 
 	function resolutionOptionsForField( card, field, raw ) {
@@ -1069,27 +1098,6 @@
 		rerenderCards();
 	}
 
-	function trafficOptionButton( idx, field, raw, opt ) {
-		var kind = 'choose';
-		if ( opt.key === 'remove_google_ads_condition' ) {
-			kind = 'ignore';
-		} else if ( opt.key === 'configure_google_ads_mapping' ) {
-			kind = 'pick_manual';
-		}
-		return $( '<button>', {
-			type: 'button',
-			class: 'button rwgc-resolution-option' + ( opt.recommended ? ' is-recommended' : '' ) + ( opt.key === 'remove_google_ads_condition' ? ' rwgc-resolution-option--danger' : '' ),
-			text: opt.label || opt.key,
-			'data-card-action': 'choose_condition',
-			'data-card': idx,
-			'data-field': field,
-			'data-raw': raw || '',
-			'data-kind': kind,
-			'data-id': opt.key || '',
-			'data-label': opt.label || '',
-		} );
-	}
-
 	function conditionOptionButton( idx, field, raw, opt ) {
 		var kind = 'choose';
 		var id = '';
@@ -1154,7 +1162,7 @@
 		}
 		$body.append( $( '<p>', { class: 'rwgc-condition-card__value' } ).text( valueText ) );
 		if ( row.type === 'condition_group' && row.children && row.children.length ) {
-			$body.append( $( '<p>', { class: 'rwgc-condition-card__child-summary' } ).text( conditionGroupSummary( row, idx ) ) );
+			$body.append( renderConditionGroupChildren( row, idx ) );
 		}
 		$cc.append( $body );
 
@@ -1595,7 +1603,7 @@
 		if ( ! invalidSplit ) {
 			var needs = hubNeedsLabels( proposal );
 			var ready = hubReadyLabels( proposal );
-			if ( needs.length || ready.length ) {
+			if ( remaining > 0 && ( needs.length || ready.length ) ) {
 				var $hubLists = $( '<div>', { class: 'rwgc-geo-rail__hub-lists' } );
 				if ( needs.length ) {
 					var $needs = $( '<div>', { class: 'rwgc-geo-rail__hub-section rwgc-resolution-list' } );
@@ -1700,7 +1708,7 @@
 				text: ( i18n.resolveItems || 'Resolve' ) + ' ' + remaining + ' ' + ( remaining === 1 ? ( i18n.itemWord || 'item' ) : ( i18n.itemsWord || 'items' ) ),
 				'data-card-action': 'resolve_items',
 			} ) );
-		} else {
+		} else if ( responseCanExecute( proposal ) ) {
 			$cta.append( $( '<button>', {
 				type: 'button',
 				class: 'button button-primary rwgc-geo-btn',

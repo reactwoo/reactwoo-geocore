@@ -1249,6 +1249,23 @@
 	color: #5b6474;
 }
 
+.rwgc-condition-card__children {
+	margin: 0.45rem 0 0;
+	padding: 0 0 0 1rem;
+	list-style: disc;
+}
+
+.rwgc-condition-card__child {
+	margin: 0.15rem 0;
+	font-size: 0.78rem;
+	line-height: 1.45;
+	color: #5b6474;
+}
+
+.rwgc-condition-card__child--needs-resolution {
+	color: #9a3412;
+}
+
 .rwgc-condition-card__actions {
 	margin-top: 0.55rem;
 	display: flex;
