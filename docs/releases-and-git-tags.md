@@ -48,9 +48,12 @@ git add -A
 git commit -m "Release VERSION — short summary"
 git tag -a "vVERSION" -m "Release VERSION"
 git push origin main "vVERSION"
+git ls-remote --tags origin "vVERSION"
 ```
 
 Replace `VERSION` with the exact version string (e.g. `1.8.20`). The annotated tag `v1.8.20` should match the plugin header so support and CI can correlate git ↔ installed zip.
+
+**A release is incomplete until the tag appears on GitHub** (`git ls-remote`). Local commit + tag alone do not publish to R2.
 
 ### Avoid slow or flaky releases (agents + Windows)
 
