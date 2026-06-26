@@ -95,6 +95,65 @@ class RWGC_REST {
 				),
 			)
 		);
+
+		register_rest_route(
+			'reactwoo-geocore/v1',
+			'/targets/search',
+			array(
+				'methods'             => \WP_REST_Server::READABLE,
+				'callback'            => array( __CLASS__, 'get_targets_search' ),
+				'permission_callback' => array( __CLASS__, 'permissions_targeting_assistant' ),
+				'args'                => array(
+					'target_type' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+					'q'           => array(
+						'type'              => 'string',
+						'default'           => '',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			'reactwoo-geocore/v1',
+			'/targets/create',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( __CLASS__, 'post_targets_create' ),
+				'permission_callback' => array( __CLASS__, 'permissions_targeting_assistant' ),
+				'args'                => array(
+					'target_type' => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_key',
+					),
+					'title'       => array(
+						'required'          => true,
+						'type'              => 'string',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'status'      => array(
+						'type'              => 'string',
+						'default'           => 'draft',
+						'sanitize_callback' => 'sanitize_key',
+					),
+					'proposal_id' => array(
+						'type'              => 'string',
+						'default'           => '',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+					'action_id'   => array(
+						'type'              => 'string',
+						'default'           => '',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -167,6 +226,65 @@ class RWGC_REST {
 
 		if ( function_exists( 'rwgc_get_portable_targeting_editor_context' ) ) {
 			$result['editor_context'] = rwgc_get_portable_targeting_editor_context();
+		}
+
+		return rest_ensure_response( $result );
+	}
+
+	/**
+	 * GET popup (and future) target search for the assistant resolver.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public static function get_targets_search( $request ) {
+		$type = (string) $request->get_param( 'target_type' );
+		if ( 'popup' !== $type ) {
+			return new WP_Error(
+				'rwgc_unsupported_target_type',
+				__( 'This target type is not supported yet.', 'reactwoo-geocore' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		if ( ! class_exists( 'RWGC_Assistant_Target_Service', false ) ) {
+			return new WP_Error( 'rwgc_service_missing', __( 'Target service unavailable.', 'reactwoo-geocore' ), array( 'status' => 500 ) );
+		}
+
+		$result = RWGC_Assistant_Target_Service::search_popups( (string) $request->get_param( 'q' ) );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		return rest_ensure_response( $result );
+	}
+
+	/**
+	 * POST create a target (Elementor popup draft) from the assistant.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public static function post_targets_create( $request ) {
+		$type = (string) $request->get_param( 'target_type' );
+		if ( 'popup' !== $type ) {
+			return new WP_Error(
+				'rwgc_unsupported_target_type',
+				__( 'This target type is not supported yet.', 'reactwoo-geocore' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		if ( ! class_exists( 'RWGC_Assistant_Target_Service', false ) ) {
+			return new WP_Error( 'rwgc_service_missing', __( 'Target service unavailable.', 'reactwoo-geocore' ), array( 'status' => 500 ) );
+		}
+
+		$result = RWGC_Assistant_Target_Service::create_popup(
+			(string) $request->get_param( 'title' ),
+			(string) $request->get_param( 'status' )
+		);
+		if ( is_wp_error( $result ) ) {
+			return $result;
 		}
 
 		return rest_ensure_response( $result );

@@ -24,12 +24,16 @@
 
 ---
 
-## Geo suite — do not retry (family-wide)
+### Geo Assistant popup resolver — local PHPUnit on Windows agent
 
-- Duplicating MaxMind / visitor detection in a satellite plugin.
-- City-based **page routing** inside Geo Core (`RWGC_Routing` is country-level).
-- CSV or free-text country lists in admin UI (use prepopulated selects).
-- Stacking defensive fallbacks instead of fixing root cause in the evaluator or hook contract.
-- Patching symptoms in the wrong repo (e.g. Commerce pricing bug fixed only in Core without adapter trace).
+**Symptoms:** `composer test` / `vendor/bin/phpunit` fails with `Class "PHPUnit\TextUI\Command" not found` or bash fork errors on some Windows Local Sites shells.
 
-<!-- Add plugin-specific issues below -->
+**Tried:** Direct `php vendor/bin/phpunit` — same fatal.
+
+**Likely causes:** Incomplete `vendor/` install or PHP/bash fork instability in Cursor agent shell.
+
+**Do not retry:** Assuming tests passed without running on a machine with working `composer install`.
+
+---
+
+<!-- Add real issues below -->

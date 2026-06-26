@@ -625,8 +625,8 @@
 			refresh_audiences: i18n.cardRefresh || 'Refresh synced',
 			choose_target: i18n.cardChooseTarget || 'Choose page/category',
 			search_targets: i18n.cardSearchTargets || 'Search',
-			choose_popup: i18n.cardChoosePopup || 'Choose popup',
-			search_popups: i18n.cardSearchPopups || 'Search popups',
+			resolve_popup: i18n.resolvePopup || 'Resolve popup',
+			choose_popup: i18n.resolvePopup || 'Resolve popup',
 			remove_action: i18n.cardRemoveAction || 'Remove action',
 		};
 		var map = {
@@ -638,8 +638,8 @@
 			choose_audience: 'choose_manual',
 			choose_target: 'toggle_picker',
 			search_targets: 'toggle_picker',
+			resolve_popup: 'open_resolver',
 			choose_popup: 'open_resolver',
-			search_popups: 'toggle_picker',
 			remove_action: 'remove_action',
 		};
 		return $( '<button>', {
@@ -751,8 +751,8 @@
 			$b.append( $acts );
 		}
 
-		if ( 'target' === opts.field ) {
-			$b.append( targetPicker( idx, opts.value, opts.suggestions, !!opts.isPopup ) );
+		if ( 'target' === opts.field && ! opts.isPopup ) {
+			$b.append( targetPicker( idx, opts.value, opts.suggestions, false ) );
 		}
 
 		return $b;
@@ -963,65 +963,429 @@
 
 	var RESOLVER_FIELD_ORDER = [ 'target', 'location', 'campaign', 'audience', 'traffic_source' ];
 
-	function popupTargetResolverOptions( card, raw ) {
-		var options = [];
-		var contextPopup = $( '#rwgc-targeting-assistant' ).data( 'context-popup' );
-		if ( contextPopup && contextPopup.id ) {
-			options.push( {
-				key: 'popup:' + contextPopup.id + ':' + contextPopup.title,
-				label: ( i18n.useCurrentPopup || 'Use current popup' ) + ' — ' + contextPopup.title,
-				recommended: true,
-			} );
+	function popupDetectedLabel( raw ) {
+		var s = String( raw || '' ).trim();
+		if ( ! s ) {
+			return i18n.popupTargetDefault || 'Popup';
 		}
-		( cfg.popups || [] ).forEach( function ( p ) {
-			options.push( {
-				key: 'popup:' + p.id + ':' + p.title,
-				label: p.title,
-			} );
-		} );
-		if ( card && card.target && card.target.suggestions && card.target.suggestions.length ) {
-			card.target.suggestions.forEach( function ( s ) {
-				var sugKey = 'popup:' + ( s.id || '' ) + ':' + s.name;
-				if ( ! options.some( function ( opt ) { return opt.key === sugKey; } ) ) {
-					options.push( { key: sugKey, label: s.name } );
-				}
-			} );
+		if ( ! /\bpopup$/i.test( s ) ) {
+			s = s + ' popup';
 		}
-		options.push( {
-			key: 'search_popups',
-			label: i18n.cardSearchPopups || 'Search popups',
-		} );
-		options.push( {
-			key: 'remove_action',
-			label: i18n.cardRemoveAction || 'Remove action',
-		} );
-		return options;
+		return s;
 	}
 
-	function openPopupTargetResolver( idx, raw ) {
+	function popupCreateName( raw ) {
+		var s = String( raw || '' ).trim();
+		s = s.replace( /\s+popup$/i, '' ).trim();
+		return s || String( raw || '' ).trim() || 'New popup';
+	}
+
+	function rwgcModalButton( text, variant, action, extra ) {
+		var attrs = {
+			type: 'button',
+			class: 'rwgc-button rwgc-button--' + ( variant || 'secondary' ),
+			text: text,
+			'data-popup-action': action,
+		};
+		if ( extra ) {
+			Object.keys( extra ).forEach( function ( key ) {
+				attrs[ key ] = extra[ key ];
+			} );
+		}
+		return $( '<button>', attrs );
+	}
+
+	function rwgcModalFooter( buttons, includeCancel ) {
+		var $footer = $( '<div>', { class: 'rwgc-modal-footer' } );
+		var $actions = $( '<div>', { class: 'rwgc-modal-actions' } );
+		( buttons || [] ).forEach( function ( $btn ) {
+			$actions.append( $btn );
+		} );
+		$footer.append( $actions );
+		if ( includeCancel !== false ) {
+			$footer.append( rwgcModalButton( i18n.cancel || 'Cancel', 'ghost', 'cancel' ) );
+		}
+		return $footer;
+	}
+
+	function fallbackPopupSearch( q ) {
+		var ql = String( q || '' ).toLowerCase();
+		return ( cfg.popups || [] ).filter( function ( p ) {
+			if ( ! ql ) {
+				return true;
+			}
+			return String( p.title || '' ).toLowerCase().indexOf( ql ) >= 0;
+		} ).map( function ( p ) {
+			return {
+				id: p.id,
+				label: p.title,
+				status: 'publish',
+				status_label: i18n.statusValid || 'Published',
+			};
+		} );
+	}
+
+	function fetchPopupSearch( q ) {
+		var base = cfg.targetSearchUrl || '';
+		if ( ! base ) {
+			return $.Deferred().resolve( fallbackPopupSearch( q ) ).promise();
+		}
+		var url = base + ( base.indexOf( '?' ) >= 0 ? '&' : '?' ) + 'target_type=popup&q=' + encodeURIComponent( q || '' );
+		return $.ajax( {
+			url: url,
+			method: 'GET',
+			beforeSend: function ( xhr ) {
+				xhr.setRequestHeader( 'X-WP-Nonce', cfg.restNonce || '' );
+			},
+		} ).then( function ( resp ) {
+			return ( resp && resp.results ) ? resp.results : [];
+		}, function () {
+			return fallbackPopupSearch( q );
+		} );
+	}
+
+	function schedulePopupSearch( q ) {
+		if ( state.popupSearchTimer ) {
+			clearTimeout( state.popupSearchTimer );
+		}
+		if ( ! state.popupResolver ) {
+			return;
+		}
+		state.popupResolver.searchLoading = true;
+		state.popupResolver.searchQuery = q;
+		renderPopupResolverChoosePanel();
+		state.popupSearchTimer = setTimeout( function () {
+			state.popupSearchTimer = null;
+			fetchPopupSearch( q ).done( function ( results ) {
+				if ( ! state.popupResolver || state.popupResolver.view !== 'choose' ) {
+					return;
+				}
+				state.popupResolver.searchResults = results || [];
+				state.popupResolver.searchLoading = false;
+				renderPopupResolverChoosePanel();
+			} );
+		}, 320 );
+	}
+
+	function applyPopupTargetResolution( idx, raw, target ) {
+		state.cardResolutions[ fieldKey( idx, 'target', raw ) ] = {
+			kind: 'chosen',
+			id: String( target.id || '' ),
+			label: target.label || '',
+			created_by_assistant: !! target.created_by_assistant,
+		};
+		recordConditionLearning( idx, 'target', raw, state.cardResolutions[ fieldKey( idx, 'target', raw ) ] );
+		closeResolutionDrawer();
+		rerenderCards();
+	}
+
+	function removePopupAction( idx ) {
+		state.cardResolutions[ 'removed_' + cardKey( idx ) ] = true;
+		closeResolutionDrawer();
+		rerenderCards();
+	}
+
+	function renderPopupResolverStart( $panel, pr ) {
+		var detected = popupDetectedLabel( pr.raw );
+		var exactName = popupCreateName( pr.raw );
+		$panel.append( $( '<h3>', { class: 'rwgc-resolution-drawer__title' } ).text( i18n.resolvePopupTarget || 'Resolve popup target' ) );
+		$panel.append( $( '<p>', { class: 'rwgc-popup-resolver__meta' } ).append(
+			$( '<strong>' ).text( ( i18n.drawerDetected || 'Detected' ) + ':' ),
+			' ',
+			$( '<span>' ).text( detected )
+		) );
+		var expl = ( i18n.popupTargetStartExplanation || 'I could not find an exact popup called "%s". You can create it now, choose an existing popup, or remove this action.' )
+			.replace( '%s', exactName );
+		$panel.append( $( '<p>', { class: 'rwgc-popup-resolver__explanation' } ).text( expl ) );
+
+		var $choices = $( '<div>', { class: 'rwgc-modal-actions rwgc-popup-resolver__choices' } );
+		$choices.append( rwgcModalButton( i18n.popupCreateNew || 'Create new popup', 'primary', 'goto_create' ) );
+		$choices.append( rwgcModalButton( i18n.popupChooseExisting || 'Choose existing popup', 'secondary', 'goto_choose' ) );
+		$choices.append( rwgcModalButton( i18n.cardRemoveAction || 'Remove action', 'danger', 'goto_confirm_remove' ) );
+		$panel.append( $choices );
+		$panel.append( rwgcModalFooter( [], true ) );
+	}
+
+	function renderPopupResolverCreate( $panel, pr ) {
+		$panel.append( $( '<h3>', { class: 'rwgc-resolution-drawer__title' } ).text( i18n.popupCreateTitle || 'Create popup' ) );
+
+		var $nameRow = $( '<label>', { class: 'rwgc-popup-resolver__field' } );
+		$nameRow.append( $( '<span>', { class: 'rwgc-popup-resolver__field-label' } ).text( i18n.popupNameLabel || 'Name' ) );
+		$nameRow.append( $( '<input>', {
+			type: 'text',
+			class: 'rwgc-popup-resolver__input',
+			value: pr.createName || '',
+			'data-popup-field': 'create_name',
+		} ) );
+		$panel.append( $nameRow );
+
+		var $statusRow = $( '<label>', { class: 'rwgc-popup-resolver__field' } );
+		$statusRow.append( $( '<span>', { class: 'rwgc-popup-resolver__field-label' } ).text( i18n.popupStatusLabel || 'Status' ) );
+		$statusRow.append( $( '<select>', { class: 'rwgc-popup-resolver__input', 'data-popup-field': 'create_status' } ).append(
+			$( '<option>', { value: 'draft', text: i18n.popupStatusDraft || 'Draft', selected: ( pr.createStatus || 'draft' ) === 'draft' } )
+		) );
+		$panel.append( $statusRow );
+
+		var attachLabel = ( i18n.popupAttachAction || 'Use this popup as the target for Action %d' ).replace( '%d', String( pr.card + 1 ) );
+		var $attach = $( '<label>', { class: 'rwgc-popup-resolver__checkbox' } );
+		$attach.append( $( '<input>', {
+			type: 'checkbox',
+			checked: pr.attachToAction !== false,
+			'data-popup-field': 'attach_action',
+		} ) );
+		$attach.append( $( '<span>' ).text( attachLabel ) );
+		$panel.append( $attach );
+
+		var createBtn = rwgcModalButton(
+			i18n.popupCreateButton || 'Create popup',
+			'primary',
+			'submit_create',
+			{ disabled: pr.createLoading ? 'disabled' : null }
+		);
+		$panel.append( rwgcModalFooter( [
+			createBtn,
+			rwgcModalButton( i18n.popupBack || 'Back', 'secondary', 'goto_start' ),
+		], true ) );
+	}
+
+	function renderPopupResolverChoosePanel() {
+		var $panel = $( '#rwgc-resolution-drawer .rwgc-popup-resolver__choose-body' );
+		if ( ! $panel.length || ! state.popupResolver ) {
+			return;
+		}
+		var pr = state.popupResolver;
+		$panel.empty();
+
+		var $search = $( '<input>', {
+			type: 'search',
+			class: 'rwgc-popup-resolver__input rwgc-popup-search-input',
+			placeholder: i18n.popupSearchPlaceholder || 'Search popups…',
+			value: pr.searchQuery || '',
+		} );
+		$panel.append( $( '<div>', { class: 'rwgc-popup-resolver__search' } ).append( $search ) );
+
+		if ( pr.searchLoading ) {
+			$panel.append( $( '<p>', { class: 'rwgc-popup-resolver__loading' } ).text( i18n.popupSearchLoading || 'Searching popups…' ) );
+			return;
+		}
+
+		var results = pr.searchResults || [];
+		if ( ! results.length ) {
+			var $empty = $( '<div>', { class: 'rwgc-popup-resolver__empty' } );
+			$empty.append( $( '<p>' ).text( i18n.popupSearchEmpty || 'No matching popups found.' ) );
+			$empty.append( rwgcModalButton(
+				( i18n.popupCreateFromEmpty || 'Create new popup: %s' ).replace( '%s', popupCreateName( pr.raw ) ),
+				'secondary',
+				'goto_create'
+			) );
+			$panel.append( $empty );
+			return;
+		}
+
+		var $list = $( '<div>', { class: 'rwgc-popup-resolver__list', role: 'radiogroup' } );
+		results.forEach( function ( row ) {
+			var id = String( row.id || '' );
+			var $item = $( '<label>', { class: 'rwgc-popup-resolver__row' + ( pr.selectedPopupId === id ? ' is-selected' : '' ) } );
+			$item.append( $( '<input>', {
+				type: 'radio',
+				name: 'rwgc-popup-choice',
+				value: id,
+				checked: pr.selectedPopupId === id,
+			} ) );
+			var $meta = $( '<span>', { class: 'rwgc-popup-resolver__row-body' } );
+			$meta.append( $( '<span>', { class: 'rwgc-popup-resolver__row-title' } ).text( row.label || '' ) );
+			var statusBits = [ row.status_label || row.status || '' ];
+			if ( row.modified ) {
+				statusBits.push( row.modified );
+			}
+			$meta.append( $( '<span>', { class: 'rwgc-popup-resolver__row-meta' } ).text( statusBits.filter( Boolean ).join( ' · ' ) ) );
+			$item.append( $meta );
+			$list.append( $item );
+		} );
+		$panel.append( $list );
+	}
+
+	function renderPopupResolverChoose( $panel, pr ) {
+		$panel.append( $( '<h3>', { class: 'rwgc-resolution-drawer__title' } ).text( i18n.popupChooseTitle || 'Choose existing popup' ) );
+		$panel.append( $( '<div>', { class: 'rwgc-popup-resolver__choose-body' } ) );
+		renderPopupResolverChoosePanel();
+
+		var useBtn = rwgcModalButton(
+			i18n.popupUseSelected || 'Use selected popup',
+			'primary',
+			'submit_choose',
+			{ disabled: pr.selectedPopupId ? null : 'disabled' }
+		);
+		$panel.append( rwgcModalFooter( [
+			useBtn,
+			rwgcModalButton( i18n.popupBack || 'Back', 'secondary', 'goto_start' ),
+		], true ) );
+	}
+
+	function renderPopupResolverConfirmRemove( $panel, pr ) {
+		$panel.append( $( '<h3>', { class: 'rwgc-resolution-drawer__title' } ).text( i18n.popupRemoveConfirmTitle || 'Remove action?' ) );
+		var body = ( i18n.popupRemoveConfirmBody || 'This will remove the rule setup for %s.' )
+			.replace( '%s', popupDetectedLabel( pr.raw ) );
+		$panel.append( $( '<p>', { class: 'rwgc-popup-resolver__explanation' } ).text( body ) );
+		$panel.append( rwgcModalFooter( [
+			rwgcModalButton( i18n.cardRemoveAction || 'Remove action', 'danger', 'confirm_remove' ),
+			rwgcModalButton( i18n.popupBack || 'Back', 'secondary', 'goto_start' ),
+		], true ) );
+	}
+
+	function renderPopupResolver() {
+		var pr = state.popupResolver;
+		if ( ! pr ) {
+			return;
+		}
+		var $drawer = ensureResolutionDrawer();
+		var $panel = $drawer.find( '.rwgc-resolution-drawer__panel' );
+		$panel.empty().addClass( 'rwgc-popup-resolver' );
+		state.resolutionDrawer = null;
+
+		if ( pr.view === 'create' ) {
+			renderPopupResolverCreate( $panel, pr );
+		} else if ( pr.view === 'choose' ) {
+			renderPopupResolverChoose( $panel, pr );
+		} else if ( pr.view === 'confirm_remove' ) {
+			renderPopupResolverConfirmRemove( $panel, pr );
+		} else {
+			renderPopupResolverStart( $panel, pr );
+		}
+
+		$drawer.removeClass( 'rwgc-is-hidden' ).attr( 'aria-hidden', 'false' );
+	}
+
+	function submitCreatePopup() {
+		var pr = state.popupResolver;
+		if ( ! pr || pr.createLoading ) {
+			return;
+		}
+		var name = String( pr.createName || '' ).trim();
+		if ( ! name ) {
+			return;
+		}
+		if ( ! cfg.targetCreateUrl ) {
+			window.alert( i18n.popupCreateFailed || 'Could not create the popup.' );
+			return;
+		}
+		pr.createLoading = true;
+		renderPopupResolver();
+
+		$.ajax( {
+			url: cfg.targetCreateUrl,
+			method: 'POST',
+			contentType: 'application/json',
+			beforeSend: function ( xhr ) {
+				xhr.setRequestHeader( 'X-WP-Nonce', cfg.restNonce || '' );
+			},
+			data: JSON.stringify( {
+				target_type: 'popup',
+				title: name,
+				status: pr.createStatus || 'draft',
+				proposal_id: state.proposal && state.proposal.id ? String( state.proposal.id ) : '',
+				action_id: 'action_' + ( pr.card + 1 ),
+			} ),
+		} ).done( function ( resp ) {
+			if ( ! resp || ! resp.success || ! resp.target ) {
+				pr.createLoading = false;
+				window.alert( i18n.popupCreateFailed || 'Could not create the popup.' );
+				renderPopupResolver();
+				return;
+			}
+			if ( pr.attachToAction !== false ) {
+				applyPopupTargetResolution( pr.card, pr.raw, resp.target );
+			} else {
+				closeResolutionDrawer();
+				rerenderCards();
+			}
+		} ).fail( function () {
+			pr.createLoading = false;
+			window.alert( i18n.popupCreateFailed || 'Could not create the popup.' );
+			renderPopupResolver();
+		} );
+	}
+
+	function submitChoosePopup() {
+		var pr = state.popupResolver;
+		if ( ! pr || ! pr.selectedPopupId ) {
+			return;
+		}
+		var chosen = null;
+		( pr.searchResults || [] ).forEach( function ( row ) {
+			if ( String( row.id ) === String( pr.selectedPopupId ) ) {
+				chosen = row;
+			}
+		} );
+		if ( ! chosen ) {
+			return;
+		}
+		applyPopupTargetResolution( pr.card, pr.raw, {
+			id: chosen.id,
+			label: chosen.label,
+			created_by_assistant: false,
+		} );
+	}
+
+	function handlePopupResolverAction( action ) {
+		var pr = state.popupResolver;
+		if ( ! pr ) {
+			return;
+		}
+		if ( 'cancel' === action ) {
+			closeResolutionDrawer();
+		} else if ( 'goto_start' === action ) {
+			pr.view = 'start';
+			renderPopupResolver();
+		} else if ( 'goto_create' === action ) {
+			pr.view = 'create';
+			pr.createName = pr.createName || popupCreateName( pr.raw );
+			pr.createStatus = pr.createStatus || 'draft';
+			renderPopupResolver();
+		} else if ( 'goto_choose' === action ) {
+			pr.view = 'choose';
+			pr.selectedPopupId = '';
+			pr.searchResults = [];
+			renderPopupResolver();
+			schedulePopupSearch( '' );
+		} else if ( 'goto_confirm_remove' === action ) {
+			pr.view = 'confirm_remove';
+			renderPopupResolver();
+		} else if ( 'submit_create' === action ) {
+			submitCreatePopup();
+		} else if ( 'submit_choose' === action ) {
+			submitChoosePopup();
+		} else if ( 'confirm_remove' === action ) {
+			removePopupAction( pr.card );
+		}
+	}
+
+	function openPopupTargetResolver( idx, raw, initialView ) {
 		var card = ( state.proposal && state.proposal.action_cards ) ? state.proposal.action_cards[ idx ] : null;
 		if ( ! card ) {
 			return;
 		}
-		var options = popupTargetResolverOptions( card, raw );
-		var recommended = null;
-		options.forEach( function ( opt ) {
-			if ( opt.recommended ) {
-				recommended = opt;
-			}
-		} );
-		openResolutionDrawer( {
-			title: i18n.resolvePopupTarget || 'Resolve popup target',
-			detected: raw || ( card.target && card.target.raw ) || '',
-			why: i18n.popupTargetHint || 'This looks like a popup target. Choose the matching popup before creating the rule.',
-			recommendedLabel: recommended ? recommended.label : '',
-			recommendedKey: recommended ? recommended.key : '',
-			options: options,
-			applyLabel: i18n.cardChoosePopup || 'Choose popup',
+		var detected = raw || ( card.target && card.target.raw ) || ( card.target && card.target.label ) || '';
+		state.popupResolver = {
+			mode: 'popup',
+			view: initialView || 'start',
 			card: idx,
-			field: 'target',
-			raw: raw,
-		} );
+			raw: detected,
+			selectedPopupId: '',
+			searchQuery: '',
+			searchResults: [],
+			searchLoading: false,
+			createName: popupCreateName( detected ),
+			createStatus: 'draft',
+			attachToAction: true,
+			createLoading: false,
+		};
+		if ( state.popupResolver.view === 'choose' ) {
+			renderPopupResolver();
+			schedulePopupSearch( '' );
+			return;
+		}
+		renderPopupResolver();
 	}
 
 	function openFirstUnresolvedDrawer() {
@@ -1081,7 +1445,13 @@
 
 	function closeResolutionDrawer() {
 		$( '#rwgc-resolution-drawer' ).addClass( 'rwgc-is-hidden' ).attr( 'aria-hidden', 'true' );
+		$( '#rwgc-resolution-drawer .rwgc-resolution-drawer__panel' ).removeClass( 'rwgc-popup-resolver' );
 		state.resolutionDrawer = null;
+		state.popupResolver = null;
+		if ( state.popupSearchTimer ) {
+			clearTimeout( state.popupSearchTimer );
+			state.popupSearchTimer = null;
+		}
 	}
 
 	function openResolutionDrawer( opts ) {
@@ -1154,24 +1524,6 @@
 		}
 		if ( drawer.selected === 'remove_action' ) {
 			state.cardResolutions[ 'removed_' + cardKey( drawer.card ) ] = true;
-			closeResolutionDrawer();
-			rerenderCards();
-			return;
-		}
-		if ( drawer.selected === 'search_popups' ) {
-			closeResolutionDrawer();
-			$( '.rwgc-geo-card__picker[data-picker-card="' + drawer.card + '"]' ).removeClass( 'rwgc-is-hidden' );
-			jumpToCard( drawer.card );
-			return;
-		}
-		if ( drawer.field === 'target' && String( drawer.selected ).indexOf( 'popup:' ) === 0 ) {
-			var parts = String( drawer.selected ).split( ':' );
-			state.cardResolutions[ fieldKey( drawer.card, drawer.field, drawer.raw ) ] = {
-				kind: 'chosen',
-				id: parts[ 1 ] || '',
-				label: parts.slice( 2 ).join( ':' ) || parts[ 1 ] || '',
-			};
-			recordConditionLearning( drawer.card, drawer.field, drawer.raw, state.cardResolutions[ fieldKey( drawer.card, drawer.field, drawer.raw ) ] );
 			closeResolutionDrawer();
 			rerenderCards();
 			return;
@@ -1398,9 +1750,11 @@
 				return r.field === 'target';
 			} );
 			var targetActions = targetReq && targetReq.actions && targetReq.actions.length
-				? targetReq.actions
+				? targetReq.actions.filter( function ( act ) {
+					return act !== 'search_popups';
+				} )
 				: ( t.type === 'popup'
-					? [ 'choose_popup', 'search_popups', 'remove_action' ]
+					? [ 'resolve_popup', 'remove_action' ]
 					: [ 'choose_target', 'search_targets', 'remove_action' ] );
 			$card.append( fieldBlock( idx, {
 				field: 'target',
@@ -2003,6 +2357,11 @@
 			delete state.cardResolutions[ fieldKey( idx, field, raw ) ];
 			rerenderCards();
 		} else if ( 'remove_action' === action ) {
+			var card = ( state.proposal && state.proposal.action_cards ) ? state.proposal.action_cards[ idx ] : null;
+			if ( field === 'target' && card && card.target && card.target.type === 'popup' ) {
+				openPopupTargetResolver( idx, raw, 'confirm_remove' );
+				return;
+			}
 			state.cardResolutions[ 'removed_' + cardKey( idx ) ] = true;
 			rerenderCards();
 		} else if ( 'restore_action' === action ) {
@@ -3137,12 +3496,41 @@
 		} );
 
 		$( 'body' ).on( 'click', '#rwgc-resolution-drawer [data-drawer-action]', function () {
+			if ( state.popupResolver ) {
+				return;
+			}
 			var action = $( this ).data( 'drawer-action' );
 			if ( 'apply' === action ) {
 				applyResolutionDrawer();
 			} else if ( 'cancel' === action ) {
 				closeResolutionDrawer();
 			}
+		} ).on( 'click', '#rwgc-resolution-drawer [data-popup-action]', function () {
+			handlePopupResolverAction( String( $( this ).data( 'popup-action' ) || '' ) );
+		} ).on( 'input', '#rwgc-resolution-drawer .rwgc-popup-search-input', function () {
+			schedulePopupSearch( String( $( this ).val() || '' ) );
+		} ).on( 'change', '#rwgc-resolution-drawer [data-popup-field]', function () {
+			var pr = state.popupResolver;
+			if ( ! pr ) {
+				return;
+			}
+			var field = String( $( this ).data( 'popup-field' ) || '' );
+			if ( 'create_name' === field ) {
+				pr.createName = String( $( this ).val() || '' );
+			} else if ( 'create_status' === field ) {
+				pr.createStatus = String( $( this ).val() || 'draft' );
+			} else if ( 'attach_action' === field ) {
+				pr.attachToAction = $( this ).is( ':checked' );
+			}
+		} ).on( 'change', '#rwgc-resolution-drawer input[name="rwgc-popup-choice"]', function () {
+			var pr = state.popupResolver;
+			if ( ! pr ) {
+				return;
+			}
+			pr.selectedPopupId = String( $( this ).val() || '' );
+			$( '#rwgc-resolution-drawer .rwgc-popup-resolver__row' ).removeClass( 'is-selected' );
+			$( this ).closest( '.rwgc-popup-resolver__row' ).addClass( 'is-selected' );
+			$( '#rwgc-resolution-drawer [data-popup-action="submit_choose"]' ).prop( 'disabled', ! pr.selectedPopupId );
 		} ).on( 'click', '#rwgc-resolution-drawer [data-option-key]', function () {
 			var key = String( $( this ).data( 'option-key' ) || '' );
 			if ( ! state.resolutionDrawer ) {

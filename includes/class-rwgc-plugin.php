@@ -156,6 +156,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-page-version-routing.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-variant-rule-applications.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-context-resolver.php';
+		require_once RWGC_PATH . 'includes/targeting/class-rwgc-assistant-target-service.php';
 		require_once RWGC_PATH . 'includes/targeting/providers/class-rwgc-target-provider-geo.php';
 		require_once RWGC_PATH . 'includes/targeting/providers/class-rwgc-target-provider-language.php';
 		require_once RWGC_PATH . 'includes/targeting/providers/class-rwgc-target-provider-time.php';

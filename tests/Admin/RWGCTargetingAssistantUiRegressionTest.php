@@ -91,11 +91,11 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$js   = $this->assistant_js();
 		$card = $this->js_between( $js, 'renderCard', 'renderActionCards' );
 
-		$this->assertStringContainsString( 'choose_popup', $card );
-		$this->assertStringContainsString( 'search_popups', $card );
+		$this->assertStringContainsString( 'resolve_popup', $card );
 		$this->assertStringContainsString( 'popupTargetHint', $card );
 		$this->assertStringContainsString( 'remove_action', $card );
-		$this->assertStringContainsString( "choose_popup: 'open_resolver'", $card );
+		$this->assertStringContainsString( "resolve_popup: 'open_resolver'", $card );
+		$this->assertStringNotContainsString( 'search_popups', $card );
 	}
 
 	public function test_create_rule_resolver_journey_wiring(): void {
@@ -103,13 +103,41 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 
 		$this->assertStringContainsString( 'RESOLVER_FIELD_ORDER', $js );
 		$this->assertStringContainsString( 'openPopupTargetResolver', $js );
+		$this->assertStringContainsString( 'renderPopupResolverStart', $js );
+		$this->assertStringContainsString( 'renderPopupResolverChoose', $js );
+		$this->assertStringContainsString( 'renderPopupResolverCreate', $js );
+		$this->assertStringContainsString( 'renderPopupResolverConfirmRemove', $js );
 		$this->assertStringContainsString( 'recalculateClientActionState', $js );
 		$this->assertStringContainsString( 'openFirstUnresolvedDrawer', $js );
+		$this->assertStringContainsString( 'targetSearchUrl', $js );
+		$this->assertStringContainsString( 'targetCreateUrl', $js );
 
 		$drawer = $this->js_between( $js, 'openPopupTargetResolver', 'openFirstUnresolvedDrawer' );
-		$this->assertStringContainsString( 'resolvePopupTarget', $drawer );
-		$this->assertStringContainsString( 'search_popups', $drawer );
-		$this->assertStringContainsString( 'remove_action', $drawer );
+		$this->assertStringContainsString( 'popupCreateNew', $drawer );
+		$this->assertStringContainsString( 'popupChooseExisting', $drawer );
+		$this->assertStringContainsString( 'goto_confirm_remove', $drawer );
+		$this->assertStringNotContainsString( 'search_popups', $drawer );
+		$this->assertStringNotContainsString( 'popupTargetResolverOptions', $drawer );
+	}
+
+	public function test_popup_resolver_modal_button_styles(): void {
+		$css = $this->targeting_css();
+
+		$this->assertStringContainsString( '.rwgc-modal-actions', $css );
+		$this->assertStringContainsString( '.rwgc-modal-footer', $css );
+		$this->assertStringContainsString( '.rwgc-button--primary', $css );
+		$this->assertStringContainsString( '.rwgc-button--danger', $css );
+		$this->assertStringContainsString( '.rwgc-popup-resolver__row', $css );
+	}
+
+	public function test_popup_target_rest_routes_registered(): void {
+		$path = dirname( __DIR__, 2 ) . '/includes/class-rwgc-rest.php';
+		$this->assertFileExists( $path );
+		$rest = (string) file_get_contents( $path );
+		$this->assertStringContainsString( '/targets/search', $rest );
+		$this->assertStringContainsString( '/targets/create', $rest );
+		$this->assertStringContainsString( 'get_targets_search', $rest );
+		$this->assertStringContainsString( 'post_targets_create', $rest );
 	}
 
 }

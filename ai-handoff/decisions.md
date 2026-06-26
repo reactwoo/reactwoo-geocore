@@ -1,16 +1,15 @@
-# Decisions — ReactWoo Geo Core
+# Decisions
 
-> Architecture choices for this repo. See also `reactwoo-geocore/docs/geo-core-cursor-master-plan.md`.
+> Architecture and workflow choices that should survive beyond one chat thread.
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
-| — | Core owns visitor geo + routing contracts | Satellites must not fork detection |
-| — | City page routing stays in Geo Elementor | Core `RWGC_Routing` is country-level |
-| — | No CSV country inputs in admin UIs | Use prepopulated selects (§5.1) |
-| — | File handoff for ChatGPT ↔ Cursor | `ai-handoff/` replaces long debug threads |
+| 2026-06-26 | Popup target resolution uses multi-view modal in Geo Core JS + `reactwoo-geocore/v1/targets/*` REST | Keeps Elementor popup create/search server-side; avoids listing all popups as top-level resolver buttons |
+| 2026-06-26 | `ai-handoff/current-task.md` archived when task ships; `cursor-output.md` updated each pass | Planner reads output files, not full chat |
 
-## AI handoff defaults
+## ReactWoo defaults
 
-- **ChatGPT/Codex:** diagnose, spec, acceptance criteria, review `cursor-output.md`.
-- **Cursor:** patch, run smallest test, write `cursor-output.md`.
-- **Do not** grow satellite product UIs into Core — keep integration thin (hooks, REST, filters).
+- **ChatGPT/Codex:** diagnose, spec, acceptance criteria, review patches.
+- **Cursor:** apply patches, local edits, run smallest validation, write `cursor-output.md`.
+- **Repo markdown:** shared memory — not chat history.
+- **No duplicate fallbacks:** fix root cause; do not stack defensive workarounds.
