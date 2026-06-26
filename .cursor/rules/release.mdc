@@ -1,0 +1,31 @@
+---
+description: Fast, reliable Geo Core git release (commit, tag, single push)
+globs:
+  - "**/*"
+---
+
+# Geo Core release (agents)
+
+When shipping **reactwoo-geocore**, follow `docs/releases-and-git-tags.md` §2.
+
+## Required pattern
+
+1. `git commit` — standalone command.
+2. `git tag -a "vVERSION" -m "…"` — **standalone** command (never chained with push on Windows).
+3. `git push origin main "vVERSION"` — **one** push, not `push main` then `push tag`.
+
+Use SSH push on Windows (see `.cursor/rules/git-push-windows.mdc`):
+
+```bash
+GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=15" git push origin main "vVERSION"
+```
+
+## Do not
+
+- Chain `commit && tag && archive && push && push` in one line.
+- Run two pushes to origin unless the combined push failed and you are retrying only the missing ref.
+- Run local `git archive` before tag push unless the user needs a zip before CI (tag push runs `publish-update.yml`).
+
+## If push/tag fails with exit 139 or fork errors
+
+Retry **only** the failed step in a new shell command (e.g. tag alone, then `git push origin main "vVERSION"`).
