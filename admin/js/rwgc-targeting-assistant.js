@@ -338,7 +338,15 @@
 			bump( 'target', card.target.raw || card.target.label || '' );
 		}
 		( card.condition_rows || [] ).forEach( function ( row ) {
-			if ( ! row || row.is_note || row.status === 'valid' ) {
+			if ( ! row || row.is_note ) {
+				return;
+			}
+			if ( effectiveRowStatus( row, idx ) === 'valid' ) {
+				return;
+			}
+			var meta = conditionGroupResolution( row );
+			if ( meta.field ) {
+				bump( meta.field, meta.raw );
 				return;
 			}
 			if ( row.type === 'audience' ) {
@@ -457,6 +465,11 @@
 		var card = cards[ 0 ];
 		if ( isCardRemoved( 0 ) ) {
 			return labels;
+		}
+		var t = card.target || {};
+		var targetLabel = resolvedTargetLabel( card, 0 );
+		if ( targetLabel && ( ! requiresField( card, 'target' ) || fieldResolution( 0, 'target', t.raw || t.label || '' ) ) ) {
+			labels.push( targetLabel );
 		}
 		( card.condition_rows || [] ).forEach( function ( row ) {
 			if ( effectiveRowStatus( row, 0 ) !== 'valid' ) {
@@ -625,7 +638,7 @@
 			choose_audience: 'choose_manual',
 			choose_target: 'toggle_picker',
 			search_targets: 'toggle_picker',
-			choose_popup: 'toggle_picker',
+			choose_popup: 'open_resolver',
 			search_popups: 'toggle_picker',
 			remove_action: 'remove_action',
 		};
@@ -920,6 +933,10 @@
 		if ( ! card ) {
 			return;
 		}
+		if ( field === 'target' && card.target && card.target.type === 'popup' ) {
+			openPopupTargetResolver( idx, raw || card.target.raw || card.target.label || '' );
+			return;
+		}
 		var options = resolutionOptionsForField( card, field, raw );
 		var recommended = null;
 		options.forEach( function ( opt ) {
@@ -944,6 +961,69 @@
 		} );
 	}
 
+	var RESOLVER_FIELD_ORDER = [ 'target', 'location', 'campaign', 'audience', 'traffic_source' ];
+
+	function popupTargetResolverOptions( card, raw ) {
+		var options = [];
+		var contextPopup = $( '#rwgc-targeting-assistant' ).data( 'context-popup' );
+		if ( contextPopup && contextPopup.id ) {
+			options.push( {
+				key: 'popup:' + contextPopup.id + ':' + contextPopup.title,
+				label: ( i18n.useCurrentPopup || 'Use current popup' ) + ' — ' + contextPopup.title,
+				recommended: true,
+			} );
+		}
+		( cfg.popups || [] ).forEach( function ( p ) {
+			options.push( {
+				key: 'popup:' + p.id + ':' + p.title,
+				label: p.title,
+			} );
+		} );
+		if ( card && card.target && card.target.suggestions && card.target.suggestions.length ) {
+			card.target.suggestions.forEach( function ( s ) {
+				var sugKey = 'popup:' + ( s.id || '' ) + ':' + s.name;
+				if ( ! options.some( function ( opt ) { return opt.key === sugKey; } ) ) {
+					options.push( { key: sugKey, label: s.name } );
+				}
+			} );
+		}
+		options.push( {
+			key: 'search_popups',
+			label: i18n.cardSearchPopups || 'Search popups',
+		} );
+		options.push( {
+			key: 'remove_action',
+			label: i18n.cardRemoveAction || 'Remove action',
+		} );
+		return options;
+	}
+
+	function openPopupTargetResolver( idx, raw ) {
+		var card = ( state.proposal && state.proposal.action_cards ) ? state.proposal.action_cards[ idx ] : null;
+		if ( ! card ) {
+			return;
+		}
+		var options = popupTargetResolverOptions( card, raw );
+		var recommended = null;
+		options.forEach( function ( opt ) {
+			if ( opt.recommended ) {
+				recommended = opt;
+			}
+		} );
+		openResolutionDrawer( {
+			title: i18n.resolvePopupTarget || 'Resolve popup target',
+			detected: raw || ( card.target && card.target.raw ) || '',
+			why: i18n.popupTargetHint || 'This looks like a popup target. Choose the matching popup before creating the rule.',
+			recommendedLabel: recommended ? recommended.label : '',
+			recommendedKey: recommended ? recommended.key : '',
+			options: options,
+			applyLabel: i18n.cardChoosePopup || 'Choose popup',
+			card: idx,
+			field: 'target',
+			raw: raw,
+		} );
+	}
+
 	function openFirstUnresolvedDrawer() {
 		var proposal = state.proposal;
 		if ( ! proposal || ! proposal.action_cards ) {
@@ -956,13 +1036,26 @@
 			}
 			var card = cards[ i ];
 			var reqs = ( card && card.requiredResolutions ) || [];
-			for ( var r = 0; r < reqs.length; r++ ) {
-				var req = reqs[ r ];
-				if ( fieldResolution( i, req.field, req.raw ) ) {
-					continue;
-				}
-				if ( req.field === 'traffic_source' ) {
+			for ( var o = 0; o < RESOLVER_FIELD_ORDER.length; o++ ) {
+				var fieldOrder = RESOLVER_FIELD_ORDER[ o ];
+				for ( var r = 0; r < reqs.length; r++ ) {
+					var req = reqs[ r ];
+					if ( req.field !== fieldOrder || fieldResolution( i, req.field, req.raw ) ) {
+						continue;
+					}
 					jumpToCard( i );
+					if ( req.field === 'target' && card.target && card.target.type === 'popup' ) {
+						openPopupTargetResolver( i, req.raw );
+						return true;
+					}
+					if ( req.field === 'traffic_source' || ( req.options && req.options.length ) ) {
+						openResolverForField( i, req.field, req.raw );
+						return true;
+					}
+					if ( req.field === 'target' ) {
+						$( '.rwgc-geo-card__picker[data-picker-card="' + i + '"]' ).removeClass( 'rwgc-is-hidden' );
+						return true;
+					}
 					openResolverForField( i, req.field, req.raw );
 					return true;
 				}
@@ -1057,6 +1150,30 @@
 	function applyResolutionDrawer() {
 		var drawer = state.resolutionDrawer;
 		if ( ! drawer || ! drawer.selected ) {
+			return;
+		}
+		if ( drawer.selected === 'remove_action' ) {
+			state.cardResolutions[ 'removed_' + cardKey( drawer.card ) ] = true;
+			closeResolutionDrawer();
+			rerenderCards();
+			return;
+		}
+		if ( drawer.selected === 'search_popups' ) {
+			closeResolutionDrawer();
+			$( '.rwgc-geo-card__picker[data-picker-card="' + drawer.card + '"]' ).removeClass( 'rwgc-is-hidden' );
+			jumpToCard( drawer.card );
+			return;
+		}
+		if ( drawer.field === 'target' && String( drawer.selected ).indexOf( 'popup:' ) === 0 ) {
+			var parts = String( drawer.selected ).split( ':' );
+			state.cardResolutions[ fieldKey( drawer.card, drawer.field, drawer.raw ) ] = {
+				kind: 'chosen',
+				id: parts[ 1 ] || '',
+				label: parts.slice( 2 ).join( ':' ) || parts[ 1 ] || '',
+			};
+			recordConditionLearning( drawer.card, drawer.field, drawer.raw, state.cardResolutions[ fieldKey( drawer.card, drawer.field, drawer.raw ) ] );
+			closeResolutionDrawer();
+			rerenderCards();
 			return;
 		}
 		var opt = null;
@@ -1756,9 +1873,30 @@
 	}
 
 	function rerenderCards() {
+		recalculateClientActionState();
 		if ( state.proposal ) {
 			updateSetupPanel( state.proposal, setupStatusLabel( state.lastResponse, state.proposal ) );
 		}
+	}
+
+	function recalculateClientActionState() {
+		if ( ! state.proposal || ! state.proposal.action_cards ) {
+			return;
+		}
+		var remaining = remainingResolutions( state.proposal );
+		state.proposal.fields_needing_attention = remaining;
+		state.proposal.requires_resolution = remaining > 0;
+		state.proposal.can_execute = remaining === 0 && ! isInvalidCreateRuleSplit( state.proposal );
+		state.proposal.action_cards.forEach( function ( card, idx ) {
+			if ( isCardRemoved( idx ) ) {
+				card.status = 'removed';
+				card.can_execute = false;
+				return;
+			}
+			var cardRemaining = remainingForCard( idx, card, state.proposal );
+			card.status = cardRemaining > 0 ? 'needs_resolution' : 'ready';
+			card.can_execute = cardRemaining === 0;
+		} );
 	}
 
 	function collectCardResolutions() {
@@ -1932,11 +2070,11 @@
 			finalizeCardSetup();
 		} else if ( 'resolve_items' === action || 'review_items' === action ) {
 			jumpToActionReview();
+			if ( 'resolve_items' === action && openFirstUnresolvedDrawer() ) {
+				return;
+			}
 			var unresolved = firstUnresolvedCardIndex( state.proposal );
 			jumpToCard( unresolved >= 0 ? unresolved : 0 );
-			if ( 'resolve_items' === action && ! openFirstUnresolvedDrawer() ) {
-				// Target and other inline resolvers stay on the action card.
-			}
 		} else if ( 'ask_ai_recheck' === action ) {
 			askAiToCheck();
 		}
@@ -1977,27 +2115,9 @@
 	}
 
 	function finalizeCardSetup() {
-		// If the server already produced an executable proposal, run it directly.
-		if ( state.proposalId ) {
-			executeProposal();
-			return;
-		}
-		// Otherwise push the user's resolutions back through the interpreter so the
-		// chosen synced entities / locations are applied server-side, then execute.
-		var resolutions = cardResolutionsToFieldMap();
-		if ( cfg.confirmInterpretationUrl ) {
-			var payload = buildInterpretationPayload( resolutions );
-			payload.card_resolutions = collectCardResolutions();
-			apiPost( cfg.confirmInterpretationUrl, payload ).done( function ( response ) {
-				if ( response && response.success ) {
-					state.ambiguities = null;
-					state.aiInterpretation = null;
-					applyInterpretResponse( response );
-					if ( responseCanExecute( state.proposal ) && state.proposalId ) {
-						executeProposal();
-					}
-				}
-			} );
+		if ( ! responseCanExecute( state.proposal ) ) {
+			jumpToActionReview();
+			openFirstUnresolvedDrawer();
 			return;
 		}
 		executeProposal();
@@ -2607,16 +2727,23 @@
 	function executeProposal() {
 		if ( ! responseCanExecute( state.proposal ) ) {
 			jumpToActionReview();
-			jumpToCard( firstUnresolvedCardIndex( state.proposal ) );
+			openFirstUnresolvedDrawer();
 			return;
 		}
 		if ( ! state.proposalId || ! cfg.executeUrl ) {
 			goWorkflowFromProposal();
 			return;
 		}
+		var $rail = $( '#rwgc-targeting-rail' );
+		$rail.find( '.rwgc-geo-rail__cta .button-primary' ).prop( 'disabled', true ).addClass( 'is-busy' );
 		apiPost( cfg.executeUrl, { proposal_id: state.proposalId, resolutions: collectCardResolutions() } )
 			.done( function ( response ) {
-				recordLearningFeedback( 'executed' );
+				recordLearningFeedback( 'executed', {
+					correction: {
+						resolved_fields: collectCardResolutions(),
+						context: 'create_rule_journey',
+					},
+				} );
 				var result = response && response.result ? response.result : {};
 				// Legacy redirect path (Geo Core executor not available).
 				if ( result.redirect_steps && result.redirect_steps.length ) {
@@ -2638,30 +2765,40 @@
 						state.proposal.action_cards = data.action_cards;
 						state.proposal.fields_needing_attention = data.fields_needing_attention || 0;
 						state.proposal.requires_resolution = true;
+						state.proposal.can_execute = false;
 					}
 					state.cardResolutions = {};
 					var msg = ( jqxhr.responseJSON && jqxhr.responseJSON.message ) || i18n.cardResolveRemaining || 'Some fields still need resolving.';
+					if ( data.unresolved && data.unresolved.length ) {
+						msg = ( i18n.cardResolveRemaining || 'Some fields still need resolving.' ) + ' ' + data.unresolved.join( ', ' );
+					}
 					appendAssistant( esc( msg ) );
 					updateSetupPanel( state.proposal, i18n.statusNeedsResolution || 'Needs resolution' );
 					return;
 				}
 				goWorkflowFromProposal();
+			} )
+			.always( function () {
+				$rail.find( '.rwgc-geo-rail__cta .button-primary' ).prop( 'disabled', false ).removeClass( 'is-busy' );
 			} );
 	}
 
 	function renderExecutionSummary( result ) {
 		var $plan = $( '#rwgc-targeting-setup-plan' );
+		var $rail = $( '#rwgc-targeting-rail' );
 		$( '#rwgc-targeting-setup-empty' ).addClass( 'rwgc-is-hidden' );
 		$( '#rwgc-targeting-setup-hint' ).addClass( 'rwgc-is-hidden' );
 		$plan.removeClass( 'rwgc-is-hidden' ).empty();
 
+		var created = result.created_rules || [];
 		var $wrap = $( '<div>', { class: 'rwgc-geo-result' } );
+		$wrap.append( $( '<p>', { class: 'rwgc-geo-result__headline' } ).text( i18n.ruleCreated || 'Rule created.' ) );
 		$wrap.append( $( '<p>', { class: 'rwgc-geo-result__message' } ).text( result.message || '' ) );
 
-		( result.created_rules || [] ).forEach( function ( rule ) {
+		created.forEach( function ( rule ) {
 			var $row = $( '<div>', { class: 'rwgc-geo-result__row rwgc-geo-result__row--ok' } );
 			if ( rule.edit_url ) {
-				$row.append( $( '<a>', { href: rule.edit_url, target: '_blank', rel: 'noopener' } ).text( rule.title || ( 'Rule #' + rule.id ) ) );
+				$row.append( $( '<a>', { href: rule.edit_url, target: '_blank', rel: 'noopener', class: 'rwgc-geo-result__rule-link' } ).text( rule.title || ( 'Rule #' + rule.id ) ) );
 			} else {
 				$row.append( document.createTextNode( rule.title || ( 'Rule #' + rule.id ) ) );
 			}
@@ -2670,6 +2807,47 @@
 			} );
 			$wrap.append( $row );
 		} );
+
+		if ( created.length && state.proposal && state.proposal.action_cards && state.proposal.action_cards[ 0 ] ) {
+			var card = state.proposal.action_cards[ 0 ];
+			var createdLines = [];
+			( card.condition_rows || [] ).forEach( function ( row ) {
+				if ( row.is_note || ! row.label ) {
+					return;
+				}
+				if ( row.mode === 'exclude' ) {
+					createdLines.push( ( i18n.cardExclude || 'Exclude' ) + ' ' + row.label );
+				} else {
+					createdLines.push( row.label );
+				}
+			} );
+			if ( createdLines.length ) {
+				var $conds = $( '<ul>', { class: 'rwgc-geo-result__conditions' } );
+				createdLines.forEach( function ( line ) {
+					$conds.append( $( '<li>' ).text( line ) );
+				} );
+				$wrap.append( $( '<p>', { class: 'rwgc-geo-result__label' } ).text( i18n.createdConditions || 'Created conditions:' ) );
+				$wrap.append( $conds );
+			}
+		}
+
+		var $actions = $( '<div>', { class: 'rwgc-geo-result__actions' } );
+		if ( created[ 0 ] && created[ 0 ].edit_url ) {
+			$actions.append( $( '<a>', { href: created[ 0 ].edit_url, class: 'button button-primary', target: '_blank', rel: 'noopener' } ).text( i18n.viewRule || 'View rule' ) );
+		}
+		var targetRes = state.proposal && state.proposal.action_cards && state.proposal.action_cards[ 0 ]
+			? fieldResolution( 0, 'target', ( state.proposal.action_cards[ 0 ].target || {} ).raw || '' )
+			: null;
+		if ( targetRes && targetRes.id ) {
+			$actions.append( $( '<a>', {
+				href: 'post.php?post=' + encodeURIComponent( targetRes.id ) + '&action=edit',
+				class: 'button',
+				target: '_blank',
+				rel: 'noopener',
+			} ).text( i18n.openTarget || 'Open target' ) );
+		}
+		$actions.append( $( '<button>', { type: 'button', class: 'button', text: i18n.createAnotherRule || 'Create another rule', 'data-action': 'cancel' } ) );
+		$wrap.append( $actions );
 
 		( result.manual_steps || [] ).forEach( function ( step ) {
 			$wrap.append(
@@ -2693,8 +2871,25 @@
 		} );
 
 		$plan.append( $wrap );
+
+		if ( created.length ) {
+			$rail.empty();
+			$rail.append( $( '<h3>', { class: 'rwgc-geo-rail__title' } ).text( i18n.resolutionHub || 'Resolution Hub' ) );
+			$rail.append( $( '<p>', { class: 'rwgc-geo-rail__count is-ok' } ).text( '1 ' + ( i18n.actionCreated || 'action created' ) ) );
+			if ( created[ 0 ].edit_url ) {
+				$rail.append( $( '<p>', { class: 'rwgc-geo-rail__cta' } ).append(
+					$( '<a>', { href: created[ 0 ].edit_url, class: 'button button-primary', target: '_blank', rel: 'noopener' } ).text( i18n.viewRule || 'View rule' )
+				) );
+			}
+			$rail.removeClass( 'rwgc-is-hidden' );
+		}
+
 		$( '#rwgc-targeting-summary' ).removeClass( 'rwgc-is-hidden' );
-		appendAssistant( esc( result.message || i18n.setupConfirmed || 'Setup confirmed.' ) );
+		var chatHtml = '<p><strong>' + esc( i18n.ruleCreated || 'Rule created.' ) + '</strong></p>';
+		if ( created[ 0 ] ) {
+			chatHtml += '<p>' + esc( created[ 0 ].title || '' ) + '</p>';
+		}
+		appendAssistant( chatHtml );
 	}
 
 	function persistPortableAndGo( url ) {

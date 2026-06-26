@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.89
+Stable tag: 1.8.90
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.90 =
+* **Geo Assistant create-rule journey:** Resolution Hub CTA opens popup target then Google Ads resolvers in order; popup target drawer; client-side ready/execute state; Create rule posts card resolutions to Geo AI execute; post-create success links. Requires ReactWoo Geo AI 0.4.130+.
 
 = 1.8.89 =
 * **Geo Assistant Action Review polish:** Condition-group children render as a readable list with per-child status; Resolution Hub hides empty needs/ready lists when resolved; ready counts follow remaining unresolved fields; Create rule stays gated until the proposal is executable; popup target labels and sticky hub refinements. Adds structural UI regression tests.

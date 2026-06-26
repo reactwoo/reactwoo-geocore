@@ -95,6 +95,21 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$this->assertStringContainsString( 'search_popups', $card );
 		$this->assertStringContainsString( 'popupTargetHint', $card );
 		$this->assertStringContainsString( 'remove_action', $card );
+		$this->assertStringContainsString( "choose_popup: 'open_resolver'", $card );
+	}
+
+	public function test_create_rule_resolver_journey_wiring(): void {
+		$js = $this->assistant_js();
+
+		$this->assertStringContainsString( 'RESOLVER_FIELD_ORDER', $js );
+		$this->assertStringContainsString( 'openPopupTargetResolver', $js );
+		$this->assertStringContainsString( 'recalculateClientActionState', $js );
+		$this->assertStringContainsString( 'openFirstUnresolvedDrawer', $js );
+
+		$drawer = $this->js_between( $js, 'openPopupTargetResolver', 'openFirstUnresolvedDrawer' );
+		$this->assertStringContainsString( 'resolvePopupTarget', $drawer );
+		$this->assertStringContainsString( 'search_popups', $drawer );
+		$this->assertStringContainsString( 'remove_action', $drawer );
 	}
 
 }
