@@ -23,6 +23,8 @@
 | `docs/phases/phase-7.md` | Phase 7 (Geo Commerce) — WooCommerce pricing rules + geo merge in satellite plugin |
 | `docs/WEATHER-FACETS-MERCHANDISING-PLAN.md` | Shopping-weather facets, Woo/Elementor/Gutenberg widgets, phased rollout |
 | `docs/TARGETING-RULES-PLAN.md` | Portable JSON visibility rules (Elementor, blocks, library) |
+| `docs/ai-handoff-workflow.md` | **ChatGPT ↔ Cursor file bridge** (`ai-handoff/`, no API) |
+| `ai-handoff/` | Task packets: `current-task.md`, `cursor-output.md`, `test-output.md`, `known-issues.md` |
 
 **Master plan execution:** Geo Core phases **1–7** are **complete for engine/contracts** (see **§16**). **§17** records shipped satellite depth; **§18** is the rolling backlog. REST **`GET …/v1/capabilities`** includes **`satellites`** (`geo_ai`, `geo_optimise`, `geo_commerce`: `ready`, `version`) and **`integration.satellite_actions`** / **`satellite_filters`** (hook names for discovery).
 
@@ -76,3 +78,17 @@ Each declares **`Requires Plugins: reactwoo-geocore`** (same slug as Core’s `w
 ## Optional: role-specific focus
 
 If you want a **narrow prompt** for one area only, say so in chat (e.g. “engine only, no admin UI”). You do **not** need separate agent files or multiple prompts for normal work.
+
+## AI handoff (ChatGPT ↔ Cursor, no API)
+
+When debugging across tools, use **`ai-handoff/`** in this repo instead of long Cursor threads.
+
+1. Planner fills **`current-task.md`** (or export from ReactWoo Flow).
+2. Cursor reads **`current-task.md`** + **`known-issues.md`**, implements, writes **`cursor-output.md`**.
+3. You test locally → **`test-output.md`** → paste both back to the planner.
+
+- Workflow: **`docs/ai-handoff-workflow.md`**
+- Cursor rule: **`.cursor/rules/ai-handoff.mdc`**
+- Refresh all Geo family repos: `python reactwoo-flow/scripts/init-ai-handoff.py --family geo --force`
+
+**Geo Core task defaults:** do not duplicate satellite product logic here; keep engine/contracts thin. See **`decisions.md`** in `ai-handoff/`.

@@ -1,5 +1,7 @@
 *.zip
-.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 .phpunit.result.cache
 /vendor/phpunit/
 /vendor/bin/phpunit
