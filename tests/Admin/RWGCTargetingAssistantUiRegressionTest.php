@@ -281,4 +281,27 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$this->assertStringContainsString( '.rwgc-mapping-also-valid', $css );
 	}
 
+	public function test_execute_flow_syncs_resolutions_to_payload(): void {
+		$js = $this->assistant_js();
+
+		$this->assertStringContainsString( 'findFieldResolution', $js );
+		$this->assertStringContainsString( 'collectCardResolutions', $js );
+		$this->assertStringContainsString( 'applyResolutionsToProposalCards', $js );
+		$this->assertStringContainsString( 'unresolvedExecuteItems', $js );
+		$this->assertStringContainsString( 'showExecuteBlockedMessage', $js );
+		$this->assertStringContainsString( 'applyTrafficResolutionToCard', $js );
+
+		$collect = $this->js_between( $js, 'function collectCardResolutions', 'function recordConditionLearning' );
+		$this->assertStringContainsString( 'findFieldResolution', $collect );
+		$this->assertStringContainsString( 'cardResolutionEntries', $collect );
+
+		$finalize = $this->js_between( $js, 'function finalizeCardSetup', 'function updateSetupPanel' );
+		$this->assertStringContainsString( 'syncProposalPayload', $finalize );
+		$this->assertStringContainsString( 'unresolvedExecuteItems', $finalize );
+
+		$execute = $this->js_between( $js, 'function executeProposal', 'function renderExecutionSummary' );
+		$this->assertStringContainsString( 'unresolvedExecuteItems', $execute );
+		$this->assertStringContainsString( 'unresolved_details', $execute );
+	}
+
 }

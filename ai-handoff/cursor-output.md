@@ -6,33 +6,39 @@ done
 
 ## Summary
 
-Fixed three remaining Geo Assistant UX/state issues for the Free Delivery popup rule journey: popup auto-match, Action Review Create rule footer, and Resolution Hub ready label.
+Fixed Create rule executing against stale Google Ads mapping state. Resolver changes now sync into the canonical proposal payload, execute collects resolutions by field (not exact raw key only), and blocked create responses name the unresolved field explicitly.
+
+## Root cause
+
+Google Ads mapping was stored in `state.cardResolutions` under a `raw` key that did not always match `requiredResolutions[].raw`, while `collectCardResolutions()` only exported exact matches. UI readiness used `findFieldResolution`-style logic via `effectiveRowStatus`, so the hub/card looked ready but execute sent an incomplete `resolutions` array to `geo-ai/v1/interpret/execute`.
 
 ## Files changed
 
 | File | Why |
 |------|-----|
-| `admin/js/rwgc-targeting-assistant.js` | Pass popup registry in interpret context; client auto-match with suffix normalization; popup resolved UI (Set to / Change popup); Action Review footer with Edit rule + Create rule; setupStatusLabel shows Ready to create when resolved |
-| `admin/css/rwgc-targeting.css` | Footer left/right layout for action cards |
-| `includes/class-rwgc-admin.php` | Load popups via target service (pending + private filter); i18n cardChangePopup, statusReadyManual |
-| `includes/targeting/class-rwgc-assistant-target-service.php` | normalize_popup_label(); improved find_similar_popups(); private post filter in search |
-| `tests/Admin/RWGCTargetingAssistantUiRegressionTest.php` | Guards for auto-match helpers, footer buttons, ready status label |
-| `tests/Targeting/RWGCAssistantTargetServiceTest.php` | normalize_popup_label tests |
-| `reactwoo-geocore.php`, `readme.txt` | Version **1.8.96** |
+| `admin/js/rwgc-targeting-assistant.js` | `findFieldResolution`, proposal sync, expanded `collectCardResolutions`, execute preflight, named blocked-create UI |
+| `includes/class-rwgc-admin.php` | i18n for execute blocked messaging |
+| `tests/Admin/RWGCTargetingAssistantUiRegressionTest.php` | Structural guards for execute sync helpers |
+| `reactwoo-geocore.php`, `readme.txt` | Version **1.8.97** |
+| `reactwoo-geo-ai/.../class-rwga-planner-action-card-builder.php` | `unresolved_field_details()` |
+| `reactwoo-geo-ai/.../class-rwga-assistant-service.php` | Structured `unresolved_details` + `code: unresolved_fields` on reject |
+| `reactwoo-geo-ai/.../class-rwga-card-resolution-applier.php` | Force-clear traffic unresolved on mapping choose |
+| `reactwoo-geo-ai/tests/Services/RWGAAssistantExecuteValidationTest.php` | Assert structured unresolved details |
+| `reactwoo-geo-ai/reactwoo-geo-ai.php`, `readme.txt` | Version **0.4.131** |
 
 ## What was not changed
 
 - Geo AI parser / planner interpretation logic.
-- Popup create REST flow.
-- Google Ads mapping resolver logic (v1.8.95 behaviour preserved).
+- Popup create/select flow and popup auto-match.
+- Google Ads mapping drawer UI/cards.
 - Country / device / page-type parsing.
 
 ## Commands run
 
 - `node --check admin/js/rwgc-targeting-assistant.js` — pass
-- `composer test --filter RWGCTargetingAssistantUiRegressionTest|RWGCAssistantTargetServiceTest` — blocked (PHPUnit\TextUI\Command not found on Windows agent; see known-issues.md)
 
 ## Remaining
 
-- Manual Local browser pass per acceptance test (Free Delivery auto-match, ready footer, hub label).
-- Release: commit, tag v1.8.96, push, package zip when requested.
+- Manual Local pass: apply Standard Google Ads UTM → Create rule succeeds.
+- Install Geo Core **1.8.97** + Geo AI **0.4.131** together on Local.
+- Release both repos when requested.
