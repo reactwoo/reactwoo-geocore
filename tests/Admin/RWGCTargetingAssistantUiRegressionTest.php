@@ -187,10 +187,36 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$card = $this->js_between( $js, 'renderCard', 'renderActionCards' );
 
 		$this->assertStringContainsString( 'rwgc-action-card__footer', $card );
+		$this->assertStringContainsString( 'rwgc-action-card__footer-left', $card );
+		$this->assertStringContainsString( 'rwgc-action-card__footer-right', $card );
 		$this->assertStringContainsString( 'rwgc-link-button--danger', $card );
+		$this->assertStringContainsString( 'rwgc-button--primary', $card );
+		$this->assertStringContainsString( 'create_setup', $card );
+		$this->assertStringContainsString( 'review_items', $card );
 		$this->assertStringNotContainsString( 'rwgc-geo-card__row-actions', $card );
 		$this->assertStringContainsString( '.rwgc-action-card__footer', $css );
 		$this->assertStringContainsString( 'padding: 14px 20px 18px', $css );
+	}
+
+	public function test_popup_target_auto_match_helpers(): void {
+		$js = $this->assistant_js();
+
+		$this->assertStringContainsString( 'normalizePopupTargetLabel', $js );
+		$this->assertStringContainsString( 'autoMatchPopupTargets', $js );
+		$this->assertStringContainsString( 'findExactPopupMatch', $js );
+		$this->assertStringContainsString( 'popupTargetRegistry', $js );
+		$this->assertStringContainsString( "ctx.targets = { popups: popups }", $js );
+		$this->assertStringContainsString( 'cardChangePopup', $js );
+	}
+
+	public function test_setup_status_label_ready_when_resolved(): void {
+		$js = $this->assistant_js();
+		$fn = $this->js_between( $js, 'function setupStatusLabel', 'function locationOptionLabel' );
+
+		$this->assertStringContainsString( 'remainingResolutions', $fn );
+		$this->assertStringContainsString( 'responseCanExecute', $fn );
+		$this->assertStringContainsString( 'cardReady', $fn );
+		$this->assertStringNotContainsString( "return i18n.statusPending || 'Pending confirmation'", $fn );
 	}
 
 	public function test_popup_target_rest_routes_registered(): void {

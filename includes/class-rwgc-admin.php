@@ -504,7 +504,25 @@ class RWGC_Admin {
 		if ( false !== strpos( $hook, 'rwgc-targeting-hub' ) ) {
 			$pages     = class_exists( 'RWGC_Page_Version', false ) ? RWGC_Page_Version::get_page_choices( 80 ) : array();
 			$popups    = array();
-			if ( post_type_exists( 'elementor_library' ) ) {
+			if ( class_exists( 'RWGC_Assistant_Target_Service', false ) ) {
+				$popup_search = RWGC_Assistant_Target_Service::search_popups( '', 80 );
+				if ( ! is_wp_error( $popup_search ) && ! empty( $popup_search['results'] ) && is_array( $popup_search['results'] ) ) {
+					foreach ( $popup_search['results'] as $popup_row ) {
+						$popup_id = isset( $popup_row['id'] ) ? (int) $popup_row['id'] : 0;
+						if ( $popup_id <= 0 ) {
+							continue;
+						}
+						$popup_status = isset( $popup_row['status'] ) ? (string) $popup_row['status'] : '';
+						if ( 'private' === $popup_status && ! current_user_can( 'edit_post', $popup_id ) ) {
+							continue;
+						}
+						$popups[] = array(
+							'id'    => $popup_id,
+							'title' => (string) ( $popup_row['label'] ?? '' ),
+						);
+					}
+				}
+			} elseif ( post_type_exists( 'elementor_library' ) ) {
 				$popup_posts = get_posts(
 					array(
 						'post_type'      => 'elementor_library',
@@ -694,6 +712,7 @@ class RWGC_Admin {
 						'cardMatched'     => __( 'Matched', 'reactwoo-geocore' ),
 						'cardIgnored'     => __( 'Ignored', 'reactwoo-geocore' ),
 						'cardSetTo'       => __( 'Set to', 'reactwoo-geocore' ),
+						'cardChangePopup' => __( 'Change popup', 'reactwoo-geocore' ),
 						'cardUndo'        => __( 'Undo', 'reactwoo-geocore' ),
 						'cardSameAs'      => __( 'Same as', 'reactwoo-geocore' ),
 						'cardChooseCampaign' => __( 'Choose campaign', 'reactwoo-geocore' ),
@@ -729,6 +748,7 @@ class RWGC_Admin {
 						'allResolvedReady' => __( 'Everything is resolved — you can create the setup.', 'reactwoo-geocore' ),
 						'reviewInPanel'   => __( 'Review and resolve each action in the setup panel on the right.', 'reactwoo-geocore' ),
 						'statusPending'   => __( 'Pending confirmation', 'reactwoo-geocore' ),
+						'statusReadyManual' => __( 'Ready to create — manual confirmation required', 'reactwoo-geocore' ),
 						'statusNeedsConfirmation' => __( 'Needs confirmation', 'reactwoo-geocore' ),
 						'statusConfirmed' => __( 'Confirmed', 'reactwoo-geocore' ),
 						'statusNeedsResolution' => __( 'Needs resolution', 'reactwoo-geocore' ),

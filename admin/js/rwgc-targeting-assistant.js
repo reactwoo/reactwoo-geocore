@@ -119,10 +119,127 @@
 		if ( response && ( response.status === 'needs_confirmation' || response.status === 'needs_clarification' ) ) {
 			return i18n.statusNeedsConfirmation || 'Needs confirmation';
 		}
+		if ( proposal && proposal.action_cards && proposal.action_cards.length ) {
+			var remaining = remainingResolutions( proposal );
+			if ( remaining === 0 && responseCanExecute( proposal ) ) {
+				var cards = proposal.action_cards.filter( function ( c, i ) {
+					return ! isCardRemoved( i );
+				} );
+				var needsManual = cards.some( function ( c ) {
+					return c.confirmation_instruction && c.confirmation_instruction.requires_confirmation;
+				} );
+				if ( needsManual ) {
+					return i18n.statusReadyManual || 'Ready to create — manual confirmation required';
+				}
+				return i18n.cardReady || 'Ready to create';
+			}
+			if ( proposal.can_execute === false || remaining > 0 ) {
+				return i18n.statusNeedsConfirmation || 'Needs confirmation';
+			}
+			return i18n.cardReady || 'Ready to create';
+		}
 		if ( proposal && proposal.can_execute === false ) {
 			return i18n.statusNeedsConfirmation || 'Needs confirmation';
 		}
-		return i18n.statusPending || 'Pending confirmation';
+		return i18n.cardReady || 'Ready to create';
+	}
+
+	function normalizePopupTargetLabel( raw ) {
+		var s = String( raw || '' ).trim().toLowerCase().replace( /\s+/g, ' ' );
+		var suffixes = [ 'banner popup', 'geo popup', 'pop-up', 'popup', 'modal', 'banner' ];
+		suffixes.forEach( function ( suffix ) {
+			if ( s === suffix ) {
+				s = '';
+				return;
+			}
+			var withSpace = ' ' + suffix;
+			if ( s.slice( -withSpace.length ) === withSpace ) {
+				s = s.slice( 0, -withSpace.length ).trim();
+			}
+		} );
+		return s.replace( /\s+/g, ' ' ).trim();
+	}
+
+	function popupTargetRegistry() {
+		return ( cfg.popups || [] ).map( function ( popup ) {
+			var title = String( popup.title || popup.label || '' ).trim();
+			if ( ! title ) {
+				return null;
+			}
+			return {
+				id: String( popup.id || '' ),
+				name: title,
+				source: 'elementor',
+				aliases: [
+					title + ' popup',
+					title + ' pop-up',
+					title + ' modal',
+					title + ' banner popup',
+					title + ' geo popup',
+				],
+			};
+		} ).filter( Boolean );
+	}
+
+	function findExactPopupMatch( raw ) {
+		var norm = normalizePopupTargetLabel( raw );
+		if ( ! norm ) {
+			return null;
+		}
+		var matches = [];
+		( cfg.popups || [] ).forEach( function ( popup ) {
+			var title = String( popup.title || popup.label || '' ).trim();
+			if ( ! title ) {
+				return;
+			}
+			if ( normalizePopupTargetLabel( title ) === norm ) {
+				matches.push( popup );
+			}
+		} );
+		return matches.length === 1 ? matches[ 0 ] : null;
+	}
+
+	function applyPopupTargetMatch( card, idx, popup ) {
+		var raw = targetFieldRaw( card, idx );
+		var label = String( popup.title || popup.label || '' ).trim();
+		state.cardResolutions[ fieldKey( idx, 'target', raw ) ] = {
+			kind: 'chosen',
+			id: String( popup.id || '' ),
+			label: label,
+		};
+		if ( card.target ) {
+			card.target.status = 'matched';
+			card.target.resolved = {
+				id: String( popup.id || '' ),
+				name: label,
+			};
+		}
+	}
+
+	function autoMatchPopupTargets( proposal ) {
+		if ( ! proposal || ! proposal.action_cards ) {
+			return;
+		}
+		proposal.action_cards.forEach( function ( card, idx ) {
+			if ( isCardRemoved( idx ) ) {
+				return;
+			}
+			var t = card.target || {};
+			if ( t.type !== 'popup' ) {
+				return;
+			}
+			var raw = targetFieldRaw( card, idx );
+			if ( fieldResolution( idx, 'target', raw ) ) {
+				return;
+			}
+			if ( t.status === 'matched' && t.resolved && t.resolved.id ) {
+				return;
+			}
+			var match = findExactPopupMatch( t.raw || t.label || raw );
+			if ( match ) {
+				applyPopupTargetMatch( card, idx, match );
+			}
+		} );
 	}
 
 	function locationOptionLabel( value ) {
@@ -707,13 +824,50 @@
 		var $b = $( '<div>', { class: 'rwgc-geo-card__field' } );
 		$b.append( $( '<span>', { class: 'rwgc-geo-card__field-label' } ).text( opts.label ) );
 
+		var resolution = fieldResolution( idx, opts.field, opts.value );
+		var popupResolvedName = '';
+		if ( opts.isPopup ) {
+			if ( resolution && resolution.kind !== 'ignored' && resolution.label ) {
+				popupResolvedName = resolution.label;
+			} else if ( opts.resolved ) {
+				popupResolvedName = opts.resolved;
+			}
+		}
+
+		if ( popupResolvedName ) {
+			$b.append( $( '<span>', { class: 'rwgc-geo-card__field-value' } ).text( opts.value || popupResolvedName ) );
+			$b.append( $( '<span>', { class: 'rwgc-geo-card__field-ok' } ).text( ( i18n.cardSetTo || 'Set to' ) + ' ' + popupResolvedName ) );
+			var $popupActs = $( '<div>', { class: 'rwgc-geo-card__field-actions' } );
+			$popupActs.append( $( '<button>', {
+				type: 'button',
+				class: 'button rwgc-geo-card__act',
+				text: i18n.cardChangePopup || 'Change popup',
+				'data-card-action': 'open_resolver',
+				'data-card': idx,
+				'data-field': opts.field,
+				'data-raw': opts.value || '',
+			} ) );
+			if ( resolution ) {
+				$popupActs.append( $( '<button>', {
+					type: 'button',
+					class: 'button-link rwgc-geo-card__undo',
+					text: i18n.cardUndo || 'Undo',
+					'data-card-action': 'undo_field',
+					'data-card': idx,
+					'data-field': opts.field,
+					'data-raw': opts.value || '',
+				} ) );
+			}
+			$b.append( $popupActs );
+			return $b;
+		}
+
 		if ( opts.resolved ) {
 			$b.append( $( '<span>', { class: 'rwgc-geo-card__field-value' } ).text( opts.resolved ) );
 			$b.append( $( '<span>', { class: 'rwgc-geo-card__field-ok' } ).text( i18n.cardMatched || 'Matched' ) );
 			return $b;
 		}
 
-		var resolution = fieldResolution( idx, opts.field, opts.value );
 		if ( resolution ) {
 			$b.append( $( '<span>', { class: 'rwgc-geo-card__field-value' } ).text( opts.value || '—' ) );
 			var label = resolution.kind === 'ignored'
@@ -2697,15 +2851,37 @@
 			$card.append( $( '<p>', { class: 'rwgc-geo-card__warning' } ).text( w ) );
 		} );
 
-		$card.append( $( '<div>', { class: 'rwgc-action-card__footer' } ).append(
-			$( '<button>', {
+		var canCreate = remaining === 0
+			&& responseCanExecute( state.proposal )
+			&& ! waitingForSharedTarget( state.proposal, idx, card );
+		var $footer = $( '<div>', { class: 'rwgc-action-card__footer' } );
+		var $footerLeft = $( '<div>', { class: 'rwgc-action-card__footer-left' } );
+		var $footerRight = $( '<div>', { class: 'rwgc-action-card__footer-right' } );
+		$footerLeft.append( $( '<button>', {
+			type: 'button',
+			class: 'rwgc-link-button rwgc-link-button--danger',
+			text: i18n.cardRemoveAction || 'Remove action',
+			'data-card-action': 'remove_action',
+			'data-card': idx,
+		} ) );
+		if ( canCreate ) {
+			$footerRight.append( $( '<button>', {
 				type: 'button',
-				class: 'rwgc-link-button rwgc-link-button--danger',
-				text: i18n.cardRemoveAction || 'Remove action',
-				'data-card-action': 'remove_action',
+				class: 'rwgc-button rwgc-button--secondary',
+				text: i18n.editRule || 'Edit rule',
+				'data-card-action': 'review_items',
 				'data-card': idx,
-			} )
-		) );
+			} ) );
+			$footerRight.append( $( '<button>', {
+				type: 'button',
+				class: 'rwgc-button rwgc-button--primary',
+				text: primaryCreateRuleLabel( state.proposal ),
+				'data-card-action': 'create_setup',
+				'data-card': idx,
+			} ) );
+		}
+		$footer.append( $footerLeft, $footerRight );
+		$card.append( $footer );
 
 		return $card;
 	}
@@ -3752,6 +3928,8 @@
 		}
 		state.proposalId = response.proposal_id || '';
 		state.debug = response.debug || null;
+		autoMatchPopupTargets( state.proposal );
+		recalculateClientActionState();
 		updateSetupPanel( state.proposal, setupStatusLabel( response, state.proposal ) );
 		appendAssistant( formatProposalHtml( response ), proposalActions( state.proposalId, response ) );
 		if ( state.proposal && state.proposal.action_cards && state.proposal.action_cards.length ) {
@@ -3762,7 +3940,12 @@
 	}
 
 	function buildContext() {
-		return { screen: 'targeting_assistant' };
+		var ctx = { screen: 'targeting_assistant' };
+		var popups = popupTargetRegistry();
+		if ( popups.length ) {
+			ctx.targets = { popups: popups };
+		}
+		return ctx;
 	}
 
 	function apiPost( url, payload ) {

@@ -1125,9 +1125,23 @@
 
 .rwgc-action-card__footer {
 	display: flex;
-	justify-content: flex-end;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
 	padding: 14px 20px 18px;
 	border-top: 1px solid #eef2f7;
+}
+
+.rwgc-action-card__footer-left {
+	flex: 0 0 auto;
+}
+
+.rwgc-action-card__footer-right {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	justify-content: flex-end;
+	margin-left: auto;
 }
 
 .rwgc-link-button {

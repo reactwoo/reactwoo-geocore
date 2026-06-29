@@ -55,6 +55,9 @@ class RWGC_Assistant_Target_Service {
 			if ( ! $post instanceof WP_Post ) {
 				continue;
 			}
+			if ( 'private' === $post->post_status && ! current_user_can( 'edit_post', $post->ID ) ) {
+				continue;
+			}
 			$rows[] = self::format_popup_row( $post );
 		}
 
@@ -174,6 +177,29 @@ class RWGC_Assistant_Target_Service {
 	}
 
 	/**
+	 * Normalise a popup label for title matching (strip trailing type words).
+	 *
+	 * @param string $label Raw label.
+	 * @return string
+	 */
+	public static function normalize_popup_label( $label ) {
+		$s = strtolower( trim( (string) $label ) );
+		$s = preg_replace( '/\s+/', ' ', $s );
+		$suffixes = array( 'banner popup', 'geo popup', 'pop-up', 'popup', 'modal', 'banner' );
+		foreach ( $suffixes as $suffix ) {
+			if ( $s === $suffix ) {
+				return '';
+			}
+			$suffix_sp = ' ' . $suffix;
+			if ( strlen( $s ) > strlen( $suffix_sp ) && substr( $s, -strlen( $suffix_sp ) ) === $suffix_sp ) {
+				$s = trim( substr( $s, 0, -strlen( $suffix_sp ) ) );
+				break;
+			}
+		}
+		return trim( $s );
+	}
+
+	/**
 	 * Find popups with a similar title (exact or close match).
 	 *
 	 * @param string $title Popup title.
@@ -186,7 +212,7 @@ class RWGC_Assistant_Target_Service {
 		}
 
 		$title   = trim( (string) $title );
-		$needle  = strtolower( $title );
+		$needle  = self::normalize_popup_label( $title );
 		$limit   = max( 1, min( 10, (int) $limit ) );
 		$matches = array();
 		$seen    = array();
@@ -200,7 +226,7 @@ class RWGC_Assistant_Target_Service {
 			foreach ( $search['results'] as $row ) {
 				$id    = isset( $row['id'] ) ? (int) $row['id'] : 0;
 				$label = isset( $row['label'] ) ? (string) $row['label'] : '';
-				$hay   = strtolower( $label );
+				$hay   = self::normalize_popup_label( $label );
 				if ( $id <= 0 || '' === $label || isset( $seen[ $id ] ) ) {
 					continue;
 				}
@@ -223,13 +249,12 @@ class RWGC_Assistant_Target_Service {
 			$wpdb->prepare(
 				"SELECT p.ID FROM {$wpdb->posts} p
 				INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = %s AND pm.meta_value = %s
-				WHERE p.post_type = %s AND p.post_status IN ('publish','draft','private','pending') AND LOWER(p.post_title) = %s
+				WHERE p.post_type = %s AND p.post_status IN ('publish','draft','private','pending')
 				LIMIT %d",
 				'_elementor_template_type',
 				'popup',
 				self::POPUP_POST_TYPE,
-				$needle,
-				$limit
+				50
 			)
 		);
 
@@ -242,11 +267,18 @@ class RWGC_Assistant_Target_Service {
 			if ( ! $post instanceof WP_Post ) {
 				continue;
 			}
-			$matches[]        = array(
-				'id'    => $post_id,
-				'label' => (string) get_the_title( $post ),
-			);
-			$seen[ $post_id ] = true;
+			if ( 'private' === $post->post_status && ! current_user_can( 'edit_post', $post_id ) ) {
+				continue;
+			}
+			$label = (string) get_the_title( $post );
+			$hay   = self::normalize_popup_label( $label );
+			if ( $hay === $needle || false !== strpos( $hay, $needle ) || false !== strpos( $needle, $hay ) ) {
+				$matches[]        = array(
+					'id'    => $post_id,
+					'label' => $label,
+				);
+				$seen[ $post_id ] = true;
+			}
 			if ( count( $matches ) >= $limit ) {
 				break;
 			}

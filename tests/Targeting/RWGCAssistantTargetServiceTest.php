@@ -86,4 +86,11 @@ class RWGCAssistantTargetServiceTest extends TestCase {
 		$this->assertSame( 'draft', $row['status'] );
 		$this->assertStringContainsString( 'post.php?post=42', $row['edit_url'] );
 	}
+
+	public function test_normalize_popup_label_strips_suffix(): void {
+		$this->assertSame( 'free delivery', RWGC_Assistant_Target_Service::normalize_popup_label( 'Free Delivery popup' ) );
+		$this->assertSame( 'winter sale', RWGC_Assistant_Target_Service::normalize_popup_label( 'Winter Sale pop-up' ) );
+		$this->assertSame( 'exit intent', RWGC_Assistant_Target_Service::normalize_popup_label( 'Exit Intent modal' ) );
+		$this->assertSame( 'free delivery', RWGC_Assistant_Target_Service::normalize_popup_label( 'Free Delivery' ) );
+	}
 }
