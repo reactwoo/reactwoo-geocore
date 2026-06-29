@@ -129,6 +129,7 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$this->assertStringContainsString( 'z-index: 100000', $css );
 		$this->assertStringContainsString( '.rwgc-modal-actions', $css );
 		$this->assertStringContainsString( '.rwgc-modal-footer', $css );
+		$this->assertStringContainsString( '.rwgc-popup-resolver__error', $css );
 		$this->assertStringContainsString( '.rwgc-button--primary', $css );
 		$this->assertStringContainsString( '.rwgc-button--danger', $css );
 		$this->assertStringContainsString( '.rwgc-popup-resolver__row', $css );
@@ -159,6 +160,10 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$create = $this->js_between( $js, 'submitCreatePopup', 'submitChoosePopup' );
 		$this->assertStringNotContainsString( 'create_setup', $create );
 		$this->assertStringNotContainsString( 'executeUrl', $create );
+		$this->assertStringNotContainsString( 'window.alert', $create );
+		$this->assertStringContainsString( 'proposalIdForRequest', $create );
+		$this->assertStringContainsString( 'setPopupCreateError', $create );
+		$this->assertStringContainsString( 'renderPopupResolverCreateError', $create );
 	}
 
 	public function test_modal_mounted_to_body_and_centered(): void {
@@ -198,6 +203,8 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$this->assertStringContainsString( 'post_targets_create', $rest );
 		$this->assertStringContainsString( 'attach_to_action', $rest );
 		$this->assertStringContainsString( 'force_create', $rest );
+		$this->assertStringContainsString( 'target_create_failure', $rest );
+		$this->assertStringContainsString( "'code'    =>", $rest );
 	}
 
 	public function test_target_service_duplicate_guard(): void {
@@ -206,6 +213,7 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$service = (string) file_get_contents( $path );
 		$this->assertStringContainsString( 'find_similar_popups', $service );
 		$this->assertStringContainsString( 'possible_duplicate', $service );
+		$this->assertStringContainsString( 'duplicate_found', $service );
 	}
 
 }

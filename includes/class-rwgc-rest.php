@@ -268,23 +268,80 @@ class RWGC_REST {
 	}
 
 	/**
+	 * Structured failure payload for POST /targets/create.
+	 *
+	 * @param string               $code    Machine-readable code.
+	 * @param string               $message Human-readable reason.
+	 * @param int                  $status  HTTP status.
+	 * @param array<string, mixed> $details Extra context.
+	 * @return \WP_REST_Response
+	 */
+	private static function target_create_failure( $code, $message, $status = 400, $details = array() ) {
+		return new \WP_REST_Response(
+			array(
+				'success' => false,
+				'code'    => (string) $code,
+				'message' => (string) $message,
+				'details' => is_array( $details ) ? $details : array(),
+			),
+			(int) $status
+		);
+	}
+
+	/**
+	 * Map a WP_Error from the target service into structured JSON.
+	 *
+	 * @param \WP_Error $error Error object.
+	 * @return \WP_REST_Response
+	 */
+	private static function target_create_failure_from_error( $error ) {
+		$map = array(
+			'rwgc_popup_unavailable'        => 'unsupported_target_type',
+			'rwgc_forbidden'                => 'capability_failed',
+			'rwgc_invalid_title'            => 'create_failed',
+			'rwgc_popup_create_failed'      => 'create_failed',
+			'rwgc_invalid_attach_context'   => 'attach_failed',
+			'rwgc_unsupported_target_type'  => 'unsupported_target_type',
+			'rwgc_service_missing'          => 'create_failed',
+		);
+
+		$status  = 500;
+		$details = array();
+		$data    = $error->get_error_data();
+		if ( is_array( $data ) ) {
+			if ( isset( $data['status'] ) ) {
+				$status = (int) $data['status'];
+			}
+			$details = $data;
+		}
+
+		$code = isset( $map[ $error->get_error_code() ] ) ? $map[ $error->get_error_code() ] : 'create_failed';
+
+		return self::target_create_failure( $code, $error->get_error_message(), $status, $details );
+	}
+
+	/**
 	 * POST create a target (Elementor popup draft) from the assistant.
 	 *
 	 * @param \WP_REST_Request $request Request.
-	 * @return \WP_REST_Response|\WP_Error
+	 * @return \WP_REST_Response
 	 */
 	public static function post_targets_create( $request ) {
 		$type = (string) $request->get_param( 'target_type' );
 		if ( 'popup' !== $type ) {
-			return new WP_Error(
-				'rwgc_unsupported_target_type',
+			return self::target_create_failure(
+				'unsupported_target_type',
 				__( 'This target type is not supported yet.', 'reactwoo-geocore' ),
-				array( 'status' => 400 )
+				400
 			);
 		}
 
 		if ( ! class_exists( 'RWGC_Assistant_Target_Service', false ) ) {
-			return new WP_Error( 'rwgc_service_missing', __( 'Target service unavailable.', 'reactwoo-geocore' ), array( 'status' => 500 ) );
+			return self::target_create_failure(
+				'create_failed',
+				__( 'Target service unavailable.', 'reactwoo-geocore' ),
+				500
+			);
 		}
 
 		$attach = (bool) $request->get_param( 'attach_to_action' );
@@ -292,10 +349,14 @@ class RWGC_REST {
 			$proposal_id = trim( (string) $request->get_param( 'proposal_id' ) );
 			$action_id   = trim( (string) $request->get_param( 'action_id' ) );
 			if ( '' === $proposal_id || '' === $action_id ) {
-				return new WP_Error(
-					'rwgc_invalid_attach_context',
+				return self::target_create_failure(
+					'attach_failed',
 					__( 'Proposal and action are required when attaching a new popup to an action.', 'reactwoo-geocore' ),
-					array( 'status' => 400 )
+					400,
+					array(
+						'proposal_id' => $proposal_id,
+						'action_id'   => $action_id,
+					)
 				);
 			}
 		}
@@ -308,11 +369,32 @@ class RWGC_REST {
 			)
 		);
 		if ( is_wp_error( $result ) ) {
-			return $result;
+			return self::target_create_failure_from_error( $result );
 		}
 
 		if ( empty( $result['success'] ) ) {
-			return rest_ensure_response( $result );
+			$code    = isset( $result['code'] ) ? (string) $result['code'] : 'create_failed';
+			$message = isset( $result['message'] ) ? (string) $result['message'] : __( 'Could not create the popup.', 'reactwoo-geocore' );
+			$details = isset( $result['details'] ) && is_array( $result['details'] ) ? $result['details'] : array();
+			if ( empty( $details['matches'] ) && ! empty( $result['matches'] ) && is_array( $result['matches'] ) ) {
+				$details['matches'] = $result['matches'];
+			}
+			if ( 'possible_duplicate' === ( $result['reason'] ?? '' ) && 'duplicate_found' !== $code ) {
+				$code = 'duplicate_found';
+			}
+
+			$body = array(
+				'success' => false,
+				'code'    => $code,
+				'message' => $message,
+				'details' => $details,
+			);
+			if ( ! empty( $result['matches'] ) ) {
+				$body['matches'] = $result['matches'];
+				$body['reason']  = 'possible_duplicate';
+			}
+
+			return new \WP_REST_Response( $body, 'duplicate_found' === $code ? 200 : 400 );
 		}
 
 		return rest_ensure_response( $result );

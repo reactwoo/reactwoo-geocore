@@ -107,9 +107,13 @@ class RWGC_Assistant_Target_Service {
 			if ( ! empty( $matches ) ) {
 				return array(
 					'success' => false,
+					'code'    => 'duplicate_found',
 					'reason'  => 'possible_duplicate',
 					'matches' => $matches,
 					'message' => __( 'A similar popup already exists.', 'reactwoo-geocore' ),
+					'details' => array(
+						'matches' => $matches,
+					),
 				);
 			}
 		}

@@ -1026,6 +1026,86 @@
 		return $footer;
 	}
 
+	function proposalIdForRequest() {
+		if ( state.proposalId ) {
+			return String( state.proposalId );
+		}
+		if ( state.proposal && state.proposal.id ) {
+			return String( state.proposal.id );
+		}
+		return '';
+	}
+
+	function actionIdForCard( idx ) {
+		var card = ( state.proposal && state.proposal.action_cards ) ? state.proposal.action_cards[ idx ] : null;
+		if ( card && card.action_id ) {
+			return String( card.action_id );
+		}
+		return 'action_' + ( idx + 1 );
+	}
+
+	function parseTargetCreateError( xhr ) {
+		var resp = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+		var fallback = {
+			code: 'create_failed',
+			message: i18n.popupCreateFailed || 'Could not create the popup. Try again or choose an existing popup.',
+			details: {},
+		};
+		if ( ! resp ) {
+			return fallback;
+		}
+		if ( resp.success === false && ( resp.code || resp.message ) ) {
+			return {
+				code: resp.code || resp.reason || 'create_failed',
+				message: resp.message || fallback.message,
+				details: resp.details || {},
+				matches: resp.matches || ( resp.details && resp.details.matches ) || [],
+			};
+		}
+		if ( resp.code && resp.message ) {
+			var codeMap = {
+				rwgc_invalid_attach_context: 'attach_failed',
+				rwgc_forbidden: 'capability_failed',
+				rwgc_popup_unavailable: 'unsupported_target_type',
+				rwgc_invalid_title: 'create_failed',
+				rwgc_popup_create_failed: 'create_failed',
+				rwgc_unsupported_target_type: 'unsupported_target_type',
+				rest_cookie_invalid_nonce: 'invalid_nonce',
+				rest_forbidden: 'capability_failed',
+			};
+			return {
+				code: codeMap[ resp.code ] || resp.code,
+				message: resp.message,
+				details: resp.data || {},
+			};
+		}
+		return fallback;
+	}
+
+	function setPopupCreateError( pr, err ) {
+		pr.createLoading = false;
+		pr.createError = err || null;
+		renderPopupResolver();
+	}
+
+	function isPopupDuplicateResponse( resp ) {
+		if ( ! resp || resp.success !== false ) {
+			return false;
+		}
+		return resp.code === 'duplicate_found'
+			|| resp.reason === 'possible_duplicate'
+			|| ( resp.details && resp.details.matches && resp.details.matches.length );
+	}
+
+	function applyPopupDuplicateResponse( pr, resp ) {
+		pr.createLoading = false;
+		pr.createError = null;
+		pr.duplicateMatches = resp.matches || ( resp.details && resp.details.matches ) || [];
+		pr.duplicateMessage = resp.message || '';
+		pr.view = 'duplicate';
+		renderPopupResolver();
+	}
+
 	function fallbackPopupSearch( q ) {
 		var ql = String( q || '' ).toLowerCase();
 		return ( cfg.popups || [] ).filter( function ( p ) {
@@ -1192,6 +1272,11 @@
 	}
 
 	function renderPopupResolverCreate( $panel, pr ) {
+		if ( pr.createError ) {
+			renderPopupResolverCreateError( $panel, pr );
+			return;
+		}
+
 		$panel.append( $( '<h3>', { class: 'rwgc-resolution-drawer__title' } ).text( i18n.popupCreateTitle || 'Create popup' ) );
 
 		var $nameRow = $( '<label>', { class: 'rwgc-popup-resolver__field' } );
@@ -1230,6 +1315,19 @@
 		$panel.append( rwgcModalFooter( [
 			createBtn,
 			rwgcModalButton( i18n.popupBack || 'Back', 'secondary', 'goto_start' ),
+		], true ) );
+	}
+
+	function renderPopupResolverCreateError( $panel, pr ) {
+		var err = pr.createError || {};
+		$panel.append( $( '<h3>', { class: 'rwgc-resolution-drawer__title' } ).text( i18n.popupCreateErrorTitle || 'Could not create popup' ) );
+		var $box = $( '<div>', { class: 'rwgc-popup-resolver__error', role: 'alert' } );
+		$box.append( $( '<p>', { class: 'rwgc-popup-resolver__error-label' } ).text( i18n.popupCreateErrorReason || 'Reason:' ) );
+		$box.append( $( '<p>', { class: 'rwgc-popup-resolver__error-message' } ).text( err.message || ( i18n.popupCreateFailed || 'Could not create the popup.' ) ) );
+		$panel.append( $box );
+		$panel.append( rwgcModalFooter( [
+			rwgcModalButton( i18n.popupTryAgain || 'Try again', 'primary', 'retry_create' ),
+			rwgcModalButton( i18n.popupChooseExisting || 'Choose existing popup', 'secondary', 'goto_choose' ),
 		], true ) );
 	}
 
@@ -1383,11 +1481,28 @@
 			return;
 		}
 		if ( ! cfg.targetCreateUrl ) {
-			window.alert( i18n.popupCreateFailed || 'Could not create the popup.' );
+			setPopupCreateError( pr, {
+				code: 'create_failed',
+				message: i18n.popupCreateEndpointMissing || 'Popup create endpoint is not configured on this site.',
+			} );
 			return;
 		}
 		pr.createLoading = true;
+		pr.createError = null;
 		renderPopupResolver();
+
+		var wantsAttach = pr.attachToAction !== false;
+		var proposalId = proposalIdForRequest();
+		var attachToAction = wantsAttach && !! proposalId;
+		var payload = {
+			target_type: 'popup',
+			title: name,
+			status: pr.createStatus || 'draft',
+			proposal_id: attachToAction ? proposalId : '',
+			action_id: actionIdForCard( pr.card ),
+			attach_to_action: attachToAction,
+			force_create: !! forceCreate,
+		};
 
 		$.ajax( {
 			url: cfg.targetCreateUrl,
@@ -1396,40 +1511,57 @@
 			beforeSend: function ( xhr ) {
 				xhr.setRequestHeader( 'X-WP-Nonce', cfg.restNonce || '' );
 			},
-			data: JSON.stringify( {
-				target_type: 'popup',
-				title: name,
-				status: pr.createStatus || 'draft',
-				proposal_id: state.proposal && state.proposal.id ? String( state.proposal.id ) : '',
-				action_id: 'action_' + ( pr.card + 1 ),
-				attach_to_action: pr.attachToAction !== false,
-				force_create: !! forceCreate,
-			} ),
+			data: JSON.stringify( payload ),
 		} ).done( function ( resp ) {
-			if ( resp && resp.success === false && resp.reason === 'possible_duplicate' ) {
-				pr.createLoading = false;
-				pr.duplicateMatches = resp.matches || [];
-				pr.duplicateMessage = resp.message || '';
-				pr.view = 'duplicate';
-				renderPopupResolver();
+			if ( isPopupDuplicateResponse( resp ) ) {
+				applyPopupDuplicateResponse( pr, resp );
 				return;
 			}
-			if ( ! resp || ! resp.success || ! resp.target ) {
-				pr.createLoading = false;
-				window.alert( i18n.popupCreateFailed || 'Could not create the popup.' );
-				renderPopupResolver();
+			if ( ! resp || ! resp.success ) {
+				setPopupCreateError( pr, {
+					code: ( resp && resp.code ) || 'create_failed',
+					message: ( resp && resp.message ) || ( i18n.popupCreateFailed || 'Could not create the popup.' ),
+					details: ( resp && resp.details ) || {},
+				} );
 				return;
 			}
-			if ( pr.attachToAction !== false ) {
-				applyPopupTargetResolution( pr.card, pr.raw, resp.target, { showToast: true } );
+			var target = resp.target || {};
+			var targetId = target.id || target.post_id;
+			if ( ! targetId ) {
+				setPopupCreateError( pr, {
+					code: 'create_failed',
+					message: i18n.popupCreateFailed || 'Could not create the popup.',
+					details: { response: target },
+				} );
+				return;
+			}
+			target = {
+				type: target.type || 'popup',
+				id: targetId,
+				label: target.label || name,
+				status: target.status || 'valid',
+				created_by_assistant: target.created_by_assistant !== false,
+				created_status: target.created_status || pr.createStatus || 'draft',
+				edit_url: target.edit_url || '',
+			};
+			if ( wantsAttach ) {
+				applyPopupTargetResolution( pr.card, pr.raw, target, { showToast: true } );
 			} else {
 				closeResolutionDrawer();
 				rerenderCards();
 			}
-		} ).fail( function () {
-			pr.createLoading = false;
-			window.alert( i18n.popupCreateFailed || 'Could not create the popup.' );
-			renderPopupResolver();
+		} ).fail( function ( xhr ) {
+			var err = parseTargetCreateError( xhr );
+			if ( err.code === 'duplicate_found' || ( err.matches && err.matches.length ) ) {
+				applyPopupDuplicateResponse( pr, {
+					success: false,
+					code: 'duplicate_found',
+					message: err.message,
+					matches: err.matches,
+				} );
+				return;
+			}
+			setPopupCreateError( pr, err );
 		} );
 	}
 
@@ -1469,15 +1601,21 @@
 			renderPopupResolver();
 		} else if ( 'goto_create' === action ) {
 			pr.view = 'create';
+			pr.createError = null;
 			pr.createName = pr.createName || popupCreateName( pr.raw );
 			pr.createStatus = pr.createStatus || 'draft';
 			renderPopupResolver();
 		} else if ( 'goto_choose' === action ) {
 			pr.view = 'choose';
+			pr.createError = null;
 			pr.selectedPopupId = '';
 			pr.searchResults = [];
 			renderPopupResolver();
 			schedulePopupSearch( '' );
+		} else if ( 'retry_create' === action ) {
+			pr.createError = null;
+			pr.view = 'create';
+			renderPopupResolver();
 		} else if ( 'goto_confirm_remove' === action ) {
 			pr.view = 'confirm_remove';
 			renderPopupResolver();
@@ -1522,6 +1660,7 @@
 			createStatus: 'draft',
 			attachToAction: true,
 			createLoading: false,
+			createError: null,
 		};
 		if ( state.popupResolver.view === 'choose' ) {
 			renderPopupResolver();
