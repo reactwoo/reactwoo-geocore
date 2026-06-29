@@ -1,8 +1,6 @@
 # AI handoff — file bridge (no API)
 
-Use these markdown files to pass context between **ChatGPT/Codex** and **Cursor** without API integration.
-
-**Geo Core family:** see `docs/ai-handoff-workflow.md` (this repo) for suite rules and paste-back format.
+Use these markdown files to pass context between **ChatGPT/Codex** (planner/reviewer) and **Cursor** (editor/patch applier) without OpenAI API integration.
 
 ## Loop
 
