@@ -892,15 +892,45 @@
 	}
 
 	function conditionGroupChildLine( child, idx, row ) {
-		var label = child.label || child.type || '';
+		var name = conditionChildDisplayName( child );
+		var value = conditionChildDisplayValue( child, idx, row );
+		return name + ': ' + value;
+	}
+
+	function conditionChildDisplayName( child ) {
+		if ( child.type === 'traffic_source' ) {
+			return i18n.googleAdsChildLabel || 'Google Ads';
+		}
+		if ( child.type === 'url' || child.type === 'page_url' ) {
+			return i18n.urlChildLabel || 'URL';
+		}
+		return conditionTypeLabel( child.type ) || child.label || child.type || '';
+	}
+
+	function conditionChildDisplayValue( child, idx, row ) {
 		var st = effectiveChildStatus( child, idx, row );
+		if ( child.type === 'traffic_source' ) {
+			var meta = conditionGroupResolution( row );
+			var res = fieldResolution( idx, 'traffic_source', meta.raw );
+			if ( res && res.kind === 'ignored' ) {
+				return i18n.cardIgnored || 'Removed';
+			}
+			if ( res && res.kind === 'chosen' ) {
+				return googleAdsResolutionShortLabel( res.id, res.label );
+			}
+			return i18n.childNeedsMapping || 'needs mapping';
+		}
 		if ( st === 'valid' ) {
-			return label + ': ' + ( i18n.childStatusValid || 'valid' );
+			var lab = child.label || child.raw || '';
+			if ( ( child.type === 'url' || child.type === 'page_url' ) && /^url\s+/i.test( lab ) ) {
+				lab = lab.replace( /^url\s+/i, '' );
+			}
+			return lab || ( i18n.childStatusValid || 'valid' );
 		}
-		if ( child.type === 'traffic_source' || st === 'needs_mapping' ) {
-			return label + ': ' + ( i18n.childNeedsMapping || 'needs mapping' );
+		if ( st === 'needs_mapping' ) {
+			return i18n.childNeedsMapping || 'needs mapping';
 		}
-		return label + ': ' + ( i18n.childNeedsAttention || 'needs attention' );
+		return i18n.childNeedsAttention || 'needs attention';
 	}
 
 	function conditionGroupSummary( row, idx ) {
@@ -917,7 +947,9 @@
 			var st = effectiveChildStatus( child, idx, row );
 			var $item = $( '<li>', {
 				class: 'rwgc-condition-card__child rwgc-condition-card__child--' + ( st === 'valid' ? 'valid' : 'needs-resolution' ),
-			} ).text( conditionGroupChildLine( child, idx, row ) );
+			} );
+			$item.append( $( '<span>', { class: 'rwgc-condition-card__child-name' } ).text( conditionChildDisplayName( child ) + ':' ) );
+			$item.append( $( '<span>', { class: 'rwgc-condition-card__child-value' } ).text( conditionChildDisplayValue( child, idx, row ) ) );
 			$list.append( $item );
 		} );
 		return $list;
@@ -944,6 +976,174 @@
 		return options;
 	}
 
+	function googleAdsMappingMeta( key ) {
+		var map = {
+			utm_source_google_and_medium_cpc: {
+				title: i18n.googleAdsOptStandard || 'Standard Google Ads UTM tracking',
+				description: i18n.googleAdsOptStandardDesc || 'Matches utm_source=google AND utm_medium=cpc',
+				shortLabel: i18n.googleAdsShortStandard || 'Standard UTM tracking',
+			},
+			utm_source_google: {
+				title: i18n.googleAdsOptSource || 'Google source only',
+				description: i18n.googleAdsOptSourceDesc || 'Matches utm_source=google',
+				shortLabel: i18n.googleAdsShortSource || 'Google source only',
+			},
+			utm_medium_cpc: {
+				title: i18n.googleAdsOptMedium || 'Paid click medium only',
+				description: i18n.googleAdsOptMediumDesc || 'Matches utm_medium=cpc',
+				shortLabel: i18n.googleAdsShortMedium || 'Paid click medium only',
+			},
+			gclid_exists: {
+				title: i18n.googleAdsOptGclid || 'Google click ID',
+				description: i18n.googleAdsOptGclidDesc || 'Matches when gclid exists',
+				shortLabel: i18n.googleAdsShortGclid || 'Google click ID (gclid)',
+			},
+			configure_google_ads_mapping: {
+				title: i18n.googleAdsOptCustom || 'Configure custom mapping',
+				description: i18n.googleAdsOptCustomDesc || 'Open mapping settings',
+				shortLabel: i18n.googleAdsShortCustom || 'Custom mapping',
+			},
+		};
+		return map[ key ] || {
+			title: key,
+			description: '',
+			shortLabel: key,
+		};
+	}
+
+	function googleAdsResolutionShortLabel( key, fallback ) {
+		var meta = googleAdsMappingMeta( key );
+		return meta.shortLabel || fallback || key;
+	}
+
+	function splitGoogleAdsResolutionOptions( options ) {
+		var mapping = [];
+		var danger = null;
+		( options || [] ).forEach( function ( opt ) {
+			if ( opt.key === 'remove_google_ads_condition' ) {
+				danger = opt;
+			} else {
+				mapping.push( opt );
+			}
+		} );
+		return { mapping: mapping, danger: danger };
+	}
+
+	function updateResolutionDrawerApplyButton() {
+		var drawer = state.resolutionDrawer;
+		if ( ! drawer ) {
+			return;
+		}
+		var $btn = $( '#rwgc-resolution-drawer [data-drawer-action="apply"]' );
+		if ( ! $btn.length ) {
+			return;
+		}
+		var enabled = !! drawer.selected;
+		if ( enabled && drawer.selected === 'configure_google_ads_mapping' ) {
+			var custom = String( drawer.customMapping || '' ).trim();
+			enabled = custom.length > 0;
+		}
+		$btn.prop( 'disabled', ! enabled );
+	}
+
+	function renderGoogleAdsMappingDrawer( $panel, opts ) {
+		var split = splitGoogleAdsResolutionOptions( opts.options || [] );
+		var recommendedKey = opts.recommendedKey || 'utm_source_google_and_medium_cpc';
+		var selected = recommendedKey;
+
+		split.mapping.forEach( function ( opt ) {
+			if ( opt.recommended ) {
+				selected = opt.key;
+			}
+		} );
+
+		state.resolutionDrawer = {
+			card: opts.card,
+			field: 'traffic_source',
+			raw: opts.raw || '',
+			selected: selected,
+			customMapping: '',
+		};
+
+		$panel.addClass( 'rwgc-google-ads-resolver' );
+		$panel.append( $( '<h3>', { class: 'rwgc-resolution-drawer__title' } ).text( opts.title || ( i18n.resolveGoogleAds || 'Resolve Google Ads mapping' ) ) );
+		$panel.append( $( '<p>', { class: 'rwgc-resolution-drawer__label' } ).html(
+			'<strong>' + esc( i18n.drawerDetected || 'Detected' ) + ':</strong> ' + esc( opts.detected || ( i18n.trafficSourceLabel || 'Google Ads traffic' ) )
+		) );
+		$panel.append( $( '<p>', { class: 'rwgc-resolution-drawer__why' } ).html(
+			'<strong>' + esc( i18n.drawerExplanation || 'Explanation' ) + ':</strong> ' + esc( opts.why || ( i18n.googleAdsWhy || 'Geo Core needs to know how to recognise visits from Google Ads.' ) )
+		) );
+
+		var recMeta = googleAdsMappingMeta( selected );
+		$panel.append( $( '<div>', { class: 'rwgc-mapping-recommended' } ).append(
+			$( '<p>', { class: 'rwgc-mapping-recommended__label' } ).text( i18n.drawerRecommendedOption || 'Recommended option' ),
+			$( '<p>', { class: 'rwgc-mapping-recommended__title' } ).text( recMeta.title ),
+			$( '<p>', { class: 'rwgc-mapping-recommended__description' } ).text( recMeta.description )
+		) );
+
+		$panel.append( $( '<p>', { class: 'rwgc-mapping-options__heading' } ).text( i18n.mappingOptionsLabel || 'Options' ) );
+		var $list = $( '<div>', { class: 'rwgc-mapping-options', role: 'radiogroup' } );
+		split.mapping.forEach( function ( opt ) {
+			var meta = googleAdsMappingMeta( opt.key );
+			var isSelected = opt.key === selected;
+			var $item = $( '<label>', {
+				class: 'rwgc-mapping-option' + ( isSelected ? ' rwgc-mapping-option--selected' : '' ),
+				'data-option-key': opt.key || '',
+			} );
+			$item.append( $( '<input>', {
+				type: 'radio',
+				name: 'rwgc-mapping-choice',
+				value: opt.key || '',
+				checked: isSelected,
+			} ) );
+			var $body = $( '<span>', { class: 'rwgc-mapping-option__body' } );
+			$body.append( $( '<span>', { class: 'rwgc-mapping-option__title' } ).text( meta.title ) );
+			if ( meta.description ) {
+				$body.append( $( '<span>', { class: 'rwgc-mapping-option__description' } ).text( meta.description ) );
+			}
+			if ( opt.recommended ) {
+				$body.append( $( '<span>', { class: 'rwgc-mapping-option__badge' } ).text( i18n.recommendedBadge || 'Recommended' ) );
+			}
+			$item.append( $body );
+			$list.append( $item );
+		} );
+		$panel.append( $list );
+
+		var $custom = $( '<div>', { class: 'rwgc-mapping-custom rwgc-is-hidden' } );
+		$custom.append( $( '<label>', { class: 'rwgc-mapping-custom__label' } ).text( i18n.googleAdsCustomMappingLabel || 'Custom mapping label' ) );
+		$custom.append( $( '<input>', {
+			type: 'text',
+			class: 'rwgc-mapping-custom__input',
+			placeholder: i18n.googleAdsCustomMappingPlaceholder || 'Describe how to recognise this traffic',
+			'data-drawer-field': 'custom_mapping',
+		} ) );
+		$panel.append( $custom );
+
+		if ( split.danger ) {
+			var $danger = $( '<div>', { class: 'rwgc-mapping-danger' } );
+			$danger.append( $( '<button>', {
+				type: 'button',
+				class: 'rwgc-button rwgc-button--danger',
+				text: split.danger.label || ( i18n.removeGoogleAdsCondition || 'Remove Google Ads condition' ),
+				'data-drawer-action': 'remove_google_ads',
+			} ) );
+			$panel.append( $danger );
+		}
+
+		var $applyBtn = $( '<button>', {
+			type: 'button',
+			class: 'rwgc-button rwgc-button--primary',
+			text: i18n.drawerApply || 'Apply mapping',
+			'data-drawer-action': 'apply',
+			disabled: selected ? null : 'disabled',
+		} );
+		$panel.append( rwgcModalFooter( [ $applyBtn ], true, 'drawer' ) );
+
+		if ( selected === 'configure_google_ads_mapping' ) {
+			$panel.find( '.rwgc-mapping-custom' ).removeClass( 'rwgc-is-hidden' );
+		}
+	}
+
 	function openResolverForField( idx, field, raw ) {
 		var card = ( state.proposal && state.proposal.action_cards ) ? state.proposal.action_cards[ idx ] : null;
 		if ( ! card ) {
@@ -966,14 +1166,15 @@
 				: ( i18n.resolveField || 'Resolve' ),
 			detected: raw || ( field === 'traffic_source' ? ( i18n.trafficSourceLabel || 'Google Ads traffic' ) : field ),
 			why: field === 'traffic_source'
-				? ( i18n.googleAdsWhy || 'Geo Core needs to know how to recognise Google Ads traffic.' )
+				? ( i18n.googleAdsWhy || 'Geo Core needs to know how to recognise visits from Google Ads.' )
 				: '',
 			recommendedLabel: recommended ? recommended.label : '',
-			recommendedKey: recommended ? recommended.key : '',
+			recommendedKey: recommended ? recommended.key : ( field === 'traffic_source' ? 'utm_source_google_and_medium_cpc' : '' ),
 			options: options,
 			card: idx,
 			field: field,
 			raw: raw,
+			useMappingCards: field === 'traffic_source',
 		} );
 	}
 
@@ -1011,7 +1212,7 @@
 		return $( '<button>', attrs );
 	}
 
-	function rwgcModalFooter( buttons, includeCancel ) {
+	function rwgcModalFooter( buttons, includeCancel, cancelMode ) {
 		var $footer = $( '<div>', { class: 'rwgc-modal-footer' } );
 		if ( buttons && buttons.length ) {
 			var $actions = $( '<div>', { class: 'rwgc-modal-actions' } );
@@ -1021,7 +1222,16 @@
 			$footer.append( $actions );
 		}
 		if ( includeCancel !== false ) {
-			$footer.append( rwgcModalButton( i18n.cancel || 'Cancel', 'ghost', 'cancel' ) );
+			if ( 'drawer' === cancelMode ) {
+				$footer.append( $( '<button>', {
+					type: 'button',
+					class: 'rwgc-button rwgc-button--ghost',
+					text: i18n.cancel || 'Cancel',
+					'data-drawer-action': 'cancel',
+				} ) );
+			} else {
+				$footer.append( rwgcModalButton( i18n.cancel || 'Cancel', 'ghost', 'cancel' ) );
+			}
 		}
 		return $footer;
 	}
@@ -1732,7 +1942,7 @@
 	function closeResolutionDrawer() {
 		var $drawer = $( '#rwgc-resolution-drawer' );
 		$drawer.addClass( 'rwgc-is-hidden' ).attr( 'aria-hidden', 'true' );
-		$drawer.find( '.rwgc-resolution-drawer__panel' ).removeClass( 'rwgc-popup-resolver' ).empty();
+		$drawer.find( '.rwgc-resolution-drawer__panel' ).removeClass( 'rwgc-popup-resolver rwgc-google-ads-resolver' ).empty();
 		$( 'body' ).removeClass( 'rwgc-modal-open' );
 		if ( state.modalReturnFocus && state.modalReturnFocus.focus ) {
 			try {
@@ -1754,7 +1964,14 @@
 		opts = opts || {};
 		var $drawer = ensureResolutionDrawer();
 		var $panel = $drawer.find( '.rwgc-resolution-drawer__panel' );
-		$panel.empty();
+		$panel.empty().removeClass( 'rwgc-google-ads-resolver rwgc-popup-resolver' );
+
+		if ( opts.useMappingCards && opts.field === 'traffic_source' ) {
+			renderGoogleAdsMappingDrawer( $panel, opts );
+			openResolutionDrawerShell();
+			return;
+		}
+
 		state.resolutionDrawer = {
 			card: opts.card,
 			field: opts.field,
@@ -1839,27 +2056,32 @@
 		} else if ( drawer.selected === 'configure_google_ads_mapping' ) {
 			kind = 'pick_manual';
 		}
+		var resolutionLabel = opt ? opt.label : drawer.selected;
+		if ( drawer.field === 'traffic_source' && kind === 'choose' ) {
+			resolutionLabel = googleAdsResolutionShortLabel( drawer.selected, resolutionLabel );
+		}
 		if ( kind === 'ignore' ) {
 			state.cardResolutions[ fieldKey( drawer.card, drawer.field, drawer.raw ) ] = { kind: 'ignored' };
 		} else if ( kind === 'pick_manual' ) {
-			var picked = window.prompt( i18n.cardEnterExact || 'Enter the exact name to use:', '' );
-			if ( ! picked || ! picked.trim() ) {
+			var picked = String( drawer.customMapping || '' ).trim();
+			if ( ! picked ) {
 				return;
 			}
 			state.cardResolutions[ fieldKey( drawer.card, drawer.field, drawer.raw ) ] = {
 				kind: 'chosen',
 				id: drawer.selected,
-				label: picked.trim(),
+				label: picked,
 			};
 		} else {
 			state.cardResolutions[ fieldKey( drawer.card, drawer.field, drawer.raw ) ] = {
 				kind: 'chosen',
 				id: drawer.selected,
-				label: opt ? opt.label : drawer.selected,
+				label: resolutionLabel,
 			};
 		}
 		recordConditionLearning( drawer.card, drawer.field, drawer.raw, state.cardResolutions[ fieldKey( drawer.card, drawer.field, drawer.raw ) ] );
 		closeResolutionDrawer();
+		syncProposalPayload();
 		rerenderCards();
 	}
 
@@ -1923,7 +2145,9 @@
 		if ( resolution ) {
 			valueText = resolution.kind === 'ignored'
 				? ( i18n.cardIgnored || 'Removed' )
-				: ( resolution.label || valueText );
+				: ( row.type === 'condition_group' && field === 'traffic_source'
+					? ( row.label || valueText )
+					: ( resolution.label || valueText ) );
 		}
 		$body.append( $( '<p>', { class: 'rwgc-condition-card__value' } ).text( valueText ) );
 		if ( row.type === 'condition_group' && row.children && row.children.length ) {
@@ -3802,9 +4026,42 @@
 			var action = $( this ).data( 'drawer-action' );
 			if ( 'apply' === action ) {
 				applyResolutionDrawer();
+			} else if ( 'remove_google_ads' === action ) {
+				if ( ! state.resolutionDrawer ) {
+					return;
+				}
+				state.resolutionDrawer.selected = 'remove_google_ads_condition';
+				applyResolutionDrawer();
 			} else if ( 'cancel' === action ) {
 				closeResolutionDrawer();
 			}
+		} ).on( 'change', '#rwgc-resolution-drawer input[name="rwgc-mapping-choice"]', function () {
+			var drawer = state.resolutionDrawer;
+			if ( ! drawer ) {
+				return;
+			}
+			var key = String( $( this ).val() || '' );
+			drawer.selected = key;
+			$( '#rwgc-resolution-drawer .rwgc-mapping-option' ).removeClass( 'rwgc-mapping-option--selected' );
+			$( this ).closest( '.rwgc-mapping-option' ).addClass( 'rwgc-mapping-option--selected' );
+			var meta = googleAdsMappingMeta( key );
+			$( '#rwgc-resolution-drawer .rwgc-mapping-recommended__title' ).text( meta.title );
+			$( '#rwgc-resolution-drawer .rwgc-mapping-recommended__description' ).text( meta.description );
+			var $custom = $( '#rwgc-resolution-drawer .rwgc-mapping-custom' );
+			if ( key === 'configure_google_ads_mapping' ) {
+				$custom.removeClass( 'rwgc-is-hidden' );
+			} else {
+				$custom.addClass( 'rwgc-is-hidden' );
+				drawer.customMapping = '';
+				$custom.find( '.rwgc-mapping-custom__input' ).val( '' );
+			}
+			updateResolutionDrawerApplyButton();
+		} ).on( 'input', '#rwgc-resolution-drawer [data-drawer-field="custom_mapping"]', function () {
+			if ( ! state.resolutionDrawer ) {
+				return;
+			}
+			state.resolutionDrawer.customMapping = String( $( this ).val() || '' );
+			updateResolutionDrawerApplyButton();
 		} ).on( 'click', '#rwgc-resolution-drawer [data-popup-action]', function () {
 			handlePopupResolverAction( String( $( this ).data( 'popup-action' ) || '' ) );
 		} ).on( 'input', '#rwgc-resolution-drawer .rwgc-popup-search-input', function () {

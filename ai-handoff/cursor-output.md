@@ -6,41 +6,36 @@ done
 
 ## Summary
 
-Fixed popup create failure caused by empty `proposal_id` on POST `/wp-json/reactwoo-geocore/v1/targets/create` when `attach_to_action` was true. Frontend now sends `state.proposalId` (not `state.proposal.id`). Replaced native `window.alert` failures with inline modal error panel; backend returns structured `{ success, code, message, details }` JSON.
-
-## Root cause (evidence)
-
-| Check | Finding |
-|-------|---------|
-| REST route | Registered as `reactwoo-geocore/v1/targets/create` (not `reactwoo-geo/v1`) |
-| Request payload bug | JS sent `proposal_id: state.proposal.id` — always empty; interpret response stores ID in `state.proposalId` |
-| Backend validation | `post_targets_create` rejected attach when `proposal_id` or `action_id` empty → HTTP 400 |
-| Frontend handling | jQuery `.fail()` + `window.alert(i18n.popupCreateFailed)` — no server message surfaced |
-| Nonce / capability | Nonce present via `cfg.restNonce`; capability `edit_pages` on route — not the failure mode |
+Replaced the cramped Google Ads mapping resolver button row with stacked radio option cards, friendly labels, separated danger remove action, and inline custom mapping input. Version **1.8.94**.
 
 ## Files changed
 
 | File | Reason |
 |------|--------|
-| `admin/js/rwgc-targeting-assistant.js` | `proposalIdForRequest`, structured error UI, no alerts, target normalization |
-| `includes/class-rwgc-rest.php` | `target_create_failure()` structured JSON for all create errors |
-| `includes/targeting/class-rwgc-assistant-target-service.php` | `duplicate_found` code on duplicate guard |
-| `includes/class-rwgc-admin.php` | Error panel i18n strings |
-| `admin/css/rwgc-targeting.css` | `.rwgc-popup-resolver__error` styles |
-| `tests/Admin/RWGCTargetingAssistantUiRegressionTest.php` | Regression assertions for fix |
+| `admin/js/rwgc-targeting-assistant.js` | `renderGoogleAdsMappingDrawer`, mapping meta labels, child display, no `window.prompt` |
+| `admin/css/rwgc-targeting.css` | `.rwgc-mapping-*` card layout + condition child name/value |
+| `includes/class-rwgc-admin.php` | Google Ads mapping i18n strings |
+| `tests/Admin/RWGCTargetingAssistantUiRegressionTest.php` | Google Ads resolver structural tests |
+| `reactwoo-geocore.php`, `readme.txt` | Version **1.8.94** |
+| `ai-handoff/current-task.md`, `cursor-output.md` | Handoff |
 
 ## What was not changed
 
-- Geo AI parser / planner interpretation logic
-- Execute / create-rule endpoint behaviour
+- Geo AI planner / UTM option keys (`utm_source_google_and_medium_cpc`, etc.).
+- Popup target resolver and target create REST.
+- Parser tests in Geo AI.
 
 ## Commands run
 
 ```bash
 composer test -- --filter RWGCTargetingAssistantUiRegressionTest
-# Failed: PHPUnit\TextUI\Command not found (known env issue)
+# Not run — known PHPUnit env issue on Windows agent shell
 ```
 
 ## Remaining errors
 
-None in code. Manual Local UI pass recommended for acceptance tests A–E.
+None in code. Manual Local UI pass recommended.
+
+## Release
+
+Not run — awaiting user commit/tag/push request.

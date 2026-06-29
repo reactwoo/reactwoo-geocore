@@ -216,4 +216,32 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$this->assertStringContainsString( 'duplicate_found', $service );
 	}
 
+	public function test_google_ads_mapping_resolver_uses_card_options(): void {
+		$js  = $this->assistant_js();
+		$css = $this->targeting_css();
+
+		$this->assertStringContainsString( 'renderGoogleAdsMappingDrawer', $js );
+		$this->assertStringContainsString( 'googleAdsMappingMeta', $js );
+		$this->assertStringContainsString( 'rwgc-mapping-options', $js );
+		$this->assertStringContainsString( 'rwgc-mapping-option', $js );
+		$this->assertStringContainsString( 'rwgc-mapping-danger', $js );
+		$this->assertStringContainsString( 'utm_source_google_and_medium_cpc', $js );
+		$this->assertStringContainsString( 'updateResolutionDrawerApplyButton', $js );
+		$this->assertStringContainsString( 'useMappingCards', $js );
+
+		$drawer = $this->js_between( $js, 'renderGoogleAdsMappingDrawer', 'openResolverForField' );
+		$this->assertStringContainsString( 'name: \'rwgc-mapping-choice\'', $drawer );
+		$this->assertStringContainsString( 'rwgc-mapping-danger', $drawer );
+		$this->assertStringNotContainsString( 'rwgc-resolution-drawer__options', $drawer );
+
+		$apply = $this->js_between( $js, 'applyResolutionDrawer', 'conditionOptionButton' );
+		$this->assertStringContainsString( 'googleAdsResolutionShortLabel', $apply );
+		$this->assertStringContainsString( 'syncProposalPayload', $apply );
+		$this->assertStringNotContainsString( 'window.prompt', $apply );
+
+		$this->assertStringContainsString( '.rwgc-mapping-options', $css );
+		$this->assertStringContainsString( '.rwgc-mapping-option--selected', $css );
+		$this->assertStringContainsString( '.rwgc-mapping-option__badge', $css );
+	}
+
 }
