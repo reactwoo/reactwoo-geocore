@@ -1827,6 +1827,82 @@
 	justify-content: flex-start;
 }
 
+.rwgc-mapping-advanced {
+	margin-top: 1rem;
+	padding-top: 0.85rem;
+	border-top: 1px solid #eaecf0;
+}
+
+.rwgc-mapping-advanced__heading {
+	margin: 0 0 0.55rem;
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: #667085;
+}
+
+.rwgc-mapping-option--advanced {
+	margin-top: 0.35rem;
+}
+
+.rwgc-mapping-also-valid {
+	margin: 0.85rem 0 1rem;
+	padding: 0.85rem 0.95rem;
+	border-radius: 12px;
+	background: #f6fef9;
+	border: 1px solid #abefc6;
+}
+
+.rwgc-mapping-also-valid__heading,
+.rwgc-mapping-also-valid__status,
+.rwgc-mapping-also-valid__examples-label {
+	margin: 0 0 0.35rem;
+	font-size: 0.86rem;
+	color: #344054;
+}
+
+.rwgc-mapping-also-valid__examples {
+	margin: 0 0 0.55rem 1.1rem;
+	padding: 0;
+	font-size: 0.84rem;
+	color: #475467;
+}
+
+.rwgc-mapping-also-valid__edit {
+	margin-top: 0.15rem;
+}
+
+.rwgc-url-match__label,
+.rwgc-url-match__examples-label,
+.rwgc-url-match__field-label {
+	display: block;
+	margin: 0.75rem 0 0.35rem;
+	font-size: 0.82rem;
+	font-weight: 600;
+	color: #344054;
+}
+
+.rwgc-url-match__hint {
+	margin: 0.35rem 0 0.75rem;
+	font-size: 0.84rem;
+	line-height: 1.45;
+	color: #667085;
+}
+
+.rwgc-url-match__field {
+	display: block;
+	margin-bottom: 0.75rem;
+}
+
+.rwgc-url-match__input {
+	width: 100%;
+	padding: 0.55rem 0.65rem;
+	border: 1px solid #d0d5dd;
+	border-radius: 8px;
+	font-size: 0.88rem;
+}
+
 .rwgc-condition-card__child {
 	display: flex;
 	flex-wrap: wrap;

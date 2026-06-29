@@ -222,16 +222,26 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 
 		$this->assertStringContainsString( 'renderGoogleAdsMappingDrawer', $js );
 		$this->assertStringContainsString( 'googleAdsMappingMeta', $js );
+		$this->assertStringContainsString( 'defaultGoogleAdsMappingKey', $js );
+		$this->assertStringContainsString( 'partitionGoogleAdsOptions', $js );
+		$this->assertStringContainsString( 'renderGoogleAdsValidUrlSection', $js );
+		$this->assertStringContainsString( 'renderUrlMatchDrawer', $js );
+		$this->assertStringContainsString( 'edit_url_match', $js );
 		$this->assertStringContainsString( 'rwgc-mapping-options', $js );
 		$this->assertStringContainsString( 'rwgc-mapping-option', $js );
 		$this->assertStringContainsString( 'rwgc-mapping-danger', $js );
+		$this->assertStringContainsString( 'rwgc-mapping-also-valid', $js );
+		$this->assertStringContainsString( 'rwgc-mapping-advanced', $js );
 		$this->assertStringContainsString( 'utm_source_google_and_medium_cpc', $js );
+		$this->assertStringContainsString( 'GOOGLE_ADS_STANDARD_KEY', $js );
 		$this->assertStringContainsString( 'updateResolutionDrawerApplyButton', $js );
 		$this->assertStringContainsString( 'useMappingCards', $js );
 
-		$drawer = $this->js_between( $js, 'renderGoogleAdsMappingDrawer', 'openResolverForField' );
+		$drawer = $this->js_between( $js, 'renderGoogleAdsMappingDrawer', 'renderUrlMatchDrawer' );
 		$this->assertStringContainsString( 'name: \'rwgc-mapping-choice\'', $drawer );
 		$this->assertStringContainsString( 'rwgc-mapping-danger', $drawer );
+		$this->assertStringContainsString( 'renderGoogleAdsValidUrlSection', $drawer );
+		$this->assertStringNotContainsString( 'opt.recommended', $drawer );
 		$this->assertStringNotContainsString( 'rwgc-resolution-drawer__options', $drawer );
 
 		$apply = $this->js_between( $js, 'applyResolutionDrawer', 'conditionOptionButton' );
@@ -242,6 +252,7 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$this->assertStringContainsString( '.rwgc-mapping-options', $css );
 		$this->assertStringContainsString( '.rwgc-mapping-option--selected', $css );
 		$this->assertStringContainsString( '.rwgc-mapping-option__badge', $css );
+		$this->assertStringContainsString( '.rwgc-mapping-also-valid', $css );
 	}
 
 }

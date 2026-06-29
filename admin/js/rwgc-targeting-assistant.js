@@ -921,10 +921,10 @@
 			return i18n.childNeedsMapping || 'needs mapping';
 		}
 		if ( st === 'valid' ) {
-			var lab = child.label || child.raw || '';
-			if ( ( child.type === 'url' || child.type === 'page_url' ) && /^url\s+/i.test( lab ) ) {
-				lab = lab.replace( /^url\s+/i, '' );
+			if ( child.type === 'url' || child.type === 'page_url' ) {
+				return effectiveUrlChildDisplay( child, idx );
 			}
+			var lab = child.label || child.raw || '';
 			return lab || ( i18n.childStatusValid || 'valid' );
 		}
 		if ( st === 'needs_mapping' ) {
@@ -999,8 +999,8 @@
 				shortLabel: i18n.googleAdsShortGclid || 'Google click ID (gclid)',
 			},
 			configure_google_ads_mapping: {
-				title: i18n.googleAdsOptCustom || 'Configure custom mapping',
-				description: i18n.googleAdsOptCustomDesc || 'Open mapping settings',
+				title: i18n.googleAdsOptCustom || 'Custom mapping',
+				description: i18n.googleAdsOptCustomDesc || 'Use this if your Google Ads links use non-standard tracking parameters.',
 				shortLabel: i18n.googleAdsShortCustom || 'Custom mapping',
 			},
 		};
@@ -1016,6 +1016,14 @@
 		return meta.shortLabel || fallback || key;
 	}
 
+	var GOOGLE_ADS_STANDARD_KEY = 'utm_source_google_and_medium_cpc';
+	var GOOGLE_ADS_STANDARD_ORDER = [
+		'utm_source_google_and_medium_cpc',
+		'utm_source_google',
+		'utm_medium_cpc',
+		'gclid_exists',
+	];
+
 	function splitGoogleAdsResolutionOptions( options ) {
 		var mapping = [];
 		var danger = null;
@@ -1027,6 +1035,153 @@
 			}
 		} );
 		return { mapping: mapping, danger: danger };
+	}
+
+	function defaultGoogleAdsMappingKey( options ) {
+		var keys = ( options || [] ).map( function ( opt ) {
+			return opt.key;
+		} );
+		if ( keys.indexOf( GOOGLE_ADS_STANDARD_KEY ) !== -1 ) {
+			return GOOGLE_ADS_STANDARD_KEY;
+		}
+		var i;
+		for ( i = 0; i < GOOGLE_ADS_STANDARD_ORDER.length; i++ ) {
+			if ( keys.indexOf( GOOGLE_ADS_STANDARD_ORDER[ i ] ) !== -1 ) {
+				return GOOGLE_ADS_STANDARD_ORDER[ i ];
+			}
+		}
+		for ( i = 0; i < ( options || [] ).length; i++ ) {
+			var key = options[ i ].key;
+			if ( key && key !== 'configure_google_ads_mapping' && key !== 'remove_google_ads_condition' ) {
+				return key;
+			}
+		}
+		return GOOGLE_ADS_STANDARD_KEY;
+	}
+
+	function partitionGoogleAdsOptions( options ) {
+		var split = splitGoogleAdsResolutionOptions( options );
+		var byKey = {};
+		var custom = null;
+		split.mapping.forEach( function ( opt ) {
+			if ( opt.key === 'configure_google_ads_mapping' ) {
+				custom = opt;
+			} else {
+				byKey[ opt.key ] = opt;
+			}
+		} );
+		var standard = [];
+		GOOGLE_ADS_STANDARD_ORDER.forEach( function ( key ) {
+			if ( byKey[ key ] ) {
+				standard.push( byKey[ key ] );
+			}
+		} );
+		split.mapping.forEach( function ( opt ) {
+			if ( opt.key === 'configure_google_ads_mapping' || GOOGLE_ADS_STANDARD_ORDER.indexOf( opt.key ) !== -1 ) {
+				return;
+			}
+			standard.push( opt );
+		} );
+		return { standard: standard, custom: custom, danger: split.danger };
+	}
+
+	function findTrafficConditionGroupRow( card, raw ) {
+		var found = null;
+		( ( card && card.condition_rows ) || [] ).forEach( function ( row ) {
+			if ( row.type !== 'condition_group' ) {
+				return;
+			}
+			var meta = conditionGroupResolution( row );
+			if ( meta.field === 'traffic_source' && ( ! raw || meta.raw === raw ) ) {
+				found = row;
+			}
+		} );
+		return found;
+	}
+
+	function validUrlChildrenFromRow( row ) {
+		if ( ! row || row.type !== 'condition_group' ) {
+			return [];
+		}
+		return ( row.children || [] ).filter( function ( child ) {
+			return ( child.type === 'url' || child.type === 'page_url' ) && child.status === 'valid';
+		} );
+	}
+
+	function parseUrlPathFromChild( child, idx ) {
+		var res = fieldResolution( idx, 'url_match', child.label || child.raw || '' );
+		if ( res && res.value ) {
+			return String( res.value );
+		}
+		var lab = String( child.label || child.raw || '' );
+		var m = lab.match( /URL\s+contains\s+(\S+)/i );
+		if ( m ) {
+			return m[ 1 ];
+		}
+		if ( child.value ) {
+			return String( child.value );
+		}
+		m = lab.match( /(\/[\w-]+(?:\/[\w-]+)*)/ );
+		return m ? m[ 1 ] : lab.replace( /^URL\s+/i, '' ).trim();
+	}
+
+	function urlMatchTypeFromResolution( child, idx ) {
+		var res = fieldResolution( idx, 'url_match', child.label || child.raw || '' );
+		return ( res && res.id ) ? String( res.id ) : 'contains';
+	}
+
+	function urlMatchLabel( matchType, path ) {
+		path = String( path || '' ).trim();
+		var labels = {
+			contains: i18n.urlMatchContains || 'contains',
+			path_starts_with: i18n.urlMatchStartsWith || 'path starts with',
+			exact_path: i18n.urlMatchExact || 'exact path',
+			wildcard: i18n.urlMatchWildcard || 'path wildcard',
+		};
+		var op = labels[ matchType ] || labels.contains;
+		var displayPath = path;
+		if ( matchType === 'wildcard' && displayPath.indexOf( '/*' ) === -1 ) {
+			displayPath = displayPath + '/*';
+		}
+		return 'URL ' + op + ' ' + displayPath;
+	}
+
+	function urlMatchExamples( path, matchType ) {
+		path = String( path || '' ).trim();
+		if ( ! path ) {
+			return [];
+		}
+		matchType = matchType || 'contains';
+		if ( matchType === 'wildcard' ) {
+			var base = path.replace( /\/\*$/, '' );
+			return [ base + '/*', base + '/coats', base + '/products' ];
+		}
+		if ( matchType === 'path_starts_with' ) {
+			return [ path, path + '/coats', path + '/products' ];
+		}
+		if ( matchType === 'exact_path' ) {
+			return [ path ];
+		}
+		if ( path.indexOf( '/' ) === 0 ) {
+			return [ path, '/shop' + path, path + '/products' ];
+		}
+		return [ path, '/shop/' + path, '/' + path + '/products' ];
+	}
+
+	function effectiveUrlChildDisplay( child, idx ) {
+		var res = fieldResolution( idx, 'url_match', child.label || child.raw || '' );
+		if ( res && res.label ) {
+			var edited = String( res.label );
+			if ( /^url\s+/i.test( edited ) ) {
+				return edited.replace( /^url\s+/i, '' );
+			}
+			return edited;
+		}
+		var lab = child.label || child.raw || '';
+		if ( ( child.type === 'url' || child.type === 'page_url' ) && /^url\s+/i.test( lab ) ) {
+			return lab.replace( /^url\s+/i, '' );
+		}
+		return lab || ( i18n.childStatusValid || 'valid' );
 	}
 
 	function updateResolutionDrawerApplyButton() {
@@ -1046,23 +1201,89 @@
 		$btn.prop( 'disabled', ! enabled );
 	}
 
-	function renderGoogleAdsMappingDrawer( $panel, opts ) {
-		var split = splitGoogleAdsResolutionOptions( opts.options || [] );
-		var recommendedKey = opts.recommendedKey || 'utm_source_google_and_medium_cpc';
-		var selected = recommendedKey;
-
-		split.mapping.forEach( function ( opt ) {
-			if ( opt.recommended ) {
-				selected = opt.key;
+	function renderGoogleAdsValidUrlSection( $panel, urlChildren, idx ) {
+		if ( ! urlChildren.length ) {
+			return;
+		}
+		urlChildren.forEach( function ( child ) {
+			var label = child.label || child.raw || '';
+			var displayLabel = effectiveUrlChildDisplay( child, idx );
+			if ( ! /^URL/i.test( displayLabel ) ) {
+				displayLabel = 'URL ' + displayLabel;
 			}
+			var matchType = urlMatchTypeFromResolution( child, idx );
+			var path = parseUrlPathFromChild( child, idx );
+			var examples = urlMatchExamples( path, matchType );
+
+			var $section = $( '<div>', { class: 'rwgc-mapping-also-valid' } );
+			$section.append( $( '<p>', { class: 'rwgc-mapping-also-valid__heading' } ).html(
+				'<strong>' + esc( i18n.alsoDetectedLabel || 'Also detected' ) + ':</strong> ' + esc( displayLabel )
+			) );
+			$section.append( $( '<p>', { class: 'rwgc-mapping-also-valid__status' } ).html(
+				'<strong>' + esc( i18n.alsoValidStatusLabel || 'Status' ) + ':</strong> ' + esc( i18n.statusValid || 'Valid' )
+			) );
+			if ( examples.length ) {
+				var $examples = $( '<ul>', { class: 'rwgc-mapping-also-valid__examples' } );
+				examples.forEach( function ( example ) {
+					$examples.append( $( '<li>' ).text( example ) );
+				} );
+				$section.append( $( '<p>', { class: 'rwgc-mapping-also-valid__examples-label' } ).text( i18n.urlExamplesLabel || 'Examples matched' ) );
+				$section.append( $examples );
+			}
+			$section.append( $( '<button>', {
+				type: 'button',
+				class: 'rwgc-link-button rwgc-mapping-also-valid__edit',
+				text: i18n.editUrlMatch || 'Edit URL match',
+				'data-drawer-action': 'edit_url_match',
+				'data-url-child-label': child.label || child.raw || '',
+			} ) );
+			$panel.append( $section );
 		} );
+	}
+
+	function appendGoogleAdsMappingOption( $list, opt, selected, showRecommendedBadge ) {
+		var meta = googleAdsMappingMeta( opt.key );
+		var isSelected = opt.key === selected;
+		var $item = $( '<label>', {
+			class: 'rwgc-mapping-option' + ( isSelected ? ' rwgc-mapping-option--selected' : '' ),
+			'data-option-key': opt.key || '',
+		} );
+		$item.append( $( '<input>', {
+			type: 'radio',
+			name: 'rwgc-mapping-choice',
+			value: opt.key || '',
+			checked: isSelected,
+		} ) );
+		var $body = $( '<span>', { class: 'rwgc-mapping-option__body' } );
+		$body.append( $( '<span>', { class: 'rwgc-mapping-option__title' } ).text( meta.title ) );
+		if ( meta.description ) {
+			$body.append( $( '<span>', { class: 'rwgc-mapping-option__description' } ).text( meta.description ) );
+		}
+		if ( showRecommendedBadge ) {
+			$body.append( $( '<span>', { class: 'rwgc-mapping-option__badge' } ).text( i18n.recommendedBadge || 'Recommended' ) );
+		}
+		$item.append( $body );
+		$list.append( $item );
+	}
+
+	function renderGoogleAdsMappingDrawer( $panel, opts ) {
+		var parts = partitionGoogleAdsOptions( opts.options || [] );
+		var selected = defaultGoogleAdsMappingKey( opts.options || [] );
+		if ( opts.preservedSelection && opts.preservedSelection.selected ) {
+			selected = opts.preservedSelection.selected;
+		}
+		var customMapping = ( opts.preservedSelection && opts.preservedSelection.customMapping ) ? opts.preservedSelection.customMapping : '';
+		var urlChildren = validUrlChildrenFromRow( opts.conditionRow );
 
 		state.resolutionDrawer = {
+			mode: 'google_ads',
 			card: opts.card,
 			field: 'traffic_source',
 			raw: opts.raw || '',
 			selected: selected,
-			customMapping: '',
+			customMapping: customMapping,
+			conditionRow: opts.conditionRow || null,
+			drawerOpts: opts,
 		};
 
 		$panel.addClass( 'rwgc-google-ads-resolver' );
@@ -1071,60 +1292,65 @@
 			'<strong>' + esc( i18n.drawerDetected || 'Detected' ) + ':</strong> ' + esc( opts.detected || ( i18n.trafficSourceLabel || 'Google Ads traffic' ) )
 		) );
 		$panel.append( $( '<p>', { class: 'rwgc-resolution-drawer__why' } ).html(
-			'<strong>' + esc( i18n.drawerExplanation || 'Explanation' ) + ':</strong> ' + esc( opts.why || ( i18n.googleAdsWhy || 'Geo Core needs to know how to recognise visits from Google Ads.' ) )
+			'<strong>' + esc( i18n.drawerExplanation || 'Explanation' ) + ':</strong> ' + esc( opts.why || ( i18n.googleAdsWhy || 'Geo Core needs to know how to recognise visitors from Google Ads.' ) )
 		) );
 
-		var recMeta = googleAdsMappingMeta( selected );
+		var standardMeta = googleAdsMappingMeta( GOOGLE_ADS_STANDARD_KEY );
 		$panel.append( $( '<div>', { class: 'rwgc-mapping-recommended' } ).append(
-			$( '<p>', { class: 'rwgc-mapping-recommended__label' } ).text( i18n.drawerRecommendedOption || 'Recommended option' ),
-			$( '<p>', { class: 'rwgc-mapping-recommended__title' } ).text( recMeta.title ),
-			$( '<p>', { class: 'rwgc-mapping-recommended__description' } ).text( recMeta.description )
+			$( '<p>', { class: 'rwgc-mapping-recommended__label' } ).text( i18n.drawerRecommended || 'Recommended' ),
+			$( '<p>', { class: 'rwgc-mapping-recommended__title' } ).text( standardMeta.title ),
+			$( '<p>', { class: 'rwgc-mapping-recommended__description' } ).text( standardMeta.description )
 		) );
+
+		renderGoogleAdsValidUrlSection( $panel, urlChildren, opts.card );
 
 		$panel.append( $( '<p>', { class: 'rwgc-mapping-options__heading' } ).text( i18n.mappingOptionsLabel || 'Options' ) );
 		var $list = $( '<div>', { class: 'rwgc-mapping-options', role: 'radiogroup' } );
-		split.mapping.forEach( function ( opt ) {
-			var meta = googleAdsMappingMeta( opt.key );
-			var isSelected = opt.key === selected;
-			var $item = $( '<label>', {
-				class: 'rwgc-mapping-option' + ( isSelected ? ' rwgc-mapping-option--selected' : '' ),
-				'data-option-key': opt.key || '',
-			} );
-			$item.append( $( '<input>', {
-				type: 'radio',
-				name: 'rwgc-mapping-choice',
-				value: opt.key || '',
-				checked: isSelected,
-			} ) );
-			var $body = $( '<span>', { class: 'rwgc-mapping-option__body' } );
-			$body.append( $( '<span>', { class: 'rwgc-mapping-option__title' } ).text( meta.title ) );
-			if ( meta.description ) {
-				$body.append( $( '<span>', { class: 'rwgc-mapping-option__description' } ).text( meta.description ) );
-			}
-			if ( opt.recommended ) {
-				$body.append( $( '<span>', { class: 'rwgc-mapping-option__badge' } ).text( i18n.recommendedBadge || 'Recommended' ) );
-			}
-			$item.append( $body );
-			$list.append( $item );
+		parts.standard.forEach( function ( opt ) {
+			appendGoogleAdsMappingOption( $list, opt, selected, opt.key === GOOGLE_ADS_STANDARD_KEY );
 		} );
 		$panel.append( $list );
 
-		var $custom = $( '<div>', { class: 'rwgc-mapping-custom rwgc-is-hidden' } );
-		$custom.append( $( '<label>', { class: 'rwgc-mapping-custom__label' } ).text( i18n.googleAdsCustomMappingLabel || 'Custom mapping label' ) );
-		$custom.append( $( '<input>', {
-			type: 'text',
-			class: 'rwgc-mapping-custom__input',
-			placeholder: i18n.googleAdsCustomMappingPlaceholder || 'Describe how to recognise this traffic',
-			'data-drawer-field': 'custom_mapping',
-		} ) );
-		$panel.append( $custom );
+		if ( parts.custom ) {
+			var customMeta = googleAdsMappingMeta( 'configure_google_ads_mapping' );
+			var $advanced = $( '<div>', { class: 'rwgc-mapping-advanced' } );
+			$advanced.append( $( '<p>', { class: 'rwgc-mapping-advanced__heading' } ).text( i18n.googleAdsAdvancedLabel || 'Advanced' ) );
+			var $customOption = $( '<label>', {
+				class: 'rwgc-mapping-option rwgc-mapping-option--advanced' + ( selected === 'configure_google_ads_mapping' ? ' rwgc-mapping-option--selected' : '' ),
+				'data-option-key': 'configure_google_ads_mapping',
+			} );
+			$customOption.append( $( '<input>', {
+				type: 'radio',
+				name: 'rwgc-mapping-choice',
+				value: 'configure_google_ads_mapping',
+				checked: selected === 'configure_google_ads_mapping',
+			} ) );
+			var $customBody = $( '<span>', { class: 'rwgc-mapping-option__body' } );
+			$customBody.append( $( '<span>', { class: 'rwgc-mapping-option__title' } ).text( customMeta.title ) );
+			$customBody.append( $( '<span>', { class: 'rwgc-mapping-option__description' } ).text( customMeta.description ) );
+			$customOption.append( $customBody );
+			$advanced.append( $customOption );
 
-		if ( split.danger ) {
+			var $custom = $( '<div>', {
+				class: 'rwgc-mapping-custom' + ( selected === 'configure_google_ads_mapping' ? '' : ' rwgc-is-hidden' ),
+			} );
+			$custom.append( $( '<input>', {
+				type: 'text',
+				class: 'rwgc-mapping-custom__input',
+				value: customMapping,
+				placeholder: i18n.googleAdsCustomMappingPlaceholder || 'Example: utm_source=google-ads, source=adwords, or custom query rule',
+				'data-drawer-field': 'custom_mapping',
+			} ) );
+			$advanced.append( $custom );
+			$panel.append( $advanced );
+		}
+
+		if ( parts.danger ) {
 			var $danger = $( '<div>', { class: 'rwgc-mapping-danger' } );
 			$danger.append( $( '<button>', {
 				type: 'button',
 				class: 'rwgc-button rwgc-button--danger',
-				text: split.danger.label || ( i18n.removeGoogleAdsCondition || 'Remove Google Ads condition' ),
+				text: parts.danger.label || ( i18n.removeGoogleAdsCondition || 'Remove Google Ads condition' ),
 				'data-drawer-action': 'remove_google_ads',
 			} ) );
 			$panel.append( $danger );
@@ -1135,13 +1361,117 @@
 			class: 'rwgc-button rwgc-button--primary',
 			text: i18n.drawerApply || 'Apply mapping',
 			'data-drawer-action': 'apply',
-			disabled: selected ? null : 'disabled',
 		} );
 		$panel.append( rwgcModalFooter( [ $applyBtn ], true, 'drawer' ) );
+		updateResolutionDrawerApplyButton();
+	}
 
-		if ( selected === 'configure_google_ads_mapping' ) {
-			$panel.find( '.rwgc-mapping-custom' ).removeClass( 'rwgc-is-hidden' );
+	function renderUrlMatchDrawer( $panel, opts ) {
+		var child = opts.urlChild || {};
+		var childLabel = child.label || child.raw || '';
+		var matchType = opts.matchType || urlMatchTypeFromResolution( child, opts.card );
+		var path = opts.path || parseUrlPathFromChild( child, opts.card );
+		var examples = urlMatchExamples( path, matchType );
+
+		state.resolutionDrawer = {
+			mode: 'url_match',
+			card: opts.card,
+			urlChild: child,
+			urlChildLabel: childLabel,
+			matchType: matchType,
+			path: path,
+			returnToGoogleAds: !! opts.returnToGoogleAds,
+			googleAdsOpts: opts.googleAdsOpts || null,
+		};
+
+		$panel.addClass( 'rwgc-url-match-resolver' );
+		$panel.append( $( '<h3>', { class: 'rwgc-resolution-drawer__title' } ).text( i18n.editUrlMatchTitle || 'Edit URL match' ) );
+
+		var matchTypes = [
+			{ key: 'contains', label: i18n.urlMatchContains || 'Contains', recommended: true },
+			{ key: 'path_starts_with', label: i18n.urlMatchStartsWith || 'Path starts with' },
+			{ key: 'exact_path', label: i18n.urlMatchExact || 'Exact path' },
+			{ key: 'wildcard', label: i18n.urlMatchWildcard || 'Wildcard' },
+		];
+
+		$panel.append( $( '<p>', { class: 'rwgc-url-match__label' } ).text( i18n.urlMatchTypeLabel || 'Match type' ) );
+		var $types = $( '<div>', { class: 'rwgc-mapping-options rwgc-url-match__types', role: 'radiogroup' } );
+		matchTypes.forEach( function ( type ) {
+			var isSelected = type.key === matchType;
+			var $item = $( '<label>', {
+				class: 'rwgc-mapping-option' + ( isSelected ? ' rwgc-mapping-option--selected' : '' ),
+			} );
+			$item.append( $( '<input>', {
+				type: 'radio',
+				name: 'rwgc-url-match-type',
+				value: type.key,
+				checked: isSelected,
+			} ) );
+			var $body = $( '<span>', { class: 'rwgc-mapping-option__body' } );
+			$body.append( $( '<span>', { class: 'rwgc-mapping-option__title' } ).text( type.label ) );
+			if ( type.recommended ) {
+				$body.append( $( '<span>', { class: 'rwgc-mapping-option__badge' } ).text( i18n.recommendedBadge || 'Recommended' ) );
+			}
+			$item.append( $body );
+			$types.append( $item );
+		} );
+		$panel.append( $types );
+
+		if ( matchType === 'contains' ) {
+			$panel.append( $( '<p>', { class: 'rwgc-url-match__hint' } ).text(
+				( i18n.urlMatchContainsHint || 'This matches any URL where %s appears.' ).replace( '%s', path )
+			) );
+		} else if ( matchType === 'wildcard' ) {
+			$panel.append( $( '<p>', { class: 'rwgc-url-match__hint' } ).text(
+				i18n.urlMatchWildcardHint || 'This matches child paths under the path but may not match parent segments like /shop/winter-sale.'
+			) );
 		}
+
+		var $pathRow = $( '<label>', { class: 'rwgc-url-match__field' } );
+		$pathRow.append( $( '<span>', { class: 'rwgc-url-match__field-label' } ).text( i18n.urlMatchValueLabel || 'Detected value' ) );
+		$pathRow.append( $( '<input>', {
+			type: 'text',
+			class: 'rwgc-url-match__input',
+			value: path,
+			'data-drawer-field': 'url_path',
+		} ) );
+		$panel.append( $pathRow );
+
+		if ( examples.length ) {
+			var $examples = $( '<ul>', { class: 'rwgc-mapping-also-valid__examples' } );
+			examples.forEach( function ( example ) {
+				$examples.append( $( '<li>' ).text( example ) );
+			} );
+			$panel.append( $( '<p>', { class: 'rwgc-url-match__examples-label' } ).text( i18n.urlExamplesLabel || 'Examples' ) );
+			$panel.append( $examples );
+		}
+
+		var $applyBtn = $( '<button>', {
+			type: 'button',
+			class: 'rwgc-button rwgc-button--primary',
+			text: i18n.urlMatchApply || 'Apply URL match',
+			'data-drawer-action': 'apply_url_match',
+		} );
+		var $backBtn = $( '<button>', {
+			type: 'button',
+			class: 'rwgc-button rwgc-button--ghost',
+			text: i18n.popupBack || 'Back',
+			'data-drawer-action': 'back_to_google_ads',
+		} );
+		$panel.append( rwgcModalFooter( [ $applyBtn, $backBtn ], true, 'drawer' ) );
+	}
+
+	function openUrlMatchEditor( idx, child, googleAdsOpts ) {
+		var $drawer = ensureResolutionDrawer();
+		var $panel = $drawer.find( '.rwgc-resolution-drawer__panel' );
+		$panel.empty().removeClass( 'rwgc-popup-resolver' ).addClass( 'rwgc-google-ads-resolver' );
+		renderUrlMatchDrawer( $panel, {
+			card: idx,
+			urlChild: child,
+			returnToGoogleAds: !! googleAdsOpts,
+			googleAdsOpts: googleAdsOpts || null,
+		} );
+		openResolutionDrawerShell();
 	}
 
 	function openResolverForField( idx, field, raw ) {
@@ -1154,9 +1484,11 @@
 			return;
 		}
 		var options = resolutionOptionsForField( card, field, raw );
+		var conditionRow = field === 'traffic_source' ? findTrafficConditionGroupRow( card, raw ) : null;
+		var standardKey = field === 'traffic_source' ? defaultGoogleAdsMappingKey( options ) : '';
 		var recommended = null;
 		options.forEach( function ( opt ) {
-			if ( opt.recommended ) {
+			if ( opt.recommended && opt.key !== 'configure_google_ads_mapping' ) {
 				recommended = opt;
 			}
 		} );
@@ -1166,14 +1498,15 @@
 				: ( i18n.resolveField || 'Resolve' ),
 			detected: raw || ( field === 'traffic_source' ? ( i18n.trafficSourceLabel || 'Google Ads traffic' ) : field ),
 			why: field === 'traffic_source'
-				? ( i18n.googleAdsWhy || 'Geo Core needs to know how to recognise visits from Google Ads.' )
+				? ( i18n.googleAdsWhy || 'Geo Core needs to know how to recognise visitors from Google Ads.' )
 				: '',
-			recommendedLabel: recommended ? recommended.label : '',
-			recommendedKey: recommended ? recommended.key : ( field === 'traffic_source' ? 'utm_source_google_and_medium_cpc' : '' ),
+			recommendedLabel: recommended ? recommended.label : ( standardKey ? googleAdsMappingMeta( standardKey ).title : '' ),
+			recommendedKey: standardKey,
 			options: options,
 			card: idx,
 			field: field,
 			raw: raw,
+			conditionRow: conditionRow,
 			useMappingCards: field === 'traffic_source',
 		} );
 	}
@@ -1942,7 +2275,7 @@
 	function closeResolutionDrawer() {
 		var $drawer = $( '#rwgc-resolution-drawer' );
 		$drawer.addClass( 'rwgc-is-hidden' ).attr( 'aria-hidden', 'true' );
-		$drawer.find( '.rwgc-resolution-drawer__panel' ).removeClass( 'rwgc-popup-resolver rwgc-google-ads-resolver' ).empty();
+		$drawer.find( '.rwgc-resolution-drawer__panel' ).removeClass( 'rwgc-popup-resolver rwgc-google-ads-resolver rwgc-url-match-resolver' ).empty();
 		$( 'body' ).removeClass( 'rwgc-modal-open' );
 		if ( state.modalReturnFocus && state.modalReturnFocus.focus ) {
 			try {
@@ -1964,7 +2297,7 @@
 		opts = opts || {};
 		var $drawer = ensureResolutionDrawer();
 		var $panel = $drawer.find( '.rwgc-resolution-drawer__panel' );
-		$panel.empty().removeClass( 'rwgc-google-ads-resolver rwgc-popup-resolver' );
+		$panel.empty().removeClass( 'rwgc-google-ads-resolver rwgc-popup-resolver rwgc-url-match-resolver' );
 
 		if ( opts.useMappingCards && opts.field === 'traffic_source' ) {
 			renderGoogleAdsMappingDrawer( $panel, opts );
@@ -2027,6 +2360,50 @@
 		} ) );
 		$panel.append( $actions );
 
+		openResolutionDrawerShell();
+	}
+
+	function applyUrlMatchDrawer() {
+		var drawer = state.resolutionDrawer;
+		if ( ! drawer || drawer.mode !== 'url_match' ) {
+			return;
+		}
+		var path = String( drawer.path || '' ).trim();
+		if ( ! path ) {
+			return;
+		}
+		var matchType = drawer.matchType || 'contains';
+		var childLabel = drawer.urlChildLabel || ( drawer.urlChild ? drawer.urlChild.label : '' );
+		var displayLabel = urlMatchLabel( matchType, path );
+		state.cardResolutions[ fieldKey( drawer.card, 'url_match', childLabel ) ] = {
+			kind: 'chosen',
+			id: matchType,
+			label: displayLabel,
+			value: path,
+		};
+		if ( drawer.returnToGoogleAds && drawer.googleAdsOpts ) {
+			var $drawer = ensureResolutionDrawer();
+			var $panel = $drawer.find( '.rwgc-resolution-drawer__panel' );
+			$panel.empty().removeClass( 'rwgc-url-match-resolver' ).addClass( 'rwgc-google-ads-resolver' );
+			renderGoogleAdsMappingDrawer( $panel, drawer.googleAdsOpts );
+			openResolutionDrawerShell();
+			rerenderCards();
+			return;
+		}
+		closeResolutionDrawer();
+		rerenderCards();
+	}
+
+	function returnToGoogleAdsDrawer() {
+		var drawer = state.resolutionDrawer;
+		if ( ! drawer || ! drawer.googleAdsOpts ) {
+			closeResolutionDrawer();
+			return;
+		}
+		var $drawer = ensureResolutionDrawer();
+		var $panel = $drawer.find( '.rwgc-resolution-drawer__panel' );
+		$panel.empty().removeClass( 'rwgc-url-match-resolver' ).addClass( 'rwgc-google-ads-resolver' );
+		renderGoogleAdsMappingDrawer( $panel, drawer.googleAdsOpts );
 		openResolutionDrawerShell();
 	}
 
@@ -2793,6 +3170,27 @@
 						label: res.label || '',
 					} );
 				}
+			} );
+			( card.condition_rows || [] ).forEach( function ( row ) {
+				if ( row.type !== 'condition_group' || ! row.children ) {
+					return;
+				}
+				row.children.forEach( function ( child ) {
+					if ( child.type !== 'url' && child.type !== 'page_url' ) {
+						return;
+					}
+					var urlRes = fieldResolution( idx, 'url_match', child.label || child.raw || '' );
+					if ( urlRes ) {
+						out.push( {
+							card: idx,
+							field: 'url_match',
+							raw: child.label || child.raw || '',
+							action: 'choose',
+							id: urlRes.id || '',
+							label: urlRes.label || '',
+						} );
+					}
+				} );
 			} );
 			if ( state.cardLogic[ idx ] ) {
 				out.push( { card: idx, field: 'logic', action: 'set', id: state.cardLogic[ idx ] } );
@@ -4026,6 +4424,41 @@
 			var action = $( this ).data( 'drawer-action' );
 			if ( 'apply' === action ) {
 				applyResolutionDrawer();
+			} else if ( 'apply_url_match' === action ) {
+				applyUrlMatchDrawer();
+			} else if ( 'back_to_google_ads' === action ) {
+				returnToGoogleAdsDrawer();
+			} else if ( 'edit_url_match' === action ) {
+				var drawer = state.resolutionDrawer;
+				if ( ! drawer || ! drawer.conditionRow ) {
+					return;
+				}
+				var childLabel = String( $( this ).data( 'url-child-label' ) || '' );
+				var urlChild = null;
+				validUrlChildrenFromRow( drawer.conditionRow ).forEach( function ( child ) {
+					if ( ( child.label || child.raw || '' ) === childLabel ) {
+						urlChild = child;
+					}
+				} );
+				if ( ! urlChild ) {
+					return;
+				}
+				var savedOpts = $.extend( {}, drawer.drawerOpts || {}, {
+					preservedSelection: {
+						selected: drawer.selected,
+						customMapping: drawer.customMapping || '',
+					},
+				} );
+				var $drawerEl = ensureResolutionDrawer();
+				var $panel = $drawerEl.find( '.rwgc-resolution-drawer__panel' );
+				$panel.empty().removeClass( 'rwgc-google-ads-resolver' ).addClass( 'rwgc-url-match-resolver' );
+				renderUrlMatchDrawer( $panel, {
+					card: drawer.card,
+					urlChild: urlChild,
+					returnToGoogleAds: true,
+					googleAdsOpts: savedOpts,
+				} );
+				openResolutionDrawerShell();
 			} else if ( 'remove_google_ads' === action ) {
 				if ( ! state.resolutionDrawer ) {
 					return;
@@ -4044,9 +4477,6 @@
 			drawer.selected = key;
 			$( '#rwgc-resolution-drawer .rwgc-mapping-option' ).removeClass( 'rwgc-mapping-option--selected' );
 			$( this ).closest( '.rwgc-mapping-option' ).addClass( 'rwgc-mapping-option--selected' );
-			var meta = googleAdsMappingMeta( key );
-			$( '#rwgc-resolution-drawer .rwgc-mapping-recommended__title' ).text( meta.title );
-			$( '#rwgc-resolution-drawer .rwgc-mapping-recommended__description' ).text( meta.description );
 			var $custom = $( '#rwgc-resolution-drawer .rwgc-mapping-custom' );
 			if ( key === 'configure_google_ads_mapping' ) {
 				$custom.removeClass( 'rwgc-is-hidden' );
@@ -4056,6 +4486,29 @@
 				$custom.find( '.rwgc-mapping-custom__input' ).val( '' );
 			}
 			updateResolutionDrawerApplyButton();
+		} ).on( 'change', '#rwgc-resolution-drawer input[name="rwgc-url-match-type"]', function () {
+			var drawer = state.resolutionDrawer;
+			if ( ! drawer || drawer.mode !== 'url_match' ) {
+				return;
+			}
+			drawer.matchType = String( $( this ).val() || 'contains' );
+			var $drawerEl = ensureResolutionDrawer();
+			var $panel = $drawerEl.find( '.rwgc-resolution-drawer__panel' );
+			$panel.empty().addClass( 'rwgc-url-match-resolver' );
+			renderUrlMatchDrawer( $panel, {
+				card: drawer.card,
+				urlChild: drawer.urlChild,
+				matchType: drawer.matchType,
+				path: drawer.path,
+				returnToGoogleAds: drawer.returnToGoogleAds,
+				googleAdsOpts: drawer.googleAdsOpts,
+			} );
+			openResolutionDrawerShell();
+		} ).on( 'input', '#rwgc-resolution-drawer [data-drawer-field="url_path"]', function () {
+			if ( ! state.resolutionDrawer || state.resolutionDrawer.mode !== 'url_match' ) {
+				return;
+			}
+			state.resolutionDrawer.path = String( $( this ).val() || '' );
 		} ).on( 'input', '#rwgc-resolution-drawer [data-drawer-field="custom_mapping"]', function () {
 			if ( ! state.resolutionDrawer ) {
 				return;
