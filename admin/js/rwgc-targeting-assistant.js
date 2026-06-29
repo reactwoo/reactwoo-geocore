@@ -297,6 +297,17 @@
 		return cardKey( idx ) + '|' + field + '|' + ( raw || '' );
 	}
 
+	function targetFieldRaw( card, idx ) {
+		var req = ( ( card && card.requiredResolutions ) || [] ).find( function ( r ) {
+			return r.field === 'target';
+		} );
+		if ( req && req.raw ) {
+			return req.raw;
+		}
+		var t = ( card && card.target ) || {};
+		return t.raw || t.label || '';
+	}
+
 	function isCardRemoved( idx ) {
 		return !! state.cardResolutions[ 'removed_' + cardKey( idx ) ];
 	}
@@ -468,8 +479,13 @@
 		}
 		var t = card.target || {};
 		var targetLabel = resolvedTargetLabel( card, 0 );
-		if ( targetLabel && ( ! requiresField( card, 'target' ) || fieldResolution( 0, 'target', t.raw || t.label || '' ) ) ) {
-			labels.push( targetLabel );
+		var targetRaw = targetFieldRaw( card, 0 );
+		if ( targetLabel && ( ! requiresField( card, 'target' ) || fieldResolution( 0, 'target', targetRaw ) ) ) {
+			if ( t.type === 'popup' ) {
+				labels.push( ( i18n.hubNeedPopup || 'Popup target' ) + ': ' + targetLabel );
+			} else {
+				labels.push( targetLabel );
+			}
 		}
 		( card.condition_rows || [] ).forEach( function ( row ) {
 			if ( effectiveRowStatus( row, 0 ) !== 'valid' ) {
@@ -527,7 +543,7 @@
 
 	function resolvedTargetLabel( card, idx ) {
 		var t = ( card && card.target ) || {};
-		var res = fieldResolution( idx, 'target', t.raw || t.label || '' );
+		var res = fieldResolution( idx, 'target', targetFieldRaw( card, idx ) );
 		if ( res && res.kind !== 'ignored' && res.label ) {
 			return res.label;
 		}
@@ -997,11 +1013,13 @@
 
 	function rwgcModalFooter( buttons, includeCancel ) {
 		var $footer = $( '<div>', { class: 'rwgc-modal-footer' } );
-		var $actions = $( '<div>', { class: 'rwgc-modal-actions' } );
-		( buttons || [] ).forEach( function ( $btn ) {
-			$actions.append( $btn );
-		} );
-		$footer.append( $actions );
+		if ( buttons && buttons.length ) {
+			var $actions = $( '<div>', { class: 'rwgc-modal-actions' } );
+			buttons.forEach( function ( $btn ) {
+				$actions.append( $btn );
+			} );
+			$footer.append( $actions );
+		}
 		if ( includeCancel !== false ) {
 			$footer.append( rwgcModalButton( i18n.cancel || 'Cancel', 'ghost', 'cancel' ) );
 		}
@@ -1067,15 +1085,82 @@
 		}, 320 );
 	}
 
-	function applyPopupTargetResolution( idx, raw, target ) {
-		state.cardResolutions[ fieldKey( idx, 'target', raw ) ] = {
+	function updateActionTargetFromResolution( idx, target, rawKey ) {
+		var card = ( state.proposal && state.proposal.action_cards ) ? state.proposal.action_cards[ idx ] : null;
+		if ( ! card ) {
+			return;
+		}
+		var raw = rawKey || targetFieldRaw( card, idx );
+		var resolution = {
 			kind: 'chosen',
 			id: String( target.id || '' ),
 			label: target.label || '',
 			created_by_assistant: !! target.created_by_assistant,
+			created_status: target.created_status || '',
+			edit_url: target.edit_url || '',
 		};
-		recordConditionLearning( idx, 'target', raw, state.cardResolutions[ fieldKey( idx, 'target', raw ) ] );
+		state.cardResolutions[ fieldKey( idx, 'target', raw ) ] = resolution;
+		if ( ! card.target ) {
+			card.target = {};
+		}
+		card.target.type = target.type || card.target.type || 'popup';
+		card.target.id = target.id;
+		card.target.label = target.label || card.target.label;
+		card.target.status = target.status || 'valid';
+		card.target.created_by_assistant = !! target.created_by_assistant;
+		if ( target.created_status ) {
+			card.target.created_status = target.created_status;
+		}
+		if ( target.edit_url ) {
+			card.target.edit_url = target.edit_url;
+		}
+		recordConditionLearning( idx, 'target', raw, resolution );
+	}
+
+	function syncProposalPayload() {
+		recalculateClientActionState();
+	}
+
+	function showPopupCreateToast( target ) {
+		var $toast = $( '#rwgc-popup-create-toast' );
+		if ( ! $toast.length ) {
+			$toast = $( '<div>', {
+				id: 'rwgc-popup-create-toast',
+				class: 'rwgc-popup-resolver__success',
+				role: 'status',
+			} );
+			$( '#rwgc-targeting-review' ).prepend( $toast );
+		}
+		$toast.empty().append( $( '<p>' ).text( i18n.popupCreatedSelected || 'Popup created and selected as the target.' ) );
+		if ( target && target.edit_url ) {
+			var $links = $( '<div>', { class: 'rwgc-popup-resolver__success-links' } );
+			$links.append( $( '<a>', {
+				href: target.edit_url,
+				target: '_blank',
+				rel: 'noopener noreferrer',
+				text: i18n.popupOpenEditor || 'Open popup editor',
+			} ) );
+			$links.append( $( '<button>', {
+				type: 'button',
+				class: 'rwgc-link-button',
+				text: i18n.popupContinueSetup || 'Continue setup',
+				'data-popup-toast-action': 'dismiss',
+			} ) );
+			$toast.append( $links );
+		}
+		$toast.removeClass( 'rwgc-is-hidden' );
+	}
+
+	function applyPopupTargetResolution( idx, raw, target, opts ) {
+		opts = opts || {};
+		var card = ( state.proposal && state.proposal.action_cards ) ? state.proposal.action_cards[ idx ] : null;
+		var rawKey = raw || ( card ? targetFieldRaw( card, idx ) : '' );
+		updateActionTargetFromResolution( idx, target, rawKey );
 		closeResolutionDrawer();
+		syncProposalPayload();
+		if ( opts.showToast ) {
+			showPopupCreateToast( target );
+		}
 		rerenderCards();
 	}
 
@@ -1148,6 +1233,22 @@
 		], true ) );
 	}
 
+	function renderPopupResolverDuplicate( $panel, pr ) {
+		$panel.append( $( '<h3>', { class: 'rwgc-resolution-drawer__title' } ).text( i18n.popupDuplicateTitle || 'Similar popup found' ) );
+		$panel.append( $( '<p>', { class: 'rwgc-popup-resolver__explanation' } ).text(
+			pr.duplicateMessage || i18n.popupDuplicateMessage || 'A similar popup already exists.'
+		) );
+		var $list = $( '<ul>', { class: 'rwgc-popup-resolver__duplicate-list' } );
+		( pr.duplicateMatches || [] ).forEach( function ( row ) {
+			$list.append( $( '<li>' ).text( row.label || '' ) );
+		} );
+		$panel.append( $list );
+		$panel.append( rwgcModalFooter( [
+			rwgcModalButton( i18n.popupUseExisting || 'Use existing', 'primary', 'use_duplicate' ),
+			rwgcModalButton( i18n.popupCreateAnyway || 'Create new anyway', 'secondary', 'force_create' ),
+		], true ) );
+	}
+
 	function renderPopupResolverChoosePanel() {
 		var $panel = $( '#rwgc-resolution-drawer .rwgc-popup-resolver__choose-body' );
 		if ( ! $panel.length || ! state.popupResolver ) {
@@ -1162,7 +1263,10 @@
 			placeholder: i18n.popupSearchPlaceholder || 'Search popups…',
 			value: pr.searchQuery || '',
 		} );
-		$panel.append( $( '<div>', { class: 'rwgc-popup-resolver__search' } ).append( $search ) );
+		$panel.append( $( '<div>', { class: 'rwgc-popup-resolver__search' } ).append(
+			$( '<span>', { class: 'rwgc-popup-resolver__field-label' } ).text( i18n.popupSearchLabel || 'Search' ),
+			$search
+		) );
 
 		if ( pr.searchLoading ) {
 			$panel.append( $( '<p>', { class: 'rwgc-popup-resolver__loading' } ).text( i18n.popupSearchLoading || 'Searching popups…' ) );
@@ -1249,14 +1353,27 @@
 			renderPopupResolverChoose( $panel, pr );
 		} else if ( pr.view === 'confirm_remove' ) {
 			renderPopupResolverConfirmRemove( $panel, pr );
+		} else if ( pr.view === 'duplicate' ) {
+			renderPopupResolverDuplicate( $panel, pr );
 		} else {
 			renderPopupResolverStart( $panel, pr );
 		}
 
-		$drawer.removeClass( 'rwgc-is-hidden' ).attr( 'aria-hidden', 'false' );
+		openResolutionDrawerShell();
 	}
 
-	function submitCreatePopup() {
+	function openResolutionDrawerShell() {
+		var $drawer = ensureResolutionDrawer();
+		$drawer.removeClass( 'rwgc-is-hidden' ).attr( 'aria-hidden', 'false' );
+		$( 'body' ).addClass( 'rwgc-modal-open' );
+		var $panel = $drawer.find( '.rwgc-resolution-drawer__panel' );
+		if ( $panel.length ) {
+			state.modalReturnFocus = document.activeElement;
+			$panel.attr( 'tabindex', '-1' ).trigger( 'focus' );
+		}
+	}
+
+	function submitCreatePopup( forceCreate ) {
 		var pr = state.popupResolver;
 		if ( ! pr || pr.createLoading ) {
 			return;
@@ -1285,8 +1402,18 @@
 				status: pr.createStatus || 'draft',
 				proposal_id: state.proposal && state.proposal.id ? String( state.proposal.id ) : '',
 				action_id: 'action_' + ( pr.card + 1 ),
+				attach_to_action: pr.attachToAction !== false,
+				force_create: !! forceCreate,
 			} ),
 		} ).done( function ( resp ) {
+			if ( resp && resp.success === false && resp.reason === 'possible_duplicate' ) {
+				pr.createLoading = false;
+				pr.duplicateMatches = resp.matches || [];
+				pr.duplicateMessage = resp.message || '';
+				pr.view = 'duplicate';
+				renderPopupResolver();
+				return;
+			}
 			if ( ! resp || ! resp.success || ! resp.target ) {
 				pr.createLoading = false;
 				window.alert( i18n.popupCreateFailed || 'Could not create the popup.' );
@@ -1294,7 +1421,7 @@
 				return;
 			}
 			if ( pr.attachToAction !== false ) {
-				applyPopupTargetResolution( pr.card, pr.raw, resp.target );
+				applyPopupTargetResolution( pr.card, pr.raw, resp.target, { showToast: true } );
 			} else {
 				closeResolutionDrawer();
 				rerenderCards();
@@ -1323,6 +1450,9 @@
 		applyPopupTargetResolution( pr.card, pr.raw, {
 			id: chosen.id,
 			label: chosen.label,
+			type: 'popup',
+			status: 'valid',
+			edit_url: chosen.edit_url || '',
 			created_by_assistant: false,
 		} );
 	}
@@ -1352,7 +1482,20 @@
 			pr.view = 'confirm_remove';
 			renderPopupResolver();
 		} else if ( 'submit_create' === action ) {
-			submitCreatePopup();
+			submitCreatePopup( false );
+		} else if ( 'force_create' === action ) {
+			submitCreatePopup( true );
+		} else if ( 'use_duplicate' === action ) {
+			var match = ( pr.duplicateMatches || [] )[ 0 ];
+			if ( match ) {
+				applyPopupTargetResolution( pr.card, pr.raw, {
+					id: match.id,
+					label: match.label,
+					type: 'popup',
+					status: 'valid',
+					created_by_assistant: false,
+				} );
+			}
 		} else if ( 'submit_choose' === action ) {
 			submitChoosePopup();
 		} else if ( 'confirm_remove' === action ) {
@@ -1433,19 +1576,33 @@
 		if ( ! $drawer.length ) {
 			$drawer = $( '<div>', {
 				id: 'rwgc-resolution-drawer',
-				class: 'rwgc-resolution-drawer rwgc-is-hidden',
+				class: 'rwgc-modal-overlay rwgc-resolution-drawer rwgc-is-hidden',
 				'aria-hidden': 'true',
 			} );
-			$drawer.append( $( '<div>', { class: 'rwgc-resolution-drawer__backdrop', 'data-drawer-action': 'cancel' } ) );
-			$drawer.append( $( '<div>', { class: 'rwgc-resolution-drawer__panel', role: 'dialog', 'aria-modal': 'true' } ) );
+			$drawer.append( $( '<div>', {
+				class: 'rwgc-modal rwgc-resolution-drawer__panel',
+				role: 'dialog',
+				'aria-modal': 'true',
+				tabindex: '-1',
+			} ) );
 			$( 'body' ).append( $drawer );
 		}
 		return $drawer;
 	}
 
 	function closeResolutionDrawer() {
-		$( '#rwgc-resolution-drawer' ).addClass( 'rwgc-is-hidden' ).attr( 'aria-hidden', 'true' );
-		$( '#rwgc-resolution-drawer .rwgc-resolution-drawer__panel' ).removeClass( 'rwgc-popup-resolver' );
+		var $drawer = $( '#rwgc-resolution-drawer' );
+		$drawer.addClass( 'rwgc-is-hidden' ).attr( 'aria-hidden', 'true' );
+		$drawer.find( '.rwgc-resolution-drawer__panel' ).removeClass( 'rwgc-popup-resolver' ).empty();
+		$( 'body' ).removeClass( 'rwgc-modal-open' );
+		if ( state.modalReturnFocus && state.modalReturnFocus.focus ) {
+			try {
+				state.modalReturnFocus.focus();
+			} catch ( e ) {
+				// Ignore focus restore errors.
+			}
+		}
+		state.modalReturnFocus = null;
 		state.resolutionDrawer = null;
 		state.popupResolver = null;
 		if ( state.popupSearchTimer ) {
@@ -1514,7 +1671,7 @@
 		} ) );
 		$panel.append( $actions );
 
-		$drawer.removeClass( 'rwgc-is-hidden' ).attr( 'aria-hidden', 'false' );
+		openResolutionDrawerShell();
 	}
 
 	function applyResolutionDrawer() {
@@ -1800,10 +1957,10 @@
 			$card.append( $( '<p>', { class: 'rwgc-geo-card__warning' } ).text( w ) );
 		} );
 
-		$card.append( $( '<div>', { class: 'rwgc-geo-card__row-actions' } ).append(
+		$card.append( $( '<div>', { class: 'rwgc-action-card__footer' } ).append(
 			$( '<button>', {
 				type: 'button',
-				class: 'button-link rwgc-geo-card__act--danger',
+				class: 'rwgc-link-button rwgc-link-button--danger',
 				text: i18n.cardRemoveAction || 'Remove action',
 				'data-card-action': 'remove_action',
 				'data-card': idx,
@@ -1896,7 +2053,7 @@
 	function resolvedSummary( card, idx ) {
 		var parts = [];
 		var t = card.target || {};
-		var tres = fieldResolution( idx, 'target', t.raw );
+		var tres = fieldResolution( idx, 'target', targetFieldRaw( card, idx ) );
 		var targetText = tres ? ( tres.label || t.raw ) : ( ( t.resolved && t.resolved.name ) || t.raw || '' );
 		if ( targetText ) {
 			parts.push( targetText );
@@ -3495,7 +3652,11 @@
 			handleCardAction( $( this ) );
 		} );
 
-		$( 'body' ).on( 'click', '#rwgc-resolution-drawer [data-drawer-action]', function () {
+		$( 'body' ).on( 'click', '#rwgc-resolution-drawer.rwgc-modal-overlay', function ( e ) {
+			if ( e.target === this ) {
+				closeResolutionDrawer();
+			}
+		} ).on( 'click', '#rwgc-resolution-drawer [data-drawer-action]', function () {
 			if ( state.popupResolver ) {
 				return;
 			}
@@ -3539,6 +3700,19 @@
 			state.resolutionDrawer.selected = key;
 			$( '#rwgc-resolution-drawer .rwgc-resolution-option' ).removeClass( 'is-selected' );
 			$( this ).addClass( 'is-selected' );
+		} ).on( 'click', '[data-popup-toast-action="dismiss"]', function () {
+			$( '#rwgc-popup-create-toast' ).addClass( 'rwgc-is-hidden' );
+		} );
+
+		$( document ).on( 'keydown.rwgcModal', function ( e ) {
+			if ( 27 !== e.which && 'Escape' !== e.key ) {
+				return;
+			}
+			var $drawer = $( '#rwgc-resolution-drawer' );
+			if ( $drawer.length && ! $drawer.hasClass( 'rwgc-is-hidden' ) ) {
+				e.preventDefault();
+				closeResolutionDrawer();
+			}
 		} );
 
 		$( '#rwgc-targeting-rail' ).on( 'click', '[data-action]', function () {

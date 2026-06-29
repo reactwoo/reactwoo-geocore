@@ -1,32 +1,32 @@
 # Current task
 
-> **Completed** in Geo Core **v1.8.91** (2026-06-26). Planner may replace this file for the next task.
+> **Completed** in Geo Core **v1.8.92** (2026-06-29). Planner may replace this file for the next task.
 
 ## Problem
 
-Geo Assistant **Resolve popup target** modal was confusing: existing popups, Search, Choose popup, and Remove action all appeared as top-level buttons.
+Popup target resolver start view was correct, but create flow did not reliably auto-select the new popup, modal appeared too low, buttons were cramped, and Remove action sat on the card edge.
 
 ## Expected
 
-1. Start view: Create new popup | Choose existing popup | Remove action | Cancel only.
-2. Create flow: prefilled name, draft status, attach checkbox, `POST /targets/create`, update action target without creating rule.
-3. Choose flow: debounced search, radio rows, Use selected popup (disabled until selection), empty state.
-4. Remove flow: confirmation before discard.
-5. Consistent `.rwgc-button` modal styling.
+1. Create popup → auto-attach target to action → Resolution Hub updates → rule not created.
+2. Centered viewport modal (`rwgc-modal-overlay` on `body`).
+3. Consistent modal action/footer button layout.
+4. Search only inside Choose existing popup.
+5. Duplicate popup guard with Use existing / Create anyway.
+6. Action Review Remove action in padded card footer.
 
 ## Acceptance test
 
-- [x] Start view shows only three primary choices + Cancel (no popup names as buttons).
-- [x] Search only inside Choose existing popup.
-- [x] Create/select sets target valid; Resolution Hub updates; rule not auto-created.
-- [x] Remove requires confirmation.
-- [x] REST `targets/search` and `targets/create` registered.
+- [x] Create/select sets target valid; hub shows remaining Google Ads mapping.
+- [x] Modal centered; z-index above admin.
+- [x] REST `attach_to_action`, `force_create`, duplicate response.
+- [x] Structural PHPUnit guards.
 - [ ] Manual browser pass on Local (planner/human).
 
 ## Do not touch
 
 - Geo AI parser / planner interpretation logic.
-- Generic Google Ads resolution drawer (non-popup fields).
+- Generic Google Ads resolution drawer field logic (except shared modal shell).
 
 ## Cursor instructions
 

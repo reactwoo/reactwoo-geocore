@@ -6,49 +6,41 @@ done
 
 ## Summary
 
-Replaced the messy popup target resolver with a multi-view modal (`start` → `create` | `choose` | `confirm_remove`), added REST search/create for Elementor popups, and consistent modal button styling. Released as **v1.8.91**.
+Fixed popup create auto-select (updates `card.target` + `cardResolutions` via `targetFieldRaw`), centered resolver modal on `document.body`, duplicate-popup REST guard, action card footer padding, and post-create success toast. Version **1.8.92**.
 
 ## Files changed
 
 | File | Reason |
 |------|--------|
-| `admin/js/rwgc-targeting-assistant.js` | Multi-view popup resolver, AJAX search/create, card actions simplified |
-| `admin/css/rwgc-targeting.css` | `.rwgc-modal-*`, `.rwgc-button--*`, popup list rows |
-| `includes/targeting/class-rwgc-assistant-target-service.php` | **New** — search/create Elementor popup templates |
-| `includes/class-rwgc-rest.php` | `GET /targets/search`, `POST /targets/create` |
-| `includes/class-rwgc-admin.php` | REST URLs + i18n for resolver views |
-| `includes/class-rwgc-plugin.php` | Load target service |
-| `tests/Admin/RWGCTargetingAssistantUiRegressionTest.php` | Updated structural guards |
-| `tests/Targeting/RWGCAssistantTargetServiceTest.php` | **New** — `format_popup_row` shape |
-| `reactwoo-geocore.php`, `readme.txt` | Version **1.8.91** |
-| `ai-handoff/current-task.md` | Marked task complete |
-| `ai-handoff/cursor-output.md` | This file |
+| `admin/js/rwgc-targeting-assistant.js` | Auto-select target, modal shell, duplicate view, toast, `syncProposalPayload` |
+| `admin/css/rwgc-targeting.css` | Centered `.rwgc-modal-overlay`, footer/button polish, action card footer |
+| `includes/targeting/class-rwgc-assistant-target-service.php` | `find_similar_popups`, duplicate block unless `force_create` |
+| `includes/class-rwgc-rest.php` | `attach_to_action`, `force_create`, attach context validation |
+| `includes/class-rwgc-admin.php` | i18n for toast, duplicate, search label |
+| `tests/Admin/RWGCTargetingAssistantUiRegressionTest.php` | Tests 1–5 from task spec |
+| `reactwoo-geocore.php`, `readme.txt` | Version **1.8.92** |
+| `ai-handoff/current-task.md`, `cursor-output.md` | Handoff |
 
 ## What was not changed
 
-- Geo AI (`reactwoo-geo-ai`) — create-rule execute journey unchanged (still 0.4.130+).
-- Generic `openResolutionDrawer()` for Google Ads / campaign / audience.
-- Planner-owned `decisions.md` (one row added separately if needed).
+- Geo AI execute / create-rule journey.
+- Google Ads resolver option logic inside `openResolutionDrawer`.
 
 ## Commands run
 
 ```bash
-cd reactwoo-geocore && git status
-# modified + new files as above
-
 composer test -- --filter 'RWGCTargetingAssistantUiRegressionTest|RWGCAssistantTargetServiceTest'
-# not run — local phpunit vendor incomplete on agent machine
+# Failed: PHPUnit\TextUI\Command not found (known Windows agent env issue)
 ```
 
 ## Build / test result
 
-needs-review — structural PHPUnit guards added; manual Local UI pass recommended for create/choose/remove flows.
+needs-review — structural tests added; manual Local UI pass recommended.
 
 ## Remaining errors
 
-None in code. Local PHPUnit env (`Class PHPUnit\TextUI\Command not found`) blocked automated run on Windows agent shell.
+None in code. PHPUnit blocked on agent shell (see `known-issues.md`).
 
 ## Release
 
-- Tag: `v1.8.91`
-- Zip: `npm run package:zip` → `reactwoo-geocore-1.8.91.zip`
+Not run — awaiting user commit/tag/push request.

@@ -67,9 +67,10 @@ class RWGC_Assistant_Target_Service {
 	/**
 	 * @param string $title  Popup title.
 	 * @param string $status draft|publish.
-	 * @return array{success:bool,target:array<string,mixed>}|\WP_Error
+	 * @param array<string,mixed> $args Optional: force_create (bool).
+	 * @return array{success:bool,target?:array<string,mixed>,reason?:string,matches?:array<int,array<string,mixed>>,message?:string}|\WP_Error
 	 */
-	public static function create_popup( $title, $status = 'draft' ) {
+	public static function create_popup( $title, $status = 'draft', $args = array() ) {
 		if ( ! post_type_exists( self::POPUP_POST_TYPE ) ) {
 			return new WP_Error(
 				'rwgc_popup_unavailable',
@@ -98,6 +99,19 @@ class RWGC_Assistant_Target_Service {
 		$status = sanitize_key( (string) $status );
 		if ( ! in_array( $status, array( 'draft', 'publish', 'private', 'pending' ), true ) ) {
 			$status = 'draft';
+		}
+
+		$force_create = ! empty( $args['force_create'] );
+		if ( ! $force_create ) {
+			$matches = self::find_similar_popups( $title );
+			if ( ! empty( $matches ) ) {
+				return array(
+					'success' => false,
+					'reason'  => 'possible_duplicate',
+					'matches' => $matches,
+					'message' => __( 'A similar popup already exists.', 'reactwoo-geocore' ),
+				);
+			}
 		}
 
 		$post_id = wp_insert_post(
@@ -153,6 +167,88 @@ class RWGC_Assistant_Target_Service {
 				'created_by_assistant' => true,
 			),
 		);
+	}
+
+	/**
+	 * Find popups with a similar title (exact or close match).
+	 *
+	 * @param string $title Popup title.
+	 * @param int    $limit Max matches.
+	 * @return array<int,array{id:int,label:string}>
+	 */
+	public static function find_similar_popups( $title, $limit = 5 ) {
+		if ( ! post_type_exists( self::POPUP_POST_TYPE ) ) {
+			return array();
+		}
+
+		$title   = trim( (string) $title );
+		$needle  = strtolower( $title );
+		$limit   = max( 1, min( 10, (int) $limit ) );
+		$matches = array();
+		$seen    = array();
+
+		if ( '' === $needle ) {
+			return array();
+		}
+
+		$search = self::search_popups( $title, 20 );
+		if ( ! is_wp_error( $search ) && ! empty( $search['results'] ) && is_array( $search['results'] ) ) {
+			foreach ( $search['results'] as $row ) {
+				$id    = isset( $row['id'] ) ? (int) $row['id'] : 0;
+				$label = isset( $row['label'] ) ? (string) $row['label'] : '';
+				$hay   = strtolower( $label );
+				if ( $id <= 0 || '' === $label || isset( $seen[ $id ] ) ) {
+					continue;
+				}
+				if ( $hay === $needle || false !== strpos( $hay, $needle ) || false !== strpos( $needle, $hay ) ) {
+					$matches[]    = array(
+						'id'    => $id,
+						'label' => $label,
+					);
+					$seen[ $id ] = true;
+				}
+				if ( count( $matches ) >= $limit ) {
+					return $matches;
+				}
+			}
+		}
+
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT p.ID FROM {$wpdb->posts} p
+				INNER JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = %s AND pm.meta_value = %s
+				WHERE p.post_type = %s AND p.post_status IN ('publish','draft','private','pending') AND LOWER(p.post_title) = %s
+				LIMIT %d",
+				'_elementor_template_type',
+				'popup',
+				self::POPUP_POST_TYPE,
+				$needle,
+				$limit
+			)
+		);
+
+		foreach ( (array) $ids as $post_id ) {
+			$post_id = (int) $post_id;
+			if ( $post_id <= 0 || isset( $seen[ $post_id ] ) ) {
+				continue;
+			}
+			$post = get_post( $post_id );
+			if ( ! $post instanceof WP_Post ) {
+				continue;
+			}
+			$matches[]        = array(
+				'id'    => $post_id,
+				'label' => (string) get_the_title( $post ),
+			);
+			$seen[ $post_id ] = true;
+			if ( count( $matches ) >= $limit ) {
+				break;
+			}
+		}
+
+		return $matches;
 	}
 
 	/**

@@ -1118,10 +1118,31 @@
 
 .rwgc-action-card > .rwgc-geo-card__field,
 .rwgc-action-card > .rwgc-action-card__section,
-.rwgc-action-card > .rwgc-geo-card__warning,
-.rwgc-action-card > .rwgc-geo-card__row-actions {
+.rwgc-action-card > .rwgc-geo-card__warning {
 	padding-left: 1.1rem;
 	padding-right: 1.1rem;
+}
+
+.rwgc-action-card__footer {
+	display: flex;
+	justify-content: flex-end;
+	padding: 14px 20px 18px;
+	border-top: 1px solid #eef2f7;
+}
+
+.rwgc-link-button {
+	background: transparent;
+	border: 0;
+	padding: 4px 0;
+	color: #3156f3;
+	text-decoration: underline;
+	cursor: pointer;
+	font-weight: 500;
+	font-size: 0.88rem;
+}
+
+.rwgc-link-button--danger {
+	color: #b42318;
 }
 
 .rwgc-action-card__section {
@@ -1315,36 +1336,38 @@
 	border-color: #2563eb;
 }
 
+.rwgc-modal-overlay,
 .rwgc-resolution-drawer {
 	position: fixed;
 	inset: 0;
-	z-index: 100100;
+	z-index: 100000;
 	display: flex;
-	align-items: flex-end;
+	align-items: center;
 	justify-content: center;
+	padding: 32px;
+	background: rgba(15, 23, 42, 0.46);
 }
 
+.rwgc-modal-overlay.rwgc-is-hidden,
 .rwgc-resolution-drawer.rwgc-is-hidden {
 	display: none;
 }
 
-.rwgc-resolution-drawer__backdrop {
-	position: absolute;
-	inset: 0;
-	background: rgba(15, 23, 42, 0.45);
-}
-
+.rwgc-modal,
 .rwgc-resolution-drawer__panel {
 	position: relative;
 	z-index: 1;
-	width: min(520px, calc(100vw - 2rem));
-	margin: 0 1rem 1.5rem;
-	padding: 1.1rem 1.2rem;
+	width: min(720px, calc(100vw - 48px));
+	max-height: calc(100vh - 96px);
+	overflow: auto;
+	padding: 24px 24px 0;
 	background: #fff;
-	border-radius: 14px;
-	box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
-	max-height: calc(100vh - 3rem);
-	overflow-y: auto;
+	border-radius: 18px;
+	box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+}
+
+.rwgc-modal-overlay.rwgc-body-locked {
+	overflow: hidden;
 }
 
 .rwgc-resolution-drawer__title {
@@ -1557,34 +1580,78 @@
 	color: #667085;
 }
 
-.rwgc-popup-resolver__empty {
-	margin-top: 0.35rem;
+.rwgc-modal-open {
+	overflow: hidden;
+}
+
+.rwgc-popup-resolver__duplicate-list {
+	margin: 0.5rem 0 0;
+	padding-left: 1.1rem;
+	color: #344054;
+	font-size: 0.88rem;
 }
 
 .rwgc-modal-actions {
 	display: flex;
-	gap: 10px;
 	flex-wrap: wrap;
-	align-items: center;
+	gap: 10px;
+	margin-top: 20px;
+}
+
+.rwgc-popup-resolver__choices.rwgc-modal-actions {
+	margin-top: 0;
 }
 
 .rwgc-modal-footer {
 	display: flex;
 	justify-content: flex-end;
 	gap: 10px;
-	padding-top: 18px;
+	padding: 18px 24px 24px;
+	margin: 20px -24px 0;
 	border-top: 1px solid #e5e7eb;
-	margin-top: 24px;
+}
+
+.rwgc-modal-footer .rwgc-modal-actions {
+	margin-top: 0;
+	flex: 1;
+	justify-content: flex-start;
+}
+
+.rwgc-popup-resolver__success {
+	margin: 0.75rem 0 0;
+	padding: 0.75rem 0.9rem;
+	border-radius: 10px;
+	background: #ecfdf3;
+	border: 1px solid #abefc6;
+	color: #027a48;
+	font-size: 0.88rem;
+}
+
+.rwgc-popup-resolver__success-links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	margin-top: 0.55rem;
+}
+
+.rwgc-popup-resolver__success-links a {
+	color: #3156f3;
+	font-weight: 600;
+	text-decoration: none;
 }
 
 .rwgc-button {
-	min-height: 38px;
-	padding: 8px 14px;
-	border-radius: 8px;
+	min-height: 40px;
+	padding: 9px 15px;
+	border-radius: 9px;
 	font-weight: 600;
 	cursor: pointer;
 	font-size: 0.88rem;
 	line-height: 1.2;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .rwgc-button--primary {

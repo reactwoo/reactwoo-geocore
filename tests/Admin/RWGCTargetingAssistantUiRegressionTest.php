@@ -66,7 +66,8 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$this->assertStringNotContainsString( 'condition-card__options', $card );
 		$this->assertStringNotContainsString( 'resolution_options', $card );
 		$this->assertStringContainsString( 'rwgc-resolution-drawer', $js );
-		$this->assertStringContainsString( "class: 'rwgc-resolution-drawer rwgc-is-hidden'", $js );
+		$this->assertStringContainsString( 'rwgc-modal-overlay', $js );
+		$this->assertStringContainsString( "class: 'rwgc-modal-overlay rwgc-resolution-drawer rwgc-is-hidden'", $js );
 	}
 
 	public function test_create_rule_button_hidden_until_executable(): void {
@@ -123,11 +124,68 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 	public function test_popup_resolver_modal_button_styles(): void {
 		$css = $this->targeting_css();
 
+		$this->assertStringContainsString( '.rwgc-modal-overlay', $css );
+		$this->assertStringContainsString( 'align-items: center', $css );
+		$this->assertStringContainsString( 'z-index: 100000', $css );
 		$this->assertStringContainsString( '.rwgc-modal-actions', $css );
 		$this->assertStringContainsString( '.rwgc-modal-footer', $css );
 		$this->assertStringContainsString( '.rwgc-button--primary', $css );
 		$this->assertStringContainsString( '.rwgc-button--danger', $css );
 		$this->assertStringContainsString( '.rwgc-popup-resolver__row', $css );
+	}
+
+	public function test_popup_resolver_start_options(): void {
+		$js     = $this->assistant_js();
+		$start  = $this->js_between( $js, 'renderPopupResolverStart', 'renderPopupResolverCreate' );
+
+		$this->assertStringContainsString( 'goto_create', $start );
+		$this->assertStringContainsString( 'goto_choose', $start );
+		$this->assertStringContainsString( 'goto_confirm_remove', $start );
+		$this->assertStringContainsString( "'cancel'", $start );
+		$this->assertStringNotContainsString( 'search_popups', $start );
+		$this->assertStringNotContainsString( 'rwgc-popup-search-input', $start );
+	}
+
+	public function test_create_popup_auto_selects_target(): void {
+		$js = $this->assistant_js();
+
+		$this->assertStringContainsString( 'updateActionTargetFromResolution', $js );
+		$this->assertStringContainsString( 'card.target.status = target.status', $js );
+		$this->assertStringContainsString( 'created_by_assistant', $js );
+		$this->assertStringContainsString( 'attach_to_action', $js );
+		$this->assertStringContainsString( 'syncProposalPayload', $js );
+		$this->assertStringContainsString( 'recalculateClientActionState', $js );
+
+		$create = $this->js_between( $js, 'submitCreatePopup', 'submitChoosePopup' );
+		$this->assertStringNotContainsString( 'create_setup', $create );
+		$this->assertStringNotContainsString( 'executeUrl', $create );
+	}
+
+	public function test_modal_mounted_to_body_and_centered(): void {
+		$js  = $this->assistant_js();
+		$css = $this->targeting_css();
+
+		$this->assertStringContainsString( ".append( \$drawer )", $js );
+		$this->assertStringContainsString( 'openResolutionDrawerShell', $js );
+		$overlay_pos = strpos( $css, '.rwgc-modal-overlay' );
+		$this->assertNotFalse( $overlay_pos );
+		$overlay_chunk = substr( $css, $overlay_pos, 420 );
+		$this->assertStringContainsString( 'position: fixed', $overlay_chunk );
+		$this->assertStringContainsString( 'align-items: center', $overlay_chunk );
+		$this->assertStringContainsString( 'justify-content: center', $overlay_chunk );
+		$this->assertStringContainsString( 'z-index: 100000', $overlay_chunk );
+	}
+
+	public function test_remove_action_link_has_card_footer_padding(): void {
+		$js  = $this->assistant_js();
+		$css = $this->targeting_css();
+		$card = $this->js_between( $js, 'renderCard', 'renderActionCards' );
+
+		$this->assertStringContainsString( 'rwgc-action-card__footer', $card );
+		$this->assertStringContainsString( 'rwgc-link-button--danger', $card );
+		$this->assertStringNotContainsString( 'rwgc-geo-card__row-actions', $card );
+		$this->assertStringContainsString( '.rwgc-action-card__footer', $css );
+		$this->assertStringContainsString( 'padding: 14px 20px 18px', $css );
 	}
 
 	public function test_popup_target_rest_routes_registered(): void {
@@ -138,6 +196,16 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$this->assertStringContainsString( '/targets/create', $rest );
 		$this->assertStringContainsString( 'get_targets_search', $rest );
 		$this->assertStringContainsString( 'post_targets_create', $rest );
+		$this->assertStringContainsString( 'attach_to_action', $rest );
+		$this->assertStringContainsString( 'force_create', $rest );
+	}
+
+	public function test_target_service_duplicate_guard(): void {
+		$path = dirname( __DIR__, 2 ) . '/includes/targeting/class-rwgc-assistant-target-service.php';
+		$this->assertFileExists( $path );
+		$service = (string) file_get_contents( $path );
+		$this->assertStringContainsString( 'find_similar_popups', $service );
+		$this->assertStringContainsString( 'possible_duplicate', $service );
 	}
 
 }

@@ -151,6 +151,14 @@ class RWGC_REST {
 						'default'           => '',
 						'sanitize_callback' => 'sanitize_text_field',
 					),
+					'attach_to_action' => array(
+						'type'    => 'boolean',
+						'default' => true,
+					),
+					'force_create' => array(
+						'type'    => 'boolean',
+						'default' => false,
+					),
 				),
 			)
 		);
@@ -279,12 +287,32 @@ class RWGC_REST {
 			return new WP_Error( 'rwgc_service_missing', __( 'Target service unavailable.', 'reactwoo-geocore' ), array( 'status' => 500 ) );
 		}
 
+		$attach = (bool) $request->get_param( 'attach_to_action' );
+		if ( $attach ) {
+			$proposal_id = trim( (string) $request->get_param( 'proposal_id' ) );
+			$action_id   = trim( (string) $request->get_param( 'action_id' ) );
+			if ( '' === $proposal_id || '' === $action_id ) {
+				return new WP_Error(
+					'rwgc_invalid_attach_context',
+					__( 'Proposal and action are required when attaching a new popup to an action.', 'reactwoo-geocore' ),
+					array( 'status' => 400 )
+				);
+			}
+		}
+
 		$result = RWGC_Assistant_Target_Service::create_popup(
 			(string) $request->get_param( 'title' ),
-			(string) $request->get_param( 'status' )
+			(string) $request->get_param( 'status' ),
+			array(
+				'force_create' => (bool) $request->get_param( 'force_create' ),
+			)
 		);
 		if ( is_wp_error( $result ) ) {
 			return $result;
+		}
+
+		if ( empty( $result['success'] ) ) {
+			return rest_ensure_response( $result );
 		}
 
 		return rest_ensure_response( $result );
