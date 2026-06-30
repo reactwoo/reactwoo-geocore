@@ -199,21 +199,135 @@
 		return matches.length === 1 ? matches[ 0 ] : null;
 	}
 
-	function applyPopupTargetMatch( card, idx, popup ) {
-		var raw = targetFieldRaw( card, idx );
-		var label = String( popup.title || popup.label || '' ).trim();
-		state.cardResolutions[ fieldKey( idx, 'target', raw ) ] = {
-			kind: 'chosen',
-			id: String( popup.id || '' ),
-			label: label,
-		};
-		if ( card.target ) {
-			card.target.status = 'matched';
-			card.target.resolved = {
-				id: String( popup.id || '' ),
-				name: label,
-			};
+	function popupTargetRawCandidates( card, idx ) {
+		var out = [];
+		var seen = {};
+		function add( value ) {
+			var v = String( value || '' ).trim();
+			if ( ! v || seen[ v ] ) {
+				return;
+			}
+			seen[ v ] = true;
+			out.push( v );
 		}
+		( ( card && card.requiredResolutions ) || [] ).forEach( function ( req ) {
+			if ( req.field === 'target' || req.type === 'target' ) {
+				add( req.raw );
+			}
+		} );
+		var t = ( card && card.target ) || {};
+		add( t.raw );
+		add( t.label );
+		add( targetFieldRaw( card, idx ) );
+		if ( t.resolved && t.resolved.name ) {
+			add( t.resolved.name );
+			add( t.resolved.name + ' popup' );
+		}
+		if ( t.label ) {
+			add( t.label + ' popup' );
+		}
+		return out;
+	}
+
+	function seedPopupTargetCardResolutions( card, idx, id, label ) {
+		if ( ! id ) {
+			return;
+		}
+		var resolution = {
+			kind: 'chosen',
+			id: String( id ),
+			label: label || '',
+		};
+		popupTargetRawCandidates( card, idx ).forEach( function ( raw ) {
+			if ( ! fieldResolution( idx, 'target', raw ) ) {
+				state.cardResolutions[ fieldKey( idx, 'target', raw ) ] = resolution;
+			}
+		} );
+	}
+
+	function popupTargetResolvedFromCard( card, idx ) {
+		if ( ! card || ! card.target || card.target.type !== 'popup' ) {
+			return null;
+		}
+		var candidates = popupTargetRawCandidates( card, idx );
+		var i;
+		for ( i = 0; i < candidates.length; i++ ) {
+			var raw = candidates[ i ];
+			var stored = fieldResolution( idx, 'target', raw );
+			if ( stored && stored.kind !== 'ignored' && stored.id ) {
+				return {
+					raw: targetFieldRaw( card, idx ) || raw,
+					res: stored,
+				};
+			}
+		}
+		var normWanted = '';
+		candidates.forEach( function ( candidate ) {
+			if ( ! normWanted ) {
+				normWanted = normalizePopupTargetLabel( candidate );
+			}
+		} );
+		var loose = null;
+		cardResolutionEntries( idx ).forEach( function ( entry ) {
+			if ( entry.field !== 'target' || loose || ! entry.res || entry.res.kind === 'ignored' || ! entry.res.id ) {
+				return;
+			}
+			if ( ! normWanted || normalizePopupTargetLabel( entry.raw ) === normWanted
+				|| normalizePopupTargetLabel( entry.res.label ) === normWanted ) {
+				loose = { raw: targetFieldRaw( card, idx ) || entry.raw, res: entry.res };
+			}
+		} );
+		if ( loose ) {
+			return loose;
+		}
+		var t = card.target;
+		var id = ( t.resolved && t.resolved.id ) || t.id || '';
+		if ( ! id ) {
+			return null;
+		}
+		if ( t.status !== 'matched' && t.status !== 'valid' && t.status !== 'resolved' ) {
+			return null;
+		}
+		var popupLabel = ( t.resolved && t.resolved.name ) || t.label || '';
+		return {
+			raw: targetFieldRaw( card, idx ) || t.raw || t.label || popupLabel,
+			res: {
+				kind: 'chosen',
+				id: String( id ),
+				label: popupLabel,
+			},
+		};
+	}
+
+	function ensurePopupTargetCardResolutions( card, idx ) {
+		if ( ! card || ! card.target || card.target.type !== 'popup' ) {
+			return;
+		}
+		var resolved = popupTargetResolvedFromCard( card, idx );
+		if ( ! resolved || ! resolved.res || ! resolved.res.id ) {
+			return;
+		}
+		seedPopupTargetCardResolutions( card, idx, resolved.res.id, resolved.res.label );
+	}
+
+	function syncPopupTargetActionState( card, idx, id, label ) {
+		if ( ! card.target ) {
+			card.target = { type: 'popup' };
+		}
+		card.target.type = 'popup';
+		card.target.id = String( id || '' );
+		card.target.label = label || card.target.label || '';
+		card.target.status = 'matched';
+		card.target.resolved = {
+			id: String( id || '' ),
+			name: label || '',
+		};
+		seedPopupTargetCardResolutions( card, idx, id, label );
+	}
+
+	function applyPopupTargetMatch( card, idx, popup ) {
+		var label = String( popup.title || popup.label || '' ).trim();
+		syncPopupTargetActionState( card, idx, popup.id, label );
 	}
 
 	function autoMatchPopupTargets( proposal ) {
@@ -228,11 +342,12 @@
 			if ( t.type !== 'popup' ) {
 				return;
 			}
-			var raw = targetFieldRaw( card, idx );
-			if ( fieldResolution( idx, 'target', raw ) ) {
+			if ( t.status === 'matched' && t.resolved && t.resolved.id ) {
+				ensurePopupTargetCardResolutions( card, idx );
 				return;
 			}
-			if ( t.status === 'matched' && t.resolved && t.resolved.id ) {
+			var raw = targetFieldRaw( card, idx );
+			if ( fieldResolution( idx, 'target', raw ) ) {
 				return;
 			}
 			var match = findExactPopupMatch( t.raw || t.label || raw );
@@ -484,6 +599,10 @@
 			}
 		}
 		if ( field === 'target' && card ) {
+			var popupResolved = popupTargetResolvedFromCard( card, idx );
+			if ( popupResolved ) {
+				return popupResolved;
+			}
 			var targetRaw = targetFieldRaw( card, idx );
 			if ( targetRaw && fieldResolution( idx, field, targetRaw ) ) {
 				return { raw: targetRaw, res: fieldResolution( idx, field, targetRaw ) };
@@ -606,6 +725,7 @@
 	}
 
 	function applyTargetResolutionToCard( card, idx ) {
+		ensurePopupTargetCardResolutions( card, idx );
 		var raw = targetFieldRaw( card, idx );
 		var match = findFieldResolution( idx, 'target', raw, card );
 		if ( ! match || match.res.kind === 'ignored' ) {
@@ -614,13 +734,17 @@
 		if ( ! card.target ) {
 			card.target = {};
 		}
-		card.target.status = 'matched';
-		card.target.resolved = {
-			id: match.res.id || '',
-			name: match.res.label || '',
-		};
+		if ( card.target.type === 'popup' && match.res.id ) {
+			syncPopupTargetActionState( card, idx, match.res.id, match.res.label || '' );
+		} else {
+			card.target.status = 'matched';
+			card.target.resolved = {
+				id: match.res.id || '',
+				name: match.res.label || '',
+			};
+		}
 		card.requiredResolutions = ( card.requiredResolutions || [] ).filter( function ( req ) {
-			if ( req.field !== 'target' ) {
+			if ( req.field !== 'target' && req.type !== 'target' ) {
 				return true;
 			}
 			return ! findFieldResolution( idx, 'target', req.raw, card );
@@ -648,12 +772,16 @@
 		( items || [] ).forEach( function ( item ) {
 			var $li = $( '<li>' );
 			$li.append( $( '<span>' ).text( item.label || item.field || '' ) );
+			var resolveLabel = i18n.resolveField || 'Resolve';
+			if ( item.field === 'traffic_source' ) {
+				resolveLabel = i18n.resolveGoogleAds || 'Resolve Google Ads mapping';
+			} else if ( item.field === 'target' ) {
+				resolveLabel = i18n.resolvePopupTarget || 'Resolve popup target';
+			}
 			$li.append( $( '<button>', {
 				type: 'button',
 				class: 'button-link',
-				text: item.field === 'traffic_source'
-					? ( i18n.resolveGoogleAds || 'Resolve Google Ads mapping' )
-					: ( i18n.resolveField || 'Resolve' ),
+				text: resolveLabel,
 				'data-card-action': 'open_resolver',
 				'data-card': item.card,
 				'data-field': item.field,
@@ -2136,7 +2264,11 @@
 		card.target.type = target.type || card.target.type || 'popup';
 		card.target.id = target.id;
 		card.target.label = target.label || card.target.label;
-		card.target.status = target.status || 'valid';
+		card.target.status = 'matched';
+		card.target.resolved = {
+			id: String( target.id || '' ),
+			name: target.label || card.target.label || '',
+		};
 		card.target.created_by_assistant = !! target.created_by_assistant;
 		if ( target.created_status ) {
 			card.target.created_status = target.created_status;
@@ -2144,6 +2276,7 @@
 		if ( target.edit_url ) {
 			card.target.edit_url = target.edit_url;
 		}
+		seedPopupTargetCardResolutions( card, idx, target.id, target.label || card.target.label );
 		recordConditionLearning( idx, 'target', raw, resolution );
 	}
 
@@ -3580,6 +3713,119 @@
 		} );
 	}
 
+	function collectPopupTargetResolution( card, idx ) {
+		if ( card.uses_shared_target || ! card.target || card.target.type !== 'popup' ) {
+			return null;
+		}
+		var resolved = popupTargetResolvedFromCard( card, idx );
+		if ( ! resolved || ! resolved.res || resolved.res.kind === 'ignored' || ! resolved.res.id ) {
+			return null;
+		}
+		var exportRaw = targetFieldRaw( card, idx ) || resolved.raw || '';
+		return {
+			card: idx,
+			field: 'target',
+			type: 'popup',
+			raw: exportRaw,
+			action: 'choose',
+			id: resolved.res.id,
+			label: resolved.res.label || '',
+			value: resolved.res.id,
+			status: 'valid',
+		};
+	}
+
+	function executePayloadTargetMismatches( proposal ) {
+		var mismatches = [];
+		var collected = collectCardResolutions();
+		( ( proposal && proposal.action_cards ) || [] ).forEach( function ( card, idx ) {
+			if ( isCardRemoved( idx ) || ! card.target || card.target.type !== 'popup' ) {
+				return;
+			}
+			var id = ( card.target.resolved && card.target.resolved.id ) || card.target.id || '';
+			var visuallyResolved = ( card.target.status === 'matched' || card.target.status === 'valid' ) && !! id;
+			if ( ! visuallyResolved ) {
+				return;
+			}
+			var exported = collected.some( function ( row ) {
+				return row.card === idx && row.field === 'target' && row.id;
+			} );
+			if ( ! exported ) {
+				mismatches.push( {
+					card: idx,
+					field: 'target',
+					raw: targetFieldRaw( card, idx ),
+					label: i18n.hubNeedPopup || 'Popup target',
+					selectedLabel: ( card.target.resolved && card.target.resolved.name ) || card.target.label || '',
+				} );
+			}
+		} );
+		return mismatches;
+	}
+
+	function showTargetExecuteMismatchMessage( items ) {
+		var item = items && items.length ? items[ 0 ] : null;
+		if ( ! item ) {
+			return;
+		}
+		var $wrap = $( '<div>', { class: 'rwgc-targeting-assistant__execute-blocked rwgc-targeting-assistant__execute-mismatch' } );
+		$wrap.append( $( '<p>' ).html( '<strong>' + esc( i18n.stateMismatchTitle || 'State mismatch' ) + '</strong>' ) );
+		$wrap.append( $( '<p>' ).text( i18n.stateMismatchPopupBody || 'The popup target is selected in the UI but missing from the execute payload.' ) );
+		$wrap.append( $( '<p>' ).html(
+			'<strong>' + esc( i18n.selectedTargetLabel || 'Selected target:' ) + '</strong> '
+			+ esc( item.selectedLabel || '—' )
+		) );
+		$wrap.append( $( '<p>' ).html(
+			'<strong>' + esc( i18n.missingExecuteResolution || 'Missing execute resolution:' ) + '</strong> '
+			+ esc( item.label || i18n.hubNeedPopup || 'Popup target' )
+		) );
+		var $actions = $( '<div>', { class: 'rwgc-targeting-assistant__execute-blocked-actions' } );
+		$actions.append( $( '<button>', {
+			type: 'button',
+			class: 'button rwgc-geo-btn',
+			text: i18n.resolvePopupTarget || 'Resolve popup target',
+			'data-card-action': 'open_resolver',
+			'data-card': item.card,
+			'data-field': 'target',
+			'data-raw': item.raw || '',
+		} ) );
+		$actions.append( $( '<button>', {
+			type: 'button',
+			class: 'button rwgc-geo-btn',
+			text: i18n.showDebug || 'Show debug',
+			'data-action': 'debug',
+		} ) );
+		$actions.append( $( '<button>', {
+			type: 'button',
+			class: 'button-link rwgc-geo-btn',
+			text: i18n.cancel || 'Cancel',
+			'data-action': 'cancel',
+		} ) );
+		$wrap.append( $actions );
+		var $thread = $( '#rwgc-targeting-thread' );
+		var $bubble = assistantBubble( '' );
+		$bubble.find( '.rwgc-targeting-assistant__bubble-body' ).append( $wrap );
+		$thread.append( $bubble );
+		scrollThread();
+	}
+
+	function logExecutePayloadDebug( resolutions ) {
+		if ( ! state.debug && ! state.executePayloadDebug ) {
+			return;
+		}
+		console.log( '[Geo Assistant execute debug]', {
+			proposalId: state.proposalId,
+			cardResolutions: state.cardResolutions,
+			collectedResolutions: resolutions,
+			proposalCards: state.proposal && state.proposal.action_cards,
+			actionCards: state.proposal && state.proposal.action_cards,
+			payload: {
+				proposal_id: state.proposalId,
+				resolutions: resolutions,
+			},
+		} );
+	}
+
 	function collectCardResolutions() {
 		var out = [];
 		var seen = {};
@@ -3599,14 +3845,20 @@
 					return;
 				}
 				seen[ dedupe ] = true;
-				out.push( {
+				var row = {
 					card: idx,
 					field: field,
 					raw: match.raw || preferredRaw || '',
 					action: match.res.kind === 'ignored' ? 'ignore' : 'choose',
 					id: match.res.id || '',
 					label: match.res.label || '',
-				} );
+				};
+				if ( field === 'target' && card.target && card.target.type === 'popup' && match.res.id ) {
+					row.type = 'popup';
+					row.value = match.res.id;
+					row.status = 'valid';
+				}
+				out.push( row );
 			}
 			( ( card && card.requiredResolutions ) || [] ).forEach( function ( req ) {
 				pushResolution( req.field, req.raw );
@@ -3633,6 +3885,14 @@
 			if ( ! card.uses_shared_target && card.target && card.target.status
 				&& 'matched' !== card.target.status && 'ignored' !== card.target.status ) {
 				pushResolution( 'target', card.target.raw || card.target.label || '' );
+			}
+			var popupTargetRow = collectPopupTargetResolution( card, idx );
+			if ( popupTargetRow ) {
+				var popupDedupe = idx + '|target|' + popupTargetRow.raw;
+				if ( ! seen[ popupDedupe ] ) {
+					seen[ popupDedupe ] = true;
+					out.push( popupTargetRow );
+				}
 			}
 			cardResolutionEntries( idx ).forEach( function ( entry ) {
 				pushResolution( entry.field, entry.raw );
@@ -3839,6 +4099,12 @@
 
 	function finalizeCardSetup() {
 		syncProposalPayload();
+		var targetMismatch = executePayloadTargetMismatches( state.proposal );
+		if ( targetMismatch.length ) {
+			showTargetExecuteMismatchMessage( targetMismatch );
+			jumpToActionReview();
+			return;
+		}
 		var unresolved = unresolvedExecuteItems( state.proposal );
 		if ( unresolved.length ) {
 			showExecuteBlockedMessage( unresolved );
@@ -3847,8 +4113,10 @@
 			return;
 		}
 		if ( ! responseCanExecute( state.proposal ) ) {
-			var mismatch = unresolvedExecuteItems( state.proposal );
-			if ( ! mismatch.length && state.debug ) {
+			var mismatch = executePayloadTargetMismatches( state.proposal );
+			if ( mismatch.length ) {
+				showTargetExecuteMismatchMessage( mismatch );
+			} else if ( state.debug ) {
 				appendAssistant( esc( i18n.stateMismatchWarning || 'State mismatch: visible action is ready but execute payload still has unresolved fields.' ) );
 			}
 			jumpToActionReview();
@@ -4468,6 +4736,12 @@
 
 	function executeProposal() {
 		syncProposalPayload();
+		var targetMismatch = executePayloadTargetMismatches( state.proposal );
+		if ( targetMismatch.length ) {
+			showTargetExecuteMismatchMessage( targetMismatch );
+			jumpToActionReview();
+			return;
+		}
 		var preflight = unresolvedExecuteItems( state.proposal );
 		if ( preflight.length ) {
 			showExecuteBlockedMessage( preflight );
@@ -4485,6 +4759,7 @@
 			return;
 		}
 		var resolutions = collectCardResolutions();
+		logExecutePayloadDebug( resolutions );
 		var $rail = $( '#rwgc-targeting-rail' );
 		$rail.find( '.rwgc-geo-rail__cta .button-primary' ).prop( 'disabled', true ).addClass( 'is-busy' );
 		apiPost( cfg.executeUrl, { proposal_id: state.proposalId, resolutions: resolutions } )
@@ -4698,6 +4973,7 @@
 		if ( ! state.debug ) {
 			return;
 		}
+		state.executePayloadDebug = true;
 		$( '#rwgc-targeting-debug-body' ).text( JSON.stringify( state.debug, null, 2 ) );
 		$( '#rwgc-targeting-debug-panel' ).removeClass( 'rwgc-is-hidden' ).prop( 'hidden', false );
 	}

@@ -151,7 +151,7 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$js = $this->assistant_js();
 
 		$this->assertStringContainsString( 'updateActionTargetFromResolution', $js );
-		$this->assertStringContainsString( 'card.target.status = target.status', $js );
+		$this->assertStringContainsString( "card.target.status = 'matched'", $js );
 		$this->assertStringContainsString( 'created_by_assistant', $js );
 		$this->assertStringContainsString( 'attach_to_action', $js );
 		$this->assertStringContainsString( 'syncProposalPayload', $js );
@@ -294,14 +294,46 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$collect = $this->js_between( $js, 'function collectCardResolutions', 'function recordConditionLearning' );
 		$this->assertStringContainsString( 'findFieldResolution', $collect );
 		$this->assertStringContainsString( 'cardResolutionEntries', $collect );
+		$this->assertStringContainsString( 'collectPopupTargetResolution', $collect );
 
 		$finalize = $this->js_between( $js, 'function finalizeCardSetup', 'function updateSetupPanel' );
 		$this->assertStringContainsString( 'syncProposalPayload', $finalize );
 		$this->assertStringContainsString( 'unresolvedExecuteItems', $finalize );
+		$this->assertStringContainsString( 'executePayloadTargetMismatches', $finalize );
 
 		$execute = $this->js_between( $js, 'function executeProposal', 'function renderExecutionSummary' );
 		$this->assertStringContainsString( 'unresolvedExecuteItems', $execute );
 		$this->assertStringContainsString( 'unresolved_details', $execute );
+		$this->assertStringContainsString( 'logExecutePayloadDebug', $execute );
+		$this->assertStringContainsString( 'executePayloadTargetMismatches', $execute );
+	}
+
+	public function test_popup_target_execute_sync_helpers(): void {
+		$js = $this->assistant_js();
+
+		$this->assertStringContainsString( 'popupTargetRawCandidates', $js );
+		$this->assertStringContainsString( 'popupTargetResolvedFromCard', $js );
+		$this->assertStringContainsString( 'seedPopupTargetCardResolutions', $js );
+		$this->assertStringContainsString( 'ensurePopupTargetCardResolutions', $js );
+		$this->assertStringContainsString( 'syncPopupTargetActionState', $js );
+		$this->assertStringContainsString( 'collectPopupTargetResolution', $js );
+		$this->assertStringContainsString( 'showTargetExecuteMismatchMessage', $js );
+
+		$auto = $this->js_between( $js, 'function autoMatchPopupTargets', 'function locationOptionLabel' );
+		$this->assertStringContainsString( 'ensurePopupTargetCardResolutions', $auto );
+
+		$collect = $this->js_between( $js, 'function collectPopupTargetResolution', 'function executePayloadTargetMismatches' );
+		$this->assertStringContainsString( "type: 'popup'", $collect );
+		$this->assertStringContainsString( "status: 'valid'", $collect );
+		$this->assertStringContainsString( 'popupTargetResolvedFromCard', $collect );
+
+		$target = $this->js_between( $js, 'function applyTargetResolutionToCard', 'function applyResolutionsToProposalCards' );
+		$this->assertStringContainsString( 'ensurePopupTargetCardResolutions', $target );
+		$this->assertStringContainsString( 'syncPopupTargetActionState', $target );
+
+		$update = $this->js_between( $js, 'function updateActionTargetFromResolution', 'function syncProposalPayload' );
+		$this->assertStringContainsString( "card.target.status = 'matched'", $update );
+		$this->assertStringContainsString( 'seedPopupTargetCardResolutions', $update );
 	}
 
 }
