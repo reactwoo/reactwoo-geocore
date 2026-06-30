@@ -764,6 +764,44 @@
 		} );
 	}
 
+	function showExecuteFailedMessage( serverMessage, jqxhr ) {
+		var status = jqxhr && jqxhr.status ? jqxhr.status : 0;
+		var $wrap = $( '<div>', { class: 'rwgc-targeting-assistant__execute-blocked rwgc-targeting-assistant__execute-failed' } );
+		$wrap.append( $( '<p>' ).html( '<strong>' + esc( i18n.couldNotCreateRule || 'Could not create rule' ) + '</strong>' ) );
+		var detail = serverMessage || '';
+		if ( ! detail && status >= 500 ) {
+			detail = i18n.executeServerError || 'The server could not create this rule. Check the site error log and try again.';
+		}
+		if ( ! detail ) {
+			detail = i18n.cardResolveRemaining || 'Some fields still need resolving before this setup can be created.';
+		}
+		$wrap.append( $( '<p>' ).text( detail ) );
+		if ( status ) {
+			$wrap.append( $( '<p>', { class: 'rwgc-targeting-assistant__execute-blocked-detail' } ).text(
+				( i18n.executeHttpStatus || 'HTTP status' ) + ': ' + String( status )
+			) );
+		}
+		var $actions = $( '<div>', { class: 'rwgc-targeting-assistant__execute-blocked-actions' } );
+		$actions.append( $( '<button>', {
+			type: 'button',
+			class: 'button rwgc-geo-btn',
+			text: i18n.showDebug || 'Show debug',
+			'data-action': 'debug',
+		} ) );
+		$actions.append( $( '<button>', {
+			type: 'button',
+			class: 'button-link rwgc-geo-btn',
+			text: i18n.cancel || 'Cancel',
+			'data-action': 'cancel',
+		} ) );
+		$wrap.append( $actions );
+		var $thread = $( '#rwgc-targeting-thread' );
+		var $bubble = assistantBubble( '' );
+		$bubble.find( '.rwgc-targeting-assistant__bubble-body' ).append( $wrap );
+		$thread.append( $bubble );
+		scrollThread();
+	}
+
 	function showExecuteBlockedMessage( items, serverMessage ) {
 		var $wrap = $( '<div>', { class: 'rwgc-targeting-assistant__execute-blocked' } );
 		$wrap.append( $( '<p>' ).html( '<strong>' + esc( i18n.couldNotCreateRule || 'Could not create rule' ) + '</strong>' ) );
@@ -4825,7 +4863,8 @@
 					updateSetupPanel( state.proposal, i18n.statusNeedsResolution || 'Needs resolution' );
 					return;
 				}
-				goWorkflowFromProposal();
+				showExecuteFailedMessage( serverMsg, jqxhr );
+				jumpToActionReview();
 			} )
 			.always( function () {
 				$rail.find( '.rwgc-geo-rail__cta .button-primary' ).prop( 'disabled', false ).removeClass( 'is-busy' );

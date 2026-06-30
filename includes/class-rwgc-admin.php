@@ -857,6 +857,8 @@ class RWGC_Admin {
 						'stateMismatchPopupBody' => __( 'The popup target is selected in the UI but missing from the execute payload.', 'reactwoo-geocore' ),
 						'selectedTargetLabel'  => __( 'Selected target:', 'reactwoo-geocore' ),
 						'missingExecuteResolution' => __( 'Missing execute resolution:', 'reactwoo-geocore' ),
+						'executeServerError'   => __( 'The server could not create this rule. Check the site error log and try again.', 'reactwoo-geocore' ),
+						'executeHttpStatus'    => __( 'HTTP status', 'reactwoo-geocore' ),
 						'cardPreviewSkipped' => __( 'preview only, nothing created', 'reactwoo-geocore' ),
 						'setupConfirmed'  => __( 'Setup confirmed. Continue in the workflow.', 'reactwoo-geocore' ),
 						'geoAiRequired'   => __( 'Natural-language commands require ReactWoo Geo AI.', 'reactwoo-geocore' ),

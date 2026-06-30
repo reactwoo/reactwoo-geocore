@@ -306,6 +306,10 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$this->assertStringContainsString( 'unresolved_details', $execute );
 		$this->assertStringContainsString( 'logExecutePayloadDebug', $execute );
 		$this->assertStringContainsString( 'executePayloadTargetMismatches', $execute );
+		$this->assertStringContainsString( 'showExecuteFailedMessage', $execute );
+		$fail = $this->js_between( $js, '.fail( function ( jqxhr )', '.always( function ()' );
+		$this->assertStringContainsString( 'showExecuteFailedMessage( serverMsg, jqxhr )', $fail );
+		$this->assertStringNotContainsString( 'goWorkflowFromProposal', $fail );
 	}
 
 	public function test_popup_target_execute_sync_helpers(): void {
