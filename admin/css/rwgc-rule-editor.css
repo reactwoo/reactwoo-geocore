@@ -456,3 +456,70 @@
 .rwgc-rule-editor .rwgc-rb--cards > .button.rwgc-rb__btn {
 	margin-top: 4px;
 }
+
+.rwgc-logic-preview__intro {
+	margin: 0 0 12px;
+	font-size: 13px;
+	line-height: 1.55;
+}
+
+.rwgc-logic-preview__list {
+	margin: 0;
+	padding-left: 1.35em;
+	font-size: 13px;
+	line-height: 1.55;
+}
+
+.rwgc-logic-preview__list > li {
+	margin-bottom: 8px;
+}
+
+.rwgc-logic-preview__sublist {
+	margin: 6px 0 0;
+	padding-left: 1.25em;
+	list-style: disc;
+}
+
+.rwgc-logic-preview__sublist > li {
+	margin-bottom: 4px;
+}
+
+.rwgc-condition-chip--or {
+	background: transparent;
+	border: none;
+	color: #1d4ed8;
+	font-weight: 700;
+	font-size: 11px;
+	padding: 4px 6px;
+}
+
+.rwgc-rb__match-help {
+	margin: 8px 0 0;
+	max-width: 52em;
+}
+
+.rwgc-rule-test__result {
+	margin-top: 12px;
+	padding: 10px 12px;
+	border-radius: 4px;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.rwgc-rule-test__result--match {
+	background: #e8f5e9;
+	border: 1px solid #a5d6a7;
+	color: #1b5e20;
+}
+
+.rwgc-rule-test__result--nomatch {
+	background: #fff8e1;
+	border: 1px solid #ffe082;
+	color: #6d4c00;
+}
+
+.rwgc-rule-test__result--error {
+	background: #fde8e8;
+	border: 1px solid #f5b7b7;
+	color: #9b1c1c;
+}

@@ -28,8 +28,11 @@ $delete_url              = $post_id > 0
 		'rwgc_delete_visibility_rule_' . $post_id
 	)
 	: '';
-$save_label              = $is_new ? __( 'Create rule', 'reactwoo-geocore' ) : __( 'Save rule', 'reactwoo-geocore' );
-$page_title              = $is_new ? __( 'Add visibility rule', 'reactwoo-geocore' ) : __( 'Edit visibility rule', 'reactwoo-geocore' );
+$logic_preview         = isset( $editor_presenter['logic_preview'] ) && is_array( $editor_presenter['logic_preview'] ) ? $editor_presenter['logic_preview'] : array();
+$logic_intro           = (string) ( $logic_preview['intro'] ?? '' );
+$logic_lines           = isset( $logic_preview['lines'] ) && is_array( $logic_preview['lines'] ) ? $logic_preview['lines'] : array();
+$save_label            = $is_new ? __( 'Create rule', 'reactwoo-geocore' ) : __( 'Save rule', 'reactwoo-geocore' );
+$page_title            = $is_new ? __( 'Add visibility rule', 'reactwoo-geocore' ) : __( 'Edit visibility rule', 'reactwoo-geocore' );
 ?>
 <div class="wrap rwgc-wrap rwgc-suite rwgc-rule-editor">
 	<div class="rwgc-rule-editor__header">
@@ -42,7 +45,7 @@ $page_title              = $is_new ? __( 'Add visibility rule', 'reactwoo-geocor
 		<div class="rwgc-rule-editor__top-actions">
 			<a class="button" href="<?php echo esc_url( $list_url ); ?>">&larr; <?php esc_html_e( 'Back to rules', 'reactwoo-geocore' ); ?></a>
 			<button type="submit" class="button button-primary" form="rwgc-visibility-rule-form"><?php echo esc_html( $save_label ); ?></button>
-			<a class="button" href="#rwgc-rule-summary-card"><?php esc_html_e( 'Preview logic', 'reactwoo-geocore' ); ?></a>
+			<a class="button" href="#rwgc-rule-logic-preview"><?php esc_html_e( 'Preview logic', 'reactwoo-geocore' ); ?></a>
 		</div>
 	</div>
 
@@ -63,7 +66,7 @@ $page_title              = $is_new ? __( 'Add visibility rule', 'reactwoo-geocor
 		<?php endif; ?>
 	<?php endif; ?>
 
-	<form id="rwgc-visibility-rule-form" method="post" action="<?php echo esc_url( $form_url ); ?>">
+	<form id="rwgc-visibility-rule-form" method="post" action="<?php echo esc_url( $form_url ); ?>" <?php echo '' !== $target_label ? 'data-rwgc-target-label="' . esc_attr( $target_label ) . '"' : ''; ?>>
 		<?php wp_nonce_field( 'rwgc_save_visibility_rule' ); ?>
 		<input type="hidden" name="action" value="rwgc_save_visibility_rule" />
 		<input type="hidden" name="rwgc_rule_id" value="<?php echo esc_attr( (string) $post_id ); ?>" />
@@ -111,6 +114,83 @@ $page_title              = $is_new ? __( 'Add visibility rule', 'reactwoo-geocor
 							<textarea name="rwgc_portable_targeting" id="rwgc_portable_targeting" rows="4" class="large-text code"><?php echo esc_textarea( $portable_raw ); ?></textarea>
 						</div>
 						<p class="description"><?php esc_html_e( 'Match all condition groups at the top level. Nested groups show OR logic inside a traffic trigger.', 'reactwoo-geocore' ); ?></p>
+					</div>
+				</div>
+
+				<div class="rwgc-rule-card" id="rwgc-rule-logic-preview">
+					<div class="rwgc-rule-card__header">
+						<h2><?php esc_html_e( 'Logic preview', 'reactwoo-geocore' ); ?></h2>
+					</div>
+					<div class="rwgc-rule-card__body rwgc-logic-preview" id="rwgc-rule-logic-preview-body">
+						<?php if ( '' !== $logic_intro ) : ?>
+							<p class="rwgc-logic-preview__intro"><?php echo esc_html( $logic_intro ); ?></p>
+						<?php endif; ?>
+						<?php if ( ! empty( $logic_lines ) ) : ?>
+							<ol class="rwgc-logic-preview__list">
+								<?php foreach ( $logic_lines as $line ) : ?>
+									<li>
+										<span><?php echo esc_html( (string) ( $line['text'] ?? '' ) ); ?></span>
+										<?php if ( ! empty( $line['children'] ) && is_array( $line['children'] ) ) : ?>
+											<ul class="rwgc-logic-preview__sublist">
+												<?php foreach ( $line['children'] as $child ) : ?>
+													<li><?php echo esc_html( (string) $child ); ?></li>
+												<?php endforeach; ?>
+											</ul>
+										<?php endif; ?>
+									</li>
+								<?php endforeach; ?>
+							</ol>
+						<?php else : ?>
+							<p class="description"><?php esc_html_e( 'Add conditions to generate a logic preview.', 'reactwoo-geocore' ); ?></p>
+						<?php endif; ?>
+					</div>
+				</div>
+
+				<div class="rwgc-rule-card" id="rwgc-rule-test-panel">
+					<div class="rwgc-rule-card__header">
+						<h2><?php esc_html_e( 'Test rule', 'reactwoo-geocore' ); ?></h2>
+					</div>
+					<div class="rwgc-rule-card__body">
+						<p class="description"><?php esc_html_e( 'Simulate a visitor scenario against the current rule data (unsaved changes included).', 'reactwoo-geocore' ); ?></p>
+						<form id="rwgc-rule-test-form" class="rwgc-rule-test__form">
+							<p>
+								<label for="rwgc_test_country"><?php esc_html_e( 'Country (ISO)', 'reactwoo-geocore' ); ?></label><br />
+								<input type="text" name="country" id="rwgc_test_country" class="regular-text" placeholder="IE" maxlength="2" />
+							</p>
+							<p>
+								<label for="rwgc_test_device"><?php esc_html_e( 'Device', 'reactwoo-geocore' ); ?></label><br />
+								<select name="device" id="rwgc_test_device">
+									<option value="desktop"><?php esc_html_e( 'Desktop', 'reactwoo-geocore' ); ?></option>
+									<option value="mobile"><?php esc_html_e( 'Mobile', 'reactwoo-geocore' ); ?></option>
+									<option value="tablet"><?php esc_html_e( 'Tablet', 'reactwoo-geocore' ); ?></option>
+								</select>
+							</p>
+							<p>
+								<label for="rwgc_test_page_type"><?php esc_html_e( 'Page type', 'reactwoo-geocore' ); ?></label><br />
+								<select name="page_type" id="rwgc_test_page_type">
+									<option value="product"><?php esc_html_e( 'Product pages', 'reactwoo-geocore' ); ?></option>
+									<option value="homepage"><?php esc_html_e( 'Homepage', 'reactwoo-geocore' ); ?></option>
+									<option value="shop"><?php esc_html_e( 'Shop', 'reactwoo-geocore' ); ?></option>
+									<option value="category"><?php esc_html_e( 'Category pages', 'reactwoo-geocore' ); ?></option>
+								</select>
+							</p>
+							<p>
+								<label for="rwgc_test_request_uri"><?php esc_html_e( 'URL path', 'reactwoo-geocore' ); ?></label><br />
+								<input type="text" name="request_uri" id="rwgc_test_request_uri" class="regular-text" placeholder="/shop/product-a" />
+							</p>
+							<p>
+								<label for="rwgc_test_utm_source"><?php esc_html_e( 'UTM source', 'reactwoo-geocore' ); ?></label><br />
+								<input type="text" name="utm_source" id="rwgc_test_utm_source" class="regular-text" placeholder="google" />
+							</p>
+							<p>
+								<label for="rwgc_test_utm_medium"><?php esc_html_e( 'UTM medium', 'reactwoo-geocore' ); ?></label><br />
+								<input type="text" name="utm_medium" id="rwgc_test_utm_medium" class="regular-text" placeholder="cpc" />
+							</p>
+							<p>
+								<button type="submit" class="button button-secondary"><?php esc_html_e( 'Run test', 'reactwoo-geocore' ); ?></button>
+							</p>
+						</form>
+						<div id="rwgc-rule-test-result" class="rwgc-rule-test__result" aria-live="polite"></div>
 					</div>
 				</div>
 

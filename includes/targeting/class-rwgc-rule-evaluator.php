@@ -53,6 +53,9 @@ class RWGC_Rule_Evaluator {
 			'page_type'        => array( __CLASS__, 'eval_page_type' ),
 			'request_uri'      => array( __CLASS__, 'eval_request_uri' ),
 			'condition_group'  => array( __CLASS__, 'eval_condition_group' ),
+			'utm_source'       => array( __CLASS__, 'eval_utm_source' ),
+			'utm_medium'       => array( __CLASS__, 'eval_utm_medium' ),
+			'utm_campaign'     => array( __CLASS__, 'eval_utm_campaign' ),
 		);
 	}
 
@@ -626,5 +629,60 @@ class RWGC_Rule_Evaluator {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * @param string                $op       Operator.
+	 * @param mixed                 $val      Expected values.
+	 * @param RWGC_Context_Snapshot $snapshot Snapshot.
+	 * @return bool
+	 */
+	public static function eval_utm_source( $op, $val, RWGC_Context_Snapshot $snapshot ) {
+		return self::eval_attribution_scalar( 'source', $op, $val, $snapshot );
+	}
+
+	/**
+	 * @param string                $op       Operator.
+	 * @param mixed                 $val      Expected values.
+	 * @param RWGC_Context_Snapshot $snapshot Snapshot.
+	 * @return bool
+	 */
+	public static function eval_utm_medium( $op, $val, RWGC_Context_Snapshot $snapshot ) {
+		return self::eval_attribution_scalar( 'medium', $op, $val, $snapshot );
+	}
+
+	/**
+	 * @param string                $op       Operator.
+	 * @param mixed                 $val      Expected values.
+	 * @param RWGC_Context_Snapshot $snapshot Snapshot.
+	 * @return bool
+	 */
+	public static function eval_utm_campaign( $op, $val, RWGC_Context_Snapshot $snapshot ) {
+		return self::eval_attribution_scalar( 'campaign', $op, $val, $snapshot );
+	}
+
+	/**
+	 * @param string                $field    Snapshot attribution field.
+	 * @param string                $op       Operator.
+	 * @param mixed                 $val      Expected values.
+	 * @param RWGC_Context_Snapshot $snapshot Snapshot.
+	 * @return bool
+	 */
+	private static function eval_attribution_scalar( $field, $op, $val, RWGC_Context_Snapshot $snapshot ) {
+		$actual = strtolower( trim( (string) $snapshot->get( (string) $field, '' ) ) );
+		$list   = self::normalize_lower_string_list( $val );
+		if ( empty( $list ) ) {
+			return true;
+		}
+		if ( '' === $actual ) {
+			return false;
+		}
+		$op = (string) $op;
+		if ( 'is' === $op ) {
+			$op = 'in';
+		} elseif ( 'is_not' === $op ) {
+			$op = 'not_in';
+		}
+		return RWGC_Target_Operators::evaluate( $actual, $op, $list );
 	}
 }

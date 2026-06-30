@@ -32,10 +32,15 @@ class RWGC_Visibility_Rule_Editor_Presenter {
 		$chips     = self::summary_chips( $set );
 		$summary   = self::summary_sentence( $target, $chips );
 		$warnings  = self::validation_warnings( $set, $portable_raw );
+		$decoded   = is_string( $portable_raw ) ? json_decode( $portable_raw, true ) : null;
+		$logic     = class_exists( 'RWGC_Visibility_Rule_Logic_Preview', false )
+			? RWGC_Visibility_Rule_Logic_Preview::build( is_array( $decoded ) ? $decoded : $set, $target )
+			: array( 'intro' => '', 'lines' => array() );
 
 		return array(
 			'target_label' => $target,
 			'summary'      => $summary,
+			'logic_preview' => $logic,
 			'chips'        => $chips,
 			'status_label' => 'publish' === $status ? __( 'Active', 'reactwoo-geocore' ) : __( 'Draft', 'reactwoo-geocore' ),
 			'status_slug'  => $status,

@@ -162,6 +162,80 @@ class RWGC_REST {
 				),
 			)
 		);
+
+		register_rest_route(
+			'reactwoo-geocore/v1',
+			'/targeting/preview-rule',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( __CLASS__, 'post_targeting_preview_rule' ),
+				'permission_callback' => array( __CLASS__, 'permissions_visibility_rule_editor' ),
+				'args'                => array(
+					'portable_json' => array(
+						'required' => true,
+						'type'     => 'string',
+					),
+					'scenario'      => array(
+						'default' => array(),
+					),
+					'target_label'  => array(
+						'type'              => 'string',
+						'default'           => '',
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Visibility rule editor: manage Geo settings.
+	 *
+	 * @return bool
+	 */
+	public static function permissions_visibility_rule_editor() {
+		return class_exists( 'RWGC_Admin', false ) && RWGC_Admin::can_manage();
+	}
+
+	/**
+	 * POST portable JSON + scenario → match result and logic preview lines.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response
+	 */
+	public static function post_targeting_preview_rule( $request ) {
+		$json   = (string) $request->get_param( 'portable_json' );
+		$target = (string) $request->get_param( 'target_label' );
+		$scenario = $request->get_param( 'scenario' );
+		if ( ! is_array( $scenario ) ) {
+			$scenario = array();
+		}
+		$scenario = array(
+			'country'     => isset( $scenario['country'] ) ? (string) $scenario['country'] : '',
+			'device'      => isset( $scenario['device'] ) ? (string) $scenario['device'] : '',
+			'page_type'   => isset( $scenario['page_type'] ) ? (string) $scenario['page_type'] : '',
+			'request_uri' => isset( $scenario['request_uri'] ) ? (string) $scenario['request_uri'] : '',
+			'utm_source'  => isset( $scenario['utm_source'] ) ? (string) $scenario['utm_source'] : '',
+			'utm_medium'  => isset( $scenario['utm_medium'] ) ? (string) $scenario['utm_medium'] : '',
+		);
+
+		$eval = class_exists( 'RWGC_Visibility_Rule_Preview', false )
+			? RWGC_Visibility_Rule_Preview::evaluate( $json, $scenario )
+			: array( 'matches' => false, 'error' => '' );
+
+		$decoded = json_decode( $json, true );
+		$logic   = class_exists( 'RWGC_Visibility_Rule_Logic_Preview', false )
+			? RWGC_Visibility_Rule_Logic_Preview::build( is_array( $decoded ) ? $decoded : null, $target )
+			: array( 'intro' => '', 'lines' => array() );
+
+		return new \WP_REST_Response(
+			array(
+				'matches'       => ! empty( $eval['matches'] ),
+				'error'         => (string) ( $eval['error'] ?? '' ),
+				'logic_preview' => $logic,
+			),
+			200
+		);
 	}
 
 	/**

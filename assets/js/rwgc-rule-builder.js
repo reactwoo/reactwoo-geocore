@@ -523,7 +523,20 @@
 		return true;
 	}
 
-	function summarize(rows, ruleMatch, c, mode) {
+	function joinOrLabels(labels) {
+		var list = (labels || []).filter(function (x) {
+			return !!x;
+		});
+		if (!list.length) {
+			return '';
+		}
+		if (list.length === 1) {
+			return list[0];
+		}
+		return list.join(' ' + t('orSeparator') + ' ');
+	}
+
+	function summarize(rows, ruleMatch, c, mode, useGroupWording) {
 		if (!rows.length) {
 			return { text: t('noConditionsYet'), warn: true };
 		}
@@ -535,7 +548,8 @@
 		for (var i = 0; i < rows.length; i++) {
 			parts.push(humanizeRow(rows[i], c));
 		}
-		var joiner = ruleMatch === 'any' ? ' ' + t('matchAny').toLowerCase() + ' — ' : ' ' + t('matchAll').toLowerCase() + ' — ';
+		var matchAllLabel = useGroupWording && t('matchAllGroups') ? t('matchAllGroups') : t('matchAll');
+		var joiner = ruleMatch === 'any' ? ' ' + t('matchAny').toLowerCase() + ' — ' : ' ' + matchAllLabel.toLowerCase() + ' — ';
 		var body = parts.join(joiner);
 		var prefix = mode === 'hide' ? t('summaryPrefixHide') : t('summaryPrefixShow');
 		return { text: (prefix + ' ' + body).trim(), warn: false };
@@ -612,19 +626,19 @@
 			var names = row.values.map(function (code) {
 				return countryLabel(code, c);
 			});
-			return uiLabelForField(row.field) + ' ' + opw + ' ' + names.join(', ');
+			return uiLabelForField(row.field) + ' ' + opw + ' ' + joinOrLabels(names);
 		}
 		if (row.field === 'ga4_audience') {
 			var an = row.values.map(function (id) {
 				return audienceLabel(id, c);
 			});
-			return uiLabelForField(row.field) + ' (' + t('sourceGa4') + ') ' + opw + ' ' + an.join(', ');
+			return uiLabelForField(row.field) + ' (' + t('sourceGa4') + ') ' + opw + ' ' + joinOrLabels(an);
 		}
 		if (row.field === 'ads_campaign') {
 			var cn = row.values.map(function (id) {
 				return campaignLabel(id, c);
 			});
-			return uiLabelForField(row.field) + ' (' + t('sourceGoogleAds') + ') ' + opw + ' ' + cn.join(', ');
+			return uiLabelForField(row.field) + ' (' + t('sourceGoogleAds') + ') ' + opw + ' ' + joinOrLabels(cn);
 		}
 		if (row.field === 'logged_in') {
 			return uiLabelForField(row.field) + ' ' + opw + ' ' + (row.values[0] === '1' ? t('loggedInYes') : t('loggedInNo'));
@@ -639,15 +653,15 @@
 			return uiLabelForField(row.field);
 		}
 		if (row.field === 'device_type') {
-			return uiLabelForField(row.field) + ' ' + opw + ' ' + row.values.join(', ');
+			return uiLabelForField(row.field) + ' ' + opw + ' ' + joinOrLabels(row.values);
 		}
 		if (row.field === 'weather_facet') {
 			var wn = row.values.map(function (slug) {
 				return weatherFacetLabel(slug, c);
 			});
-			return uiLabelForField(row.field) + ' ' + opw + ' ' + wn.join(', ');
+			return uiLabelForField(row.field) + ' ' + opw + ' ' + joinOrLabels(wn);
 		}
-		return uiLabelForField(row.field) + ' ' + opw + ' ' + row.values.join(', ');
+		return uiLabelForField(row.field) + ' ' + opw + ' ' + joinOrLabels(row.values);
 	}
 
 	function operatorPillLabel(uiOp) {
@@ -735,9 +749,15 @@
 	function renderDisplayChips(chips) {
 		var wrap = document.createElement('div');
 		wrap.className = 'rwgc-condition-card__chips';
-		(chips || []).forEach(function (label) {
+		(chips || []).forEach(function (label, idx) {
 			if (!label) {
 				return;
+			}
+			if (idx > 0) {
+				var sep = document.createElement('span');
+				sep.className = 'rwgc-condition-chip rwgc-condition-chip--or';
+				sep.textContent = t('orSeparator');
+				wrap.appendChild(sep);
 			}
 			var chip = document.createElement('span');
 			chip.className = 'rwgc-condition-chip';
@@ -1248,9 +1268,10 @@
 			var ml = document.createElement('label');
 			ml.textContent = t('matchConditionsLabel');
 			var ms = document.createElement('select');
+			var matchAllLabel = options.cardView && t('matchAllGroups') ? t('matchAllGroups') : t('matchAll');
 			ms.innerHTML =
 				'<option value="all">' +
-				escapeHtml(t('matchAll')) +
+				escapeHtml(matchAllLabel) +
 				'</option><option value="any">' +
 				escapeHtml(t('matchAny')) +
 				'</option>';
@@ -1262,6 +1283,12 @@
 			});
 			matchWrap.appendChild(ml);
 			matchWrap.appendChild(ms);
+			if (options.cardView && t('matchAllGroupsHelp')) {
+				var matchHelp = document.createElement('p');
+				matchHelp.className = 'description rwgc-rb__match-help';
+				matchHelp.textContent = t('matchAllGroupsHelp');
+				matchWrap.appendChild(matchHelp);
+			}
 			root.appendChild(matchWrap);
 
 			state.rows.forEach(function (row, idx) {
@@ -1296,7 +1323,7 @@
 			root.appendChild(clearBtn);
 
 			var sumMode = state.localMode !== undefined ? state.localMode : getMode();
-			var sum = summarize(state.rows, state.ruleMatch, c, sumMode);
+			var sum = summarize(state.rows, state.ruleMatch, c, sumMode, options.cardView);
 			var sumEl = document.createElement('div');
 			sumEl.className = 'rwgc-rb__summary' + (sum.warn ? ' rwgc-rb__summary--warn' : '');
 			sumEl.textContent = sum.text;
@@ -1523,7 +1550,7 @@
 			var header = renderCardHeader({
 				title: t('cardTrafficTrigger'),
 				summary: '',
-				operator: group.match === 'any' ? t('matchAny') : t('matchAll'),
+				operator: '',
 				iconType: 'traffic',
 			});
 			wrap.appendChild(header);

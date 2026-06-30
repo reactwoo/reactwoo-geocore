@@ -17,6 +17,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 	const SCRIPT_HANDLE = 'rwgc-rule-builder';
 	const STYLE_HANDLE  = 'rwgc-rule-builder';
 	const EDITOR_STYLE_HANDLE = 'rwgc-rule-editor';
+	const PREVIEW_SCRIPT_HANDLE = 'rwgc-visibility-rule-preview';
 
 	/**
 	 * Boot hooks.
@@ -50,6 +51,13 @@ class RWGC_Targeting_Rule_Builder_Assets {
 			RWGC_URL . 'admin/css/rwgc-rule-editor.css',
 			array( self::STYLE_HANDLE ),
 			RWGC_VERSION
+		);
+		wp_register_script(
+			self::PREVIEW_SCRIPT_HANDLE,
+			RWGC_URL . 'admin/js/rwgc-visibility-rule-preview.js',
+			array(),
+			RWGC_VERSION,
+			true
 		);
 		wp_register_script(
 			self::SCRIPT_HANDLE,
@@ -91,6 +99,8 @@ class RWGC_Targeting_Rule_Builder_Assets {
 		return array(
 			'whoHeading'           => __( 'Who should see this?', 'reactwoo-geocore' ),
 			'matchAll'             => __( 'Match all conditions', 'reactwoo-geocore' ),
+			'matchAllGroups'       => __( 'All condition groups must match', 'reactwoo-geocore' ),
+			'matchAllGroupsHelp'   => __( 'Each condition card must match. Values inside a card use the row match style (for example, Ireland OR United Kingdom).', 'reactwoo-geocore' ),
 			'matchAny'             => __( 'Match any condition', 'reactwoo-geocore' ),
 			'matchConditionsLabel' => __( 'Conditions', 'reactwoo-geocore' ),
 			'addCondition'         => __( 'Add condition', 'reactwoo-geocore' ),
@@ -123,18 +133,19 @@ class RWGC_Targeting_Rule_Builder_Assets {
 			'cardChooseCondition'  => __( 'Choose a condition type and values.', 'reactwoo-geocore' ),
 			'cardLocation'         => __( 'Location', 'reactwoo-geocore' ),
 			'cardExcludedLocations' => __( 'Excluded locations', 'reactwoo-geocore' ),
-			'cardIncludeCountrySummary' => __( 'Visitor country includes any of:', 'reactwoo-geocore' ),
-			'cardExcludeCountrySummary' => __( 'Do not show to visitors from:', 'reactwoo-geocore' ),
+			'cardIncludeCountrySummary' => __( 'Visitor country is any of:', 'reactwoo-geocore' ),
+			'cardExcludeCountrySummary' => __( 'Visitor country is not any of:', 'reactwoo-geocore' ),
 			'cardDevice'           => __( 'Device', 'reactwoo-geocore' ),
-			'cardDeviceSummary'    => __( 'Only show on:', 'reactwoo-geocore' ),
+			'cardDeviceSummary'    => __( 'Device type is any of:', 'reactwoo-geocore' ),
 			'cardPageType'         => __( 'Page type', 'reactwoo-geocore' ),
-			'cardPageTypeSummary'  => __( 'Only show on:', 'reactwoo-geocore' ),
+			'cardPageTypeSummary'  => __( 'Page type is any of:', 'reactwoo-geocore' ),
 			'cardTrafficTrigger'   => __( 'Traffic trigger', 'reactwoo-geocore' ),
-			'cardTrafficMatchAny'  => __( 'Match any of these:', 'reactwoo-geocore' ),
+			'cardTrafficMatchAny'  => __( 'Match any of:', 'reactwoo-geocore' ),
 			'cardTrafficUrl'       => __( 'URL contains', 'reactwoo-geocore' ),
 			'cardUrlSummary'       => __( 'URL path contains:', 'reactwoo-geocore' ),
 			'cardLoggedInSummary'  => __( 'Logged-in status:', 'reactwoo-geocore' ),
 			'trafficOr'            => __( 'OR', 'reactwoo-geocore' ),
+			'orSeparator'          => __( 'OR', 'reactwoo-geocore' ),
 			'trafficAnd'           => __( 'AND', 'reactwoo-geocore' ),
 			'fieldLoggedIn'        => __( 'Logged-in status', 'reactwoo-geocore' ),
 			'fieldWeatherFacet'    => __( 'Shopping weather', 'reactwoo-geocore' ),
@@ -217,6 +228,20 @@ class RWGC_Targeting_Rule_Builder_Assets {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['rwgc_edit'] ) ) {
 			wp_enqueue_style( self::EDITOR_STYLE_HANDLE );
+			wp_enqueue_script( self::PREVIEW_SCRIPT_HANDLE );
+			wp_localize_script(
+				self::PREVIEW_SCRIPT_HANDLE,
+				'rwgcVisibilityRulePreview',
+				array(
+					'restUrl'      => esc_url_raw( rest_url( 'reactwoo-geocore/v1/targeting/preview-rule' ) ),
+					'nonce'        => wp_create_nonce( 'wp_rest' ),
+					'testingLabel' => __( 'Testing…', 'reactwoo-geocore' ),
+					'matchLabel'   => __( 'Match — this visitor would see the targeted content.', 'reactwoo-geocore' ),
+					'noMatchLabel' => __( 'No match — this visitor would not match the rule.', 'reactwoo-geocore' ),
+					'errorLabel'   => __( 'Could not evaluate the rule preview.', 'reactwoo-geocore' ),
+					'emptyLogic'   => __( 'Add conditions to generate a logic preview.', 'reactwoo-geocore' ),
+				)
+			);
 			wp_add_inline_script( self::SCRIPT_HANDLE, self::get_mount_inline( '#rwgc_portable_targeting', "'show_if'", 'allowAllConditionTypes:true,cardView:true' ), 'after' );
 			wp_add_inline_script(
 				self::SCRIPT_HANDLE,
