@@ -802,6 +802,78 @@
 		scrollThread();
 	}
 
+	function isVerifiedCreatedRule( rule ) {
+		if ( ! rule || typeof rule !== 'object' ) {
+			return false;
+		}
+		if ( rule.verified === false ) {
+			return false;
+		}
+		var url = String( rule.edit_url || '' ).trim();
+		if ( ! url ) {
+			return false;
+		}
+		if ( /post\.php\?post=/i.test( url ) && ! /rwgc/i.test( url ) ) {
+			return false;
+		}
+		return /rwgc[-_]visibility[-_]rules/i.test( url ) || /rwgc_edit=/i.test( url );
+	}
+
+	function verifiedCreatedRules( result ) {
+		var list = result && result.created_rules ? result.created_rules : [];
+		return list.filter( isVerifiedCreatedRule );
+	}
+
+	function showRuleLinkVerificationFailedMessage( rule, response ) {
+		var postId = rule && ( rule.id || rule.rule_id || rule.post_id ) ? String( rule.id || rule.rule_id || rule.post_id ) : '';
+		var editUrl = rule && rule.edit_url ? String( rule.edit_url ) : '';
+		if ( ! editUrl && response && response.edit_url ) {
+			editUrl = String( response.edit_url );
+		}
+		if ( ! postId && response && ( response.post_id || response.rule_id ) ) {
+			postId = String( response.post_id || response.rule_id );
+		}
+		var $wrap = $( '<div>', { class: 'rwgc-targeting-assistant__execute-blocked rwgc-targeting-assistant__execute-failed' } );
+		$wrap.append( $( '<p>' ).html( '<strong>' + esc( i18n.couldNotCreateRule || 'Could not create rule' ) + '</strong>' ) );
+		$wrap.append( $( '<p>' ).text( i18n.ruleLinkVerifyFailed || 'The server returned a rule link, but the rule could not be opened or verified.' ) );
+		var $details = $( '<ul>', { class: 'rwgc-targeting-assistant__execute-blocked-list' } );
+		if ( postId ) {
+			$details.append( $( '<li>' ).text( ( i18n.ruleVerifyReturnedPostId || 'Returned post ID' ) + ': ' + postId ) );
+		}
+		if ( editUrl ) {
+			$details.append( $( '<li>' ).text( ( i18n.ruleVerifyReturnedUrl || 'Returned URL' ) + ': ' + editUrl ) );
+		}
+		$details.append( $( '<li>' ).text( i18n.ruleVerifyNotEditable || 'Status: not editable / wrong object' ) );
+		$wrap.append( $( '<p>', { class: 'rwgc-targeting-assistant__execute-blocked-detail' } ).text( i18n.ruleVerifyDetailsLabel || 'Details:' ) );
+		$wrap.append( $details );
+		var $actions = $( '<div>', { class: 'rwgc-targeting-assistant__execute-blocked-actions' } );
+		$actions.append( $( '<button>', {
+			type: 'button',
+			class: 'button button-primary rwgc-geo-btn',
+			text: i18n.retryCreateRule || 'Retry create',
+			'data-action': 'retry_create',
+		} ) );
+		$actions.append( $( '<button>', {
+			type: 'button',
+			class: 'button rwgc-geo-btn',
+			text: i18n.showDebug || 'Show debug',
+			'data-action': 'debug',
+		} ) );
+		$actions.append( $( '<button>', {
+			type: 'button',
+			class: 'button-link rwgc-geo-btn',
+			text: i18n.cancel || 'Cancel',
+			'data-action': 'cancel',
+		} ) );
+		$wrap.append( $actions );
+		var $thread = $( '#rwgc-targeting-thread' );
+		var $bubble = assistantBubble( '' );
+		$bubble.find( '.rwgc-targeting-assistant__bubble-body' ).append( $wrap );
+		$thread.append( $bubble );
+		scrollThread();
+		jumpToActionReview();
+	}
+
 	function showExecuteBlockedMessage( items, serverMessage ) {
 		var $wrap = $( '<div>', { class: 'rwgc-targeting-assistant__execute-blocked' } );
 		$wrap.append( $( '<p>' ).html( '<strong>' + esc( i18n.couldNotCreateRule || 'Could not create rule' ) + '</strong>' ) );
@@ -4814,6 +4886,16 @@
 					persistPortableAndGo( result.redirect_steps[0].url );
 					return;
 				}
+				var hadCreatedPayload = !!( result.created_rules && result.created_rules.length );
+				var verifiedCreated = verifiedCreatedRules( result );
+				if ( hadCreatedPayload && ! verifiedCreated.length ) {
+					var badRule = result.created_rules[0] || {
+						id: response.rule_id || response.post_id || 0,
+						edit_url: response.edit_url || '',
+					};
+					showRuleLinkVerificationFailedMessage( badRule, response );
+					return;
+				}
 				if ( result.created_rules || result.manual_steps || result.preview_only || result.needs_attention ) {
 					renderExecutionSummary( result );
 					return;
@@ -4878,9 +4960,11 @@
 		$( '#rwgc-targeting-setup-hint' ).addClass( 'rwgc-is-hidden' );
 		$plan.removeClass( 'rwgc-is-hidden' ).empty();
 
-		var created = result.created_rules || [];
+		var created = verifiedCreatedRules( result );
 		var $wrap = $( '<div>', { class: 'rwgc-geo-result' } );
-		$wrap.append( $( '<p>', { class: 'rwgc-geo-result__headline' } ).text( i18n.ruleCreated || 'Rule created.' ) );
+		if ( created.length ) {
+			$wrap.append( $( '<p>', { class: 'rwgc-geo-result__headline' } ).text( i18n.ruleCreated || 'Rule created.' ) );
+		}
 		$wrap.append( $( '<p>', { class: 'rwgc-geo-result__message' } ).text( result.message || '' ) );
 
 		created.forEach( function ( rule ) {
@@ -4926,9 +5010,9 @@
 		var targetRes = state.proposal && state.proposal.action_cards && state.proposal.action_cards[ 0 ]
 			? fieldResolution( 0, 'target', ( state.proposal.action_cards[ 0 ].target || {} ).raw || '' )
 			: null;
-		if ( targetRes && targetRes.id ) {
+		if ( targetRes && targetRes.id && targetRes.edit_url ) {
 			$actions.append( $( '<a>', {
-				href: 'post.php?post=' + encodeURIComponent( targetRes.id ) + '&action=edit',
+				href: targetRes.edit_url,
 				class: 'button',
 				target: '_blank',
 				rel: 'noopener',
@@ -5200,6 +5284,8 @@
 		$( '#rwgc-targeting-thread' ).on( 'click', '[data-action]', function () {
 			var action = $( this ).data( 'action' );
 			if ( 'confirm' === action ) {
+				executeProposal();
+			} else if ( 'retry_create' === action ) {
 				executeProposal();
 			} else if ( 'review_action' === action ) {
 				jumpToActionReview();

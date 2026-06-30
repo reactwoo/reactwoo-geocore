@@ -123,6 +123,80 @@ class RWGC_Visibility_Rule_Repository {
 	}
 
 	/**
+	 * Geo Core visibility rule editor URL (not wp-admin post.php — CPT has show_ui false).
+	 *
+	 * @param int $post_id Rule post ID.
+	 * @return string
+	 */
+	public static function get_edit_url( $post_id ) {
+		$post_id = absint( $post_id );
+		if ( $post_id <= 0 || ! self::get_post( $post_id ) ) {
+			return '';
+		}
+		$base = admin_url( 'admin.php?page=rwgc-visibility-rules' );
+		if ( function_exists( 'rw_geo_app_url' ) ) {
+			$app = rw_geo_app_url( 'targeting', 'rwgc-visibility-rules' );
+			if ( is_string( $app ) && '' !== $app ) {
+				$base = $app;
+			}
+		}
+		return add_query_arg( 'rwgc_edit', $post_id, $base );
+	}
+
+	/**
+	 * Whether the current user may open the Geo Core visibility rule editor.
+	 *
+	 * @param int $post_id Rule post ID.
+	 * @return bool
+	 */
+	public static function can_current_user_manage_rule( $post_id ) {
+		if ( ! class_exists( 'RWGC_Admin', false ) || ! RWGC_Admin::can_manage() ) {
+			return false;
+		}
+		return null !== self::get_post( $post_id );
+	}
+
+	/**
+	 * Verify an assistant-created library rule before exposing edit links.
+	 *
+	 * @param int $post_id Rule post ID.
+	 * @return array{valid:bool,post_id:int,post_type:string,can_edit:bool,has_rule_set:bool,edit_url:string,reason:string}
+	 */
+	public static function assistant_rule_verification( $post_id ) {
+		$post_id = absint( $post_id );
+		$out     = array(
+			'valid'        => false,
+			'post_id'      => $post_id,
+			'post_type'    => '',
+			'can_edit'     => false,
+			'has_rule_set' => false,
+			'edit_url'     => '',
+			'reason'       => '',
+		);
+		$post = self::get_post( $post_id );
+		if ( ! $post ) {
+			$raw = get_post( $post_id );
+			if ( $raw instanceof WP_Post ) {
+				$out['post_type'] = (string) $raw->post_type;
+			}
+			$out['reason'] = 'not_visibility_rule';
+			return $out;
+		}
+		$out['post_type']    = (string) $post->post_type;
+		$set                 = self::get_rule_set( $post_id );
+		$out['has_rule_set'] = is_array( $set ) && ! empty( $set['rules'] );
+		$out['can_edit']     = self::can_current_user_manage_rule( $post_id );
+		$out['edit_url']     = $out['can_edit'] ? self::get_edit_url( $post_id ) : '';
+		$out['valid']        = $out['has_rule_set'] && $out['can_edit'] && '' !== $out['edit_url'];
+		if ( ! $out['has_rule_set'] ) {
+			$out['reason'] = 'empty_rule_set';
+		} elseif ( ! $out['can_edit'] ) {
+			$out['reason'] = 'not_editable';
+		}
+		return $out;
+	}
+
+	/**
 	 * @param int $post_id Post ID.
 	 * @return bool
 	 */
