@@ -16,6 +16,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 
 	const SCRIPT_HANDLE = 'rwgc-rule-builder';
 	const STYLE_HANDLE  = 'rwgc-rule-builder';
+	const EDITOR_STYLE_HANDLE = 'rwgc-rule-editor';
 
 	/**
 	 * Boot hooks.
@@ -42,6 +43,12 @@ class RWGC_Targeting_Rule_Builder_Assets {
 			self::STYLE_HANDLE,
 			RWGC_URL . 'assets/css/rwgc-rule-builder.css',
 			array(),
+			RWGC_VERSION
+		);
+		wp_register_style(
+			self::EDITOR_STYLE_HANDLE,
+			RWGC_URL . 'admin/css/rwgc-rule-editor.css',
+			array( self::STYLE_HANDLE ),
 			RWGC_VERSION
 		);
 		wp_register_script(
@@ -106,6 +113,10 @@ class RWGC_Targeting_Rule_Builder_Assets {
 			'fieldUtmSource'       => __( 'UTM source', 'reactwoo-geocore' ),
 			'fieldUtmMedium'       => __( 'UTM medium', 'reactwoo-geocore' ),
 			'fieldDevice'          => __( 'Device type', 'reactwoo-geocore' ),
+			'fieldPageType'        => __( 'Page type', 'reactwoo-geocore' ),
+			'fieldRequestUri'      => __( 'URL contains', 'reactwoo-geocore' ),
+			'trafficSourceGroup'   => __( 'Traffic source group', 'reactwoo-geocore' ),
+			'opContains'           => __( 'contains', 'reactwoo-geocore' ),
 			'fieldLoggedIn'        => __( 'Logged-in status', 'reactwoo-geocore' ),
 			'fieldWeatherFacet'    => __( 'Shopping weather', 'reactwoo-geocore' ),
 			'pickWeatherFacets'    => __( 'Choose weather types', 'reactwoo-geocore' ),
@@ -186,7 +197,13 @@ class RWGC_Targeting_Rule_Builder_Assets {
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['rwgc_edit'] ) ) {
+			wp_enqueue_style( self::EDITOR_STYLE_HANDLE );
 			wp_add_inline_script( self::SCRIPT_HANDLE, self::get_mount_inline( '#rwgc_portable_targeting', "'show_if'", 'allowAllConditionTypes:true' ), 'after' );
+			wp_add_inline_script(
+				self::SCRIPT_HANDLE,
+				"(function(){function syncAdv(){var src=document.getElementById('rwgc_portable_targeting');var adv=document.getElementById('rwgc_portable_targeting_advanced');if(!src||!adv){return;}adv.value=src.value;}document.addEventListener('input',function(e){if(e.target&&e.target.id==='rwgc_portable_targeting'){syncAdv();}});document.addEventListener('DOMContentLoaded',syncAdv);})();",
+				'after'
+			);
 		}
 	}
 

@@ -155,6 +155,9 @@ class RWGC_Admin_Visibility_Rules {
 		$variant_provenance = array();
 		$variant_references = array();
 		$variant_sync_url   = '';
+		$editor_presenter   = class_exists( 'RWGC_Visibility_Rule_Editor_Presenter', false )
+			? RWGC_Visibility_Rule_Editor_Presenter::build( $post_id, $title, $status, $portable_raw )
+			: array();
 		if ( $post_id > 0 && class_exists( 'RWGC_Variant_Rule_Applications', false ) ) {
 			$variant_provenance = RWGC_Variant_Rule_Applications::get_provenance( $post_id );
 			if ( empty( $variant_provenance['sourceType'] ) && class_exists( 'RWGC_Targeting_Rule_Set_Schema', false ) ) {

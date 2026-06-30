@@ -1,0 +1,231 @@
+/* ReactWoo Geo — visibility rule library editor (scoped to rwgc-visibility-rules) */
+.rwgc-rule-editor {
+	--rwgc-rule-card-radius: 10px;
+	--rwgc-rule-card-border: #dcdcde;
+	--rwgc-rule-card-bg: #fff;
+	--rwgc-rule-muted: #646970;
+	max-width: 1280px;
+}
+
+.rwgc-rule-editor__header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	margin: 0 0 20px;
+}
+
+.rwgc-rule-editor__header-copy h1 {
+	margin: 0 0 6px;
+	font-size: 23px;
+	font-weight: 600;
+}
+
+.rwgc-rule-editor__subheader {
+	margin: 0;
+	color: var(--rwgc-rule-muted);
+	max-width: 720px;
+}
+
+.rwgc-rule-editor__top-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+
+.rwgc-rule-editor__layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 320px;
+	gap: 20px;
+	align-items: start;
+}
+
+@media (max-width: 1100px) {
+	.rwgc-rule-editor__layout {
+		grid-template-columns: 1fr;
+	}
+}
+
+.rwgc-rule-card,
+.rwgc-summary-card {
+	background: var(--rwgc-rule-card-bg);
+	border: 1px solid var(--rwgc-rule-card-border);
+	border-radius: var(--rwgc-rule-card-radius);
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+	margin-bottom: 16px;
+}
+
+.rwgc-rule-card__header,
+.rwgc-summary-card__header {
+	padding: 16px 18px 0;
+}
+
+.rwgc-rule-card__header h2,
+.rwgc-summary-card__header h2 {
+	margin: 0;
+	font-size: 15px;
+	font-weight: 600;
+}
+
+.rwgc-rule-card__body,
+.rwgc-summary-card__body {
+	padding: 16px 18px 18px;
+}
+
+.rwgc-rule-editor .form-table th {
+	width: 160px;
+	padding: 12px 10px 12px 0;
+	font-weight: 600;
+}
+
+.rwgc-rule-editor .form-table td {
+	padding: 10px 0;
+}
+
+.rwgc-rule-editor .regular-text,
+.rwgc-rule-editor select {
+	min-height: 36px;
+}
+
+.rwgc-rule-editor .rwgc-rb-mount-wrap textarea {
+	display: none;
+}
+
+.rwgc-rule-editor .rwgc-rb {
+	margin-top: 4px;
+}
+
+.rwgc-rule-editor .rwgc-rb__row,
+.rwgc-rule-editor .rwgc-condition-block {
+	border: 1px solid #e2e4e7;
+	border-radius: 8px;
+	padding: 14px 16px;
+	margin-bottom: 12px;
+	background: #fff;
+}
+
+.rwgc-rule-editor .rwgc-condition-block--group {
+	border-color: #c3d4f5;
+	background: #f8fbff;
+}
+
+.rwgc-rule-editor .rwgc-condition-block--exclude .rwgc-condition-block__title {
+	color: #9b1c1c;
+}
+
+.rwgc-condition-block__title {
+	font-weight: 600;
+	margin: 0 0 4px;
+}
+
+.rwgc-condition-block__meta {
+	margin: 0 0 10px;
+	color: var(--rwgc-rule-muted);
+	font-size: 12px;
+}
+
+.rwgc-condition-chip,
+.rwgc-summary-chip {
+	display: inline-block;
+	background: #f0f0f1;
+	border: 1px solid #dcdcde;
+	border-radius: 999px;
+	padding: 4px 10px;
+	margin: 0 6px 6px 0;
+	font-size: 12px;
+	line-height: 1.3;
+}
+
+.rwgc-condition-group-branch {
+	border-left: 3px solid #c3d4f5;
+	padding-left: 12px;
+	margin: 10px 0;
+}
+
+.rwgc-condition-group-branch__title {
+	font-weight: 600;
+	margin: 0 0 6px;
+}
+
+.rwgc-condition-group-branch ul {
+	margin: 0;
+	padding-left: 18px;
+}
+
+.rwgc-summary-card__text {
+	margin: 0 0 12px;
+	line-height: 1.5;
+}
+
+.rwgc-summary-card__section {
+	margin-top: 12px;
+}
+
+.rwgc-summary-card__section strong {
+	display: block;
+	margin-bottom: 6px;
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	color: var(--rwgc-rule-muted);
+}
+
+.rwgc-status-pill {
+	display: inline-block;
+	border-radius: 999px;
+	padding: 4px 10px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.rwgc-status-pill--draft {
+	background: #f0f0f1;
+	color: #50575e;
+}
+
+.rwgc-status-pill--publish {
+	background: #edfaef;
+	color: #1e4620;
+}
+
+.rwgc-status-pill--warn {
+	background: #fcf9e8;
+	color: #6f4f00;
+}
+
+.rwgc-rule-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.rwgc-rule-actions .button-primary {
+	width: 100%;
+	text-align: center;
+	justify-content: center;
+}
+
+.rwgc-rule-editor__footer-save {
+	margin-top: 8px;
+}
+
+.rwgc-rule-editor details.rwgc-rule-card {
+	padding: 0;
+}
+
+.rwgc-rule-editor details.rwgc-rule-card > summary {
+	cursor: pointer;
+	padding: 16px 18px;
+	font-weight: 600;
+	list-style: none;
+}
+
+.rwgc-rule-editor details.rwgc-rule-card > summary::-webkit-details-marker {
+	display: none;
+}
+
+.rwgc-rule-editor details.rwgc-rule-card .rwgc-rule-card__body {
+	padding-top: 0;
+}

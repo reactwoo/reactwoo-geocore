@@ -50,6 +50,9 @@ class RWGC_Rule_Evaluator {
 			'day_of_week'    => array( __CLASS__, 'eval_day_of_week' ),
 			'logged_in'        => array( __CLASS__, 'eval_logged_in' ),
 			'page_version_url' => array( __CLASS__, 'eval_page_version_url' ),
+			'page_type'        => array( __CLASS__, 'eval_page_type' ),
+			'request_uri'      => array( __CLASS__, 'eval_request_uri' ),
+			'condition_group'  => array( __CLASS__, 'eval_condition_group' ),
 		);
 	}
 
@@ -512,5 +515,116 @@ class RWGC_Rule_Evaluator {
 			default:
 				return $match;
 		}
+	}
+
+	/**
+	 * @param string                $op       Operator.
+	 * @param mixed                 $val      Expected page types.
+	 * @param RWGC_Context_Snapshot $snapshot Snapshot.
+	 * @return bool
+	 */
+	public static function eval_page_type( $op, $val, RWGC_Context_Snapshot $snapshot ) {
+		$types = self::normalize_lower_string_list( $val );
+		if ( empty( $types ) ) {
+			return true;
+		}
+		$actual_types = $snapshot->get( 'page_types', array() );
+		if ( ! is_array( $actual_types ) ) {
+			$actual_types = array();
+		}
+		$actual = strtolower( trim( (string) $snapshot->get( 'page_type', '' ) ) );
+		if ( '' !== $actual ) {
+			$actual_types[] = $actual;
+		}
+		$actual_types = array_values( array_unique( array_filter( array_map( 'strtolower', array_map( 'strval', $actual_types ) ) ) ) );
+		if ( empty( $actual_types ) ) {
+			return false;
+		}
+		$hit = false;
+		foreach ( $types as $type ) {
+			if ( in_array( $type, $actual_types, true ) ) {
+				$hit = true;
+				break;
+			}
+		}
+		if ( in_array( (string) $op, array( 'not_in', 'excludes' ), true ) ) {
+			return ! $hit;
+		}
+		return $hit;
+	}
+
+	/**
+	 * @param string                $op       Operator.
+	 * @param mixed                 $val      URL fragments.
+	 * @param RWGC_Context_Snapshot $snapshot Snapshot.
+	 * @return bool
+	 */
+	public static function eval_request_uri( $op, $val, RWGC_Context_Snapshot $snapshot ) {
+		$needles = self::normalize_lower_string_list( $val );
+		if ( empty( $needles ) ) {
+			return true;
+		}
+		$uri = strtolower( (string) $snapshot->get( 'request_uri', '' ) );
+		if ( '' === $uri && class_exists( 'RWGC_Page_Version_Routing', false ) ) {
+			$uri = strtolower( (string) RWGC_Page_Version_Routing::get_raw_request_uri() );
+		}
+		if ( '' === $uri ) {
+			return false;
+		}
+		$hit = false;
+		foreach ( $needles as $needle ) {
+			if ( '' !== $needle && false !== strpos( $uri, $needle ) ) {
+				$hit = true;
+				break;
+			}
+		}
+		if ( in_array( (string) $op, array( 'not_contains', 'not_in', 'is_not' ), true ) ) {
+			return ! $hit;
+		}
+		return $hit;
+	}
+
+	/**
+	 * @param string                $op       Operator.
+	 * @param mixed                 $val      Group payload.
+	 * @param RWGC_Context_Snapshot $snapshot Snapshot.
+	 * @return bool
+	 */
+	public static function eval_condition_group( $op, $val, RWGC_Context_Snapshot $snapshot ) {
+		unset( $op );
+		if ( ! is_array( $val ) || empty( $val['branches'] ) || ! is_array( $val['branches'] ) ) {
+			return false;
+		}
+		$mode    = isset( $val['match'] ) && 'all' === sanitize_key( (string) $val['match'] ) ? 'all' : 'any';
+		$results = array();
+		foreach ( $val['branches'] as $branch ) {
+			if ( ! is_array( $branch ) ) {
+				continue;
+			}
+			$results[] = self::matches_rule(
+				array(
+					'match'      => isset( $branch['match'] ) ? $branch['match'] : 'all',
+					'conditions' => isset( $branch['conditions'] ) && is_array( $branch['conditions'] ) ? $branch['conditions'] : array(),
+				),
+				$snapshot
+			);
+		}
+		if ( empty( $results ) ) {
+			return false;
+		}
+		if ( 'all' === $mode ) {
+			foreach ( $results as $result ) {
+				if ( ! $result ) {
+					return false;
+				}
+			}
+			return true;
+		}
+		foreach ( $results as $result ) {
+			if ( $result ) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

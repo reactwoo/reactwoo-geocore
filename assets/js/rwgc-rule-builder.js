@@ -53,6 +53,8 @@
 		{ key: 'utm_campaign', portableType: 'utm_campaign', pro: true, multi: false },
 		{ key: 'utm_source', portableType: 'utm_source', pro: true, multi: false },
 		{ key: 'utm_medium', portableType: 'utm_medium', pro: true, multi: false },
+		{ key: 'page_type', portableType: 'page_type', pro: false, multi: true },
+		{ key: 'request_uri', portableType: 'request_uri', pro: false, multi: false },
 		{ key: 'device_type', portableType: 'device_type', pro: false, multi: true },
 		{ key: 'logged_in', portableType: 'logged_in', pro: false, multi: false },
 		{ key: 'weather_facet', portableType: 'weather_facet', pro: true, multi: true, requiresWeather: true },
@@ -62,6 +64,15 @@
 		{ v: 'mobile', l: 'Mobile' },
 		{ v: 'tablet', l: 'Tablet' },
 		{ v: 'desktop', l: 'Desktop' },
+	];
+
+	var PAGE_TYPE_OPTIONS = [
+		{ v: 'product', l: 'Product pages' },
+		{ v: 'category', l: 'Category pages' },
+		{ v: 'homepage', l: 'Homepage' },
+		{ v: 'shop', l: 'Shop' },
+		{ v: 'cart', l: 'Cart' },
+		{ v: 'checkout', l: 'Checkout' },
 	];
 
 	function fieldMeta(key) {
@@ -116,6 +127,10 @@
 				return t('fieldUtmMedium');
 			case 'device_type':
 				return t('fieldDevice');
+			case 'page_type':
+				return t('fieldPageType');
+			case 'request_uri':
+				return t('fieldRequestUri');
 			case 'logged_in':
 				return t('fieldLoggedIn');
 			case 'page_version_url':
@@ -137,6 +152,8 @@
 			utm_medium: 'utm_medium',
 			device: 'device_type',
 			device_type: 'device_type',
+			page_type: 'page_type',
+			request_uri: 'request_uri',
 			logged_in: 'logged_in',
 			page_version_url: 'page_version_url',
 			weather_facet: 'weather_facet',
@@ -259,6 +276,7 @@
 			is_not: 'is_not',
 			includes: 'in',
 			excludes: 'not_in',
+			contains: 'contains',
 			empty: 'empty',
 			not_empty: 'not_empty',
 		};
@@ -271,6 +289,7 @@
 			is_not: 'is_not',
 			in: 'includes',
 			not_in: 'excludes',
+			contains: 'contains',
 			empty: 'empty',
 			not_empty: 'not_empty',
 		};
@@ -336,6 +355,14 @@
 		if (!c || typeof c !== 'object' || !c.type) {
 			return { uid: uid(), field: '', uiOp: 'includes', values: [], unknown: null };
 		}
+		if (String(c.type) === 'condition_group') {
+			return {
+				uid: uid(),
+				isGroup: true,
+				group: c.value && typeof c.value === 'object' ? c.value : { match: 'any', branches: [] },
+				unknown: null,
+			};
+		}
 		if (String(c.type) === 'page_version_url') {
 			var pv = c.value && typeof c.value === 'object' ? c.value : {};
 			return {
@@ -386,6 +413,9 @@
 	function rowToCondition(row) {
 		if (row.unknown) {
 			return { type: row.unknown.type, operator: row.unknown.operator, value: row.unknown.value };
+		}
+		if (row.isGroup && row.group) {
+			return { type: 'condition_group', operator: 'match', value: row.group };
 		}
 		if (!row.field) {
 			return null;
@@ -450,6 +480,9 @@
 	}
 
 	function rowIncomplete(row) {
+		if (row.isGroup) {
+			return !(row.group && Array.isArray(row.group.branches) && row.group.branches.length);
+		}
 		if (row.unknown) {
 			return false;
 		}
@@ -1243,13 +1276,93 @@
 			return el;
 		}
 
-		function renderRow(row, index, c) {
+		function formatPortableCondition(cond) {
+			if (!cond || typeof cond !== 'object') {
+				return '';
+			}
+			var type = String(cond.type || '');
+			var op = String(cond.operator || '');
+			var val = cond.value;
+			var vals = Array.isArray(val) ? val.join(', ') : String(val == null ? '' : val);
+			if (type === 'utm_source' || type === 'utm_medium' || type === 'utm_campaign') {
+				return type.replace('utm_', 'utm_') + ' = ' + vals;
+			}
+			if (type === 'request_uri') {
+				return t('fieldRequestUri') + ' ' + vals;
+			}
+			if (type === 'page_type') {
+				return t('fieldPageType') + ': ' + vals;
+			}
+			return type + ' ' + op + ' ' + vals;
+		}
+
+		function renderGroupRow(row, index) {
 			var wrap = document.createElement('div');
-			wrap.className = 'rwgc-rb__row' + (rowIncomplete(row) ? ' rwgc-rb__row--invalid' : '');
+			wrap.className = 'rwgc-rb__row rwgc-condition-block rwgc-condition-block--group';
+			var group = row.group || {};
+			var title = document.createElement('div');
+			title.className = 'rwgc-condition-block__title';
+			title.textContent = group.label || t('trafficSourceGroup');
+			wrap.appendChild(title);
+			var meta = document.createElement('p');
+			meta.className = 'rwgc-condition-block__meta';
+			meta.textContent = group.match === 'any' ? t('matchAny') : t('matchAll');
+			wrap.appendChild(meta);
+			(group.branches || []).forEach(function (branch) {
+				if (!branch || typeof branch !== 'object') {
+					return;
+				}
+				var b = document.createElement('div');
+				b.className = 'rwgc-condition-group-branch';
+				var bt = document.createElement('p');
+				bt.className = 'rwgc-condition-group-branch__title';
+				bt.textContent = branch.label || t('matchConditionsLabel');
+				b.appendChild(bt);
+				var ul = document.createElement('ul');
+				(branch.conditions || []).forEach(function (cond) {
+					var li = document.createElement('li');
+					li.textContent = formatPortableCondition(cond);
+					ul.appendChild(li);
+				});
+				b.appendChild(ul);
+				wrap.appendChild(b);
+			});
+			var actions = document.createElement('div');
+			actions.className = 'rwgc-rb__actions';
+			var rem = document.createElement('button');
+			rem.type = 'button';
+			rem.className = 'rwgc-rb__btn rwgc-rb__btn--danger';
+			rem.textContent = t('remove');
+			rem.addEventListener('click', function () {
+				state.rows.splice(index, 1);
+				writeTextareaFromState();
+				render();
+			});
+			actions.appendChild(rem);
+			wrap.appendChild(actions);
+			return wrap;
+		}
+
+		function renderRow(row, index, c) {
+			if (row.isGroup) {
+				return renderGroupRow(row, index);
+			}
+			var wrap = document.createElement('div');
+			wrap.className = 'rwgc-rb__row rwgc-condition-block' + (rowIncomplete(row) ? ' rwgc-rb__row--invalid' : '');
+			if (row.uiOp === 'excludes') {
+				wrap.classList.add('rwgc-condition-block--exclude');
+			}
 			if (row.unknown) {
 				wrap.classList.add('rwgc-rb__row--unknown');
 				wrap.textContent = t('unsupportedCard');
 				return wrap;
+			}
+
+			if (row.field) {
+				var blockTitle = document.createElement('div');
+				blockTitle.className = 'rwgc-condition-block__title';
+				blockTitle.textContent = uiLabelForField(row.field);
+				wrap.appendChild(blockTitle);
 			}
 
 			var head = document.createElement('div');
@@ -1274,7 +1387,7 @@
 			fs.addEventListener('change', function () {
 				row.field = fs.value;
 				row.values = [];
-				row.uiOp = fs.value === 'page_version_url' ? 'is' : 'includes';
+				row.uiOp = fs.value === 'page_version_url' ? 'is' : fs.value === 'request_uri' ? 'contains' : 'includes';
 				if (fs.value === 'page_version_url') {
 					row.pageVersionPageId = defaultPageVersionPageId(c);
 					row.values = [''];
@@ -1380,6 +1493,9 @@
 					escapeHtml(t('opIsNot')) +
 					'</option>';
 				return html;
+			}
+			if (field === 'request_uri') {
+				return '<option value="contains">' + escapeHtml(t('opContains')) + '</option>';
 			}
 			if (field === 'utm_campaign' || field === 'utm_source' || field === 'utm_medium') {
 				html +=
@@ -1527,6 +1643,46 @@
 					box.appendChild(lab);
 				});
 				frag.appendChild(box);
+				return frag;
+			}
+			if (row.field === 'page_type') {
+				var pbox = document.createElement('div');
+				pbox.className = 'rwgc-rb__multi';
+				PAGE_TYPE_OPTIONS.forEach(function (d) {
+					var plab = document.createElement('label');
+					var pcb = document.createElement('input');
+					pcb.type = 'checkbox';
+					pcb.value = d.v;
+					pcb.checked = row.values.indexOf(d.v) !== -1;
+					pcb.addEventListener('change', function () {
+						if (pcb.checked) {
+							if (row.values.indexOf(d.v) === -1) {
+								row.values.push(d.v);
+							}
+						} else {
+							row.values = row.values.filter(function (x) {
+								return x !== d.v;
+							});
+						}
+						writeTextareaFromState();
+					});
+					plab.appendChild(pcb);
+					plab.appendChild(document.createTextNode(d.l));
+					pbox.appendChild(plab);
+				});
+				frag.appendChild(pbox);
+				return frag;
+			}
+			if (row.field === 'request_uri') {
+				var rinp = document.createElement('input');
+				rinp.type = 'text';
+				rinp.value = row.values[0] || '';
+				rinp.placeholder = '/winter-sale';
+				rinp.addEventListener('input', function () {
+					row.values = [rinp.value];
+					writeTextareaFromState();
+				});
+				frag.appendChild(rinp);
 				return frag;
 			}
 			if (row.field === 'page_version_url') {

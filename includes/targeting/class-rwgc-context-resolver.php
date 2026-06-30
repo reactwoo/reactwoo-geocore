@@ -38,6 +38,7 @@ class RWGC_Context_Resolver {
 		$merged = self::collect_provider_values();
 		$merged = self::apply_definition_resolve_callbacks( $merged );
 		$merged = self::attach_attribution_context( $merged );
+		$merged = self::attach_request_page_context( $merged );
 
 		/**
 		 * Filter merged raw context values before wrapping in snapshot.
@@ -176,6 +177,47 @@ class RWGC_Context_Resolver {
 		$merged['new_visitor']  = empty( $attribution['returning_visitor'] );
 		$merged                 = self::attach_profile_context( $merged );
 
+		return $merged;
+	}
+
+	/**
+	 * Page type and request URI for portable targeting rules.
+	 *
+	 * @param array<string, mixed> $merged Values.
+	 * @return array<string, mixed>
+	 */
+	private static function attach_request_page_context( array $merged ) {
+		$uri = '';
+		if ( class_exists( 'RWGC_Page_Version_Routing', false ) ) {
+			$uri = (string) RWGC_Page_Version_Routing::get_raw_request_uri();
+		}
+		if ( '' === $uri && isset( $_SERVER['REQUEST_URI'] ) ) {
+			$uri = sanitize_text_field( wp_unslash( (string) $_SERVER['REQUEST_URI'] ) );
+		}
+		$merged['request_uri'] = $uri;
+
+		$types = array();
+		if ( function_exists( 'is_product' ) && is_product() ) {
+			$types[] = 'product';
+		}
+		if ( function_exists( 'is_product_category' ) && is_product_category() ) {
+			$types[] = 'category';
+		}
+		if ( function_exists( 'is_shop' ) && is_shop() ) {
+			$types[] = 'shop';
+		}
+		if ( function_exists( 'is_cart' ) && is_cart() ) {
+			$types[] = 'cart';
+		}
+		if ( function_exists( 'is_checkout' ) && is_checkout() ) {
+			$types[] = 'checkout';
+		}
+		if ( function_exists( 'is_front_page' ) && is_front_page() ) {
+			$types[] = 'homepage';
+		}
+		$types = array_values( array_unique( array_map( 'sanitize_key', $types ) ) );
+		$merged['page_types'] = $types;
+		$merged['page_type']  = ! empty( $types ) ? (string) $types[0] : 'other';
 		return $merged;
 	}
 

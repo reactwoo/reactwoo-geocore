@@ -32,6 +32,9 @@ class RWGC_Targeting_Rule_Set_Schema {
 		'day_of_week',
 		'logged_in',
 		'page_version_url',
+		'page_type',
+		'request_uri',
+		'condition_group',
 	);
 
 	/** @var string[] */
@@ -130,6 +133,22 @@ class RWGC_Targeting_Rule_Set_Schema {
 				'label'       => __( 'Page Version URL', 'reactwoo-geocore' ),
 				'pro'         => false,
 				'description' => __( 'Show content only on a branded page version URL (`/page/_gc/version-name`).', 'reactwoo-geocore' ),
+			),
+			'page_type'        => array(
+				'label'       => __( 'Page type', 'reactwoo-geocore' ),
+				'pro'         => false,
+				'description' => __( 'WooCommerce / site page context such as product or category pages.', 'reactwoo-geocore' ),
+			),
+			'request_uri'      => array(
+				'label'       => __( 'Request URL', 'reactwoo-geocore' ),
+				'pro'         => false,
+				'description' => __( 'Match the current request path or URL fragment.', 'reactwoo-geocore' ),
+			),
+			'condition_group'  => array(
+				'label'       => __( 'Condition group', 'reactwoo-geocore' ),
+				'pro'         => false,
+				'description' => __( 'Nested match-all / match-any branches (for example Google Ads OR URL contains).', 'reactwoo-geocore' ),
+				'hidden'      => true,
 			),
 			'campaign'      => array(
 				'label'       => __( 'Campaign', 'reactwoo-geocore' ),
@@ -296,6 +315,18 @@ class RWGC_Targeting_Rule_Set_Schema {
 				);
 				continue;
 			}
+			if ( 'condition_group' === $type ) {
+				$group_val = self::sanitize_condition_group_value( isset( $c['value'] ) ? $c['value'] : array(), $pro );
+				if ( null === $group_val ) {
+					continue;
+				}
+				$conditions_out[] = array(
+					'type'     => $type,
+					'operator' => 'match',
+					'value'    => $group_val,
+				);
+				continue;
+			}
 			if ( ! RWGC_Target_Operators::is_valid( $op ) ) {
 				$op = 'in';
 			}
@@ -316,6 +347,72 @@ class RWGC_Targeting_Rule_Set_Schema {
 			'match'      => self::sanitize_rule_match( isset( $rule['match'] ) ? $rule['match'] : 'all' ),
 			'conditions' => $conditions_out,
 		);
+	}
+
+	/**
+	 * Sanitize nested OR/AND group payload used by Geo Assistant exports.
+	 *
+	 * @param mixed $raw Raw group value.
+	 * @param bool  $pro Pro active.
+	 * @return array<string,mixed>|null
+	 */
+	private static function sanitize_condition_group_value( $raw, $pro ) {
+		if ( ! is_array( $raw ) ) {
+			return null;
+		}
+		$branches_out = array();
+		$branches     = isset( $raw['branches'] ) && is_array( $raw['branches'] ) ? $raw['branches'] : array();
+		foreach ( $branches as $branch ) {
+			if ( ! is_array( $branch ) ) {
+				continue;
+			}
+			$conds = self::sanitize_branch_conditions( $branch, $pro );
+			if ( empty( $conds ) ) {
+				continue;
+			}
+			$branches_out[] = array(
+				'label'      => sanitize_text_field( (string) ( $branch['label'] ?? '' ) ),
+				'match'      => self::sanitize_rule_match( isset( $branch['match'] ) ? $branch['match'] : 'all' ),
+				'conditions' => $conds,
+			);
+		}
+		if ( count( $branches_out ) < 2 ) {
+			return null;
+		}
+		return array(
+			'match'    => self::sanitize_rule_match( isset( $raw['match'] ) ? $raw['match'] : 'any' ),
+			'label'    => sanitize_text_field( (string) ( $raw['label'] ?? '' ) ),
+			'branches' => $branches_out,
+		);
+	}
+
+	/**
+	 * @param array<string,mixed> $branch Branch row.
+	 * @param bool                $pro    Pro active.
+	 * @return array<int,array<string,mixed>>
+	 */
+	private static function sanitize_branch_conditions( array $branch, $pro ) {
+		$conds = isset( $branch['conditions'] ) && is_array( $branch['conditions'] ) ? $branch['conditions'] : array();
+		$out   = array();
+		foreach ( $conds as $c ) {
+			if ( ! is_array( $c ) || empty( $c['type'] ) ) {
+				continue;
+			}
+			$type = self::sanitize_condition_type_string( $c['type'] );
+			if ( '' === $type || ( ! $pro && self::is_pro_gated_condition_type( $type ) ) ) {
+				continue;
+			}
+			$op = isset( $c['operator'] ) ? sanitize_key( (string) $c['operator'] ) : 'in';
+			if ( ! RWGC_Target_Operators::is_valid( $op ) ) {
+				$op = 'in';
+			}
+			$out[] = array(
+				'type'     => $type,
+				'operator' => $op,
+				'value'    => isset( $c['value'] ) ? $c['value'] : array(),
+			);
+		}
+		return $out;
 	}
 
 	/**
