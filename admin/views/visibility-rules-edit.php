@@ -123,7 +123,7 @@ $page_title              = $is_new ? __( 'Add visibility rule', 'reactwoo-geocor
 				</details>
 			</div>
 
-			<aside class="rwgc-rule-editor__sidebar">
+			<aside class="rwgc-rule-editor__sidebar rwgc-rule-editor__sidebar--sticky">
 				<div class="rwgc-summary-card" id="rwgc-rule-summary-card">
 					<div class="rwgc-summary-card__header">
 						<h2><?php esc_html_e( 'Rule summary', 'reactwoo-geocore' ); ?></h2>
@@ -140,7 +140,15 @@ $page_title              = $is_new ? __( 'Add visibility rule', 'reactwoo-geocor
 							<?php if ( ! empty( $summary_chips[ $chip_key ] ) ) : ?>
 								<div class="rwgc-summary-card__section">
 									<strong><?php echo esc_html( $chip_label ); ?></strong>
-									<?php foreach ( (array) $summary_chips[ $chip_key ] as $chip ) : ?>
+									<?php
+									$chip_items = (array) $summary_chips[ $chip_key ];
+									foreach ( $chip_items as $chip_index => $chip ) :
+										if ( 'traffic' === $chip_key && $chip_index > 0 ) :
+											?>
+											<span class="rwgc-summary-chip rwgc-summary-chip--or"><?php esc_html_e( 'OR', 'reactwoo-geocore' ); ?></span>
+											<?php
+										endif;
+										?>
 										<span class="rwgc-summary-chip"><?php echo esc_html( (string) $chip ); ?></span>
 									<?php endforeach; ?>
 								</div>

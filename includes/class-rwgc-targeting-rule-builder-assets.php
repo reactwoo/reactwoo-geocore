@@ -117,6 +117,25 @@ class RWGC_Targeting_Rule_Builder_Assets {
 			'fieldRequestUri'      => __( 'URL contains', 'reactwoo-geocore' ),
 			'trafficSourceGroup'   => __( 'Traffic source group', 'reactwoo-geocore' ),
 			'opContains'           => __( 'contains', 'reactwoo-geocore' ),
+			'cardEdit'             => __( 'Edit', 'reactwoo-geocore' ),
+			'cardDone'             => __( 'Done', 'reactwoo-geocore' ),
+			'cardNewCondition'     => __( 'New condition', 'reactwoo-geocore' ),
+			'cardChooseCondition'  => __( 'Choose a condition type and values.', 'reactwoo-geocore' ),
+			'cardLocation'         => __( 'Location', 'reactwoo-geocore' ),
+			'cardExcludedLocations' => __( 'Excluded locations', 'reactwoo-geocore' ),
+			'cardIncludeCountrySummary' => __( 'Visitor country includes any of:', 'reactwoo-geocore' ),
+			'cardExcludeCountrySummary' => __( 'Do not show to visitors from:', 'reactwoo-geocore' ),
+			'cardDevice'           => __( 'Device', 'reactwoo-geocore' ),
+			'cardDeviceSummary'    => __( 'Only show on:', 'reactwoo-geocore' ),
+			'cardPageType'         => __( 'Page type', 'reactwoo-geocore' ),
+			'cardPageTypeSummary'  => __( 'Only show on:', 'reactwoo-geocore' ),
+			'cardTrafficTrigger'   => __( 'Traffic trigger', 'reactwoo-geocore' ),
+			'cardTrafficMatchAny'  => __( 'Match any of these:', 'reactwoo-geocore' ),
+			'cardTrafficUrl'       => __( 'URL contains', 'reactwoo-geocore' ),
+			'cardUrlSummary'       => __( 'URL path contains:', 'reactwoo-geocore' ),
+			'cardLoggedInSummary'  => __( 'Logged-in status:', 'reactwoo-geocore' ),
+			'trafficOr'            => __( 'OR', 'reactwoo-geocore' ),
+			'trafficAnd'           => __( 'AND', 'reactwoo-geocore' ),
 			'fieldLoggedIn'        => __( 'Logged-in status', 'reactwoo-geocore' ),
 			'fieldWeatherFacet'    => __( 'Shopping weather', 'reactwoo-geocore' ),
 			'pickWeatherFacets'    => __( 'Choose weather types', 'reactwoo-geocore' ),
@@ -198,7 +217,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['rwgc_edit'] ) ) {
 			wp_enqueue_style( self::EDITOR_STYLE_HANDLE );
-			wp_add_inline_script( self::SCRIPT_HANDLE, self::get_mount_inline( '#rwgc_portable_targeting', "'show_if'", 'allowAllConditionTypes:true' ), 'after' );
+			wp_add_inline_script( self::SCRIPT_HANDLE, self::get_mount_inline( '#rwgc_portable_targeting', "'show_if'", 'allowAllConditionTypes:true,cardView:true' ), 'after' );
 			wp_add_inline_script(
 				self::SCRIPT_HANDLE,
 				"(function(){function syncAdv(){var src=document.getElementById('rwgc_portable_targeting');var adv=document.getElementById('rwgc_portable_targeting_advanced');if(!src||!adv){return;}adv.value=src.value;}document.addEventListener('input',function(e){if(e.target&&e.target.id==='rwgc_portable_targeting'){syncAdv();}});document.addEventListener('DOMContentLoaded',syncAdv);})();",

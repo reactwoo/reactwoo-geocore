@@ -115,7 +115,7 @@ class RWGC_Visibility_Rule_Editor_Presenter {
 					}
 					$label = trim( (string) ( $branch['label'] ?? '' ) );
 					if ( '' !== $label ) {
-						$out['traffic'][] = $label;
+						$out['traffic'][] = self::traffic_chip_label( $label );
 					}
 				}
 			}
@@ -189,6 +189,21 @@ class RWGC_Visibility_Rule_Editor_Presenter {
 	}
 
 	/**
+	 * @param string $label Branch label from stored group.
+	 * @return string
+	 */
+	private static function traffic_chip_label( $label ) {
+		$label = trim( (string) $label );
+		if ( preg_match( '/google\s+ads/i', $label ) ) {
+			return __( 'Google Ads', 'reactwoo-geocore' );
+		}
+		if ( preg_match( '/url\s+contains/i', $label ) ) {
+			return $label;
+		}
+		return $label;
+	}
+
+	/**
 	 * @param string                    $target Target label.
 	 * @param array<string,array<int,string>> $chips Chips.
 	 * @return string
@@ -196,11 +211,11 @@ class RWGC_Visibility_Rule_Editor_Presenter {
 	private static function summary_sentence( $target, array $chips ) {
 		if ( '' !== $target && ! empty( $chips['include'] ) && ! empty( $chips['device'] ) && ! empty( $chips['page'] ) ) {
 			$sentence = sprintf(
-				/* translators: 1: target label, 2: devices, 3: pages, 4: include countries, 5: exclude countries, 6: traffic */
+				/* translators: 1: target, 2: device list, 3: page list, 4: include countries, 5: exclude clause, 6: traffic clause */
 				__( 'This rule shows %1$s to %2$s visitors on %3$s from %4$s%5$s%6$s.', 'reactwoo-geocore' ),
 				$target,
-				implode( ', ', $chips['device'] ),
-				implode( ', ', $chips['page'] ),
+				strtolower( implode( ', ', $chips['device'] ) ),
+				strtolower( implode( ', ', $chips['page'] ) ),
 				implode( ' ' . __( 'or', 'reactwoo-geocore' ) . ' ', $chips['include'] ),
 				! empty( $chips['exclude'] )
 					? ', ' . sprintf(

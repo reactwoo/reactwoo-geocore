@@ -558,6 +558,13 @@
 				}
 			}
 		}
+		if (field === 'page_type') {
+			for (var p = 0; p < PAGE_TYPE_OPTIONS.length; p++) {
+				if (PAGE_TYPE_OPTIONS[p].v === value) {
+					return PAGE_TYPE_OPTIONS[p].l;
+				}
+			}
+		}
 		if (field === 'weather_facet') {
 			return weatherFacetLabel(value, c);
 		}
@@ -641,6 +648,103 @@
 			return uiLabelForField(row.field) + ' ' + opw + ' ' + wn.join(', ');
 		}
 		return uiLabelForField(row.field) + ' ' + opw + ' ' + row.values.join(', ');
+	}
+
+	function operatorPillLabel(uiOp) {
+		switch (uiOp) {
+			case 'excludes':
+				return t('opExcludes');
+			case 'is':
+				return t('opIs');
+			case 'is_not':
+				return t('opIsNot');
+			case 'contains':
+				return t('opContains');
+			case 'empty':
+				return t('opEmpty');
+			case 'not_empty':
+				return t('opNotEmpty');
+			default:
+				return t('opIncludesAny');
+		}
+	}
+
+	function conditionCardMeta(row, c) {
+		var meta = {
+			title: uiLabelForField(row.field) || t('cardNewCondition'),
+			summary: '',
+			chips: [],
+			operator: operatorPillLabel(row.uiOp),
+			iconType: row.field || 'generic',
+			extraClass: '',
+		};
+		if (!row.field) {
+			meta.summary = t('cardChooseCondition');
+			return meta;
+		}
+		if (row.field === 'country') {
+			if (row.uiOp === 'excludes') {
+				meta.title = t('cardExcludedLocations');
+				meta.summary = t('cardExcludeCountrySummary');
+				meta.extraClass = 'rwgc-condition-card--exclude';
+				meta.iconType = 'exclude';
+			} else {
+				meta.title = t('cardLocation');
+				meta.summary = t('cardIncludeCountrySummary');
+				meta.iconType = 'country';
+			}
+			meta.chips = (row.values || []).map(function (code) {
+				return countryLabel(code, c);
+			});
+		} else if (row.field === 'device_type') {
+			meta.title = t('cardDevice');
+			meta.summary = t('cardDeviceSummary');
+			meta.iconType = 'device';
+			meta.chips = (row.values || []).map(function (v) {
+				return chipLabelForValue(row.field, v, c);
+			});
+		} else if (row.field === 'page_type') {
+			meta.title = t('cardPageType');
+			meta.summary = t('cardPageTypeSummary');
+			meta.iconType = 'page';
+			meta.chips = (row.values || []).map(function (v) {
+				return chipLabelForValue(row.field, v, c);
+			});
+		} else if (row.field === 'request_uri') {
+			meta.title = t('cardTrafficUrl');
+			meta.summary = t('cardUrlSummary');
+			meta.iconType = 'url';
+			meta.chips = (row.values || []).filter(Boolean).map(String);
+		} else if (row.field === 'logged_in') {
+			meta.summary = t('cardLoggedInSummary');
+			meta.chips =
+				row.values[0] === '1'
+					? [t('loggedInYes')]
+					: row.values[0] === '0'
+						? [t('loggedInNo')]
+						: [];
+		} else {
+			meta.summary = humanizeRow(row, c);
+			meta.chips = (row.values || []).map(function (v) {
+				return chipLabelForValue(row.field, v, c);
+			});
+		}
+		return meta;
+	}
+
+	function renderDisplayChips(chips) {
+		var wrap = document.createElement('div');
+		wrap.className = 'rwgc-condition-card__chips';
+		(chips || []).forEach(function (label) {
+			if (!label) {
+				return;
+			}
+			var chip = document.createElement('span');
+			chip.className = 'rwgc-condition-chip';
+			chip.textContent = label;
+			wrap.appendChild(chip);
+		});
+		return wrap;
 	}
 
 	function countryLabel(code, c) {
@@ -927,6 +1031,9 @@
 
 		var root = document.createElement('div');
 		root.className = 'rwgc-rb';
+		if (options.cardView) {
+			root.classList.add('rwgc-rb--cards');
+		}
 		textarea.parentNode.insertBefore(root, textarea);
 
 		var getMode = options.getMode || function () {
@@ -941,8 +1048,31 @@
 			advancedOpen: false,
 			jsonDraft: '',
 			parseError: null,
+			expandedRows: {},
 		};
 		var syncingFromState = false;
+
+		if (options.cardView === undefined) {
+			options.cardView = !!(textarea.closest && textarea.closest('.rwgc-rule-editor'));
+		}
+
+		function isRowExpanded(row) {
+			if (!options.cardView) {
+				return true;
+			}
+			if (!row.field || rowIncomplete(row)) {
+				return true;
+			}
+			return !!state.expandedRows[row.uid];
+		}
+
+		function setRowExpanded(uid, expanded) {
+			if (expanded) {
+				state.expandedRows[uid] = true;
+			} else {
+				delete state.expandedRows[uid];
+			}
+		}
 
 		function readDocFromTextarea() {
 			var p = parseDoc(textarea.value);
@@ -1143,7 +1273,9 @@
 			addBtn.className = 'rwgc-rb__btn';
 			addBtn.textContent = t('addCondition');
 			addBtn.addEventListener('click', function () {
-				state.rows.push({ uid: uid(), field: '', uiOp: 'includes', values: [], unknown: null });
+				var newRow = { uid: uid(), field: '', uiOp: 'includes', values: [], unknown: null };
+				state.rows.push(newRow);
+				state.expandedRows[newRow.uid] = true;
 				writeTextareaFromState();
 				render();
 			});
@@ -1276,6 +1408,92 @@
 			return el;
 		}
 
+		function formatBranchDetails(branch) {
+			var lines = [];
+			(branch.conditions || []).forEach(function (cond) {
+				if (!cond || typeof cond !== 'object') {
+					return;
+				}
+				var type = String(cond.type || '');
+				var val = cond.value;
+				var vals = Array.isArray(val) ? val.join(', ') : String(val == null ? '' : val);
+				if (type === 'utm_source' || type === 'utm_medium' || type === 'utm_campaign') {
+					lines.push(type + ' = ' + vals);
+				} else if (type === 'request_uri') {
+					lines.push(t('fieldRequestUri') + ' ' + vals);
+				} else {
+					lines.push(formatPortableCondition(cond));
+				}
+			});
+			return lines;
+		}
+
+		function renderCardActions(row, index, opts) {
+			opts = opts || {};
+			var actions = document.createElement('div');
+			actions.className = options.cardView ? 'rwgc-condition-card__actions' : 'rwgc-rb__actions';
+			if (options.cardView && opts.showEdit !== false && !row.unknown) {
+				var edit = document.createElement('button');
+				edit.type = 'button';
+				edit.className = 'button button-small';
+				edit.textContent = isRowExpanded(row) ? t('cardDone') : t('cardEdit');
+				edit.addEventListener('click', function () {
+					setRowExpanded(row.uid, !isRowExpanded(row));
+					render();
+				});
+				actions.appendChild(edit);
+			}
+			if (opts.showDuplicate !== false) {
+				var dup = document.createElement('button');
+				dup.type = 'button';
+				dup.className = options.cardView ? 'button button-small' : 'rwgc-rb__btn';
+				dup.textContent = t('duplicate');
+				dup.addEventListener('click', function () {
+					var copy = JSON.parse(JSON.stringify(row));
+					copy.uid = uid();
+					state.rows.splice(index + 1, 0, copy);
+					writeTextareaFromState();
+					render();
+				});
+				actions.appendChild(dup);
+			}
+			var rem = document.createElement('button');
+			rem.type = 'button';
+			rem.className = options.cardView ? 'button button-small button-link-delete' : 'rwgc-rb__btn rwgc-rb__btn--danger';
+			rem.textContent = t('remove');
+			rem.addEventListener('click', function () {
+				delete state.expandedRows[row.uid];
+				state.rows.splice(index, 1);
+				writeTextareaFromState();
+				render();
+			});
+			actions.appendChild(rem);
+			return actions;
+		}
+
+		function renderCardHeader(cardMeta) {
+			var header = document.createElement('div');
+			header.className = 'rwgc-condition-card__header';
+			var icon = document.createElement('span');
+			icon.className = 'rwgc-condition-card__icon';
+			icon.setAttribute('data-type', cardMeta.iconType || 'generic');
+			header.appendChild(icon);
+			var copy = document.createElement('div');
+			copy.className = 'rwgc-condition-card__header-copy';
+			var title = document.createElement('div');
+			title.className = 'rwgc-condition-card__title';
+			title.textContent = cardMeta.title;
+			copy.appendChild(title);
+			if (cardMeta.operator) {
+				var op = document.createElement('span');
+				op.className = 'rwgc-condition-card__operator';
+				op.textContent = cardMeta.operator;
+				copy.appendChild(op);
+			}
+			header.appendChild(copy);
+			return header;
+		}
+
 		function formatPortableCondition(cond) {
 			if (!cond || typeof cond !== 'object') {
 				return '';
@@ -1298,72 +1516,67 @@
 
 		function renderGroupRow(row, index) {
 			var wrap = document.createElement('div');
-			wrap.className = 'rwgc-rb__row rwgc-condition-block rwgc-condition-block--group';
+			wrap.className =
+				'rwgc-rb__row rwgc-condition-card rwgc-condition-card--group rwgc-condition-card--traffic' +
+				(rowIncomplete(row) ? ' rwgc-rb__row--invalid' : '');
 			var group = row.group || {};
-			var title = document.createElement('div');
-			title.className = 'rwgc-condition-block__title';
-			title.textContent = group.label || t('trafficSourceGroup');
-			wrap.appendChild(title);
-			var meta = document.createElement('p');
-			meta.className = 'rwgc-condition-block__meta';
-			meta.textContent = group.match === 'any' ? t('matchAny') : t('matchAll');
-			wrap.appendChild(meta);
-			(group.branches || []).forEach(function (branch) {
+			var header = renderCardHeader({
+				title: t('cardTrafficTrigger'),
+				summary: '',
+				operator: group.match === 'any' ? t('matchAny') : t('matchAll'),
+				iconType: 'traffic',
+			});
+			wrap.appendChild(header);
+			var summary = document.createElement('p');
+			summary.className = 'rwgc-condition-card__summary';
+			summary.textContent = t('cardTrafficMatchAny');
+			wrap.appendChild(summary);
+			var branches = group.branches || [];
+			branches.forEach(function (branch, branchIdx) {
 				if (!branch || typeof branch !== 'object') {
 					return;
 				}
+				if (branchIdx > 0) {
+					var or = document.createElement('div');
+					or.className = 'rwgc-traffic-or';
+					or.textContent = t('trafficOr');
+					wrap.appendChild(or);
+				}
 				var b = document.createElement('div');
-				b.className = 'rwgc-condition-group-branch';
-				var bt = document.createElement('p');
-				bt.className = 'rwgc-condition-group-branch__title';
+				b.className = 'rwgc-traffic-branch';
+				var bt = document.createElement('div');
+				bt.className = 'rwgc-traffic-branch__title';
 				bt.textContent = branch.label || t('matchConditionsLabel');
 				b.appendChild(bt);
-				var ul = document.createElement('ul');
-				(branch.conditions || []).forEach(function (cond) {
-					var li = document.createElement('li');
-					li.textContent = formatPortableCondition(cond);
-					ul.appendChild(li);
-				});
-				b.appendChild(ul);
+				var lines = formatBranchDetails(branch);
+				if (lines.length > 1) {
+					lines.forEach(function (line, lineIdx) {
+						if (lineIdx > 0) {
+							var and = document.createElement('div');
+							and.className = 'rwgc-traffic-branch__and';
+							and.textContent = t('trafficAnd');
+							b.appendChild(and);
+						}
+						var dl = document.createElement('div');
+						dl.className = 'rwgc-traffic-branch__line';
+						dl.textContent = line;
+						b.appendChild(dl);
+					});
+				} else if (lines.length === 1) {
+					var single = document.createElement('div');
+					single.className = 'rwgc-traffic-branch__line';
+					single.textContent = lines[0];
+					b.appendChild(single);
+				}
 				wrap.appendChild(b);
 			});
-			var actions = document.createElement('div');
-			actions.className = 'rwgc-rb__actions';
-			var rem = document.createElement('button');
-			rem.type = 'button';
-			rem.className = 'rwgc-rb__btn rwgc-rb__btn--danger';
-			rem.textContent = t('remove');
-			rem.addEventListener('click', function () {
-				state.rows.splice(index, 1);
-				writeTextareaFromState();
-				render();
-			});
-			actions.appendChild(rem);
-			wrap.appendChild(actions);
+			wrap.appendChild(renderCardActions(row, index, { showEdit: false }));
 			return wrap;
 		}
 
-		function renderRow(row, index, c) {
-			if (row.isGroup) {
-				return renderGroupRow(row, index);
-			}
-			var wrap = document.createElement('div');
-			wrap.className = 'rwgc-rb__row rwgc-condition-block' + (rowIncomplete(row) ? ' rwgc-rb__row--invalid' : '');
-			if (row.uiOp === 'excludes') {
-				wrap.classList.add('rwgc-condition-block--exclude');
-			}
-			if (row.unknown) {
-				wrap.classList.add('rwgc-rb__row--unknown');
-				wrap.textContent = t('unsupportedCard');
-				return wrap;
-			}
-
-			if (row.field) {
-				var blockTitle = document.createElement('div');
-				blockTitle.className = 'rwgc-condition-block__title';
-				blockTitle.textContent = uiLabelForField(row.field);
-				wrap.appendChild(blockTitle);
-			}
+		function buildRowEditor(row, index, c) {
+			var editor = document.createElement('div');
+			editor.className = 'rwgc-condition-card__editor';
 
 			var head = document.createElement('div');
 			head.className = 'rwgc-rb__row-head';
@@ -1428,10 +1641,10 @@
 				head.appendChild(vWrap);
 			}
 
-			wrap.appendChild(head);
+			editor.appendChild(head);
 
 			if (row.field === 'page_version_url') {
-				wrap.appendChild(
+				editor.appendChild(
 					renderPageVersionPanel(row, c, function (rebuildUi) {
 						writeTextareaFromState();
 						if (rebuildUi !== false) {
@@ -1440,7 +1653,57 @@
 					})
 				);
 			}
+			return editor;
+		}
 
+		function renderRow(row, index, c) {
+			if (row.isGroup) {
+				return renderGroupRow(row, index);
+			}
+			var expanded = isRowExpanded(row);
+			var wrap = document.createElement('div');
+			wrap.className =
+				'rwgc-rb__row' +
+				(options.cardView ? ' rwgc-condition-card' : ' rwgc-condition-block') +
+				(rowIncomplete(row) ? ' rwgc-rb__row--invalid' : '');
+			if (row.uiOp === 'excludes') {
+				wrap.classList.add(options.cardView ? 'rwgc-condition-card--exclude' : 'rwgc-condition-block--exclude');
+			}
+			if (row.unknown) {
+				wrap.classList.add('rwgc-rb__row--unknown');
+				wrap.textContent = t('unsupportedCard');
+				return wrap;
+			}
+
+			if (options.cardView) {
+				var cardMeta = conditionCardMeta(row, c);
+				if (cardMeta.extraClass) {
+					wrap.classList.add(cardMeta.extraClass);
+				}
+				wrap.appendChild(renderCardHeader(cardMeta));
+				if (cardMeta.summary) {
+					var sum = document.createElement('p');
+					sum.className = 'rwgc-condition-card__summary';
+					sum.textContent = cardMeta.summary;
+					wrap.appendChild(sum);
+				}
+				if (cardMeta.chips && cardMeta.chips.length) {
+					wrap.appendChild(renderDisplayChips(cardMeta.chips));
+				}
+				wrap.appendChild(renderCardActions(row, index));
+				if (expanded) {
+					wrap.appendChild(buildRowEditor(row, index, c));
+				}
+				return wrap;
+			}
+
+			if (row.field) {
+				var blockTitle = document.createElement('div');
+				blockTitle.className = 'rwgc-condition-block__title';
+				blockTitle.textContent = uiLabelForField(row.field);
+				wrap.appendChild(blockTitle);
+			}
+			wrap.appendChild(buildRowEditor(row, index, c));
 			var rowMeta = fieldMeta(row.field);
 			if (row.field && row.field !== 'logged_in' && rowMeta && rowMeta.multi) {
 				wrap.appendChild(
@@ -1450,33 +1713,7 @@
 					})
 				);
 			}
-
-			var actions = document.createElement('div');
-			actions.className = 'rwgc-rb__actions';
-			var dup = document.createElement('button');
-			dup.type = 'button';
-			dup.className = 'rwgc-rb__btn';
-			dup.textContent = t('duplicate');
-			dup.addEventListener('click', function () {
-				var copy = JSON.parse(JSON.stringify(row));
-				copy.uid = uid();
-				state.rows.splice(index + 1, 0, copy);
-				writeTextareaFromState();
-				render();
-			});
-			var rem = document.createElement('button');
-			rem.type = 'button';
-			rem.className = 'rwgc-rb__btn rwgc-rb__btn--danger';
-			rem.textContent = t('remove');
-			rem.addEventListener('click', function () {
-				state.rows.splice(index, 1);
-				writeTextareaFromState();
-				render();
-			});
-			actions.appendChild(dup);
-			actions.appendChild(rem);
-			wrap.appendChild(actions);
-
+			wrap.appendChild(renderCardActions(row, index, { showEdit: false }));
 			return wrap;
 		}
 
