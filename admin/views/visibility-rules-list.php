@@ -61,6 +61,7 @@ $orphaned_variant_rules   = isset( $orphaned_variant_rules ) && is_array( $orpha
 			</p>
 			<p>
 				<a class="button button-primary" href="<?php echo esc_url( $new_url ); ?>"><?php esc_html_e( 'Add portable rule', 'reactwoo-geocore' ); ?></a>
+				<button type="button" class="button" data-rwgc-open-rule-tester><?php esc_html_e( 'Test rule', 'reactwoo-geocore' ); ?></button>
 			</p>
 			<table class="widefat striped">
 				<thead>
@@ -101,6 +102,7 @@ $orphaned_variant_rules   = isset( $orphaned_variant_rules ) && is_array( $orpha
 							<td><?php echo esc_html( get_the_modified_date( '', $rule_post ) ); ?></td>
 							<td>
 								<a class="button button-small" href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit rule', 'reactwoo-geocore' ); ?></a>
+								<button type="button" class="button button-small" data-rwgc-open-rule-tester data-rule-id="<?php echo esc_attr( (string) (int) $rule_post->ID ); ?>"><?php esc_html_e( 'Test', 'reactwoo-geocore' ); ?></button>
 								<a href="<?php echo esc_url( $del_url ); ?>" class="submitdelete" onclick="return confirm('<?php echo esc_js( __( 'Move this rule to trash?', 'reactwoo-geocore' ) ); ?>');"><?php esc_html_e( 'Trash', 'reactwoo-geocore' ); ?></a>
 							</td>
 						</tr>

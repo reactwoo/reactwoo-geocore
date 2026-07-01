@@ -235,10 +235,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 				array(
 					'restUrl'      => esc_url_raw( rest_url( 'reactwoo-geocore/v1/targeting/preview-rule' ) ),
 					'nonce'        => wp_create_nonce( 'wp_rest' ),
-					'testingLabel' => __( 'Testing…', 'reactwoo-geocore' ),
-					'matchLabel'   => __( 'Match — this visitor would see the targeted content.', 'reactwoo-geocore' ),
-					'noMatchLabel' => __( 'No match — this visitor would not match the rule.', 'reactwoo-geocore' ),
-					'errorLabel'   => __( 'Could not evaluate the rule preview.', 'reactwoo-geocore' ),
+					'errorLabel'   => __( 'Could not refresh the logic preview.', 'reactwoo-geocore' ),
 					'emptyLogic'   => __( 'Add conditions to generate a logic preview.', 'reactwoo-geocore' ),
 				)
 			);

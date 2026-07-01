@@ -46,6 +46,7 @@ $page_title            = $is_new ? __( 'Add visibility rule', 'reactwoo-geocore'
 			<a class="button" href="<?php echo esc_url( $list_url ); ?>">&larr; <?php esc_html_e( 'Back to rules', 'reactwoo-geocore' ); ?></a>
 			<button type="submit" class="button button-primary" form="rwgc-visibility-rule-form"><?php echo esc_html( $save_label ); ?></button>
 			<a class="button" href="#rwgc-rule-logic-preview"><?php esc_html_e( 'Preview logic', 'reactwoo-geocore' ); ?></a>
+			<button type="button" class="button" data-rwgc-open-rule-tester><?php esc_html_e( 'Test rule', 'reactwoo-geocore' ); ?></button>
 		</div>
 	</div>
 
@@ -146,54 +147,6 @@ $page_title            = $is_new ? __( 'Add visibility rule', 'reactwoo-geocore'
 					</div>
 				</div>
 
-				<div class="rwgc-rule-card" id="rwgc-rule-test-panel">
-					<div class="rwgc-rule-card__header">
-						<h2><?php esc_html_e( 'Test rule', 'reactwoo-geocore' ); ?></h2>
-					</div>
-					<div class="rwgc-rule-card__body">
-						<p class="description"><?php esc_html_e( 'Simulate a visitor scenario against the current rule data (unsaved changes included).', 'reactwoo-geocore' ); ?></p>
-						<form id="rwgc-rule-test-form" class="rwgc-rule-test__form">
-							<p>
-								<label for="rwgc_test_country"><?php esc_html_e( 'Country (ISO)', 'reactwoo-geocore' ); ?></label><br />
-								<input type="text" name="country" id="rwgc_test_country" class="regular-text" placeholder="IE" maxlength="2" />
-							</p>
-							<p>
-								<label for="rwgc_test_device"><?php esc_html_e( 'Device', 'reactwoo-geocore' ); ?></label><br />
-								<select name="device" id="rwgc_test_device">
-									<option value="desktop"><?php esc_html_e( 'Desktop', 'reactwoo-geocore' ); ?></option>
-									<option value="mobile"><?php esc_html_e( 'Mobile', 'reactwoo-geocore' ); ?></option>
-									<option value="tablet"><?php esc_html_e( 'Tablet', 'reactwoo-geocore' ); ?></option>
-								</select>
-							</p>
-							<p>
-								<label for="rwgc_test_page_type"><?php esc_html_e( 'Page type', 'reactwoo-geocore' ); ?></label><br />
-								<select name="page_type" id="rwgc_test_page_type">
-									<option value="product"><?php esc_html_e( 'Product pages', 'reactwoo-geocore' ); ?></option>
-									<option value="homepage"><?php esc_html_e( 'Homepage', 'reactwoo-geocore' ); ?></option>
-									<option value="shop"><?php esc_html_e( 'Shop', 'reactwoo-geocore' ); ?></option>
-									<option value="category"><?php esc_html_e( 'Category pages', 'reactwoo-geocore' ); ?></option>
-								</select>
-							</p>
-							<p>
-								<label for="rwgc_test_request_uri"><?php esc_html_e( 'URL path', 'reactwoo-geocore' ); ?></label><br />
-								<input type="text" name="request_uri" id="rwgc_test_request_uri" class="regular-text" placeholder="/shop/product-a" />
-							</p>
-							<p>
-								<label for="rwgc_test_utm_source"><?php esc_html_e( 'UTM source', 'reactwoo-geocore' ); ?></label><br />
-								<input type="text" name="utm_source" id="rwgc_test_utm_source" class="regular-text" placeholder="google" />
-							</p>
-							<p>
-								<label for="rwgc_test_utm_medium"><?php esc_html_e( 'UTM medium', 'reactwoo-geocore' ); ?></label><br />
-								<input type="text" name="utm_medium" id="rwgc_test_utm_medium" class="regular-text" placeholder="cpc" />
-							</p>
-							<p>
-								<button type="submit" class="button button-secondary"><?php esc_html_e( 'Run test', 'reactwoo-geocore' ); ?></button>
-							</p>
-						</form>
-						<div id="rwgc-rule-test-result" class="rwgc-rule-test__result" aria-live="polite"></div>
-					</div>
-				</div>
-
 				<details class="rwgc-rule-card">
 					<summary><?php esc_html_e( 'Advanced: stored rule data', 'reactwoo-geocore' ); ?></summary>
 					<div class="rwgc-rule-card__body">
@@ -266,6 +219,7 @@ $page_title            = $is_new ? __( 'Add visibility rule', 'reactwoo-geocore'
 					</div>
 					<div class="rwgc-rule-card__body rwgc-rule-actions">
 						<?php submit_button( $save_label, 'primary', 'submit', false ); ?>
+						<button type="button" class="button" data-rwgc-open-rule-tester><?php esc_html_e( 'Test rule', 'reactwoo-geocore' ); ?></button>
 						<?php if ( $post_id > 0 ) : ?>
 							<button type="button" class="button" id="rwgc-duplicate-visibility-rule"><?php esc_html_e( 'Duplicate rule', 'reactwoo-geocore' ); ?></button>
 						<?php endif; ?>

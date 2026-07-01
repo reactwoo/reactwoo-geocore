@@ -119,6 +119,8 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-editor-presenter.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-logic-preview.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-preview.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-tester.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-tester-assets.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-copy-context.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-visibility-rules.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-elementor.php';
@@ -209,6 +211,7 @@ class RWGC_Plugin {
 		RWGC_Shortcodes::init();
 		RWGC_Gutenberg::init();
 		RWGC_Targeting_Rule_Builder_Assets::init();
+		RWGC_Visibility_Rule_Tester_Assets::init();
 		RWGC_Elementor::init();
 		RWGC_Integrations_Loader::init();
 		RWGC_Routing::init();

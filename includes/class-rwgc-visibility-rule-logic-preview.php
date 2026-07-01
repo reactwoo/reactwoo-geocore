@@ -57,6 +57,38 @@ class RWGC_Visibility_Rule_Logic_Preview {
 	}
 
 	/**
+	 * Compact bullet list for the rule tester modal (no intro/numbers).
+	 *
+	 * @param array<string,mixed>|null $set Portable rule set.
+	 * @return array<int,array{text:string,children:array<int,string>}>
+	 */
+	public static function build_compact( $set ) {
+		$items = array();
+		if ( ! is_array( $set ) || empty( $set['rules'][0]['conditions'] ) ) {
+			return $items;
+		}
+		foreach ( (array) $set['rules'][0]['conditions'] as $cond ) {
+			if ( ! is_array( $cond ) ) {
+				continue;
+			}
+			$built = self::compact_condition_line( $cond );
+			if ( null === $built ) {
+				continue;
+			}
+			$items[] = $built;
+		}
+		return $items;
+	}
+
+	/**
+	 * @param array<int,array<string,mixed>> $conds Branch conditions.
+	 * @return bool
+	 */
+	public static function is_google_ads_branch( array $conds ) {
+		return self::branch_is_google_ads( $conds );
+	}
+
+	/**
 	 * @param array<string,mixed> $cond Condition row.
 	 * @return array<string,mixed>|null
 	 */
@@ -124,13 +156,95 @@ class RWGC_Visibility_Rule_Logic_Preview {
 	}
 
 	/**
+	 * @param array<string,mixed> $cond Condition row.
+	 * @return array{text:string,children:array<int,string>}|null
+	 */
+	private static function compact_condition_line( array $cond ) {
+		$type = (string) ( $cond['type'] ?? '' );
+		$op   = (string) ( $cond['operator'] ?? '' );
+		$val  = $cond['value'] ?? array();
+
+		if ( 'country' === $type && in_array( $op, array( 'in', 'is' ), true ) ) {
+			return array(
+				'text'     => sprintf(
+					__( 'Visitor country is any of %s', 'reactwoo-geocore' ),
+					self::or_list_upper( self::country_labels( $val ) )
+				),
+				'children' => array(),
+			);
+		}
+		if ( 'country' === $type && in_array( $op, array( 'not_in', 'is_not' ), true ) ) {
+			return array(
+				'text'     => sprintf(
+					__( 'Visitor country is not any of %s', 'reactwoo-geocore' ),
+					self::or_list_upper( self::country_labels( $val ) )
+				),
+				'children' => array(),
+			);
+		}
+		if ( in_array( $type, array( 'device', 'device_type' ), true ) ) {
+			$labels = array_map( 'ucfirst', self::string_list( $val ) );
+			return array(
+				'text'     => sprintf( __( 'Device is %s', 'reactwoo-geocore' ), self::or_list_upper( $labels ) ),
+				'children' => array(),
+			);
+		}
+		if ( 'page_type' === $type ) {
+			$labels = array();
+			foreach ( self::string_list( $val ) as $slug ) {
+				$labels[] = self::page_type_label( $slug );
+			}
+			return array(
+				'text'     => sprintf( __( 'Page type is %s', 'reactwoo-geocore' ), self::or_list_upper( $labels ) ),
+				'children' => array(),
+			);
+		}
+		if ( 'condition_group' === $type && is_array( $val ) ) {
+			$children = array();
+			foreach ( (array) ( $val['branches'] ?? array() ) as $branch ) {
+				if ( ! is_array( $branch ) ) {
+					continue;
+				}
+				$child = self::branch_preview_line( $branch );
+				if ( '' !== $child ) {
+					$children[] = $child;
+				}
+			}
+			if ( empty( $children ) ) {
+				return null;
+			}
+			return array(
+				'text'     => __( 'Traffic matches any:', 'reactwoo-geocore' ),
+				'children' => $children,
+			);
+		}
+
+		return null;
+	}
+
+	/**
+	 * @param array<int,string> $labels Labels.
+	 * @return string
+	 */
+	private static function or_list_upper( array $labels ) {
+		$labels = array_values( array_filter( $labels ) );
+		if ( empty( $labels ) ) {
+			return '';
+		}
+		if ( 1 === count( $labels ) ) {
+			return $labels[0];
+		}
+		return implode( ' OR ', $labels );
+	}
+
+	/**
 	 * @param array<string,mixed> $branch Group branch.
 	 * @return string
 	 */
 	private static function branch_preview_line( array $branch ) {
 		$label = trim( (string) ( $branch['label'] ?? '' ) );
 		$conds = (array) ( $branch['conditions'] ?? array() );
-		if ( self::is_google_ads_branch( $conds ) ) {
+		if ( self::branch_is_google_ads( $conds ) ) {
 			return __( 'Google Ads standard UTM: utm_source=google and utm_medium=cpc', 'reactwoo-geocore' );
 		}
 		foreach ( $conds as $cond ) {
@@ -150,7 +264,7 @@ class RWGC_Visibility_Rule_Logic_Preview {
 	 * @param array<int,array<string,mixed>> $conds Branch conditions.
 	 * @return bool
 	 */
-	private static function is_google_ads_branch( array $conds ) {
+	private static function branch_is_google_ads( array $conds ) {
 		$has_source = false;
 		$has_medium = false;
 		foreach ( $conds as $cond ) {

@@ -170,18 +170,22 @@ class RWGC_REST {
 				'methods'             => \WP_REST_Server::CREATABLE,
 				'callback'            => array( __CLASS__, 'post_targeting_preview_rule' ),
 				'permission_callback' => array( __CLASS__, 'permissions_visibility_rule_editor' ),
+				'args'                => array(),
+			)
+		);
+
+		register_rest_route(
+			'reactwoo-geocore/v1',
+			'/targeting/rule-tester/rule/(?P<id>\d+)',
+			array(
+				'methods'             => \WP_REST_Server::READABLE,
+				'callback'            => array( __CLASS__, 'get_rule_tester_rule' ),
+				'permission_callback' => array( __CLASS__, 'permissions_visibility_rule_editor' ),
 				'args'                => array(
-					'portable_json' => array(
-						'required' => true,
-						'type'     => 'string',
-					),
-					'scenario'      => array(
-						'default' => array(),
-					),
-					'target_label'  => array(
-						'type'              => 'string',
-						'default'           => '',
-						'sanitize_callback' => 'sanitize_text_field',
+					'id' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
 					),
 				),
 			)
@@ -204,9 +208,27 @@ class RWGC_REST {
 	 * @return \WP_REST_Response
 	 */
 	public static function post_targeting_preview_rule( $request ) {
-		$json   = (string) $request->get_param( 'portable_json' );
-		$target = (string) $request->get_param( 'target_label' );
-		$scenario = $request->get_param( 'scenario' );
+		$params = $request->get_json_params();
+		if ( ! is_array( $params ) ) {
+			$params = array();
+		}
+
+		// Modal tester payload (rule_id + content + context).
+		if ( isset( $params['rule_id'] ) || isset( $params['context'] ) || isset( $params['content'] ) ) {
+			$result = class_exists( 'RWGC_Visibility_Rule_Tester', false )
+				? RWGC_Visibility_Rule_Tester::run( $params )
+				: array(
+					'status'  => 'error',
+					'matches' => false,
+					'error'   => '',
+				);
+			return new \WP_REST_Response( $result, 200 );
+		}
+
+		// Legacy editor logic preview refresh.
+		$json     = isset( $params['portable_json'] ) ? (string) $params['portable_json'] : (string) $request->get_param( 'portable_json' );
+		$target   = isset( $params['target_label'] ) ? (string) $params['target_label'] : (string) $request->get_param( 'target_label' );
+		$scenario = isset( $params['scenario'] ) ? $params['scenario'] : $request->get_param( 'scenario' );
 		if ( ! is_array( $scenario ) ) {
 			$scenario = array();
 		}
@@ -236,6 +258,24 @@ class RWGC_REST {
 			),
 			200
 		);
+	}
+
+	/**
+	 * GET rule payload for the tester modal.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public static function get_rule_tester_rule( $request ) {
+		$id = absint( $request->get_param( 'id' ) );
+		if ( ! class_exists( 'RWGC_Visibility_Rule_Tester', false ) ) {
+			return new \WP_Error( 'rwgc_tester_unavailable', __( 'Rule tester is unavailable.', 'reactwoo-geocore' ), array( 'status' => 500 ) );
+		}
+		$payload = RWGC_Visibility_Rule_Tester::get_rule_payload( $id );
+		if ( is_wp_error( $payload ) ) {
+			return $payload;
+		}
+		return new \WP_REST_Response( $payload, 200 );
 	}
 
 	/**

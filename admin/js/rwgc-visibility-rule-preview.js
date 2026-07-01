@@ -100,47 +100,9 @@
 		});
 	}
 
-	function bindTestPanel() {
-		var form = document.getElementById('rwgc-rule-test-form');
-		var result = document.getElementById('rwgc-rule-test-result');
-		if (!form || !result) {
-			return;
-		}
-		form.addEventListener('submit', function (e) {
-			e.preventDefault();
-			var scenario = {
-				country: form.country.value,
-				device: form.device.value,
-				page_type: form.page_type.value,
-				request_uri: form.request_uri.value,
-				utm_source: form.utm_source.value,
-				utm_medium: form.utm_medium.value,
-			};
-			result.textContent = cfg().testingLabel || 'Testing…';
-			result.className = 'rwgc-rule-test__result';
-			fetchPreview(scenario).then(function (data) {
-				if (!data) {
-					result.textContent = cfg().errorLabel || 'Preview failed.';
-					result.className = 'rwgc-rule-test__result rwgc-rule-test__result--error';
-					return;
-				}
-				if (data.error) {
-					result.textContent = data.error;
-					result.className = 'rwgc-rule-test__result rwgc-rule-test__result--error';
-					return;
-				}
-				if (data.matches) {
-					result.textContent = cfg().matchLabel || 'Match';
-					result.className = 'rwgc-rule-test__result rwgc-rule-test__result--match';
-				} else {
-					result.textContent = cfg().noMatchLabel || 'No match';
-					result.className = 'rwgc-rule-test__result rwgc-rule-test__result--nomatch';
-				}
-			});
-		});
-	}
-
-	function bindTextareaRefresh() {
+	document.addEventListener('DOMContentLoaded', function () {
+		bindTextareaRefresh();
+	});
 		var textarea = document.getElementById('rwgc_portable_targeting');
 		if (!textarea) {
 			return;

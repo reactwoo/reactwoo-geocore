@@ -1,0 +1,133 @@
+.rwgc-modal-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 32px;
+	background: rgba(15, 23, 42, 0.46);
+}
+
+.rwgc-modal-overlay.rwgc-is-hidden {
+	display: none;
+}
+
+.rwgc-modal {
+	position: relative;
+	width: min(760px, calc(100vw - 48px));
+	max-height: calc(100vh - 96px);
+	overflow: auto;
+	padding: 24px;
+	background: #fff;
+	border-radius: 18px;
+	box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+}
+
+.rwgc-modal-open {
+	overflow: hidden;
+}
+
+.rwgc-rule-tester__header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.rwgc-rule-tester__header h2 {
+	margin: 0;
+	font-size: 1.25rem;
+}
+
+.rwgc-rule-tester__close {
+	border: 0;
+	background: transparent;
+	font-size: 1.5rem;
+	line-height: 1;
+	cursor: pointer;
+	color: #50575e;
+}
+
+.rwgc-rule-tester__section {
+	margin-bottom: 20px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid #e2e4e7;
+}
+
+.rwgc-rule-tester__section h3 {
+	margin: 0 0 10px;
+	font-size: 0.95rem;
+}
+
+.rwgc-rule-tester__conditions {
+	margin: 10px 0 0;
+	padding-left: 1.25em;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.rwgc-rule-tester__conditions ul {
+	margin: 4px 0 0;
+	padding-left: 1.25em;
+}
+
+.rwgc-rule-tester__presets {
+	margin-top: 12px;
+}
+
+.rwgc-rule-tester__preset-buttons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.rwgc-rule-tester__grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 12px 16px;
+}
+
+.rwgc-rule-tester__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.rwgc-rule-tester__summary {
+	margin: 8px 0 0;
+	padding-left: 1.25em;
+}
+
+.rwgc-is-hidden {
+	display: none !important;
+}
+
+.rwgc-rule-test__result {
+	margin-top: 16px;
+	padding: 12px 14px;
+	border-radius: 6px;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.rwgc-rule-test__result--match {
+	background: #e8f5e9;
+	border: 1px solid #a5d6a7;
+	color: #1b5e20;
+}
+
+.rwgc-rule-test__result--nomatch {
+	background: #fff8e1;
+	border: 1px solid #ffe082;
+	color: #6d4c00;
+}
+
+.rwgc-rule-test__result--error {
+	background: #fde8e8;
+	border: 1px solid #f5b7b7;
+	color: #9b1c1c;
+}
