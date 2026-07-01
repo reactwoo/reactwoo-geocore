@@ -1,48 +1,51 @@
-# Cursor output — visibility rule tester modal UX
+# Cursor output — rules list + rule tester UI modernisation
 
 ## Status
 
-**done** (needs local UI verification on Rules list + rule editor)
+**done** (needs local UI verification)
 
 ## Task
 
-Move the inline rule test panel into a decoupled modal CTA with rule, content, and visitor context steps. Keep logic preview in the editor.
+Modernise Targeting Rules list and Rule Tester modal UI. UI/UX only — no evaluator/parser/storage contract changes.
 
 ## Files changed
 
 | File | Why |
 |------|-----|
-| `includes/class-rwgc-visibility-rule-tester.php` | **NEW** — bootstrap, rule payload, content merge, presets, run orchestration |
-| `includes/class-rwgc-visibility-rule-tester-assets.php` | **NEW** — enqueue modal JS/CSS + localize bootstrap |
-| `includes/class-rwgc-visibility-rule-preview.php` | `evaluate_detailed()` with per-condition pass/fail explanations |
-| `includes/class-rwgc-visibility-rule-logic-preview.php` | `build_compact()` + public `is_google_ads_branch()` for modal conditions |
-| `includes/class-rwgc-rest.php` | Extended `POST /targeting/preview-rule`; added `GET /targeting/rule-tester/rule/{id}` |
-| `includes/class-rwgc-plugin.php` | require + init tester assets |
-| `admin/js/rwgc-visibility-rule-tester.js` | **NEW** — modal UI, presets, run test |
-| `admin/js/rwgc-visibility-rule-preview.js` | Logic preview only (removed inline test form) |
-| `admin/css/rwgc-rule-tester.css` | **NEW** — modal + result styles |
-| `admin/views/visibility-rule-tester-modal.php` | **NEW** — modal shell |
-| `admin/views/visibility-rules-edit.php` | Removed inline test panel; `Test rule` CTA in header + sidebar |
-| `admin/views/visibility-rules-list.php` | Top-level + row `Test` buttons |
-| `includes/class-rwgc-targeting-rule-builder-assets.php` | Trimmed preview script i18n |
+| `admin/views/visibility-rules-list.php` | Card sections, pills/chips, header actions, empty states, duplicate action |
+| `admin/css/rwgc-rules-page.css` | **NEW** — scoped rules page table/card/chip styles |
+| `admin/views/visibility-rule-tester-modal.php` | Wider modal shell classes |
+| `admin/css/rwgc-rule-tester.css` | Two-column modal, sections, result badges, modal buttons |
+| `admin/js/rwgc-visibility-rule-tester.js` | Guided tester layout, searchable selects, traffic presets, validation |
+| `includes/class-rwgc-visibility-rule-tester-assets.php` | Rules CSS enqueue, expanded labels, suite deps |
+| `includes/class-rwgc-visibility-rule-tester.php` | Bootstrap `countries`; rule payload `included_countries` / `excluded_countries` |
+| `includes/class-rwgc-admin-visibility-rules.php` | `handle_duplicate` admin action for list Duplicate button |
+| `reactwoo-geocore.php` / `readme.txt` | **v1.8.106** |
 
 ## What was not changed
 
 - Geo AI parser/planner
 - Rule storage schema
-- Evaluator contracts (`RWGC_Rule_Evaluator` unchanged)
+- Evaluator contracts
 - Popup / Google Ads resolvers
+- MaxMind handling
 
 ## Manual checks
 
-1. Rules list → **Test rule** opens modal with rule picker
-2. Row **Test** preselects that rule
-3. Rule editor → **Test rule** preselects current rule; unsaved textarea JSON is used
-4. Content picker fills page type + URL from page/product
-5. Presets appear for Free Delivery–style rules
-6. Run test → Match / No match with bullet explanations
-7. Logic preview card still refreshes on edit
+1. Rules list → card layout, chips, pills, empty states
+2. Row **Test** preselects rule; header **Test rule** opens blank picker
+3. Editor **Test rule** still opens modal with current rule
+4. Country dropdown shows readable names; submits ISO
+5. Traffic presets fill Google Ads / winter-sale / clear campaign
+6. **Run test** disabled until rule + country + device + page type set
+7. Result panel shows MATCH / NO MATCH with condition bullets
+
+## Commands
+
+```bash
+npm run package:zip
+```
 
 ## Release
 
-Not tagged in this pass — bump **v1.8.104** when ready.
+Bump shipped as **v1.8.106** — commit/tag/push when user requests release.

@@ -1,0 +1,227 @@
+.rwgc-rules-page .rwgc-rules-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 20px;
+}
+
+.rwgc-rules-page .rwgc-rules-header__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	align-items: center;
+}
+
+.rwgc-rules-page .rwgc-rules-card {
+	background: #fff;
+	border: 1px solid var(--rw-suite-border, #e2e8f0);
+	border-radius: var(--rw-suite-radius, 14px);
+	box-shadow: var(--rw-suite-shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.06));
+	margin-bottom: 24px;
+	overflow: hidden;
+}
+
+.rwgc-rules-page .rwgc-rules-card__head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 20px 22px 0;
+}
+
+.rwgc-rules-page .rwgc-rules-card__head h2 {
+	margin: 0 0 6px;
+	font-size: 1.05rem;
+	font-weight: 700;
+}
+
+.rwgc-rules-page .rwgc-rules-card__head .description {
+	margin: 0;
+	max-width: 52rem;
+	color: var(--rw-suite-text-muted, #64748b);
+}
+
+.rwgc-rules-page .rwgc-rules-card__actions {
+	padding: 0 22px 16px;
+}
+
+.rwgc-rules-page .rwgc-rules-table-wrap {
+	padding: 0 22px 22px;
+	overflow-x: auto;
+}
+
+.rwgc-rules-page .rwgc-rules-table {
+	width: 100%;
+	border-collapse: separate;
+	border-spacing: 0;
+	font-size: 13px;
+}
+
+.rwgc-rules-page .rwgc-rules-table thead th {
+	padding: 10px 12px;
+	text-align: left;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--rw-suite-text-muted, #64748b);
+	border-bottom: 1px solid var(--rw-suite-border, #e2e8f0);
+	background: var(--rw-suite-surface-alt, #f8fafc);
+}
+
+.rwgc-rules-page .rwgc-rules-table tbody td {
+	padding: 14px 12px;
+	vertical-align: top;
+	border-bottom: 1px solid var(--rw-suite-border, #e2e8f0);
+}
+
+.rwgc-rules-page .rwgc-rules-table tbody tr:last-child td {
+	border-bottom: 0;
+}
+
+.rwgc-rules-page .rwgc-rule-row__title {
+	display: block;
+	font-weight: 600;
+	font-size: 14px;
+	color: var(--rw-suite-text, #0f172a);
+	margin-bottom: 6px;
+}
+
+.rwgc-rules-page .rwgc-rule-row__meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: center;
+}
+
+.rwgc-rules-page .rwgc-rule-chip,
+.rwgc-rules-page .rwgc-rule-status-pill,
+.rwgc-rules-page .rwgc-rule-source-pill {
+	display: inline-flex;
+	align-items: center;
+	padding: 3px 9px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.35;
+	white-space: nowrap;
+}
+
+.rwgc-rules-page .rwgc-rule-chip {
+	background: #f1f5f9;
+	color: #334155;
+	border: 1px solid #e2e8f0;
+}
+
+.rwgc-rules-page .rwgc-rule-chip--include {
+	background: #eff6ff;
+	color: #1d4ed8;
+	border-color: #bfdbfe;
+}
+
+.rwgc-rules-page .rwgc-rule-chip--exclude {
+	background: #fef2f2;
+	color: #b91c1c;
+	border-color: #fecaca;
+}
+
+.rwgc-rules-page .rwgc-rule-chip--traffic {
+	background: #f5f3ff;
+	color: #6d28d9;
+	border-color: #ddd6fe;
+}
+
+.rwgc-rules-page .rwgc-rule-status-pill--published,
+.rwgc-rules-page .rwgc-rule-status-pill--active {
+	background: #ecfdf5;
+	color: #047857;
+	border: 1px solid #a7f3d0;
+}
+
+.rwgc-rules-page .rwgc-rule-status-pill--draft {
+	background: #f8fafc;
+	color: #475569;
+	border: 1px solid #e2e8f0;
+}
+
+.rwgc-rules-page .rwgc-rule-source-pill {
+	border: 1px solid transparent;
+}
+
+.rwgc-rules-page .rwgc-rule-source-pill--geocore {
+	background: #eff8ff;
+	color: #175cd3;
+	border-color: #b2ddff;
+}
+
+.rwgc-rules-page .rwgc-rule-source-pill--elementor {
+	background: #fef3f2;
+	color: #9b1c1c;
+	border-color: #fecdca;
+}
+
+.rwgc-rules-page .rwgc-rule-source-pill--gutenberg {
+	background: #ecfdf3;
+	color: #027a48;
+	border-color: #abefc6;
+}
+
+.rwgc-rules-page .rwgc-rule-source-pill--commerce {
+	background: #fff6ed;
+	color: #b93815;
+	border-color: #f9dbaf;
+}
+
+.rwgc-rules-page .rwgc-rule-source-pill--routing {
+	background: #f8fafc;
+	color: #334155;
+	border-color: #e2e8f0;
+}
+
+.rwgc-rules-page .rwgc-rule-row__chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	max-width: 22rem;
+}
+
+.rwgc-rules-page .rwgc-rule-row__target {
+	color: var(--rw-suite-text-muted, #64748b);
+	font-size: 12px;
+}
+
+.rwgc-rules-page .rwgc-rule-row__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+
+.rwgc-rules-page .rwgc-rules-empty {
+	padding: 28px 22px 32px;
+	text-align: center;
+}
+
+.rwgc-rules-page .rwgc-rules-empty__title {
+	margin: 0 0 8px;
+	font-size: 15px;
+	font-weight: 700;
+}
+
+.rwgc-rules-page .rwgc-rules-empty__text {
+	margin: 0 0 16px;
+	color: var(--rw-suite-text-muted, #64748b);
+	max-width: 36rem;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.rwgc-rules-page .rwgc-rule-row__note {
+	margin: 6px 0 0;
+	font-size: 12px;
+	color: var(--rw-suite-text-muted, #64748b);
+	max-width: 14rem;
+}

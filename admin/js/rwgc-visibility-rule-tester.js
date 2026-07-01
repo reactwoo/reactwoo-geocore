@@ -11,6 +11,19 @@
 		rulePayload: null,
 	};
 
+	var PAGE_TYPES = [
+		{ value: 'product', label: 'Product' },
+		{ value: 'category', label: 'Product category' },
+		{ value: 'homepage', label: 'Homepage' },
+		{ value: 'page', label: 'Page' },
+		{ value: 'post', label: 'Post' },
+		{ value: 'shop', label: 'Shop' },
+		{ value: 'cart', label: 'Cart' },
+		{ value: 'checkout', label: 'Checkout' },
+		{ value: 'search', label: 'Search' },
+		{ value: 'other', label: 'Other / manual' },
+	];
+
 	function cfg() {
 		return window.rwgcRuleTester || {};
 	}
@@ -70,11 +83,12 @@
 			});
 	}
 
-	function renderConditions(conditions) {
+
+	function renderConditionsList(conditions) {
 		if (!conditions || !conditions.length) {
 			return '<p class="description">' + esc(labels().noConditions || '') + '</p>';
 		}
-		var html = '<ul class="rwgc-rule-tester__conditions">';
+		var html = '<ul>';
 		conditions.forEach(function (item) {
 			html += '<li>' + esc(item.text || '');
 			if (item.children && item.children.length) {
@@ -90,22 +104,31 @@
 		return html;
 	}
 
-	function renderPresets(presets) {
-		if (!presets || !presets.length) {
-			return '';
-		}
-		var html = '<div class="rwgc-rule-tester__presets"><strong>' + esc(labels().presets || 'Presets') + '</strong><div class="rwgc-rule-tester__preset-buttons">';
-		presets.forEach(function (preset, idx) {
-			html += '<button type="button" class="button button-small" data-rwgc-preset="' + idx + '">' + esc(preset.label || preset.id) + '</button>';
+	function countriesOptionsHtml(selected) {
+		var countries = (cfg().bootstrap || {}).countries || [];
+		var html = '<option value="">' + esc(labels().countryPlaceholder || 'Choose a country') + '</option>';
+		countries.forEach(function (row) {
+			html += '<option value="' + esc(row.code) + '"' + (String(row.code) === String(selected) ? ' selected' : '') + '>' + esc(row.label + ' (' + row.code + ')') + '</option>';
 		});
-		html += '</div></div>';
+		return html;
+	}
+
+	function pageTypeOptionsHtml(selected) {
+		var html = '';
+		PAGE_TYPES.forEach(function (row) {
+			html += '<option value="' + esc(row.value) + '"' + (row.value === selected ? ' selected' : '') + '>' + esc(row.label) + '</option>';
+		});
 		return html;
 	}
 
 	function contentOptionsHtml() {
 		var boot = cfg().bootstrap || {};
 		var html = '<option value="">' + esc(labels().contentNone || '') + '</option>';
-		[['pages', 'Page'], ['posts', 'Post'], ['products', 'Product']].forEach(function (group) {
+		[
+			['pages', labels().contentPage || 'Pages'],
+			['posts', labels().contentPost || 'Posts'],
+			['products', labels().contentProduct || 'Products'],
+		].forEach(function (group) {
 			var key = group[0];
 			var label = group[1];
 			var items = boot[key] || [];
@@ -118,16 +141,40 @@
 			});
 			html += '</optgroup>';
 		});
-		html += '<option value="manual">' + esc(labels().contentManual || 'Manual URL') + '</option>';
+		html += '<option value="manual">' + esc(labels().contentManual || 'Manual URL / path') + '</option>';
 		return html;
 	}
 
 	function rulesOptionsHtml(selectedId) {
 		var rules = (cfg().bootstrap || {}).rules || [];
-		var html = '<option value="">' + esc(labels().selectRule || '') + '</option>';
+		var html = '<option value="">' + esc(labels().selectRulePlaceholder || 'Choose a visibility rule') + '</option>';
 		rules.forEach(function (rule) {
 			html += '<option value="' + esc(rule.id) + '"' + (String(rule.id) === String(selectedId) ? ' selected' : '') + '>' + esc(rule.title) + '</option>';
 		});
+		return html;
+	}
+
+	function countryHelperHtml(payload) {
+		if (!payload || !payload.included_countries || !payload.included_countries.length) {
+			return '';
+		}
+		return '<p class="description">' + esc(labels().countryHelper || 'Based on this rule\'s allowed countries.') + '</p>';
+	}
+
+	function renderSummaryAside(payload) {
+		var title = payload && payload.title ? payload.title : '';
+		var html = '<section class="rwgc-rule-tester-section rwgc-rule-tester-condition-summary" aria-live="polite">';
+		if (title) {
+			html += '<p class="rwgc-rule-tester-condition-summary__title">' + esc(title) + '</p>';
+			html += '<p class="description" style="margin:0 0 8px;">' + esc(labels().ruleConditions || 'Conditions') + '</p>';
+			html += renderConditionsList(payload.conditions || []);
+		} else {
+			html += '<p class="description">' + esc(labels().selectRulePlaceholder || 'Choose a visibility rule') + '</p>';
+		}
+		html += '</section>';
+		html += '<div id="rwgc-tester-result" class="rwgc-rule-tester-result" aria-live="polite">';
+		html += '<p class="rwgc-rule-tester-result__placeholder">' + esc(labels().resultPlaceholder || 'Select a rule and visitor context to test whether this rule would match.') + '</p>';
+		html += '</div>';
 		return html;
 	}
 
@@ -138,55 +185,136 @@
 		if (!body) {
 			return;
 		}
+
 		body.innerHTML =
-			'<div class="rwgc-rule-tester__header">' +
+			'<header class="rwgc-rule-tester-modal__header">' +
+			'<div>' +
 			'<h2 id="rwgc-rule-tester-title">' + esc(labels().title || 'Test visibility rule') + '</h2>' +
-			'<button type="button" class="rwgc-rule-tester__close" aria-label="' + esc(labels().close || 'Close') + '">&times;</button>' +
+			'<p class="rwgc-rule-tester-modal__subtitle">' + esc(labels().subtitle || 'Choose a rule, choose where to test it, then simulate a visitor.') + '</p>' +
 			'</div>' +
-			'<form id="rwgc-rule-tester-form" class="rwgc-rule-tester__form">' +
-			'<section class="rwgc-rule-tester__section">' +
+			'<button type="button" class="rwgc-rule-tester-modal__close" aria-label="' + esc(labels().close || 'Close') + '">&times;</button>' +
+			'</header>' +
+			'<form id="rwgc-rule-tester-form">' +
+			'<div class="rwgc-rule-tester-modal__grid">' +
+			'<div class="rwgc-rule-tester-modal__main">' +
+			'<section class="rwgc-rule-tester-section">' +
 			'<h3>' + esc(labels().stepRule || 'Rule') + '</h3>' +
-			'<p><label for="rwgc-tester-rule">' + esc(labels().selectRule || '') + '</label><br />' +
-			'<select id="rwgc-tester-rule" name="rule_id" class="regular-text">' + rulesOptionsHtml(state.openRuleId) + '</select></p>' +
-			'<div id="rwgc-tester-conditions" class="rwgc-rule-tester__conditions-wrap">' + renderConditions(payload.conditions || []) + '</div>' +
-			renderPresets(payload.presets || []) +
-			'</section>' +
-			'<section class="rwgc-rule-tester__section">' +
-			'<h3>' + esc(labels().stepContent || 'Content') + '</h3>' +
-			'<p class="description">' + esc(labels().contentHelp || '') + '</p>' +
-			'<p><label for="rwgc-tester-content">' + esc(labels().selectContent || '') + '</label><br />' +
-			'<select id="rwgc-tester-content" name="content_select" class="regular-text">' + contentOptionsHtml() + '</select></p>' +
-			'<p id="rwgc-tester-manual-wrap" class="rwgc-is-hidden"><label for="rwgc-tester-manual-url">' + esc(labels().contentManual || '') + '</label><br />' +
-			'<input type="text" id="rwgc-tester-manual-url" class="regular-text" placeholder="/product/example" /></p>' +
-			'</section>' +
-			'<section class="rwgc-rule-tester__section">' +
-			'<h3>' + esc(labels().stepContext || 'Context') + '</h3>' +
-			'<div class="rwgc-rule-tester__grid">' +
-			'<p><label for="rwgc-tester-country">' + esc(labels().country || '') + '</label><br /><input type="text" id="rwgc-tester-country" maxlength="2" value="' + esc(defaults.country || '') + '" /></p>' +
-			'<p><label for="rwgc-tester-device">' + esc(labels().device || '') + '</label><br />' +
-			'<select id="rwgc-tester-device"><option value="desktop"' + (defaults.device === 'desktop' ? ' selected' : '') + '>Desktop</option>' +
-			'<option value="mobile"' + (defaults.device === 'mobile' ? ' selected' : '') + '>Mobile</option>' +
-			'<option value="tablet"' + (defaults.device === 'tablet' ? ' selected' : '') + '>Tablet</option></select></p>' +
-			'<p><label for="rwgc-tester-page-type">' + esc(labels().pageType || '') + '</label><br />' +
-			'<select id="rwgc-tester-page-type">' +
-			'<option value="product"' + (defaults.page_type === 'product' ? ' selected' : '') + '>Product</option>' +
-			'<option value="homepage"' + (defaults.page_type === 'homepage' ? ' selected' : '') + '>Homepage</option>' +
-			'<option value="shop"' + (defaults.page_type === 'shop' ? ' selected' : '') + '>Shop</option>' +
-			'<option value="category"' + (defaults.page_type === 'category' ? ' selected' : '') + '>Category</option>' +
-			'<option value="other"' + (defaults.page_type === 'other' ? ' selected' : '') + '>Other</option>' +
-			'</select></p>' +
-			'<p><label for="rwgc-tester-url">' + esc(labels().urlPath || '') + '</label><br /><input type="text" id="rwgc-tester-url" class="regular-text" value="' + esc(defaults.request_uri || '') + '" /></p>' +
-			'<p><label for="rwgc-tester-utm-source">' + esc(labels().utmSource || '') + '</label><br /><input type="text" id="rwgc-tester-utm-source" value="' + esc(defaults.utm_source || '') + '" /></p>' +
-			'<p><label for="rwgc-tester-utm-medium">' + esc(labels().utmMedium || '') + '</label><br /><input type="text" id="rwgc-tester-utm-medium" value="' + esc(defaults.utm_medium || '') + '" /></p>' +
-			'</div></section>' +
-			'<div class="rwgc-rule-tester__actions">' +
-			'<button type="submit" class="button button-primary">' + esc(labels().runTest || 'Run test') + '</button>' +
-			'<button type="button" class="button rwgc-rule-tester__cancel">' + esc(labels().close || 'Close') + '</button>' +
+			'<div class="rwgc-rule-tester-field rwgc-rule-tester-select">' +
+			'<label for="rwgc-tester-rule-search">' + esc(labels().selectRule || 'Visibility rule') + '</label>' +
+			'<input type="search" id="rwgc-tester-rule-search" class="rwgc-rule-tester-select__search" placeholder="' + esc(labels().searchPlaceholder || 'Search…') + '" autocomplete="off" />' +
+			'<select id="rwgc-tester-rule" name="rule_id" class="rwgc-rule-tester-select__control">' + rulesOptionsHtml(state.openRuleId) + '</select>' +
 			'</div>' +
-			'<div id="rwgc-tester-result" class="rwgc-rule-test__result" aria-live="polite"></div>' +
+			'<div id="rwgc-tester-rule-presets">' + renderRulePresets(payload) + '</div>' +
+			'</section>' +
+			'<section class="rwgc-rule-tester-section">' +
+			'<h3>' + esc(labels().stepContent || 'Content') + '</h3>' +
+			'<p class="rwgc-rule-tester-section__hint">' + esc(labels().contentHelp || '') + '</p>' +
+			'<div class="rwgc-rule-tester-field rwgc-rule-tester-select">' +
+			'<label for="rwgc-tester-content-search">' + esc(labels().selectContent || 'Content') + '</label>' +
+			'<input type="search" id="rwgc-tester-content-search" class="rwgc-rule-tester-select__search" placeholder="' + esc(labels().searchPlaceholder || 'Search…') + '" autocomplete="off" />' +
+			'<select id="rwgc-tester-content" name="content_select" class="rwgc-rule-tester-select__control">' + contentOptionsHtml() + '</select>' +
+			'</div>' +
+			'<div id="rwgc-tester-manual-wrap" class="rwgc-rule-tester-field rwgc-is-hidden">' +
+			'<label for="rwgc-tester-manual-url">' + esc(labels().contentManual || 'Manual URL / path') + '</label>' +
+			'<input type="text" id="rwgc-tester-manual-url" placeholder="/product/example" />' +
+			'</div>' +
+			'<div id="rwgc-tester-detected" class="rwgc-rule-tester-detected rwgc-is-hidden"></div>' +
+			'</section>' +
+			'<section class="rwgc-rule-tester-section">' +
+			'<h3>' + esc(labels().stepVisitor || 'Visitor context') + '</h3>' +
+			'<div class="rwgc-rule-tester-field__row">' +
+			'<div class="rwgc-rule-tester-field rwgc-rule-tester-select">' +
+			'<label for="rwgc-tester-country-search">' + esc(labels().country || 'Country') + '</label>' +
+			'<input type="search" id="rwgc-tester-country-search" class="rwgc-rule-tester-select__search" placeholder="' + esc(labels().searchPlaceholder || 'Search…') + '" autocomplete="off" />' +
+			'<select id="rwgc-tester-country" class="rwgc-rule-tester-select__control">' + countriesOptionsHtml(defaults.country || '') + '</select>' +
+			countryHelperHtml(payload) +
+			'</div>' +
+			'<div class="rwgc-rule-tester-field">' +
+			'<label for="rwgc-tester-device">' + esc(labels().device || 'Device') + '</label>' +
+			'<select id="rwgc-tester-device">' +
+			'<option value="desktop"' + (defaults.device === 'desktop' ? ' selected' : '') + '>Desktop</option>' +
+			'<option value="tablet"' + (defaults.device === 'tablet' ? ' selected' : '') + '>Tablet</option>' +
+			'<option value="mobile"' + (defaults.device === 'mobile' ? ' selected' : '') + '>Mobile</option>' +
+			'</select>' +
+			'</div>' +
+			'<div class="rwgc-rule-tester-field">' +
+			'<label for="rwgc-tester-page-type">' + esc(labels().pageType || 'Page type') + '</label>' +
+			'<select id="rwgc-tester-page-type">' + pageTypeOptionsHtml(defaults.page_type || 'product') + '</select>' +
+			'</div>' +
+			'</div>' +
+			'</section>' +
+			'<section class="rwgc-rule-tester-section">' +
+			'<h3>' + esc(labels().stepTraffic || 'Traffic context') + '</h3>' +
+			'<div class="rwgc-rule-tester-presets">' +
+			'<strong>' + esc(labels().trafficPresets || 'Traffic presets') + '</strong>' +
+			'<div class="rwgc-rule-tester-presets__buttons">' +
+			'<button type="button" class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" data-rwgc-traffic-preset="google_ads">' + esc(labels().presetGoogleAds || 'Google Ads standard UTM') + '</button>' +
+			'<button type="button" class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" data-rwgc-traffic-preset="winter_sale">' + esc(labels().presetWinterSale || 'Winter sale URL') + '</button>' +
+			'<button type="button" class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" data-rwgc-traffic-preset="no_campaign">' + esc(labels().presetNoCampaign || 'No campaign') + '</button>' +
+			'</div>' +
+			'</div>' +
+			'<div class="rwgc-rule-tester-field__row" style="margin-top:12px;">' +
+			'<div class="rwgc-rule-tester-field">' +
+			'<label for="rwgc-tester-url">' + esc(labels().urlPath || 'URL / path') + '</label>' +
+			'<input type="text" id="rwgc-tester-url" value="' + esc(defaults.request_uri || '') + '" />' +
+			'</div>' +
+			'<div class="rwgc-rule-tester-field">' +
+			'<label for="rwgc-tester-utm-source">' + esc(labels().utmSource || 'UTM source') + '</label>' +
+			'<input type="text" id="rwgc-tester-utm-source" value="' + esc(defaults.utm_source || '') + '" />' +
+			'</div>' +
+			'<div class="rwgc-rule-tester-field">' +
+			'<label for="rwgc-tester-utm-medium">' + esc(labels().utmMedium || 'UTM medium') + '</label>' +
+			'<input type="text" id="rwgc-tester-utm-medium" value="' + esc(defaults.utm_medium || '') + '" />' +
+			'</div>' +
+			'</div>' +
+			'<div class="rwgc-rule-tester-field">' +
+			'<label><input type="checkbox" id="rwgc-tester-gclid" /> ' + esc(labels().gclid || 'gclid present') + '</label>' +
+			'</div>' +
+			'</section>' +
+			'</div>' +
+			'<aside class="rwgc-rule-tester-modal__aside" id="rwgc-tester-aside">' + renderSummaryAside(payload) + '</aside>' +
+			'</div>' +
+			'<footer class="rwgc-rule-tester-modal__footer">' +
+			'<button type="button" class="rwgc-btn rwgc-btn--tertiary" id="rwgc-tester-reset">' + esc(labels().reset || 'Reset') + '</button>' +
+			'<button type="button" class="rwgc-btn rwgc-btn--secondary rwgc-rule-tester__cancel">' + esc(labels().close || 'Close') + '</button>' +
+			'<button type="submit" class="rwgc-btn rwgc-btn--primary" id="rwgc-tester-run" disabled>' + esc(labels().runTest || 'Run test') + '</button>' +
+			'</footer>' +
 			'</form>';
 
 		bindFormEvents(payload);
+		updateRunButtonState();
+		updateDetectedContext();
+	}
+
+	function renderRulePresets(payload) {
+		var presets = (payload && payload.presets) || [];
+		if (!presets.length) {
+			return '';
+		}
+		var html = '<div class="rwgc-rule-tester-presets"><strong>' + esc(labels().presets || 'Quick presets') + '</strong><div class="rwgc-rule-tester-presets__buttons">';
+		presets.forEach(function (preset, idx) {
+			html += '<button type="button" class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" data-rwgc-preset="' + idx + '">' + esc(preset.label || preset.id) + '</button>';
+		});
+		html += '</div></div>';
+		return html;
+	}
+
+	function initSearchableSelect(searchInput, selectEl) {
+		if (!searchInput || !selectEl) {
+			return;
+		}
+		var options = Array.prototype.slice.call(selectEl.options);
+		searchInput.addEventListener('input', function () {
+			var q = searchInput.value.trim().toLowerCase();
+			options.forEach(function (opt, idx) {
+				if (idx === 0 && opt.value === '') {
+					opt.hidden = false;
+					return;
+				}
+				var text = (opt.textContent || '').toLowerCase();
+				opt.hidden = q !== '' && text.indexOf(q) === -1;
+			});
+		});
 	}
 
 	function bindFormEvents(payload) {
@@ -194,14 +322,26 @@
 		var ruleSelect = document.getElementById('rwgc-tester-rule');
 		var contentSelect = document.getElementById('rwgc-tester-content');
 		var manualWrap = document.getElementById('rwgc-tester-manual-wrap');
-		var closeBtn = document.querySelector('.rwgc-rule-tester__close');
+		var closeBtn = document.querySelector('.rwgc-rule-tester-modal__close');
 		var cancelBtn = document.querySelector('.rwgc-rule-tester__cancel');
+		var resetBtn = document.getElementById('rwgc-tester-reset');
+
+		initSearchableSelect(document.getElementById('rwgc-tester-rule-search'), ruleSelect);
+		initSearchableSelect(document.getElementById('rwgc-tester-content-search'), contentSelect);
+		initSearchableSelect(document.getElementById('rwgc-tester-country-search'), document.getElementById('rwgc-tester-country'));
 
 		if (closeBtn) {
 			closeBtn.addEventListener('click', closeModal);
 		}
 		if (cancelBtn) {
 			cancelBtn.addEventListener('click', closeModal);
+		}
+		if (resetBtn) {
+			resetBtn.addEventListener('click', function () {
+				state.openRuleId = 0;
+				state.rulePayload = null;
+				renderForm();
+			});
 		}
 		if (ruleSelect) {
 			ruleSelect.addEventListener('change', function () {
@@ -219,30 +359,23 @@
 			});
 		}
 		if (contentSelect) {
-			contentSelect.addEventListener('change', function () {
-				var val = contentSelect.value;
-				if ('manual' === val) {
-					manualWrap.classList.remove('rwgc-is-hidden');
-					return;
-				}
-				manualWrap.classList.add('rwgc-is-hidden');
-				if (!val) {
-					return;
-				}
-				var opt = contentSelect.options[contentSelect.selectedIndex];
-				if (!opt) {
-					return;
-				}
-				var pageType = opt.getAttribute('data-page-type');
-				var url = opt.getAttribute('data-url');
-				if (pageType) {
-					document.getElementById('rwgc-tester-page-type').value = pageType;
-				}
-				if (url) {
-					document.getElementById('rwgc-tester-url').value = url;
-				}
-			});
+			contentSelect.addEventListener('change', onContentChange);
 		}
+
+		['rwgc-tester-country', 'rwgc-tester-device', 'rwgc-tester-page-type', 'rwgc-tester-url', 'rwgc-tester-manual-url', 'rwgc-tester-content'].forEach(function (id) {
+			var el = document.getElementById(id);
+			if (el) {
+				el.addEventListener('change', function () {
+					updateRunButtonState();
+					updateDetectedContext();
+				});
+				el.addEventListener('input', function () {
+					updateRunButtonState();
+					updateDetectedContext();
+				});
+			}
+		});
+
 		document.querySelectorAll('[data-rwgc-preset]').forEach(function (btn) {
 			btn.addEventListener('click', function () {
 				var idx = parseInt(btn.getAttribute('data-rwgc-preset'), 10);
@@ -253,9 +386,90 @@
 				applyContext(preset.context);
 			});
 		});
+
+		document.querySelectorAll('[data-rwgc-traffic-preset]').forEach(function (btn) {
+			btn.addEventListener('click', function () {
+				applyTrafficPreset(btn.getAttribute('data-rwgc-traffic-preset'));
+			});
+		});
+
 		if (form) {
 			form.addEventListener('submit', onSubmit);
 		}
+
+		function onContentChange() {
+			var val = contentSelect.value;
+			if ('manual' === val) {
+				manualWrap.classList.remove('rwgc-is-hidden');
+				updateDetectedContext();
+				updateRunButtonState();
+				return;
+			}
+			manualWrap.classList.add('rwgc-is-hidden');
+			if (!val) {
+				updateDetectedContext();
+				updateRunButtonState();
+				return;
+			}
+			var opt = contentSelect.options[contentSelect.selectedIndex];
+			if (!opt) {
+				return;
+			}
+			var pageType = opt.getAttribute('data-page-type');
+			var url = opt.getAttribute('data-url');
+			if (pageType) {
+				document.getElementById('rwgc-tester-page-type').value = pageType;
+			}
+			if (url) {
+				document.getElementById('rwgc-tester-url').value = url;
+			}
+			updateDetectedContext();
+			updateRunButtonState();
+		}
+	}
+
+	function applyTrafficPreset(id) {
+		var urlInput = document.getElementById('rwgc-tester-url');
+		var utmSource = document.getElementById('rwgc-tester-utm-source');
+		var utmMedium = document.getElementById('rwgc-tester-utm-medium');
+		var gclid = document.getElementById('rwgc-tester-gclid');
+		if ('google_ads' === id) {
+			if (utmSource) {
+				utmSource.value = 'google';
+			}
+			if (utmMedium) {
+				utmMedium.value = 'cpc';
+			}
+			if (gclid) {
+				gclid.checked = true;
+			}
+		} else if ('winter_sale' === id) {
+			if (urlInput) {
+				var current = urlInput.value || '';
+				urlInput.value = current.indexOf('/winter-sale') >= 0 ? current : '/winter-sale';
+			}
+			if (utmSource) {
+				utmSource.value = '';
+			}
+			if (utmMedium) {
+				utmMedium.value = '';
+			}
+			if (gclid) {
+				gclid.checked = false;
+			}
+		} else if ('no_campaign' === id) {
+			if (utmSource) {
+				utmSource.value = '';
+			}
+			if (utmMedium) {
+				utmMedium.value = '';
+			}
+			if (gclid) {
+				gclid.checked = false;
+			}
+		}
+		updateDetectedContext();
+		updateRunButtonState();
 	}
 
 	function applyContext(context) {
@@ -280,6 +494,53 @@
 		if (context.utm_medium) {
 			document.getElementById('rwgc-tester-utm-medium').value = context.utm_medium;
 		}
+		updateDetectedContext();
+		updateRunButtonState();
+	}
+
+	function updateDetectedContext() {
+		var wrap = document.getElementById('rwgc-tester-detected');
+		if (!wrap) {
+			return;
+		}
+		var contentSelect = document.getElementById('rwgc-tester-content');
+		var pageTypeEl = document.getElementById('rwgc-tester-page-type');
+		var urlEl = document.getElementById('rwgc-tester-url');
+		var val = contentSelect ? contentSelect.value : '';
+		if (!val || 'manual' === val) {
+			if ('manual' === val) {
+				var manual = document.getElementById('rwgc-tester-manual-url');
+				var manualUrl = manual ? manual.value : '';
+				if (manualUrl) {
+					wrap.classList.remove('rwgc-is-hidden');
+					wrap.innerHTML =
+						'<span class="rwgc-rule-chip">' + esc(labels().detectedPageType || 'Page type') + ': ' + esc(pageTypeEl ? pageTypeEl.options[pageTypeEl.selectedIndex].text : '') + '</span>' +
+						'<span class="rwgc-rule-chip">' + esc(labels().detectedUrl || 'URL') + ': ' + esc(manualUrl) + '</span>';
+					return;
+				}
+			}
+			wrap.classList.add('rwgc-is-hidden');
+			wrap.innerHTML = '';
+			return;
+		}
+		var pageLabel = pageTypeEl ? pageTypeEl.options[pageTypeEl.selectedIndex].text : '';
+		var url = urlEl ? urlEl.value : '';
+		wrap.classList.remove('rwgc-is-hidden');
+		wrap.innerHTML =
+			'<span class="rwgc-rule-chip">' + esc(labels().detectedPageType || 'Page type') + ': ' + esc(pageLabel) + '</span>' +
+			(url ? '<span class="rwgc-rule-chip">' + esc(labels().detectedUrl || 'URL') + ': ' + esc(url) + '</span>' : '');
+	}
+
+	function updateRunButtonState() {
+		var btn = document.getElementById('rwgc-tester-run');
+		if (!btn) {
+			return;
+		}
+		var ruleId = parseInt((document.getElementById('rwgc-tester-rule') || {}).value, 10) || 0;
+		var country = (document.getElementById('rwgc-tester-country') || {}).value || '';
+		var device = (document.getElementById('rwgc-tester-device') || {}).value || '';
+		var pageType = (document.getElementById('rwgc-tester-page-type') || {}).value || '';
+		btn.disabled = !(ruleId && country && device && pageType);
 	}
 
 	function buildContentPayload() {
@@ -307,6 +568,7 @@
 		e.preventDefault();
 		var result = document.getElementById('rwgc-tester-result');
 		var ruleId = parseInt(document.getElementById('rwgc-tester-rule').value, 10) || 0;
+		var gclidEl = document.getElementById('rwgc-tester-gclid');
 		var payload = {
 			rule_id: ruleId,
 			target_label: state.rulePayload && state.rulePayload.target_label ? state.rulePayload.target_label : '',
@@ -318,6 +580,7 @@
 				request_uri: document.getElementById('rwgc-tester-url').value,
 				utm_source: document.getElementById('rwgc-tester-utm-source').value,
 				utm_medium: document.getElementById('rwgc-tester-utm-medium').value,
+				gclid: gclidEl && gclidEl.checked ? '1' : '',
 			},
 		};
 		var textarea = document.getElementById('rwgc_portable_targeting');
@@ -326,8 +589,8 @@
 		} else if (cfg().useEditorDraft && textarea && ruleId === cfg().currentRuleId) {
 			payload.portable_json = textarea.value;
 		}
-		result.textContent = labels().testing || 'Testing…';
-		result.className = 'rwgc-rule-test__result';
+		result.className = 'rwgc-rule-tester-result';
+		result.innerHTML = '<p class="rwgc-rule-tester-result__placeholder">' + esc(labels().testing || 'Testing…') + '</p>';
 		window.fetch(cfg().restUrl || '', {
 			method: 'POST',
 			headers: {
@@ -344,8 +607,8 @@
 				renderResult(data);
 			})
 			.catch(function () {
-				result.textContent = labels().errorTitle || 'Test failed';
-				result.className = 'rwgc-rule-test__result rwgc-rule-test__result--error';
+				result.className = 'rwgc-rule-tester-result rwgc-rule-tester-result--error';
+				result.innerHTML = '<strong>' + esc(labels().errorTitle || 'Test failed') + '</strong>';
 			});
 	}
 
@@ -355,23 +618,24 @@
 			return;
 		}
 		if (data.error && 'incomplete' !== data.status) {
+			result.className = 'rwgc-rule-tester-result rwgc-rule-tester-result--error';
 			result.innerHTML = '<strong>' + esc(labels().errorTitle || 'Error') + '</strong><p>' + esc(data.error) + '</p>';
-			result.className = 'rwgc-rule-test__result rwgc-rule-test__result--error';
 			return;
 		}
 		if ('incomplete' === data.status) {
-			result.innerHTML = '<strong>' + esc(labels().incompleteTitle || 'Cannot test') + '</strong><p>' + esc(data.error || labels().missingContext || '') + '</p>';
-			result.className = 'rwgc-rule-test__result rwgc-rule-test__result--nomatch';
+			result.className = 'rwgc-rule-tester-result rwgc-rule-tester-result--no-match';
+			result.innerHTML = '<span class="rwgc-rule-tester-result__badge">' + esc(labels().incompleteTitle || 'CANNOT TEST') + '</span><p>' + esc(data.error || labels().missingContext || '') + '</p>';
 			return;
 		}
-		var title = data.matches ? labels().matchTitle : labels().noMatchTitle;
-		var cls = data.matches ? 'rwgc-rule-test__result--match' : 'rwgc-rule-test__result--nomatch';
-		var html = '<strong>' + esc(title || '') + '</strong>';
+		var isMatch = !!data.matches;
+		var title = isMatch ? (labels().matchTitle || 'MATCH') : (labels().noMatchTitle || 'NO MATCH');
+		var cls = isMatch ? 'rwgc-rule-tester-result--match' : 'rwgc-rule-tester-result--no-match';
+		var html = '<span class="rwgc-rule-tester-result__badge">' + esc(title) + '</span>';
 		if (data.summary_intro) {
 			html += '<p>' + esc(data.summary_intro) + '</p>';
 		}
 		if (data.summary_lines && data.summary_lines.length) {
-			html += '<ul class="rwgc-rule-tester__summary">';
+			html += '<ul>';
 			data.summary_lines.forEach(function (line) {
 				if (line) {
 					html += '<li>' + esc(line) + '</li>';
@@ -380,7 +644,7 @@
 			html += '</ul>';
 		}
 		result.innerHTML = html;
-		result.className = 'rwgc-rule-test__result ' + cls;
+		result.className = 'rwgc-rule-tester-result ' + cls;
 	}
 
 	function open(opts) {

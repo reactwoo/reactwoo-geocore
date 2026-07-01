@@ -29,11 +29,22 @@ class RWGC_Visibility_Rule_Tester {
 			);
 		}
 
+		$countries = array();
+		if ( class_exists( 'RWGC_Countries', false ) ) {
+			foreach ( RWGC_Countries::get_options() as $code => $label ) {
+				$countries[] = array(
+					'code'  => strtoupper( (string) $code ),
+					'label' => (string) $label,
+				);
+			}
+		}
+
 		return array(
-			'rules'    => $rules,
-			'pages'    => self::content_options( 'page' ),
-			'posts'    => self::content_options( 'post' ),
-			'products' => function_exists( 'wc_get_product' ) ? self::content_options( 'product' ) : array(),
+			'rules'     => $rules,
+			'pages'     => self::content_options( 'page' ),
+			'posts'     => self::content_options( 'post' ),
+			'products'  => function_exists( 'wc_get_product' ) ? self::content_options( 'product' ) : array(),
+			'countries' => $countries,
 		);
 	}
 
@@ -58,15 +69,17 @@ class RWGC_Visibility_Rule_Tester {
 		}
 
 		return array(
-			'id'              => $rule_id,
-			'title'           => (string) $post->post_title,
-			'target_label'    => $target,
-			'portable_json'   => $raw,
-			'conditions'      => class_exists( 'RWGC_Visibility_Rule_Logic_Preview', false )
+			'id'                 => $rule_id,
+			'title'              => (string) $post->post_title,
+			'target_label'       => $target,
+			'portable_json'      => $raw,
+			'conditions'         => class_exists( 'RWGC_Visibility_Rule_Logic_Preview', false )
 				? RWGC_Visibility_Rule_Logic_Preview::build_compact( $set )
 				: array(),
-			'default_context' => self::default_context_from_rule( $set ),
-			'presets'         => self::presets_for_rule( $set ),
+			'default_context'    => self::default_context_from_rule( $set ),
+			'presets'            => self::presets_for_rule( $set ),
+			'included_countries' => self::rule_included_countries( $set ),
+			'excluded_countries' => self::rule_excluded_countries( $set ),
 		);
 	}
 
