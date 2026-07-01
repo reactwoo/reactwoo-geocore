@@ -1,4 +1,3 @@
-<?php
 /**
  * Modal rule tester for visibility rules library.
  *

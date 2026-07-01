@@ -1,4 +1,3 @@
-<?php
 /**
  * Admin preview + test panel for visibility rule editor.
  *
