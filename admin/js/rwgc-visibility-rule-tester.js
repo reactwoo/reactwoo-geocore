@@ -42,6 +42,11 @@
 		return document.getElementById('rwgc-rule-tester-modal');
 	}
 
+	function dialogEl() {
+		var modal = modalEl();
+		return modal ? modal.querySelector('.rwgc-rule-tester-modal__dialog') : null;
+	}
+
 	function bodyEl() {
 		return document.getElementById('rwgc-rule-tester-body');
 	}
@@ -181,12 +186,12 @@
 	function renderForm() {
 		var payload = state.rulePayload || {};
 		var defaults = payload.default_context || {};
-		var body = bodyEl();
-		if (!body) {
+		var dialog = dialogEl();
+		if (!dialog) {
 			return;
 		}
 
-		body.innerHTML =
+		dialog.innerHTML =
 			'<header class="rwgc-rule-tester-modal__header">' +
 			'<div>' +
 			'<h2 id="rwgc-rule-tester-title">' + esc(labels().title || 'Test visibility rule') + '</h2>' +
@@ -195,6 +200,7 @@
 			'<button type="button" class="rwgc-rule-tester-modal__close" aria-label="' + esc(labels().close || 'Close') + '">&times;</button>' +
 			'</header>' +
 			'<form id="rwgc-rule-tester-form">' +
+			'<div id="rwgc-rule-tester-body" class="rwgc-rule-tester-modal__body">' +
 			'<div class="rwgc-rule-tester-modal__grid">' +
 			'<div class="rwgc-rule-tester-modal__main">' +
 			'<section class="rwgc-rule-tester-section">' +
@@ -273,6 +279,7 @@
 			'</section>' +
 			'</div>' +
 			'<aside class="rwgc-rule-tester-modal__aside" id="rwgc-tester-aside">' + renderSummaryAside(payload) + '</aside>' +
+			'</div>' +
 			'</div>' +
 			'<footer class="rwgc-rule-tester-modal__footer">' +
 			'<button type="button" class="rwgc-btn rwgc-btn--tertiary" id="rwgc-tester-reset">' + esc(labels().reset || 'Reset') + '</button>' +

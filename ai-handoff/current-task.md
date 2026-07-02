@@ -1,15 +1,26 @@
 # Current task
 
-Modernise the Targeting Rules list and Rule Tester modal UI (Geo Core **v1.8.106**).
+Verify and fix v1.8.106+ Rules page / Rule Tester styling on staging.
 
 ## Status
 
-Implemented in Cursor pass — needs local UI verification on Rules list + rule editor Test rule modal.
+**done** (code fix in **v1.8.107**) — re-verify on staging after update.
 
-## Acceptance
+## Root cause (suspected)
 
-- [x] Rules tab uses modern card sections (portable library + builder-attached)
-- [x] Row actions: Edit, Test, Duplicate, Trash with suite button styles
-- [x] Rule Tester modal: wider layout, sections, country select (ISO), traffic presets
-- [x] Country list from `RWGC_Countries` — not free text
-- [ ] Manual browser pass on Local
+Rules/tester CSS depended on hook suffix containing `rwgc-visibility-rules` only. On some app-shell admin screens, enqueue could run before `rwgc-suite` was registered, leaving buttons/cards unstyled.
+
+## Fix (v1.8.107)
+
+- `RWGC_Visibility_Rule_Tester_Assets::is_visibility_rules_screen()` — hook + `$_GET['page']` + screen id + filter
+- Enqueue priority 25 + `ensure_suite_styles()` bootstrap
+- Modal dialog header/body/footer structure
+- `.rwgc-btn` fallbacks in `rwgc-rules-page.css`
+
+## Staging verification checklist
+
+1. Plugins → Geo Core version **1.8.107**
+2. Network: `rwgc-rules-page.css?ver=1.8.107` and `rwgc-rule-tester.css?ver=1.8.107` — 200
+3. Targeting → Rules — card layout, pills, suite buttons
+4. Test rule modal — wide two-column, country select, traffic presets
+5. Hard refresh / purge optimisation cache if styles still stale

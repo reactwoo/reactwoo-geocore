@@ -14,16 +14,50 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class RWGC_Visibility_Rule_Tester_Assets {
 
-	const STYLE_HANDLE      = 'rwgc-rule-tester';
+	const STYLE_HANDLE       = 'rwgc-rule-tester';
 	const RULES_STYLE_HANDLE = 'rwgc-rules-page';
-	const SCRIPT_HANDLE     = 'rwgc-visibility-rule-tester';
+	const SCRIPT_HANDLE      = 'rwgc-visibility-rule-tester';
 
 	/**
 	 * @return void
 	 */
 	public static function init() {
-		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue' ), 25 );
 		add_action( 'admin_footer', array( __CLASS__, 'render_modal_shell' ) );
+	}
+
+	/**
+	 * Whether the current admin request is the visibility rules list or editor.
+	 *
+	 * @param string $hook Optional admin_enqueue_scripts hook suffix.
+	 * @return bool
+	 */
+	public static function is_visibility_rules_screen( $hook = '' ) {
+		$hook = (string) $hook;
+		if ( '' !== $hook && false !== strpos( $hook, 'rwgc-visibility-rules' ) ) {
+			return true;
+		}
+
+		$page = '';
+		if ( isset( $_GET['page'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$page = sanitize_key( wp_unslash( (string) $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		}
+		if ( 'rwgc-visibility-rules' === $page ) {
+			return true;
+		}
+
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( $screen && isset( $screen->id ) && false !== strpos( (string) $screen->id, 'rwgc-visibility-rules' ) ) {
+			return true;
+		}
+
+		/**
+		 * Allow satellites or shell integrations to force rules/tester assets on a screen.
+		 *
+		 * @param bool   $match Default false when page/hook/screen did not match.
+		 * @param string $hook  Admin hook suffix.
+		 */
+		return (bool) apply_filters( 'rwgc_visibility_rules_tester_enqueue', false, $hook );
 	}
 
 	/**
@@ -31,9 +65,11 @@ class RWGC_Visibility_Rule_Tester_Assets {
 	 * @return void
 	 */
 	public static function enqueue( $hook ) {
-		if ( false === strpos( $hook, 'rwgc-visibility-rules' ) ) {
+		if ( ! self::is_visibility_rules_screen( $hook ) ) {
 			return;
 		}
+
+		self::ensure_suite_styles();
 
 		wp_register_style(
 			self::RULES_STYLE_HANDLE,
@@ -44,7 +80,7 @@ class RWGC_Visibility_Rule_Tester_Assets {
 		wp_register_style(
 			self::STYLE_HANDLE,
 			RWGC_URL . 'admin/css/rwgc-rule-tester.css',
-			array( 'rwgc-suite' ),
+			array( 'rwgc-suite', self::RULES_STYLE_HANDLE ),
 			RWGC_VERSION
 		);
 		wp_register_script(
@@ -59,6 +95,13 @@ class RWGC_Visibility_Rule_Tester_Assets {
 		wp_enqueue_style( self::STYLE_HANDLE );
 		wp_enqueue_script( self::SCRIPT_HANDLE );
 
+		if ( wp_style_is( 'rwgc-platform-ui', 'registered' ) ) {
+			wp_enqueue_style( 'rwgc-platform-ui' );
+		}
+		if ( wp_style_is( 'rwgc-targeting', 'registered' ) ) {
+			wp_enqueue_style( 'rwgc-targeting' );
+		}
+
 		$current_rule_id = 0;
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['rwgc_edit'] ) && is_numeric( $_GET['rwgc_edit'] ) ) {
@@ -69,15 +112,15 @@ class RWGC_Visibility_Rule_Tester_Assets {
 			self::SCRIPT_HANDLE,
 			'rwgcRuleTester',
 			array(
-				'restUrl'         => esc_url_raw( rest_url( 'reactwoo-geocore/v1/targeting/preview-rule' ) ),
-				'ruleUrl'         => esc_url_raw( rest_url( 'reactwoo-geocore/v1/targeting/rule-tester/rule/' ) ),
-				'nonce'           => wp_create_nonce( 'wp_rest' ),
-				'currentRuleId'   => $current_rule_id,
-				'useEditorDraft'  => isset( $_GET['rwgc_edit'] ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				'bootstrap'       => class_exists( 'RWGC_Visibility_Rule_Tester', false )
+				'restUrl'        => esc_url_raw( rest_url( 'reactwoo-geocore/v1/targeting/preview-rule' ) ),
+				'ruleUrl'        => esc_url_raw( rest_url( 'reactwoo-geocore/v1/targeting/rule-tester/rule/' ) ),
+				'nonce'          => wp_create_nonce( 'wp_rest' ),
+				'currentRuleId'  => $current_rule_id,
+				'useEditorDraft' => isset( $_GET['rwgc_edit'] ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				'bootstrap'      => class_exists( 'RWGC_Visibility_Rule_Tester', false )
 					? RWGC_Visibility_Rule_Tester::bootstrap_config()
 					: array(),
-				'labels'          => array(
+				'labels'         => array(
 					'title'                 => __( 'Test visibility rule', 'reactwoo-geocore' ),
 					'subtitle'              => __( 'Choose a rule, choose where to test it, then simulate a visitor.', 'reactwoo-geocore' ),
 					'stepRule'              => __( 'Rule', 'reactwoo-geocore' ),
@@ -128,11 +171,43 @@ class RWGC_Visibility_Rule_Tester_Assets {
 	}
 
 	/**
+	 * Register/enqueue suite styles when another admin callback has not already done so.
+	 *
+	 * @return void
+	 */
+	private static function ensure_suite_styles() {
+		$chain = array(
+			'rwgc-design-system' => array(),
+			'rwgc-admin'         => array( 'rwgc-design-system' ),
+			'rwgc-suite'         => array( 'rwgc-design-system', 'rwgc-admin' ),
+		);
+
+		foreach ( $chain as $handle => $deps ) {
+			if ( ! wp_style_is( $handle, 'registered' ) ) {
+				$file = 'rwgc-design-system.css';
+				if ( 'rwgc-admin' === $handle ) {
+					$file = 'admin.css';
+				} elseif ( 'rwgc-suite' === $handle ) {
+					$file = 'rwgc-suite.css';
+				}
+				wp_register_style(
+					$handle,
+					RWGC_URL . 'admin/css/' . $file,
+					$deps,
+					RWGC_VERSION
+				);
+			}
+			if ( ! wp_style_is( $handle, 'enqueued' ) ) {
+				wp_enqueue_style( $handle );
+			}
+		}
+	}
+
+	/**
 	 * @return void
 	 */
 	public static function render_modal_shell() {
-		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-		if ( ! $screen || false === strpos( (string) $screen->id, 'rwgc-visibility-rules' ) ) {
+		if ( ! self::is_visibility_rules_screen() ) {
 			return;
 		}
 		include RWGC_PATH . 'admin/views/visibility-rule-tester-modal.php';

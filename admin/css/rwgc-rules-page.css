@@ -225,3 +225,50 @@
 	color: var(--rw-suite-text-muted, #64748b);
 	max-width: 14rem;
 }
+
+/* Suite button fallbacks when rwgc-suite.css load order differs on shell screens */
+.rwgc-rules-page .rwgc-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	min-height: 38px;
+	padding: 0 16px;
+	border-radius: 8px;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.2;
+	text-decoration: none;
+	border: 1px solid transparent;
+	cursor: pointer;
+	font-family: inherit;
+}
+
+.rwgc-rules-page button.rwgc-btn {
+	-webkit-appearance: none;
+	appearance: none;
+}
+
+.rwgc-rules-page .rwgc-btn--primary {
+	background: #2271b1;
+	color: #fff;
+	border-color: #135e96;
+}
+
+.rwgc-rules-page .rwgc-btn--secondary {
+	background: #fff;
+	color: #0f172a;
+	border-color: #cbd5e1;
+}
+
+.rwgc-rules-page .rwgc-btn--danger {
+	background: #fef2f2;
+	color: #b91c1c;
+	border-color: #fecaca;
+}
+
+.rwgc-rules-page .rwgc-btn--sm {
+	min-height: 32px;
+	padding: 0 12px;
+	font-size: 13px;
+}

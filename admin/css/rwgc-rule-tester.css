@@ -25,6 +25,13 @@
 	overflow: hidden;
 }
 
+.rwgc-rule-tester-modal__dialog form {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+}
+
 .rwgc-modal-open {
 	overflow: hidden;
 }
@@ -36,6 +43,7 @@
 	gap: 16px;
 	padding: 22px 24px 16px;
 	border-bottom: 1px solid #e2e8f0;
+	flex-shrink: 0;
 }
 
 .rwgc-rule-tester-modal__header h2 {
@@ -283,6 +291,7 @@
 	padding: 14px 24px;
 	border-top: 1px solid #e2e8f0;
 	background: #fff;
+	flex-shrink: 0;
 }
 
 .rwgc-rule-tester-modal__footer .rwgc-btn[disabled] {
