@@ -36,6 +36,18 @@ $platform_shell  = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_pl
 		</div>
 	<?php endif; ?>
 
+	<?php if ( is_array( $ai_provider ) && 'missing' !== ( $ai_provider['status'] ?? '' ) && function_exists( 'rwgc_ux_opportunity_review_admin_url' ) ) : ?>
+		<div class="rwgc-card rwgc-insights-panel" style="margin-bottom:1rem;">
+			<?php RWGC_Admin_UI::render_section_header( __( 'UX opportunity review', 'reactwoo-geocore' ) ); ?>
+			<p class="description"><?php esc_html_e( 'Run a capability-aware UX review for a page, product, or variant. Recommendations respect which Geo suite products are installed and licensed.', 'reactwoo-geocore' ); ?></p>
+			<p>
+				<a class="rwgc-btn rwgc-btn--primary" href="<?php echo esc_url( rwgc_ux_opportunity_review_admin_url( array( 'source' => 'insights' ) ) ); ?>">
+					<?php esc_html_e( 'Open UX opportunity review', 'reactwoo-geocore' ); ?>
+				</a>
+			</p>
+		</div>
+	<?php endif; ?>
+
 	<div class="rwgc-card rwgc-insights-panel">
 		<?php RWGC_Admin_UI::render_section_header( __( 'Recommended actions', 'reactwoo-geocore' ) ); ?>
 		<?php if ( empty( $recommendations ) ) : ?>

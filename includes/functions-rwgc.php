@@ -45,6 +45,40 @@ if ( ! function_exists( 'rwgc_is_pro_enabled' ) ) {
 	}
 }
 
+if ( ! function_exists( 'rwgc_get_suite_capability_map' ) ) {
+	/**
+	 * Installed/licensed suite products for capability-aware AI and admin UX.
+	 *
+	 * @return array<string, mixed>
+	 */
+	function rwgc_get_suite_capability_map() {
+		if ( class_exists( 'RWGC_Suite_Capability_Map', false ) ) {
+			return RWGC_Suite_Capability_Map::get_map();
+		}
+		return array(
+			'geocore_active'           => true,
+			'geocore_version'          => defined( 'RWGC_VERSION' ) ? (string) RWGC_VERSION : '',
+			'local_fallback_available' => true,
+		);
+	}
+}
+
+if ( ! function_exists( 'rwgc_ux_opportunity_review_admin_url' ) ) {
+	/**
+	 * Admin URL for Geo AI UX opportunity review (when Geo AI is active).
+	 *
+	 * @param array<string, scalar> $args Query args: page_id, product_id, variant_page_id, rule_id, source.
+	 * @return string
+	 */
+	function rwgc_ux_opportunity_review_admin_url( array $args = array() ) {
+		$base = array(
+			'page'   => 'rwga-ux-opportunity-review',
+			'source' => 'insights',
+		);
+		return add_query_arg( array_merge( $base, $args ), admin_url( 'admin.php' ) );
+	}
+}
+
 if ( ! function_exists( 'rwgc_advanced_targeting_enabled' ) ) {
 	/**
 	 * Whether multi-condition portable targeting UI is available (GeoCore Pro).

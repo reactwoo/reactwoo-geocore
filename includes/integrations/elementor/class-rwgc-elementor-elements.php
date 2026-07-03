@@ -62,7 +62,15 @@ class RWGC_Elementor_Elements {
 			'rwgc-elementor-library-bridge',
 			'rwgcElementorLibrary',
 			array(
-				'library' => self::get_visibility_library_rows(),
+				'library'         => self::get_visibility_library_rows(),
+				'documentContext' => self::get_editor_document_context(),
+				'labels'          => array(
+					'compatibleGroup'    => __( 'Compatible rules', 'reactwoo-geocore' ),
+					'attentionGroup'     => __( 'Needs attention', 'reactwoo-geocore' ),
+					'unavailableGroup'   => __( 'Not available for this context', 'reactwoo-geocore' ),
+					'incompatibleNotice' => __( 'This rule may not match in this document context.', 'reactwoo-geocore' ),
+					'choosePlaceholder'  => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ),
+				),
 			)
 		);
 		wp_enqueue_script( 'rwgc-elementor-library-bridge' );
@@ -72,13 +80,67 @@ class RWGC_Elementor_Elements {
 	 * @return array<int, array{id:int,title:string,json:string}>
 	 */
 	public static function get_visibility_library_rows() {
+		$rows = array();
 		if ( class_exists( 'RWGC_Rule_Registry', false ) ) {
-			return RWGC_Rule_Registry::get_library_picker_rows();
+			$rows = RWGC_Rule_Registry::get_library_picker_rows();
+		} elseif ( class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
+			$rows = RWGC_Visibility_Rule_Repository::get_library_picker_rows();
 		}
-		if ( class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
-			return RWGC_Visibility_Rule_Repository::get_library_picker_rows();
+
+		$context = self::get_editor_document_context();
+		if ( ! class_exists( 'RWGC_Rule_Context_Compatibility', false ) ) {
+			return $rows;
 		}
-		return array();
+
+		$enriched = array();
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$json = isset( $row['json'] ) ? (string) $row['json'] : '';
+			$set  = '' !== trim( $json ) ? json_decode( $json, true ) : null;
+			$compat = RWGC_Rule_Context_Compatibility::evaluate( is_array( $set ) ? $set : null, $context );
+			$reason = ! empty( $compat['reasons'] ) && is_array( $compat['reasons'] )
+				? implode( ' ', $compat['reasons'] )
+				: '';
+			$row['scope_summary'] = (string) ( $compat['scope_summary'] ?? '' );
+			$row['compatibility'] = array(
+				'status'  => (string) ( $compat['status'] ?? 'compatible' ),
+				'reason'  => $reason,
+				'reasons' => isset( $compat['reasons'] ) && is_array( $compat['reasons'] ) ? $compat['reasons'] : array(),
+			);
+			$enriched[] = $row;
+		}
+		return $enriched;
+	}
+
+	/**
+	 * Current Elementor document context for library compatibility.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public static function get_editor_document_context() {
+		$post_id = 0;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['post'] ) && is_numeric( $_GET['post'] ) ) {
+			$post_id = absint( $_GET['post'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		}
+		if ( $post_id <= 0 && class_exists( '\Elementor\Plugin' ) ) {
+			$plugin = \Elementor\Plugin::$instance;
+			if ( isset( $plugin->editor ) && method_exists( $plugin->editor, 'get_post_id' ) ) {
+				$post_id = absint( $plugin->editor->get_post_id() );
+			}
+		}
+		if ( class_exists( 'RWGC_Rule_Context_Compatibility', false ) ) {
+			return RWGC_Rule_Context_Compatibility::document_context_from_post( $post_id );
+		}
+		return array(
+			'post_id'       => $post_id,
+			'post_type'     => '',
+			'page_type'     => '',
+			'request_uri'   => '',
+			'document_type' => 'page',
+		);
 	}
 
 	/**

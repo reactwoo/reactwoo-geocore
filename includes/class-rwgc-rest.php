@@ -190,6 +190,51 @@ class RWGC_REST {
 				),
 			)
 		);
+
+		register_rest_route(
+			'reactwoo-geocore/v1',
+			'/targeting/rule-tester/assignments',
+			array(
+				'methods'             => \WP_REST_Server::READABLE,
+				'callback'            => array( __CLASS__, 'get_rule_tester_assignments' ),
+				'permission_callback' => array( __CLASS__, 'permissions_visibility_rule_editor' ),
+				'args'                => array(
+					'content_id'   => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+					'content_type' => array(
+						'type'              => 'string',
+						'required'          => false,
+						'default'           => 'page',
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			'reactwoo-geocore/v1',
+			'/targeting/preview-assignment',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( __CLASS__, 'post_targeting_preview_assignment' ),
+				'permission_callback' => array( __CLASS__, 'permissions_visibility_rule_editor' ),
+				'args'                => array(),
+			)
+		);
+
+		register_rest_route(
+			'reactwoo-geocore/v1',
+			'/targeting/rule-compatibility-check',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( __CLASS__, 'post_rule_compatibility_check' ),
+				'permission_callback' => array( __CLASS__, 'permissions_visibility_rule_editor' ),
+				'args'                => array(),
+			)
+		);
 	}
 
 	/**
@@ -276,6 +321,69 @@ class RWGC_REST {
 			return $payload;
 		}
 		return new \WP_REST_Response( $payload, 200 );
+	}
+
+	/**
+	 * GET assignments for rule tester applied-target mode.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response
+	 */
+	public static function get_rule_tester_assignments( $request ) {
+		$content_id   = absint( $request->get_param( 'content_id' ) );
+		$content_type = sanitize_key( (string) $request->get_param( 'content_type' ) );
+		if ( '' === $content_type ) {
+			$content_type = 'page';
+		}
+		$result = class_exists( 'RWGC_Visibility_Rule_Tester', false )
+			? RWGC_Visibility_Rule_Tester::get_assignments( $content_id, $content_type )
+			: array(
+				'content_id'   => $content_id,
+				'content_type' => $content_type,
+				'assignments'  => array(),
+			);
+		return new \WP_REST_Response( $result, 200 );
+	}
+
+	/**
+	 * POST assignment + context → element visibility outcome.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response
+	 */
+	public static function post_targeting_preview_assignment( $request ) {
+		$params = $request->get_json_params();
+		if ( ! is_array( $params ) ) {
+			$params = array();
+		}
+		$result = class_exists( 'RWGC_Visibility_Rule_Tester', false )
+			? RWGC_Visibility_Rule_Tester::run_assignment_preview( $params )
+			: array(
+				'status'  => 'error',
+				'matches' => false,
+				'error'   => '',
+			);
+		return new \WP_REST_Response( $result, 200 );
+	}
+
+	/**
+	 * POST rule + content → compatibility metadata for tester warnings.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response
+	 */
+	public static function post_rule_compatibility_check( $request ) {
+		$params = $request->get_json_params();
+		if ( ! is_array( $params ) ) {
+			$params = array();
+		}
+		$result = class_exists( 'RWGC_Visibility_Rule_Tester', false )
+			? RWGC_Visibility_Rule_Tester::check_compatibility( $params )
+			: array(
+				'status'  => 'compatible',
+				'reasons' => array(),
+			);
+		return new \WP_REST_Response( $result, 200 );
 	}
 
 	/**

@@ -68,10 +68,15 @@ class RWGC_Visibility_Rule_Tester {
 			$target    = (string) ( $presenter['target_label'] ?? '' );
 		}
 
+		$scope_summary = class_exists( 'RWGC_Rule_Context_Compatibility', false )
+			? RWGC_Rule_Context_Compatibility::scope_summary( $set )
+			: '';
+
 		return array(
 			'id'                 => $rule_id,
 			'title'              => (string) $post->post_title,
 			'target_label'       => $target,
+			'scope_summary'      => $scope_summary,
 			'portable_json'      => $raw,
 			'conditions'         => class_exists( 'RWGC_Visibility_Rule_Logic_Preview', false )
 				? RWGC_Visibility_Rule_Logic_Preview::build_compact( $set )
@@ -127,12 +132,197 @@ class RWGC_Visibility_Rule_Tester {
 			? RWGC_Visibility_Rule_Logic_Preview::build( $decoded, $target )
 			: array( 'intro' => '', 'lines' => array() );
 
+		$compat = self::compatibility_for_content( $decoded, isset( $request['content'] ) && is_array( $request['content'] ) ? $request['content'] : array() );
+
 		return array_merge(
 			$detailed,
 			array(
 				'logic_preview' => $logic,
+				'compatibility' => $compat,
 			)
 		);
+	}
+
+	/**
+	 * @param array<string,mixed> $request Assignment preview request.
+	 * @return array<string,mixed>
+	 */
+	public static function run_assignment_preview( array $request ) {
+		$assignment_id = isset( $request['assignment_id'] ) ? sanitize_text_field( (string) $request['assignment_id'] ) : '';
+		$mode          = isset( $request['mode'] ) ? (string) $request['mode'] : 'show_if';
+		if ( class_exists( 'RWGC_Elementor_Assignment_Discovery', false ) ) {
+			$mode = RWGC_Elementor_Assignment_Discovery::mode_from_api_key( $mode );
+		} elseif ( function_exists( 'rwgc_normalize_visibility_mode' ) ) {
+			$mode = rwgc_normalize_visibility_mode( $mode );
+		}
+		if ( '' === $assignment_id ) {
+			return array(
+				'status'  => 'error',
+				'matches' => false,
+				'error'   => __( 'Select an applied target to test.', 'reactwoo-geocore' ),
+			);
+		}
+
+		$rule_id = isset( $request['rule_id'] ) ? absint( $request['rule_id'] ) : 0;
+		if ( $rule_id <= 0 ) {
+			return array(
+				'status'  => 'error',
+				'matches' => false,
+				'error'   => __( 'Assignment is missing a visibility rule.', 'reactwoo-geocore' ),
+			);
+		}
+
+		$rule_run = self::run( $request );
+		if ( 'error' === ( $rule_run['status'] ?? '' ) ) {
+			return $rule_run;
+		}
+
+		$matched  = ! empty( $rule_run['matches'] );
+		$visible  = function_exists( 'rwgc_visibility_mode_allows_render' )
+			? rwgc_visibility_mode_allows_render( $mode, $matched )
+			: $matched;
+		$mode_lbl = class_exists( 'RWGC_Elementor_Assignment_Discovery', false )
+			? RWGC_Elementor_Assignment_Discovery::mode_label( $mode )
+			: ( 'hide_if' === $mode ? __( 'Hide when rule matches', 'reactwoo-geocore' ) : __( 'Show only when rule matches', 'reactwoo-geocore' ) );
+
+		$reason = self::assignment_visibility_reason( $mode, $matched, $visible );
+
+		$conditions = array();
+		foreach ( (array) ( $rule_run['condition_results'] ?? array() ) as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$conditions[] = array(
+				'label'   => (string) ( $row['label'] ?? '' ),
+				'passed'  => 'pass' === ( $row['status'] ?? '' ),
+				'message' => (string) ( $row['detail'] ?? '' ),
+			);
+		}
+
+		return array_merge(
+			$rule_run,
+			array(
+				'assignment_id' => $assignment_id,
+				'rule_match'    => $matched,
+				'visibility'    => $visible ? 'visible' : 'hidden',
+				'mode'          => class_exists( 'RWGC_Elementor_Assignment_Discovery', false )
+					? RWGC_Elementor_Assignment_Discovery::mode_api_key( $mode )
+					: $mode,
+				'mode_label'    => $mode_lbl,
+				'reason'        => $reason,
+				'conditions'    => $conditions,
+			)
+		);
+	}
+
+	/**
+	 * @param int    $content_id   Post ID.
+	 * @param string $content_type Content type slug.
+	 * @return array<string,mixed>
+	 */
+	public static function get_assignments( $content_id, $content_type = 'page' ) {
+		if ( ! class_exists( 'RWGC_Elementor_Assignment_Discovery', false ) ) {
+			return array(
+				'content_id'   => absint( $content_id ),
+				'content_type' => sanitize_key( (string) $content_type ),
+				'assignments'  => array(),
+			);
+		}
+		return RWGC_Elementor_Assignment_Discovery::get_assignments_for_content( $content_id, $content_type );
+	}
+
+	/**
+	 * @param array<string,mixed> $request rule_id + content.
+	 * @return array<string,mixed>
+	 */
+	public static function check_compatibility( array $request ) {
+		$portable = self::resolve_portable_json( $request );
+		if ( is_wp_error( $portable ) ) {
+			return array(
+				'status'  => 'compatible',
+				'reasons' => array(),
+			);
+		}
+		$decoded = json_decode( $portable, true );
+		if ( ! is_array( $decoded ) ) {
+			return array(
+				'status'  => 'compatible',
+				'reasons' => array(),
+			);
+		}
+		$content = isset( $request['content'] ) && is_array( $request['content'] ) ? $request['content'] : array();
+		return self::compatibility_for_content( $decoded, $content );
+	}
+
+	/**
+	 * @param array<string,mixed> $rule_set Portable rule set.
+	 * @param array<string,mixed> $content  Content selector.
+	 * @return array<string,mixed>
+	 */
+	public static function compatibility_for_content( $rule_set, array $content ) {
+		if ( ! class_exists( 'RWGC_Rule_Context_Compatibility', false ) || ! is_array( $rule_set ) ) {
+			return array(
+				'status'        => 'compatible',
+				'reasons'       => array(),
+				'scope_summary' => '',
+			);
+		}
+		$context = self::document_context_from_content( $content );
+		$compat  = RWGC_Rule_Context_Compatibility::evaluate( $rule_set, $context );
+		return array(
+			'status'        => (string) ( $compat['status'] ?? 'compatible' ),
+			'reasons'       => isset( $compat['reasons'] ) && is_array( $compat['reasons'] ) ? $compat['reasons'] : array(),
+			'scope_summary' => (string) ( $compat['scope_summary'] ?? '' ),
+			'required_context' => isset( $compat['required_context'] ) && is_array( $compat['required_context'] ) ? $compat['required_context'] : array(),
+			'actual_context'   => isset( $compat['actual_context'] ) && is_array( $compat['actual_context'] ) ? $compat['actual_context'] : array(),
+		);
+	}
+
+	/**
+	 * @param array<string,mixed> $content Content payload.
+	 * @return array<string,mixed>
+	 */
+	private static function document_context_from_content( array $content ) {
+		$type = sanitize_key( (string) ( $content['type'] ?? '' ) );
+		$id   = isset( $content['id'] ) ? absint( $content['id'] ) : 0;
+		if ( in_array( $type, array( 'page', 'post', 'product' ), true ) && $id > 0 ) {
+			return RWGC_Rule_Context_Compatibility::document_context_from_post( $id );
+		}
+		return array(
+			'post_id'       => 0,
+			'post_type'     => '',
+			'page_type'     => '',
+			'request_uri'   => isset( $content['url'] ) ? (string) $content['url'] : '',
+			'document_type' => 'manual',
+		);
+	}
+
+	/**
+	 * @param string $mode     show_if|hide_if.
+	 * @param bool   $matched  Rule matched.
+	 * @param bool   $visible  Element visible.
+	 * @return string
+	 */
+	private static function assignment_visibility_reason( $mode, $matched, $visible ) {
+		$mode = function_exists( 'rwgc_normalize_visibility_mode' ) ? rwgc_normalize_visibility_mode( $mode ) : $mode;
+		if ( 'hide_if' === $mode ) {
+			if ( $matched ) {
+				return __( 'The element is hidden because the rule matched.', 'reactwoo-geocore' );
+			}
+			return __( 'The element remains visible because the hide rule did not match.', 'reactwoo-geocore' );
+		}
+		if ( $visible ) {
+			return __( 'The element is visible because the rule matched.', 'reactwoo-geocore' );
+		}
+		return __( 'The element is hidden because the rule did not match.', 'reactwoo-geocore' );
+	}
+
+	/**
+	 * @param WP_Post $post Post.
+	 * @return string
+	 */
+	public static function page_type_for_post_public( WP_Post $post ) {
+		return self::page_type_for_post( $post );
 	}
 
 	/**

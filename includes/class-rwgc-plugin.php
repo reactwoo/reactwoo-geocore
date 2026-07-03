@@ -102,6 +102,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-insights-nav.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-geo-ai-suggestions.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-capability-registry.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-suite-capability-map.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-targeting-nav.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-targeting-variants.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-module-registry.php';
@@ -119,6 +120,8 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-editor-presenter.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-logic-preview.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-preview.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-rule-context-compatibility.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-elementor-assignment-discovery.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-tester.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-tester-assets.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-copy-context.php';

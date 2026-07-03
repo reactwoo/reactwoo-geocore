@@ -351,3 +351,17 @@
 	font-size: 12px;
 }
 
+.rwgc-rule-tester-compat-warning {
+	margin: 12px 0 0;
+	padding: 12px 14px;
+	border-radius: 8px;
+	border: 1px solid #f0c36d;
+	background: #fff8e5;
+	color: #5c4a12;
+	font-size: 13px;
+}
+
+.rwgc-rule-tester-compat-warning ul {
+	margin: 8px 0 0 18px;
+}
+

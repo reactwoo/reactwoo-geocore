@@ -6,6 +6,7 @@
 
 	var cfg = window.rwgcElementorLibrary || {};
 	var rowsById = {};
+	var labels = cfg.labels || {};
 
 	function indexRows() {
 		rowsById = {};
@@ -26,6 +27,15 @@
 	function appliedRuleInput($panel) {
 		var $inp = $panel.find('.elementor-control-rwgc_applied_visibility_rule_id input');
 		return $inp.length ? $inp.first() : null;
+	}
+
+	function compatibilityNotice($panel) {
+		var $wrap = $panel.find('.rwgc-library-compat-notice');
+		if (!$wrap.length) {
+			$wrap = $('<div class="rwgc-library-compat-notice description" style="margin-top:8px;"></div>');
+			$panel.find('.elementor-control-rwgc_visibility_rule_library').after($wrap);
+		}
+		return $wrap;
 	}
 
 	function normalizeVisibilityMode(mode) {
@@ -90,8 +100,93 @@
 		}
 	}
 
+	function rebuildLibrarySelect($select) {
+		if (!$select || !$select.length) {
+			return;
+		}
+		var current = String($select.val() || '');
+		var compatible = [];
+		var attention = [];
+		var unavailable = [];
+
+		(cfg.library || []).forEach(function (row) {
+			if (!row || !row.id) {
+				return;
+			}
+			var status = row.compatibility && row.compatibility.status ? row.compatibility.status : 'compatible';
+			if (status === 'incompatible') {
+				unavailable.push(row);
+			} else if (status === 'warning') {
+				attention.push(row);
+			} else {
+				compatible.push(row);
+			}
+		});
+
+		$select.empty();
+		$select.append(
+			$('<option></option>').val('').text(labels.choosePlaceholder || '— Choose saved visibility rule —')
+		);
+
+		function appendGroup(groupLabel, rows, disableIncompatible) {
+			if (!rows.length) {
+				return;
+			}
+			var $group = $('<optgroup></optgroup>').attr('label', groupLabel);
+			rows.forEach(function (row) {
+				var title = row.title || String(row.id);
+				if (row.scope_summary) {
+					title += ' — ' + row.scope_summary;
+				}
+				var $opt = $('<option></option>').val(String(row.id)).text(title);
+				if (disableIncompatible) {
+					$opt.prop('disabled', true);
+				}
+				if (row.compatibility && row.compatibility.reason) {
+					$opt.attr('title', row.compatibility.reason);
+				}
+				$group.append($opt);
+			});
+			$select.append($group);
+		}
+
+		appendGroup(labels.compatibleGroup || 'Compatible rules', compatible, false);
+		appendGroup(labels.attentionGroup || 'Needs attention', attention, false);
+		appendGroup(labels.unavailableGroup || 'Not available for this context', unavailable, true);
+
+		if (current && rowsById[current]) {
+			var rowStatus = rowsById[current].compatibility ? rowsById[current].compatibility.status : 'compatible';
+			if (rowStatus !== 'incompatible') {
+				$select.val(current);
+			} else {
+				$select.val('');
+				persistAppliedRuleId($('#elementor-panel-inner'), '');
+			}
+		}
+	}
+
+	function showCompatibilityNotice($panel, row) {
+		var $notice = compatibilityNotice($panel);
+		if (!row || !row.compatibility || !row.compatibility.reason) {
+			$notice.text('').hide();
+			return;
+		}
+		if (row.compatibility.status === 'compatible') {
+			$notice.text('').hide();
+			return;
+		}
+		$notice.text(row.compatibility.reason).show();
+	}
+
 	function bindLibrarySelect($panel) {
 		syncVisibilityRulesToggle($panel);
+		var $select = $panel.find('.elementor-control-rwgc_visibility_rule_library select');
+		if ($select.length) {
+			rebuildLibrarySelect($select);
+			var initial = rowsById[String($select.val() || '')];
+			showCompatibilityNotice($panel, initial);
+		}
+
 		$panel
 			.find('.elementor-control-rwgc_enable_visibility_rules input')
 			.off('change.rwgcVisRules')
@@ -103,11 +198,17 @@
 			.off('change.rwgcLib')
 			.on('change.rwgcLib', function () {
 				var id = String($(this).val() || '');
+				var row = rowsById[id];
+				showCompatibilityNotice($panel, row);
 				if (!id) {
 					persistAppliedRuleId($panel, '');
 					return;
 				}
-				var row = rowsById[id];
+				if (row && row.compatibility && row.compatibility.status === 'incompatible') {
+					$(this).val('');
+					persistAppliedRuleId($panel, '');
+					return;
+				}
 				if (row && row.json) {
 					applyLibraryJson($panel, row.json);
 				}

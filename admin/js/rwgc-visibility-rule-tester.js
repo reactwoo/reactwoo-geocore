@@ -9,6 +9,10 @@
 	var state = {
 		openRuleId: 0,
 		rulePayload: null,
+		testMode: 'rule',
+		assignments: [],
+		selectedAssignment: null,
+		compatibility: null,
 	};
 
 	var PAGE_TYPES = [
@@ -69,6 +73,95 @@
 		modal.classList.add('rwgc-is-hidden');
 		modal.setAttribute('aria-hidden', 'true');
 		document.body.classList.remove('rwgc-modal-open');
+	}
+
+	function fetchAssignments(content) {
+		var base = cfg().assignmentsUrl || '';
+		if (!base || !content || !content.id) {
+			return Promise.resolve({ assignments: [] });
+		}
+		var url = base + '?content_id=' + encodeURIComponent(String(content.id)) + '&content_type=' + encodeURIComponent(content.type || 'page');
+		return window.fetch(url, {
+			headers: { 'X-WP-Nonce': cfg().nonce || '' },
+			credentials: 'same-origin',
+		})
+			.then(function (res) {
+				return res.json();
+			})
+			.catch(function () {
+				return { assignments: [] };
+			});
+	}
+
+	function fetchCompatibility(ruleId, content) {
+		var url = cfg().compatibilityUrl || '';
+		if (!url || !ruleId) {
+			state.compatibility = null;
+			return Promise.resolve(null);
+		}
+		return window.fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-WP-Nonce': cfg().nonce || '',
+			},
+			credentials: 'same-origin',
+			body: JSON.stringify({ rule_id: ruleId, content: content }),
+		})
+			.then(function (res) {
+				return res.json();
+			})
+			.then(function (data) {
+				state.compatibility = data;
+				updateCompatibilityWarning();
+				return data;
+			})
+			.catch(function () {
+				state.compatibility = null;
+				updateCompatibilityWarning();
+				return null;
+			});
+	}
+
+	function assignmentOptionsHtml() {
+		var html = '<option value="">' + esc(labels().assignmentPlaceholder || '') + '</option>';
+		(state.assignments || []).forEach(function (row) {
+			var label = (row.element_type || 'element') + ': ' + (row.element_label || row.assignment_id || '');
+			if (row.rule_label) {
+				label += ' — ' + row.rule_label;
+			}
+			if (row.mode_label) {
+				label += ' — ' + row.mode_label;
+			}
+			html += '<option value="' + esc(row.assignment_id || '') + '">' + esc(label) + '</option>';
+		});
+		return html;
+	}
+
+	function updateCompatibilityWarning() {
+		var wrap = document.getElementById('rwgc-tester-compat-warning');
+		if (!wrap) {
+			return;
+		}
+		var compat = state.compatibility;
+		if (!compat || compat.status === 'compatible' || !compat.reasons || !compat.reasons.length) {
+			wrap.classList.add('rwgc-is-hidden');
+			wrap.innerHTML = '';
+			return;
+		}
+		wrap.classList.remove('rwgc-is-hidden');
+		var html = '<strong>' + esc(labels().compatibilityWarning || 'Compatibility warning') + '</strong><ul>';
+		compat.reasons.forEach(function (line) {
+			if (line) {
+				html += '<li>' + esc(line) + '</li>';
+			}
+		});
+		html += '</ul>';
+		wrap.innerHTML = html;
+	}
+
+	function isAppliedMode() {
+		return state.testMode === 'applied';
 	}
 
 	function fetchRule(ruleId) {
@@ -171,6 +264,9 @@
 		var html = '<section class="rwgc-rule-tester-section rwgc-rule-tester-condition-summary" aria-live="polite">';
 		if (title) {
 			html += '<p class="rwgc-rule-tester-condition-summary__title">' + esc(title) + '</p>';
+			if (payload.scope_summary) {
+				html += '<p class="description"><strong>' + esc('Rule scope') + ':</strong> ' + esc(payload.scope_summary) + '</p>';
+			}
 			html += '<p class="description" style="margin:0 0 8px;">' + esc(labels().ruleConditions || 'Conditions') + '</p>';
 			html += renderConditionsList(payload.conditions || []);
 		} else {
@@ -204,6 +300,13 @@
 			'<div class="rwgc-rule-tester-modal__grid">' +
 			'<div class="rwgc-rule-tester-modal__main">' +
 			'<section class="rwgc-rule-tester-section">' +
+			'<h3>' + esc(labels().testType || 'Test type') + '</h3>' +
+			'<div class="rwgc-rule-tester-field">' +
+			'<label><input type="radio" name="rwgc_tester_mode" value="rule"' + (!isAppliedMode() ? ' checked' : '') + '> ' + esc(labels().testModeRule || 'Visibility rule') + '</label> ' +
+			'<label style="margin-left:12px;"><input type="radio" name="rwgc_tester_mode" value="applied"' + (isAppliedMode() ? ' checked' : '') + '> ' + esc(labels().testModeApplied || 'Applied target / element') + '</label>' +
+			'</div>' +
+			'</section>' +
+			'<section class="rwgc-rule-tester-section' + (isAppliedMode() ? ' rwgc-is-hidden' : '') + '" id="rwgc-tester-rule-section">' +
 			'<h3>' + esc(labels().stepRule || 'Rule') + '</h3>' +
 			'<div class="rwgc-rule-tester-field rwgc-rule-tester-select">' +
 			'<label for="rwgc-tester-rule-search">' + esc(labels().selectRule || 'Visibility rule') + '</label>' +
@@ -225,6 +328,15 @@
 			'<input type="text" id="rwgc-tester-manual-url" placeholder="/product/example" />' +
 			'</div>' +
 			'<div id="rwgc-tester-detected" class="rwgc-rule-tester-detected rwgc-is-hidden"></div>' +
+			'</section>' +
+			'<section class="rwgc-rule-tester-section' + (!isAppliedMode() ? ' rwgc-is-hidden' : '') + '" id="rwgc-tester-assignment-section">' +
+			'<h3>' + esc(labels().stepAssignment || 'Applied target') + '</h3>' +
+			'<p class="rwgc-rule-tester-section__hint">' + esc(labels().assignmentHelp || '') + '</p>' +
+			'<div class="rwgc-rule-tester-field">' +
+			'<label for="rwgc-tester-assignment">' + esc(labels().selectAssignment || 'Elementor assignment') + '</label>' +
+			'<select id="rwgc-tester-assignment" class="rwgc-rule-tester-select__control">' + assignmentOptionsHtml() + '</select>' +
+			'<p id="rwgc-tester-assignment-empty" class="description rwgc-is-hidden">' + esc(labels().assignmentEmpty || '') + '</p>' +
+			'</div>' +
 			'</section>' +
 			'<section class="rwgc-rule-tester-section">' +
 			'<h3>' + esc(labels().stepVisitor || 'Visitor context') + '</h3>' +
@@ -280,6 +392,7 @@
 			'</div>' +
 			'<aside class="rwgc-rule-tester-modal__aside" id="rwgc-tester-aside">' + renderSummaryAside(payload) + '</aside>' +
 			'</div>' +
+			'<div id="rwgc-tester-compat-warning" class="rwgc-rule-tester-compat-warning rwgc-is-hidden" aria-live="polite"></div>' +
 			'</div>' +
 			'<footer class="rwgc-rule-tester-modal__footer">' +
 			'<button type="button" class="rwgc-btn rwgc-btn--tertiary" id="rwgc-tester-reset">' + esc(labels().reset || 'Reset') + '</button>' +
@@ -291,6 +404,8 @@
 		bindFormEvents(payload);
 		updateRunButtonState();
 		updateDetectedContext();
+		updateCompatibilityWarning();
+		refreshCompatibilityCheck();
 	}
 
 	function renderRulePresets(payload) {
@@ -324,6 +439,73 @@
 		});
 	}
 
+	function refreshCompatibilityCheck() {
+		if (isAppliedMode()) {
+			var assignment = findSelectedAssignment();
+			if (assignment && assignment.rule_id) {
+				fetchCompatibility(assignment.rule_id, buildContentPayload());
+			} else {
+				state.compatibility = null;
+				updateCompatibilityWarning();
+			}
+			return;
+		}
+		var ruleId = parseInt((document.getElementById('rwgc-tester-rule') || {}).value, 10) || 0;
+		if (!ruleId) {
+			state.compatibility = null;
+			updateCompatibilityWarning();
+			return;
+		}
+		fetchCompatibility(ruleId, buildContentPayload());
+	}
+
+	function findSelectedAssignment() {
+		var select = document.getElementById('rwgc-tester-assignment');
+		var val = select ? select.value : '';
+		if (!val) {
+			return null;
+		}
+		var found = null;
+		(state.assignments || []).forEach(function (row) {
+			if (row.assignment_id === val) {
+				found = row;
+			}
+		});
+		return found;
+	}
+
+	function loadAssignmentsForContent(content) {
+		var select = document.getElementById('rwgc-tester-assignment');
+		var emptyNote = document.getElementById('rwgc-tester-assignment-empty');
+		if (!select) {
+			return;
+		}
+		if (!content || !content.id || !content.type || content.type === 'manual') {
+			state.assignments = [];
+			state.selectedAssignment = null;
+			select.innerHTML = assignmentOptionsHtml();
+			if (emptyNote) {
+				emptyNote.classList.add('rwgc-is-hidden');
+			}
+			updateRunButtonState();
+			return;
+		}
+		select.innerHTML = '<option value="">' + esc(labels().loadingAssignments || 'Loading assignments…') + '</option>';
+		fetchAssignments(content).then(function (data) {
+			state.assignments = (data && data.assignments) || [];
+			state.selectedAssignment = null;
+			select.innerHTML = assignmentOptionsHtml();
+			if (emptyNote) {
+				if (!state.assignments.length) {
+					emptyNote.classList.remove('rwgc-is-hidden');
+				} else {
+					emptyNote.classList.add('rwgc-is-hidden');
+				}
+			}
+			updateRunButtonState();
+		});
+	}
+
 	function bindFormEvents(payload) {
 		var form = document.getElementById('rwgc-rule-tester-form');
 		var ruleSelect = document.getElementById('rwgc-tester-rule');
@@ -347,7 +529,38 @@
 			resetBtn.addEventListener('click', function () {
 				state.openRuleId = 0;
 				state.rulePayload = null;
+				state.testMode = 'rule';
+				state.assignments = [];
+				state.selectedAssignment = null;
+				state.compatibility = null;
 				renderForm();
+			});
+		}
+		document.querySelectorAll('input[name="rwgc_tester_mode"]').forEach(function (radio) {
+			radio.addEventListener('change', function () {
+				state.testMode = radio.value === 'applied' ? 'applied' : 'rule';
+				renderForm();
+			});
+		});
+		var assignmentSelect = document.getElementById('rwgc-tester-assignment');
+		if (assignmentSelect) {
+			assignmentSelect.addEventListener('change', function () {
+				state.selectedAssignment = findSelectedAssignment();
+				if (state.selectedAssignment && state.selectedAssignment.rule_id) {
+					state.openRuleId = state.selectedAssignment.rule_id;
+					fetchRule(state.selectedAssignment.rule_id).then(function (data) {
+						state.rulePayload = data;
+						var aside = document.getElementById('rwgc-tester-aside');
+						if (aside) {
+							aside.innerHTML = renderSummaryAside(data);
+						}
+						refreshCompatibilityCheck();
+						updateRunButtonState();
+					});
+				} else {
+					refreshCompatibilityCheck();
+					updateRunButtonState();
+				}
 			});
 		}
 		if (ruleSelect) {
@@ -375,10 +588,12 @@
 				el.addEventListener('change', function () {
 					updateRunButtonState();
 					updateDetectedContext();
+					refreshCompatibilityCheck();
 				});
 				el.addEventListener('input', function () {
 					updateRunButtonState();
 					updateDetectedContext();
+					refreshCompatibilityCheck();
 				});
 			}
 		});
@@ -408,14 +623,18 @@
 			var val = contentSelect.value;
 			if ('manual' === val) {
 				manualWrap.classList.remove('rwgc-is-hidden');
+				loadAssignmentsForContent(null);
 				updateDetectedContext();
 				updateRunButtonState();
+				refreshCompatibilityCheck();
 				return;
 			}
 			manualWrap.classList.add('rwgc-is-hidden');
 			if (!val) {
+				loadAssignmentsForContent(null);
 				updateDetectedContext();
 				updateRunButtonState();
+				refreshCompatibilityCheck();
 				return;
 			}
 			var opt = contentSelect.options[contentSelect.selectedIndex];
@@ -430,8 +649,11 @@
 			if (url) {
 				document.getElementById('rwgc-tester-url').value = url;
 			}
+			var contentPayload = buildContentPayload();
+			loadAssignmentsForContent(contentPayload);
 			updateDetectedContext();
 			updateRunButtonState();
+			refreshCompatibilityCheck();
 		}
 	}
 
@@ -543,10 +765,15 @@
 		if (!btn) {
 			return;
 		}
-		var ruleId = parseInt((document.getElementById('rwgc-tester-rule') || {}).value, 10) || 0;
 		var country = (document.getElementById('rwgc-tester-country') || {}).value || '';
 		var device = (document.getElementById('rwgc-tester-device') || {}).value || '';
 		var pageType = (document.getElementById('rwgc-tester-page-type') || {}).value || '';
+		if (isAppliedMode()) {
+			var assignment = findSelectedAssignment();
+			btn.disabled = !(assignment && assignment.rule_id && country && device && pageType);
+			return;
+		}
+		var ruleId = parseInt((document.getElementById('rwgc-tester-rule') || {}).value, 10) || 0;
 		btn.disabled = !(ruleId && country && device && pageType);
 	}
 
@@ -574,31 +801,51 @@
 	function onSubmit(e) {
 		e.preventDefault();
 		var result = document.getElementById('rwgc-tester-result');
-		var ruleId = parseInt(document.getElementById('rwgc-tester-rule').value, 10) || 0;
 		var gclidEl = document.getElementById('rwgc-tester-gclid');
-		var payload = {
-			rule_id: ruleId,
-			target_label: state.rulePayload && state.rulePayload.target_label ? state.rulePayload.target_label : '',
-			content: buildContentPayload(),
-			context: {
-				country: document.getElementById('rwgc-tester-country').value,
-				device: document.getElementById('rwgc-tester-device').value,
-				page_type: document.getElementById('rwgc-tester-page-type').value,
-				request_uri: document.getElementById('rwgc-tester-url').value,
-				utm_source: document.getElementById('rwgc-tester-utm-source').value,
-				utm_medium: document.getElementById('rwgc-tester-utm-medium').value,
-				gclid: gclidEl && gclidEl.checked ? '1' : '',
-			},
+		var contentPayload = buildContentPayload();
+		var contextPayload = {
+			country: document.getElementById('rwgc-tester-country').value,
+			device: document.getElementById('rwgc-tester-device').value,
+			page_type: document.getElementById('rwgc-tester-page-type').value,
+			request_uri: document.getElementById('rwgc-tester-url').value,
+			utm_source: document.getElementById('rwgc-tester-utm-source').value,
+			utm_medium: document.getElementById('rwgc-tester-utm-medium').value,
+			gclid: gclidEl && gclidEl.checked ? '1' : '',
 		};
+		var payload;
+		var restUrl = cfg().restUrl || '';
+		if (isAppliedMode()) {
+			var assignment = findSelectedAssignment();
+			if (!assignment) {
+				return;
+			}
+			payload = {
+				assignment_id: assignment.assignment_id,
+				rule_id: assignment.rule_id,
+				mode: assignment.mode_internal || assignment.mode || 'show_if',
+				target_label: assignment.rule_label || '',
+				content: contentPayload,
+				context: contextPayload,
+			};
+			restUrl = cfg().assignmentRestUrl || restUrl;
+		} else {
+			var ruleId = parseInt(document.getElementById('rwgc-tester-rule').value, 10) || 0;
+			payload = {
+				rule_id: ruleId,
+				target_label: state.rulePayload && state.rulePayload.target_label ? state.rulePayload.target_label : '',
+				content: contentPayload,
+				context: contextPayload,
+			};
+		}
 		var textarea = document.getElementById('rwgc_portable_targeting');
 		if (textarea && document.getElementById('rwgc-visibility-rule-form')) {
 			payload.portable_json = textarea.value;
-		} else if (cfg().useEditorDraft && textarea && ruleId === cfg().currentRuleId) {
+		} else if (cfg().useEditorDraft && textarea && payload.rule_id === cfg().currentRuleId) {
 			payload.portable_json = textarea.value;
 		}
 		result.className = 'rwgc-rule-tester-result';
 		result.innerHTML = '<p class="rwgc-rule-tester-result__placeholder">' + esc(labels().testing || 'Testing…') + '</p>';
-		window.fetch(cfg().restUrl || '', {
+		window.fetch(restUrl, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -637,13 +884,42 @@
 		var isMatch = !!data.matches;
 		var title = isMatch ? (labels().matchTitle || 'MATCH') : (labels().noMatchTitle || 'NO MATCH');
 		var cls = isMatch ? 'rwgc-rule-tester-result--match' : 'rwgc-rule-tester-result--no-match';
-		var html = '<span class="rwgc-rule-tester-result__badge">' + esc(title) + '</span>';
+		var html = '';
+		if (data.visibility) {
+			var visible = data.visibility === 'visible';
+			html += '<p><strong>' + esc(labels().ruleMatchLabel || 'Rule match') + ':</strong> ' + esc(title) + '</p>';
+			html += '<span class="rwgc-rule-tester-result__badge">' + esc(visible ? (labels().visibleTitle || 'VISIBLE') : (labels().hiddenTitle || 'HIDDEN')) + '</span>';
+			if (data.mode_label) {
+				html += '<p><strong>' + esc(labels().appliedModeLabel || 'Applied mode') + ':</strong> ' + esc(data.mode_label) + '</p>';
+			}
+			if (data.reason) {
+				html += '<p>' + esc(data.reason) + '</p>';
+			}
+			cls = visible ? 'rwgc-rule-tester-result--match' : 'rwgc-rule-tester-result--no-match';
+		} else {
+			html += '<span class="rwgc-rule-tester-result__badge">' + esc(title) + '</span>';
+		}
+		if (data.compatibility && data.compatibility.reasons && data.compatibility.reasons.length) {
+			html += '<div class="rwgc-rule-tester-compat-warning"><strong>' + esc(labels().compatibilityWarning || 'Compatibility warning') + '</strong><ul>';
+			data.compatibility.reasons.forEach(function (line) {
+				if (line) {
+					html += '<li>' + esc(line) + '</li>';
+				}
+			});
+			html += '</ul></div>';
+		}
 		if (data.summary_intro) {
 			html += '<p>' + esc(data.summary_intro) + '</p>';
 		}
-		if (data.summary_lines && data.summary_lines.length) {
+		var lines = data.summary_lines || [];
+		if ((!lines || !lines.length) && data.conditions && data.conditions.length) {
+			lines = data.conditions.map(function (row) {
+				return row.message || '';
+			}).filter(Boolean);
+		}
+		if (lines && lines.length) {
 			html += '<ul>';
-			data.summary_lines.forEach(function (line) {
+			lines.forEach(function (line) {
 				if (line) {
 					html += '<li>' + esc(line) + '</li>';
 				}
@@ -658,6 +934,10 @@
 		opts = opts || {};
 		state.openRuleId = opts.ruleId || cfg().currentRuleId || 0;
 		state.rulePayload = null;
+		state.testMode = opts.testMode === 'applied' ? 'applied' : 'rule';
+		state.assignments = [];
+		state.selectedAssignment = null;
+		state.compatibility = null;
 		openModal();
 		if (state.openRuleId) {
 			fetchRule(state.openRuleId).then(function (data) {

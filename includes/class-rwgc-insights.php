@@ -707,6 +707,10 @@ class RWGC_Insights {
 			);
 		}
 
+		$compact['suite_capabilities'] = function_exists( 'rwgc_get_suite_capability_map' )
+			? rwgc_get_suite_capability_map()
+			: array();
+
 		/**
 		 * Filter compact capability insights exported for Geo AI workflows.
 		 *

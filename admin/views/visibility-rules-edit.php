@@ -22,6 +22,13 @@ $status_label            = (string) ( $editor_presenter['status_label'] ?? ( 'pu
 $status_slug             = (string) ( $editor_presenter['status_slug'] ?? $status );
 $is_valid                = ! empty( $editor_presenter['valid'] );
 $warnings                = isset( $editor_presenter['warnings'] ) && is_array( $editor_presenter['warnings'] ) ? $editor_presenter['warnings'] : array();
+$rule_set_decoded        = '' !== trim( $portable_raw ) ? json_decode( $portable_raw, true ) : null;
+$scope_summary           = class_exists( 'RWGC_Rule_Context_Compatibility', false ) && is_array( $rule_set_decoded )
+	? RWGC_Rule_Context_Compatibility::scope_summary( $rule_set_decoded )
+	: __( 'Any content', 'reactwoo-geocore' );
+$scope_has_page_constraint = class_exists( 'RWGC_Rule_Context_Compatibility', false ) && is_array( $rule_set_decoded )
+	&& 'Any content' !== $scope_summary
+	&& false === strpos( $scope_summary, 'URL contains' );
 $delete_url              = $post_id > 0
 	? wp_nonce_url(
 		admin_url( 'admin-post.php?action=rwgc_delete_visibility_rule&rule_id=' . $post_id ),
@@ -102,6 +109,17 @@ $page_title            = $is_new ? __( 'Add visibility rule', 'reactwoo-geocore'
 									<td><span class="rwgc-condition-chip"><?php echo esc_html( $target_label ); ?></span></td>
 								</tr>
 							<?php endif; ?>
+							<tr>
+								<th scope="row"><?php esc_html_e( 'Rule scope', 'reactwoo-geocore' ); ?></th>
+								<td>
+									<span class="rwgc-condition-chip"><?php echo esc_html( $scope_summary ); ?></span>
+									<?php if ( $scope_has_page_constraint ) : ?>
+										<p class="description" style="margin:8px 0 0;">
+											<?php esc_html_e( 'This rule should only be applied to matching content contexts unless you intentionally use it as a non-match rule.', 'reactwoo-geocore' ); ?>
+										</p>
+									<?php endif; ?>
+								</td>
+							</tr>
 						</table>
 					</div>
 				</div>
