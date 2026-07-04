@@ -770,7 +770,7 @@
 		var pageType = (document.getElementById('rwgc-tester-page-type') || {}).value || '';
 		if (isAppliedMode()) {
 			var assignment = findSelectedAssignment();
-			btn.disabled = !(assignment && assignment.rule_id && country && device && pageType);
+			btn.disabled = !(assignment && (assignment.rule_id || assignment.portable_json) && country && device && pageType);
 			return;
 		}
 		var ruleId = parseInt((document.getElementById('rwgc-tester-rule') || {}).value, 10) || 0;
@@ -827,6 +827,9 @@
 				content: contentPayload,
 				context: contextPayload,
 			};
+			if (assignment.portable_json) {
+				payload.portable_json = assignment.portable_json;
+			}
 			restUrl = cfg().assignmentRestUrl || restUrl;
 		} else {
 			var ruleId = parseInt(document.getElementById('rwgc-tester-rule').value, 10) || 0;

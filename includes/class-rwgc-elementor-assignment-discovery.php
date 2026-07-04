@@ -104,25 +104,27 @@ class RWGC_Elementor_Assignment_Discovery {
 		if ( ! self::has_visibility_rule_assignment( $settings ) ) {
 			return;
 		}
-		$rule_id = self::assigned_rule_id( $settings );
-		if ( $rule_id <= 0 ) {
-			return;
-		}
-		$mode = 'show_if';
+		$rule_id       = self::assigned_rule_id( $settings );
+		$portable_json = self::portable_json_from_settings( $settings );
+		$mode          = 'show_if';
 		if ( class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
 			$mode = RWGC_Targeting_Surface_Evaluator::get_visibility_rules_mode( $settings, null );
 		} elseif ( ! empty( $settings['rwgc_visibility_rules_mode'] ) ) {
 			$mode = (string) $settings['rwgc_visibility_rules_mode'];
 		}
 
-		$post = get_post( $rule_id );
+		$post       = $rule_id > 0 ? get_post( $rule_id ) : null;
+		$rule_label = $post instanceof WP_Post
+			? (string) $post->post_title
+			: ( $rule_id > 0 ? (string) $rule_id : __( 'Inline portable rule', 'reactwoo-geocore' ) );
 		$assignments[] = array(
 			'assignment_id' => $assignment_id,
 			'source'        => 'elementor',
 			'element_type'  => sanitize_key( $element_type ),
 			'element_label' => $label,
 			'rule_id'       => $rule_id,
-			'rule_label'    => $post instanceof WP_Post ? (string) $post->post_title : (string) $rule_id,
+			'rule_label'    => $rule_label,
+			'portable_json' => $rule_id > 0 ? '' : $portable_json,
 			'mode'          => self::mode_api_key( $mode ),
 			'mode_internal' => self::mode_key( $mode ),
 			'mode_label'    => self::mode_label( $mode ),
@@ -143,7 +145,7 @@ class RWGC_Elementor_Assignment_Discovery {
 				return false;
 			}
 		}
-		return self::assigned_rule_id( $settings ) > 0;
+		return self::assigned_rule_id( $settings ) > 0 || '' !== trim( self::portable_json_from_settings( $settings ) );
 	}
 
 	/**
@@ -158,6 +160,20 @@ class RWGC_Elementor_Assignment_Discovery {
 			return absint( $settings['rwgc_applied_visibility_rule_id'] );
 		}
 		return 0;
+	}
+
+	/**
+	 * @param array<string,mixed> $settings Settings.
+	 * @return string
+	 */
+	private static function portable_json_from_settings( array $settings ) {
+		if ( ! empty( $settings['egp_portable_geo_targeting'] ) ) {
+			return (string) $settings['egp_portable_geo_targeting'];
+		}
+		if ( ! empty( $settings['rwgc_portable_geo_targeting'] ) ) {
+			return (string) $settings['rwgc_portable_geo_targeting'];
+		}
+		return '';
 	}
 
 	/**

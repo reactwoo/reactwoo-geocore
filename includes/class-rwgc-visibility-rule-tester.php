@@ -164,11 +164,12 @@ class RWGC_Visibility_Rule_Tester {
 		}
 
 		$rule_id = isset( $request['rule_id'] ) ? absint( $request['rule_id'] ) : 0;
-		if ( $rule_id <= 0 ) {
+		$has_portable_json = ! empty( $request['portable_json'] ) && is_string( $request['portable_json'] ) && '' !== trim( $request['portable_json'] );
+		if ( $rule_id <= 0 && ! $has_portable_json ) {
 			return array(
 				'status'  => 'error',
 				'matches' => false,
-				'error'   => __( 'Assignment is missing a visibility rule.', 'reactwoo-geocore' ),
+				'error'   => __( 'Assignment is missing visibility rule data.', 'reactwoo-geocore' ),
 			);
 		}
 
@@ -403,10 +404,10 @@ class RWGC_Visibility_Rule_Tester {
 			if ( (int) get_option( 'page_on_front' ) === (int) $post->ID ) {
 				return 'homepage';
 			}
-			return 'other';
+			return 'page';
 		}
 		if ( 'post' === $post->post_type ) {
-			return 'other';
+			return 'post';
 		}
 		return 'other';
 	}
