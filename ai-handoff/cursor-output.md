@@ -1,62 +1,39 @@
-# Cursor output — UX opportunity review (first pass)
+# Cursor output — critical bug investigation
 
 ## Status
 
-**done** (needs staging acceptance)
+**done**
 
 ## Summary
 
-Implemented capability-aware **UX opportunity review** (`ux_opportunity_review`) across Geo AI (primary) and Geo Core (suite capability discovery).
+Found and fixed critical admin rule tester/editor regressions introduced around v1.8.109.
 
 ## Files changed
 
-### reactwoo-geo-ai (v0.4.135)
-
-- `includes/workflows/class-rwga-workflow-ux-opportunity-review.php` — workflow: remote AI with local deterministic fallback, structured cards, server-side action filtering, persistence to recommendations + intelligence actions.
-- `includes/services/class-rwga-ux-opportunity-action-filter.php` — capability map wrapper, action gating, pending action row builder.
-- `includes/class-rwga-workflow-registry.php` — register workflow.
-- `includes/class-rwga-plugin.php` — require new classes.
-- `includes/services/class-rwga-context-builder.php` — `build_ux_opportunity_review()` with commerce/product/pro slices.
-- `includes/services/class-rwga-intelligence-action-applier.php` — `create_optimise_test_prefill` approval handler (redirect to Optimise Create Test).
-- `includes/services/class-rwga-intelligence-optimise-handoff.php` — support `ux_opportunity_review`; read `source_id` from action_json.
-- `includes/class-rwga-admin.php` — admin route, handler, inner nav.
-- `admin/views/ux-opportunity-review-page.php` — review UI with capability badges and recommendation cards.
-- `reactwoo-geo-ai.php`, `readme.txt` — version 0.4.135.
-
-### reactwoo-geocore (v1.8.109)
-
-- `includes/class-rwgc-suite-capability-map.php` — installed/licensed suite product map.
-- `includes/functions-rwgc.php` — `rwgc_get_suite_capability_map()`, `rwgc_ux_opportunity_review_admin_url()`.
-- `includes/class-rwgc-plugin.php` — require capability map class.
-- `includes/class-rwgc-insights.php` — include `suite_capabilities` in compact payload.
-- `admin/views/insights-ai-opportunities-page.php` — CTA to UX opportunity review when Geo AI active.
-- `reactwoo-geocore.php`, `readme.txt` — version 1.8.109.
+- `admin/js/rwgc-visibility-rule-preview.js` — restored the missing `bindTextareaRefresh()` wrapper and removed the dead `bindTestPanel()` call so the visibility rule editor preview script parses and refreshes.
+- `includes/class-rwgc-visibility-rule-tester.php` — normal pages/posts now infer `page`/`post` instead of `other`; applied previews can evaluate inline portable JSON when no library rule ID exists.
+- `includes/class-rwgc-elementor-assignment-discovery.php` — Elementor inline portable assignments without a saved library rule ID are now returned to the applied-target tester.
+- `admin/js/rwgc-visibility-rule-tester.js` — applied-target mode can run inline portable assignments and sends their JSON to the preview endpoint.
+- `tests/Targeting/RWGCVisibilityRuleTesterRegressionTest.php` — regression coverage for page/post inference and inline Elementor assignment discovery.
 
 ## What was not changed
 
-- Geo Optimise / Geo Commerce / GeoCore Pro plugin code (handoff uses existing Optimise Create Test URL pattern only).
-- Remote API workflow definitions on reactwoo-api (local fallback works without API changes).
-- No auto-apply of live content; all actions remain approval-gated.
-- No satellite duplication of Geo Core detection or evaluator.
+- No release/version bump or tag.
+- No broad refactor of targeting evaluator precedence; library rule assignments still evaluate the saved library rule.
+- No changes to satellite plugin code.
 
 ## Commands run
 
-```bash
-php -l includes/workflows/class-rwga-workflow-ux-opportunity-review.php  # OK
-php -l includes/services/class-rwga-ux-opportunity-action-filter.php     # OK
-php -l includes/class-rwgc-suite-capability-map.php                      # OK
-cd reactwoo-geo-ai && npm run package:zip   # reactwoo-geo-ai-0.4.135.zip
-cd reactwoo-geocore && npm run package:zip    # reactwoo-geocore-1.8.109.zip
-```
+- `git commit -m "fix(rules): repair visibility rule tester regressions"` — OK
+- `git push -u origin cursor/critical-bug-investigation-8553` — OK
+- `composer install --no-interaction --prefer-dist` — OK (used to install local PHPUnit; regenerated vendor metadata was restored)
+- `node --check admin/js/rwgc-visibility-rule-preview.js` — OK
+- `node --check admin/js/rwgc-visibility-rule-tester.js` — OK
+- `vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr tests/Targeting/RWGCVisibilityRuleTesterRegressionTest.php` — OK (2 tests, 8 assertions)
+- `php -l includes/class-rwgc-visibility-rule-tester.php` — OK
+- `php -l includes/class-rwgc-elementor-assignment-discovery.php` — OK
+- `php -l tests/Targeting/RWGCVisibilityRuleTesterRegressionTest.php` — OK
 
-## Staging acceptance
+## Remaining errors
 
-1. Geo Core + Geo AI: run review from **Geo AI → UX opportunity review**; draft action pending; Pro/Optimise/Commerce cards show upgrade labels when products missing.
-2. With Optimise: “Create Optimise test” link on intelligence actions; approve `create_optimise_test_prefill` redirects to prefilled Create Test.
-3. With Commerce + WooCommerce: product context in review when product ID supplied.
-4. With GeoCore Pro: advanced targeting card available (open rules) vs upgrade label without Pro.
-5. Engine source shown: Remote Geo AI vs Local deterministic fallback.
-
-## Release
-
-Not committed/pushed unless user requests.
+- Full PHPUnit discovery with `vendor/bin/phpunit -c phpunit.xml.dist --stderr --filter RWGCVisibilityRuleTesterRegressionTest` is blocked before filtering by an existing unrelated PHP 8.3 fatal in `tests/Targeting/RWGCAssistantTargetServiceTest.php` (nested `WP_Post` class declaration inside a method).
