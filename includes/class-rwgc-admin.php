@@ -158,6 +158,35 @@ class RWGC_Admin {
 					'callback'       => array( 'RWGC_Suite_Admin', 'render_workflow_variant' ),
 				)
 			);
+
+			// These pages are intentionally reachable from buttons, redirects, and onboarding,
+			// but are hidden from the simplified left-hand submenu.
+			$hidden_suite_pages = array(
+				'rwgc-suite-home'      => array(
+					'title'    => __( 'Suite Home', 'reactwoo-geocore' ),
+					'callback' => array( 'RWGC_Suite_Admin', 'render_suite_home' ),
+				),
+				'rwgc-getting-started' => array(
+					'title'    => __( 'Getting Started', 'reactwoo-geocore' ),
+					'callback' => array( 'RWGC_Suite_Admin', 'render_getting_started' ),
+				),
+				'rwgc-workflow-variant' => array(
+					'title'    => __( 'Create Geo Rule', 'reactwoo-geocore' ),
+					'callback' => array( 'RWGC_Suite_Admin', 'render_workflow_variant' ),
+				),
+			);
+
+			foreach ( $hidden_suite_pages as $slug => $page ) {
+				add_submenu_page(
+					'rwgc-dashboard',
+					$page['title'],
+					$page['title'],
+					$cap,
+					$slug,
+					$page['callback']
+				);
+				remove_submenu_page( 'rwgc-dashboard', $slug );
+			}
 		}
 
 		self::register_app_route(
