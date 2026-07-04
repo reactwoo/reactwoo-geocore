@@ -2,7 +2,7 @@
 
 ## Status
 
-**needs-review** (implementation pass pushed; validation in progress)
+**done**
 
 ## Summary
 
@@ -24,8 +24,16 @@ Found and fixed critical admin rule tester/editor regressions introduced around 
 
 ## Commands run
 
-Validation pending after commit/push per automation workflow.
+- `git commit -m "fix(rules): repair visibility rule tester regressions"` — OK
+- `git push -u origin cursor/critical-bug-investigation-8553` — OK
+- `composer install --no-interaction --prefer-dist` — OK (used to install local PHPUnit; regenerated vendor metadata was restored)
+- `node --check admin/js/rwgc-visibility-rule-preview.js` — OK
+- `node --check admin/js/rwgc-visibility-rule-tester.js` — OK
+- `vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr tests/Targeting/RWGCVisibilityRuleTesterRegressionTest.php` — OK (2 tests, 8 assertions)
+- `php -l includes/class-rwgc-visibility-rule-tester.php` — OK
+- `php -l includes/class-rwgc-elementor-assignment-discovery.php` — OK
+- `php -l tests/Targeting/RWGCVisibilityRuleTesterRegressionTest.php` — OK
 
 ## Remaining errors
 
-None known yet; validation is next.
+- Full PHPUnit discovery with `vendor/bin/phpunit -c phpunit.xml.dist --stderr --filter RWGCVisibilityRuleTesterRegressionTest` is blocked before filtering by an existing unrelated PHP 8.3 fatal in `tests/Targeting/RWGCAssistantTargetServiceTest.php` (nested `WP_Post` class declaration inside a method).
