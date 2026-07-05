@@ -111,9 +111,8 @@ class RWGC_Visibility_Rule_Tester {
 			);
 		}
 
-		$context  = isset( $request['context'] ) && is_array( $request['context'] ) ? $request['context'] : array();
-		$content  = isset( $request['content'] ) && is_array( $request['content'] ) ? $request['content'] : array();
-		$resolved = self::merge_content_into_context( $content, $context );
+		$norm     = self::normalize_tester_request( $request );
+		$resolved = $norm['context'];
 		$missing  = self::missing_context_fields( $decoded, $resolved );
 
 		if ( ! empty( $missing ) ) {
@@ -132,13 +131,18 @@ class RWGC_Visibility_Rule_Tester {
 			? RWGC_Visibility_Rule_Logic_Preview::build( $decoded, $target )
 			: array( 'intro' => '', 'lines' => array() );
 
-		$compat = self::compatibility_for_content( $decoded, isset( $request['content'] ) && is_array( $request['content'] ) ? $request['content'] : array() );
+		$compat  = self::compatibility_for_tester( $decoded, $request );
+		$rule_id = isset( $request['rule_id'] ) ? absint( $request['rule_id'] ) : 0;
+		$matched = ! empty( $detailed['matches'] );
 
 		return array_merge(
 			$detailed,
 			array(
-				'logic_preview' => $logic,
-				'compatibility' => $compat,
+				'logic_preview'     => $logic,
+				'compatibility'     => $compat,
+				'applied_targets'   => self::build_applied_targets( $request, $rule_id, $matched ),
+				'preview'           => self::build_preview_response( $request, $rule_id ),
+				'document_context'  => $norm['document_context'],
 			)
 		);
 	}
@@ -250,16 +254,39 @@ class RWGC_Visibility_Rule_Tester {
 				'reasons' => array(),
 			);
 		}
+		return self::compatibility_for_tester( $decoded, $request );
+	}
+
+	/**
+	 * Normalize content + simulated visitor context for all tester endpoints.
+	 *
+	 * @param array<string,mixed> $request Tester request body.
+	 * @return array{content:array<string,mixed>,context:array<string,string>,document_context:array<string,mixed>}
+	 */
+	public static function normalize_tester_request( array $request ) {
 		$content = isset( $request['content'] ) && is_array( $request['content'] ) ? $request['content'] : array();
-		return self::compatibility_for_content( $decoded, $content );
+		$context = isset( $request['context'] ) && is_array( $request['context'] ) ? $request['context'] : array();
+
+		if ( '' === trim( (string) ( $context['page_type'] ?? '' ) ) && ! empty( $content['page_type'] ) ) {
+			$context['page_type'] = (string) $content['page_type'];
+		}
+
+		$merged_context   = self::merge_content_into_context( $content, $context );
+		$document_context = self::build_document_context( $content, $merged_context );
+
+		return array(
+			'content'          => $content,
+			'context'          => $merged_context,
+			'document_context' => $document_context,
+		);
 	}
 
 	/**
 	 * @param array<string,mixed> $rule_set Portable rule set.
-	 * @param array<string,mixed> $content  Content selector.
+	 * @param array<string,mixed> $request  Full tester request (content + context).
 	 * @return array<string,mixed>
 	 */
-	public static function compatibility_for_content( $rule_set, array $content ) {
+	public static function compatibility_for_tester( $rule_set, array $request ) {
 		if ( ! class_exists( 'RWGC_Rule_Context_Compatibility', false ) || ! is_array( $rule_set ) ) {
 			return array(
 				'status'        => 'compatible',
@@ -267,14 +294,224 @@ class RWGC_Visibility_Rule_Tester {
 				'scope_summary' => '',
 			);
 		}
-		$context = self::document_context_from_content( $content );
-		$compat  = RWGC_Rule_Context_Compatibility::evaluate( $rule_set, $context );
-		return array(
-			'status'        => (string) ( $compat['status'] ?? 'compatible' ),
-			'reasons'       => isset( $compat['reasons'] ) && is_array( $compat['reasons'] ) ? $compat['reasons'] : array(),
-			'scope_summary' => (string) ( $compat['scope_summary'] ?? '' ),
+		$norm   = self::normalize_tester_request( $request );
+		$compat = RWGC_Rule_Context_Compatibility::evaluate( $rule_set, $norm['document_context'] );
+		$result = array(
+			'status'           => (string) ( $compat['status'] ?? 'compatible' ),
+			'reasons'          => isset( $compat['reasons'] ) && is_array( $compat['reasons'] ) ? $compat['reasons'] : array(),
+			'scope_summary'    => (string) ( $compat['scope_summary'] ?? '' ),
 			'required_context' => isset( $compat['required_context'] ) && is_array( $compat['required_context'] ) ? $compat['required_context'] : array(),
 			'actual_context'   => isset( $compat['actual_context'] ) && is_array( $compat['actual_context'] ) ? $compat['actual_context'] : array(),
+			'document_context' => $norm['document_context'],
+		);
+		if ( ! empty( $norm['document_context']['content_note'] ) ) {
+			$result['content_note'] = (string) $norm['document_context']['content_note'];
+		}
+		return $result;
+	}
+
+	/**
+	 * @param array<string,mixed> $rule_set Portable rule set.
+	 * @param array<string,mixed> $content  Content selector.
+	 * @param array<string,mixed> $context  Optional simulated visitor context.
+	 * @return array<string,mixed>
+	 */
+	public static function compatibility_for_content( $rule_set, array $content, array $context = array() ) {
+		return self::compatibility_for_tester(
+			$rule_set,
+			array(
+				'content' => $content,
+				'context' => $context,
+			)
+		);
+	}
+
+	/**
+	 * @param array<string,mixed> $content        Content payload.
+	 * @param array<string,string> $merged_context Resolved visitor context.
+	 * @return array<string,mixed>
+	 */
+	private static function build_document_context( array $content, array $merged_context ) {
+		$doc               = self::document_context_from_content( $content );
+		$natural_page_type = sanitize_key( (string) ( $doc['page_type'] ?? '' ) );
+
+		if ( '' !== trim( (string) ( $merged_context['page_type'] ?? '' ) ) ) {
+			$doc['page_type']           = sanitize_key( (string) $merged_context['page_type'] );
+			$doc['simulated_page_type'] = $doc['page_type'];
+		}
+		if ( '' !== trim( (string) ( $merged_context['request_uri'] ?? '' ) ) ) {
+			$doc['request_uri'] = (string) $merged_context['request_uri'];
+		}
+
+		$doc['natural_page_type'] = $natural_page_type;
+		$doc['content_label']     = self::content_label( $content );
+		$doc['content_type']      = sanitize_key( (string) ( $content['type'] ?? '' ) );
+		$doc['content_note']      = self::content_simulation_note(
+			$content,
+			$natural_page_type,
+			(string) ( $doc['page_type'] ?? '' )
+		);
+
+		return $doc;
+	}
+
+	/**
+	 * @param array<string,mixed> $request  Tester request.
+	 * @param int                 $rule_id  Rule post ID.
+	 * @param bool                $matched  Whether the rule matched.
+	 * @return array<int,array<string,mixed>>
+	 */
+	private static function build_applied_targets( array $request, $rule_id, $matched ) {
+		$rule_id = absint( $rule_id );
+		if ( $rule_id <= 0 ) {
+			return array();
+		}
+
+		$content = isset( $request['content'] ) && is_array( $request['content'] ) ? $request['content'] : array();
+		$type    = sanitize_key( (string) ( $content['type'] ?? '' ) );
+		$id      = isset( $content['id'] ) ? absint( $content['id'] ) : 0;
+		if ( $id <= 0 || ! in_array( $type, array( 'page', 'post', 'product' ), true ) ) {
+			return array();
+		}
+
+		$data        = self::get_assignments( $id, $type );
+		$assignments = isset( $data['assignments'] ) && is_array( $data['assignments'] ) ? $data['assignments'] : array();
+		$targets     = array();
+
+		foreach ( $assignments as $row ) {
+			if ( ! is_array( $row ) || absint( $row['rule_id'] ?? 0 ) !== $rule_id ) {
+				continue;
+			}
+			$mode = (string) ( $row['mode_internal'] ?? $row['mode'] ?? 'show_if' );
+			if ( class_exists( 'RWGC_Elementor_Assignment_Discovery', false ) ) {
+				$mode = RWGC_Elementor_Assignment_Discovery::mode_from_api_key( $mode );
+			} elseif ( function_exists( 'rwgc_normalize_visibility_mode' ) ) {
+				$mode = rwgc_normalize_visibility_mode( $mode );
+			}
+			$visible = function_exists( 'rwgc_visibility_mode_allows_render' )
+				? rwgc_visibility_mode_allows_render( $mode, $matched )
+				: $matched;
+
+			$targets[] = array(
+				'assignment_id' => (string) ( $row['assignment_id'] ?? '' ),
+				'target_label'  => (string) ( $row['element_label'] ?? '' ),
+				'target_type'   => (string) ( $row['element_type'] ?? '' ),
+				'source'        => (string) ( $row['source'] ?? 'elementor' ),
+				'mode'          => class_exists( 'RWGC_Elementor_Assignment_Discovery', false )
+					? RWGC_Elementor_Assignment_Discovery::mode_api_key( $mode )
+					: $mode,
+				'mode_label'    => (string) ( $row['mode_label'] ?? '' ),
+				'rule_matches'  => (bool) $matched,
+				'visibility'    => $visible ? 'visible' : 'hidden',
+				'reason'        => self::assignment_visibility_reason( $mode, $matched, $visible ),
+			);
+		}
+
+		return $targets;
+	}
+
+	/**
+	 * @param array<string,mixed> $request Tester request.
+	 * @param int                 $rule_id Rule post ID.
+	 * @return array<string,mixed>
+	 */
+	private static function build_preview_response( array $request, $rule_id ) {
+		if ( ! class_exists( 'RWGC_Rule_Tester_Frontend_Preview', false ) ) {
+			return array(
+				'url'     => '',
+				'expires' => 0,
+			);
+		}
+
+		$rule_id    = absint( $rule_id );
+		$rule_label = '';
+		if ( $rule_id > 0 ) {
+			$post = RWGC_Visibility_Rule_Repository::get_post( $rule_id );
+			if ( $post instanceof WP_Post ) {
+				$rule_label = (string) $post->post_title;
+			}
+		}
+
+		$norm = self::normalize_tester_request( $request );
+		$url  = RWGC_Rule_Tester_Frontend_Preview::build_preview_url(
+			array(
+				'rule_id'    => $rule_id,
+				'rule_label' => $rule_label,
+				'content'    => $norm['content'],
+				'context'    => $norm['context'],
+				'assignment' => isset( $request['assignment'] ) && is_array( $request['assignment'] ) ? $request['assignment'] : array(),
+			)
+		);
+
+		if ( is_wp_error( $url ) ) {
+			return array(
+				'url'     => '',
+				'expires' => 0,
+				'error'   => $url->get_error_message(),
+			);
+		}
+
+		return array(
+			'url'     => (string) $url,
+			'expires' => time() + RWGC_Rule_Tester_Frontend_Preview::TOKEN_TTL,
+		);
+	}
+
+	/**
+	 * @param array<string,mixed> $content Content selector.
+	 * @return string
+	 */
+	private static function content_label( array $content ) {
+		$type = sanitize_key( (string) ( $content['type'] ?? '' ) );
+		$id   = isset( $content['id'] ) ? absint( $content['id'] ) : 0;
+		if ( $id > 0 && in_array( $type, array( 'page', 'post', 'product' ), true ) ) {
+			$title = get_the_title( $id );
+			return $title ? (string) $title : (string) $id;
+		}
+		if ( 'manual' === $type && ! empty( $content['url'] ) ) {
+			return (string) $content['url'];
+		}
+		return '';
+	}
+
+	/**
+	 * @param array<string,mixed> $content       Content selector.
+	 * @param string              $natural_pt    Natural page type from content record.
+	 * @param string              $simulated_pt  Simulated page type from tester form.
+	 * @return string
+	 */
+	private static function content_simulation_note( array $content, $natural_pt, $simulated_pt ) {
+		$natural_pt   = sanitize_key( (string) $natural_pt );
+		$simulated_pt = sanitize_key( (string) $simulated_pt );
+		if ( '' === $simulated_pt || $natural_pt === $simulated_pt ) {
+			return '';
+		}
+
+		$label = self::content_label( $content );
+		if ( '' === $label ) {
+			$label = __( 'Selected content', 'reactwoo-geocore' );
+		}
+
+		if ( 'product' === $simulated_pt && in_array( $natural_pt, array( 'other', 'homepage', 'page' ), true ) ) {
+			return sprintf(
+				/* translators: %s: content title */
+				__( '%1$s is a page/variant, not a product page. Product-level assignments found inside this page are evaluated separately below.', 'reactwoo-geocore' ),
+				$label
+			);
+		}
+
+		$natural_lbl = $natural_pt && class_exists( 'RWGC_Rule_Context_Compatibility', false )
+			? RWGC_Rule_Context_Compatibility::page_type_label( $natural_pt )
+			: ( $natural_pt ? $natural_pt : __( 'page/variant', 'reactwoo-geocore' ) );
+		$sim_lbl       = class_exists( 'RWGC_Rule_Context_Compatibility', false )
+			? RWGC_Rule_Context_Compatibility::page_type_label( $simulated_pt )
+			: $simulated_pt;
+
+		return sprintf(
+			/* translators: 1: natural page type label, 2: simulated page type label */
+			__( 'Selected content is %1$s; simulating %2$s page type for this test.', 'reactwoo-geocore' ),
+			$natural_lbl,
+			$sim_lbl
 		);
 	}
 
@@ -420,6 +657,10 @@ class RWGC_Visibility_Rule_Tester {
 		$type = sanitize_key( (string) ( $content['type'] ?? '' ) );
 		$id   = isset( $content['id'] ) ? absint( $content['id'] ) : 0;
 		$url  = isset( $content['url'] ) ? (string) $content['url'] : '';
+
+		if ( '' === trim( (string) ( $context['page_type'] ?? '' ) ) && ! empty( $content['page_type'] ) ) {
+			$context['page_type'] = (string) $content['page_type'];
+		}
 
 		if ( in_array( $type, array( 'page', 'post', 'product' ), true ) && $id > 0 ) {
 			$post = get_post( $id );

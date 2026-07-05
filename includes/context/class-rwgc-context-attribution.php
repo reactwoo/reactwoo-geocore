@@ -28,8 +28,16 @@ class RWGC_Context_Attribution {
 		$first_touch  = self::merge_touch( $first_touch, $request_touch );
 
 		if ( self::has_attribution_data( $request_touch ) ) {
-			self::write_cookie_snapshot( 'rwgc_ft', $first_touch );
-			self::write_cookie_snapshot( 'rwgc_st', $merged_touch );
+			/**
+			 * Whether attribution cookies may be written for this request.
+			 *
+			 * @param bool $should_persist Default true.
+			 */
+			$should_persist = (bool) apply_filters( 'rwgc_context_attribution_should_persist', true );
+			if ( $should_persist ) {
+				self::write_cookie_snapshot( 'rwgc_ft', $first_touch );
+				self::write_cookie_snapshot( 'rwgc_st', $merged_touch );
+			}
 		}
 
 		$returning = self::is_returning_visitor( $first_touch );

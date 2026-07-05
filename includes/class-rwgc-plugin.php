@@ -124,6 +124,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-elementor-assignment-discovery.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-tester.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-tester-assets.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-rule-tester-frontend-preview.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-copy-context.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-visibility-rules.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-elementor.php';
@@ -186,6 +187,7 @@ class RWGC_Plugin {
 		RWGC_Migration::init();
 		RWGC_Country_Groups::init();
 		RWGC_Preview::init();
+		RWGC_Rule_Tester_Frontend_Preview::init();
 		RWGC_Visibility_Rule_CPT::init();
 		RWGC_Variant_Rule_Applications::init();
 		RWGC_Legacy_Geo_Rule_CPT::init();

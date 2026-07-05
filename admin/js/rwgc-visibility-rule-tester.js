@@ -13,6 +13,7 @@
 		assignments: [],
 		selectedAssignment: null,
 		compatibility: null,
+		lastPreviewUrl: '',
 	};
 
 	var PAGE_TYPES = [
@@ -93,12 +94,17 @@
 			});
 	}
 
-	function fetchCompatibility(ruleId, content) {
+	function fetchCompatibility(ruleId, payload) {
 		var url = cfg().compatibilityUrl || '';
 		if (!url || !ruleId) {
 			state.compatibility = null;
 			return Promise.resolve(null);
 		}
+		var body = {
+			rule_id: ruleId,
+			content: payload.content || {},
+			context: payload.context || {},
+		};
 		return window.fetch(url, {
 			method: 'POST',
 			headers: {
@@ -106,7 +112,7 @@
 				'X-WP-Nonce': cfg().nonce || '',
 			},
 			credentials: 'same-origin',
-			body: JSON.stringify({ rule_id: ruleId, content: content }),
+			body: JSON.stringify(body),
 		})
 			.then(function (res) {
 				return res.json();
@@ -144,19 +150,27 @@
 			return;
 		}
 		var compat = state.compatibility;
-		if (!compat || compat.status === 'compatible' || !compat.reasons || !compat.reasons.length) {
+		var hasReasons = compat && compat.reasons && compat.reasons.length;
+		var hasNote = compat && compat.content_note;
+		if (!hasReasons && !hasNote) {
 			wrap.classList.add('rwgc-is-hidden');
 			wrap.innerHTML = '';
 			return;
 		}
 		wrap.classList.remove('rwgc-is-hidden');
-		var html = '<strong>' + esc(labels().compatibilityWarning || 'Compatibility warning') + '</strong><ul>';
-		compat.reasons.forEach(function (line) {
-			if (line) {
-				html += '<li>' + esc(line) + '</li>';
-			}
-		});
-		html += '</ul>';
+		var html = '';
+		if (hasNote) {
+			html += '<p class="description">' + esc(compat.content_note) + '</p>';
+		}
+		if (hasReasons) {
+			html += '<strong>' + esc(labels().compatibilityWarning || 'Compatibility warning') + '</strong><ul>';
+			compat.reasons.forEach(function (line) {
+				if (line) {
+					html += '<li>' + esc(line) + '</li>';
+				}
+			});
+			html += '</ul>';
+		}
 		wrap.innerHTML = html;
 	}
 
@@ -440,10 +454,11 @@
 	}
 
 	function refreshCompatibilityCheck() {
+		var payload = buildTesterContextPayload();
 		if (isAppliedMode()) {
 			var assignment = findSelectedAssignment();
 			if (assignment && assignment.rule_id) {
-				fetchCompatibility(assignment.rule_id, buildContentPayload());
+				fetchCompatibility(assignment.rule_id, payload);
 			} else {
 				state.compatibility = null;
 				updateCompatibilityWarning();
@@ -456,7 +471,7 @@
 			updateCompatibilityWarning();
 			return;
 		}
-		fetchCompatibility(ruleId, buildContentPayload());
+		fetchCompatibility(ruleId, payload);
 	}
 
 	function findSelectedAssignment() {
@@ -582,7 +597,7 @@
 			contentSelect.addEventListener('change', onContentChange);
 		}
 
-		['rwgc-tester-country', 'rwgc-tester-device', 'rwgc-tester-page-type', 'rwgc-tester-url', 'rwgc-tester-manual-url', 'rwgc-tester-content'].forEach(function (id) {
+		['rwgc-tester-country', 'rwgc-tester-device', 'rwgc-tester-page-type', 'rwgc-tester-url', 'rwgc-tester-manual-url', 'rwgc-tester-content', 'rwgc-tester-utm-source', 'rwgc-tester-utm-medium', 'rwgc-tester-gclid'].forEach(function (id) {
 			var el = document.getElementById(id);
 			if (el) {
 				el.addEventListener('change', function () {
@@ -727,6 +742,15 @@
 		updateRunButtonState();
 	}
 
+	function getSelectedContentLabel() {
+		var select = document.getElementById('rwgc-tester-content');
+		if (!select || !select.value || select.value === 'manual') {
+			return '';
+		}
+		var opt = select.options[select.selectedIndex];
+		return opt ? (opt.textContent || '').trim() : '';
+	}
+
 	function updateDetectedContext() {
 		var wrap = document.getElementById('rwgc-tester-detected');
 		if (!wrap) {
@@ -736,28 +760,43 @@
 		var pageTypeEl = document.getElementById('rwgc-tester-page-type');
 		var urlEl = document.getElementById('rwgc-tester-url');
 		var val = contentSelect ? contentSelect.value : '';
-		if (!val || 'manual' === val) {
-			if ('manual' === val) {
-				var manual = document.getElementById('rwgc-tester-manual-url');
-				var manualUrl = manual ? manual.value : '';
-				if (manualUrl) {
-					wrap.classList.remove('rwgc-is-hidden');
-					wrap.innerHTML =
-						'<span class="rwgc-rule-chip">' + esc(labels().detectedPageType || 'Page type') + ': ' + esc(pageTypeEl ? pageTypeEl.options[pageTypeEl.selectedIndex].text : '') + '</span>' +
-						'<span class="rwgc-rule-chip">' + esc(labels().detectedUrl || 'URL') + ': ' + esc(manualUrl) + '</span>';
-					return;
-				}
+		var pageLabel = pageTypeEl ? pageTypeEl.options[pageTypeEl.selectedIndex].text : '';
+		var url = urlEl ? urlEl.value : '';
+		var chips = [];
+
+		if ('manual' === val) {
+			var manual = document.getElementById('rwgc-tester-manual-url');
+			var manualUrl = manual ? manual.value : '';
+			if (!manualUrl && !pageLabel) {
+				wrap.classList.add('rwgc-is-hidden');
+				wrap.innerHTML = '';
+				return;
 			}
+			chips.push('<span class="rwgc-rule-chip">' + esc(labels().simulatedPageType || 'Simulated page type') + ': ' + esc(pageLabel) + '</span>');
+			if (manualUrl) {
+				chips.push('<span class="rwgc-rule-chip">' + esc(labels().detectedUrl || 'URL') + ': ' + esc(manualUrl) + '</span>');
+			}
+			wrap.classList.remove('rwgc-is-hidden');
+			wrap.innerHTML = chips.join('');
+			return;
+		}
+
+		if (!val) {
 			wrap.classList.add('rwgc-is-hidden');
 			wrap.innerHTML = '';
 			return;
 		}
-		var pageLabel = pageTypeEl ? pageTypeEl.options[pageTypeEl.selectedIndex].text : '';
-		var url = urlEl ? urlEl.value : '';
+
+		var contentLabel = getSelectedContentLabel();
+		if (contentLabel) {
+			chips.push('<span class="rwgc-rule-chip">' + esc(labels().selectedContent || 'Selected content') + ': ' + esc(contentLabel) + '</span>');
+		}
+		chips.push('<span class="rwgc-rule-chip">' + esc(labels().simulatedPageType || 'Simulated page type') + ': ' + esc(pageLabel) + '</span>');
+		if (url) {
+			chips.push('<span class="rwgc-rule-chip">' + esc(labels().detectedUrl || 'URL') + ': ' + esc(url) + '</span>');
+		}
 		wrap.classList.remove('rwgc-is-hidden');
-		wrap.innerHTML =
-			'<span class="rwgc-rule-chip">' + esc(labels().detectedPageType || 'Page type') + ': ' + esc(pageLabel) + '</span>' +
-			(url ? '<span class="rwgc-rule-chip">' + esc(labels().detectedUrl || 'URL') + ': ' + esc(url) + '</span>' : '');
+		wrap.innerHTML = chips.join('');
 	}
 
 	function updateRunButtonState() {
@@ -779,15 +818,18 @@
 
 	function buildContentPayload() {
 		var select = document.getElementById('rwgc-tester-content');
+		var pageTypeEl = document.getElementById('rwgc-tester-page-type');
+		var pageType = pageTypeEl ? pageTypeEl.value : '';
 		var val = select ? select.value : '';
 		if (!val) {
-			return { type: '', id: 0, url: document.getElementById('rwgc-tester-url').value || '' };
+			return { type: '', id: 0, url: document.getElementById('rwgc-tester-url').value || '', page_type: pageType };
 		}
 		if ('manual' === val) {
 			return {
 				type: 'manual',
 				id: 0,
 				url: document.getElementById('rwgc-tester-manual-url').value || document.getElementById('rwgc-tester-url').value || '',
+				page_type: pageType,
 			};
 		}
 		var parts = val.split(':');
@@ -795,23 +837,45 @@
 			type: parts[0] || '',
 			id: parseInt(parts[1], 10) || 0,
 			url: document.getElementById('rwgc-tester-url').value || '',
+			page_type: pageType,
 		};
+	}
+
+	function buildTesterContextPayload() {
+		var pageTypeEl = document.getElementById('rwgc-tester-page-type');
+		var pageType = pageTypeEl ? pageTypeEl.value : '';
+		var content = buildContentPayload();
+		var gclidEl = document.getElementById('rwgc-tester-gclid');
+		var context = {
+			country: (document.getElementById('rwgc-tester-country') || {}).value || '',
+			device: (document.getElementById('rwgc-tester-device') || {}).value || '',
+			page_type: pageType,
+			request_uri: (document.getElementById('rwgc-tester-url') || {}).value || '',
+			utm_source: (document.getElementById('rwgc-tester-utm-source') || {}).value || '',
+			utm_medium: (document.getElementById('rwgc-tester-utm-medium') || {}).value || '',
+			gclid: gclidEl && gclidEl.checked ? '1' : '',
+		};
+		var assignment = null;
+		if (isAppliedMode()) {
+			var row = findSelectedAssignment();
+			if (row) {
+				assignment = {
+					assignment_id: row.assignment_id,
+					rule_id: row.rule_id,
+					mode: row.mode_internal || row.mode || 'show_if',
+					element_type: row.element_type,
+					element_label: row.element_label,
+					product_id: row.product_id || 0,
+				};
+			}
+		}
+		return { content: content, context: context, assignment: assignment };
 	}
 
 	function onSubmit(e) {
 		e.preventDefault();
 		var result = document.getElementById('rwgc-tester-result');
-		var gclidEl = document.getElementById('rwgc-tester-gclid');
-		var contentPayload = buildContentPayload();
-		var contextPayload = {
-			country: document.getElementById('rwgc-tester-country').value,
-			device: document.getElementById('rwgc-tester-device').value,
-			page_type: document.getElementById('rwgc-tester-page-type').value,
-			request_uri: document.getElementById('rwgc-tester-url').value,
-			utm_source: document.getElementById('rwgc-tester-utm-source').value,
-			utm_medium: document.getElementById('rwgc-tester-utm-medium').value,
-			gclid: gclidEl && gclidEl.checked ? '1' : '',
-		};
+		var testerPayload = buildTesterContextPayload();
 		var payload;
 		var restUrl = cfg().restUrl || '';
 		if (isAppliedMode()) {
@@ -824,8 +888,9 @@
 				rule_id: assignment.rule_id,
 				mode: assignment.mode_internal || assignment.mode || 'show_if',
 				target_label: assignment.rule_label || '',
-				content: contentPayload,
-				context: contextPayload,
+				content: testerPayload.content,
+				context: testerPayload.context,
+				assignment: testerPayload.assignment,
 			};
 			restUrl = cfg().assignmentRestUrl || restUrl;
 		} else {
@@ -833,8 +898,8 @@
 			payload = {
 				rule_id: ruleId,
 				target_label: state.rulePayload && state.rulePayload.target_label ? state.rulePayload.target_label : '',
-				content: contentPayload,
-				context: contextPayload,
+				content: testerPayload.content,
+				context: testerPayload.context,
 			};
 		}
 		var textarea = document.getElementById('rwgc_portable_targeting');
@@ -866,6 +931,70 @@
 			});
 	}
 
+	function renderAppliedTargetsTable(targets) {
+		if (!targets || !targets.length) {
+			return '<p class="description">' + esc(labels().noAppliedTargets || 'This rule was evaluated successfully, but it is not applied to any detected section, product, block, popup, or element on this selected content.') + '</p>';
+		}
+		var html = '<table class="rwgc-rule-tester-targets"><thead><tr>';
+		html += '<th>' + esc(labels().targetColumn || 'Target') + '</th>';
+		html += '<th>' + esc(labels().targetTypeColumn || 'Type') + '</th>';
+		html += '<th>' + esc(labels().sourceColumn || 'Source') + '</th>';
+		html += '<th>' + esc(labels().modeColumn || 'Mode') + '</th>';
+		html += '<th>' + esc(labels().outcomeColumn || 'Outcome') + '</th>';
+		html += '</tr></thead><tbody>';
+		targets.forEach(function (row) {
+			var visible = row.visibility === 'visible';
+			html += '<tr>';
+			html += '<td>' + esc(row.target_label || row.assignment_id || '') + '</td>';
+			html += '<td>' + esc(row.target_type || '') + '</td>';
+			html += '<td>' + esc(row.source || '') + '</td>';
+			html += '<td>' + esc(row.mode_label || row.mode || '') + '</td>';
+			html += '<td class="' + (visible ? 'rwgc-outcome--visible' : 'rwgc-outcome--hidden') + '">' + esc(visible ? (labels().visibleTitle || 'Visible') : (labels().hiddenTitle || 'Hidden')) + '</td>';
+			html += '</tr>';
+			if (row.reason) {
+				html += '<tr class="rwgc-rule-tester-targets__reason"><td colspan="5">' + esc(row.reason) + '</td></tr>';
+			}
+		});
+		html += '</tbody></table>';
+		return html;
+	}
+
+	function bindPreviewActions(resultEl) {
+		if (!resultEl) {
+			return;
+		}
+		var openBtn = resultEl.querySelector('[data-rwgc-open-preview]');
+		var copyBtn = resultEl.querySelector('[data-rwgc-copy-preview]');
+		if (openBtn) {
+			openBtn.addEventListener('click', function () {
+				if (state.lastPreviewUrl) {
+					window.open(state.lastPreviewUrl, '_blank', 'noopener');
+				}
+			});
+		}
+		if (copyBtn) {
+			copyBtn.addEventListener('click', function () {
+				if (!state.lastPreviewUrl) {
+					return;
+				}
+				if (navigator.clipboard && navigator.clipboard.writeText) {
+					navigator.clipboard.writeText(state.lastPreviewUrl);
+					return;
+				}
+				var tmp = document.createElement('textarea');
+				tmp.value = state.lastPreviewUrl;
+				document.body.appendChild(tmp);
+				tmp.select();
+				try {
+					document.execCommand('copy');
+				} catch (err) {
+					// ignore
+				}
+				document.body.removeChild(tmp);
+			});
+		}
+	}
+
 	function renderResult(data) {
 		var result = document.getElementById('rwgc-tester-result');
 		if (!result || !data) {
@@ -885,6 +1014,10 @@
 		var title = isMatch ? (labels().matchTitle || 'MATCH') : (labels().noMatchTitle || 'NO MATCH');
 		var cls = isMatch ? 'rwgc-rule-tester-result--match' : 'rwgc-rule-tester-result--no-match';
 		var html = '';
+
+		html += '<section class="rwgc-rule-tester-result__section">';
+		html += '<h4>' + esc(labels().ruleEvaluationTitle || 'Rule evaluation') + '</h4>';
+
 		if (data.visibility) {
 			var visible = data.visibility === 'visible';
 			html += '<p><strong>' + esc(labels().ruleMatchLabel || 'Rule match') + ':</strong> ' + esc(title) + '</p>';
@@ -897,8 +1030,14 @@
 			}
 			cls = visible ? 'rwgc-rule-tester-result--match' : 'rwgc-rule-tester-result--no-match';
 		} else {
-			html += '<span class="rwgc-rule-tester-result__badge">' + esc(title) + '</span>';
+			html += '<p><strong>' + esc(labels().ruleMatchLabel || 'Rule match') + ':</strong> <span class="rwgc-rule-tester-result__badge">' + esc(title) + '</span></p>';
 		}
+
+		var docCtx = data.document_context || (data.compatibility && data.compatibility.document_context) || null;
+		if (docCtx && docCtx.content_note) {
+			html += '<p class="description">' + esc(docCtx.content_note) + '</p>';
+		}
+
 		if (data.compatibility && data.compatibility.reasons && data.compatibility.reasons.length) {
 			html += '<div class="rwgc-rule-tester-compat-warning"><strong>' + esc(labels().compatibilityWarning || 'Compatibility warning') + '</strong><ul>';
 			data.compatibility.reasons.forEach(function (line) {
@@ -926,8 +1065,29 @@
 			});
 			html += '</ul>';
 		}
+		html += '</section>';
+
+		if (!data.visibility) {
+			html += '<section class="rwgc-rule-tester-result__section">';
+			html += '<h4>' + esc(labels().appliedTargetsTitle || 'Applied targets on selected content') + '</h4>';
+			html += renderAppliedTargetsTable(data.applied_targets || []);
+			html += '</section>';
+		}
+
+		state.lastPreviewUrl = (data.preview && data.preview.url) ? data.preview.url : '';
+		if (state.lastPreviewUrl) {
+			html += '<section class="rwgc-rule-tester-result__section rwgc-rule-tester-result__preview">';
+			html += '<h4>' + esc(labels().previewTitle || 'Preview') + '</h4>';
+			html += '<div class="rwgc-rule-tester-presets__buttons">';
+			html += '<button type="button" class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" data-rwgc-open-preview>' + esc(labels().openPreview || 'Open simulated preview') + '</button>';
+			html += '<button type="button" class="rwgc-btn rwgc-btn--tertiary rwgc-btn--sm" data-rwgc-copy-preview>' + esc(labels().copyPreview || 'Copy preview link') + '</button>';
+			html += '</div>';
+			html += '</section>';
+		}
+
 		result.innerHTML = html;
 		result.className = 'rwgc-rule-tester-result ' + cls;
+		bindPreviewActions(result);
 	}
 
 	function open(opts) {

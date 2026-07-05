@@ -235,6 +235,17 @@ class RWGC_REST {
 				'args'                => array(),
 			)
 		);
+
+		register_rest_route(
+			'reactwoo-geocore/v1',
+			'/targeting/rule-tester/preview-url',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( __CLASS__, 'post_rule_tester_preview_url' ),
+				'permission_callback' => array( __CLASS__, 'permissions_visibility_rule_editor' ),
+				'args'                => array(),
+			)
+		);
 	}
 
 	/**
@@ -384,6 +395,54 @@ class RWGC_REST {
 				'reasons' => array(),
 			);
 		return new \WP_REST_Response( $result, 200 );
+	}
+
+	/**
+	 * POST tester payload → signed frontend preview URL.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public static function post_rule_tester_preview_url( $request ) {
+		$params = $request->get_json_params();
+		if ( ! is_array( $params ) ) {
+			$params = array();
+		}
+		if ( ! class_exists( 'RWGC_Visibility_Rule_Tester', false ) || ! class_exists( 'RWGC_Rule_Tester_Frontend_Preview', false ) ) {
+			return new \WP_Error( 'rwgc_preview_unavailable', __( 'Preview is unavailable.', 'reactwoo-geocore' ), array( 'status' => 500 ) );
+		}
+
+		$rule_id    = isset( $params['rule_id'] ) ? absint( $params['rule_id'] ) : 0;
+		$rule_label = '';
+		if ( $rule_id > 0 ) {
+			$post = RWGC_Visibility_Rule_Repository::get_post( $rule_id );
+			if ( $post instanceof WP_Post ) {
+				$rule_label = (string) $post->post_title;
+			}
+		}
+
+		$norm = RWGC_Visibility_Rule_Tester::normalize_tester_request( $params );
+		$url  = RWGC_Rule_Tester_Frontend_Preview::build_preview_url(
+			array(
+				'rule_id'    => $rule_id,
+				'rule_label' => $rule_label,
+				'content'    => $norm['content'],
+				'context'    => $norm['context'],
+				'assignment' => isset( $params['assignment'] ) && is_array( $params['assignment'] ) ? $params['assignment'] : array(),
+			)
+		);
+
+		if ( is_wp_error( $url ) ) {
+			return $url;
+		}
+
+		return new \WP_REST_Response(
+			array(
+				'url'     => (string) $url,
+				'expires' => time() + RWGC_Rule_Tester_Frontend_Preview::TOKEN_TTL,
+			),
+			200
+		);
 	}
 
 	/**

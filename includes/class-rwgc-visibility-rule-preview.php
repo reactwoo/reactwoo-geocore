@@ -230,6 +230,7 @@ class RWGC_Visibility_Rule_Preview {
 		$request_uri = sanitize_text_field( (string) ( $scenario['request_uri'] ?? '' ) );
 		$source      = strtolower( sanitize_text_field( (string) ( $scenario['utm_source'] ?? '' ) ) );
 		$medium      = strtolower( sanitize_text_field( (string) ( $scenario['utm_medium'] ?? '' ) ) );
+		$gclid       = ! empty( $scenario['gclid'] ) ? '1' : '';
 
 		$page_types = array();
 		if ( '' !== $page_type ) {
@@ -245,6 +246,7 @@ class RWGC_Visibility_Rule_Preview {
 				'request_uri'  => $request_uri,
 				'source'       => $source,
 				'medium'       => $medium,
+				'gclid'        => $gclid,
 			)
 		);
 	}

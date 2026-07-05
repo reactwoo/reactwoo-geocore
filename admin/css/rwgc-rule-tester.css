@@ -365,3 +365,57 @@
 	margin: 8px 0 0 18px;
 }
 
+.rwgc-rule-tester-result__section {
+	margin-top: 16px;
+	padding-top: 12px;
+	border-top: 1px solid #dcdcde;
+}
+
+.rwgc-rule-tester-result__section:first-child {
+	margin-top: 0;
+	padding-top: 0;
+	border-top: 0;
+}
+
+.rwgc-rule-tester-result__section h4 {
+	margin: 0 0 8px;
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.rwgc-rule-tester-targets {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 12px;
+	margin-top: 8px;
+}
+
+.rwgc-rule-tester-targets th,
+.rwgc-rule-tester-targets td {
+	padding: 6px 8px;
+	border-bottom: 1px solid #dcdcde;
+	text-align: left;
+	vertical-align: top;
+}
+
+.rwgc-rule-tester-targets__reason td {
+	color: #646970;
+	font-size: 11px;
+	padding-top: 0;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.rwgc-outcome--visible {
+	color: #1e7a34;
+	font-weight: 600;
+}
+
+.rwgc-outcome--hidden {
+	color: #b32d2e;
+	font-weight: 600;
+}
+
+.rwgc-rule-tester-result__preview .rwgc-rule-tester-presets__buttons {
+	margin-top: 8px;
+}
+
