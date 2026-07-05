@@ -1,80 +1,54 @@
-# Cursor output — Rule Tester impact inspector (v1.8.110)
+# Cursor output — Critical bug investigation
 
 ## Status
 
-**done** — implementation complete; local build/lint pending verification below.
+**done** — fixed one high-confidence Elementor editor data-loss bug.
 
-## Suspected root cause (confirmed)
+## Bug and impact
 
-`fetchCompatibility()` sent only `buildContentPayload()` → `{ type, id, url }` with **no `context.page_type`**.
+`assets/js/rwgc-elementor-library-bridge.js` rebuilt the Elementor visibility-rule library select with incompatible rules disabled. If the current saved rule was now considered incompatible for the natural document context, the rebuild path selected the placeholder and immediately wrote an empty `rwgc_applied_visibility_rule_id`.
 
-`check_compatibility()` → `compatibility_for_content()` → `document_context_from_content()` derived page type from the **post record** (Home variant → `other`), while Run Test used `context.page_type` from the form (`product`) via `merge_content_into_context()`.
+Concrete trigger:
 
-Secondary: `snapshot_from_scenario()` omitted `gclid`, so Google Ads traffic branches could fail in the tester even when UTM fields matched.
+1. A page/variant has an Elementor section using a saved visibility rule whose portable JSON is scoped to a different context (for example product page type).
+2. The user opens that page in Elementor after v1.8.109+.
+3. The library bridge marks the existing rule incompatible and clears the hidden applied-rule ID during panel setup.
+4. Saving the page persists the cleared assignment, removing the visibility rule from the element.
 
-## Proof — context shape
+## Root cause
 
-| Path | Before | After |
-|------|--------|-------|
-| Compatibility POST body | `{ rule_id, content: { type, id, url } }` | `{ rule_id, content: { type, id, url, page_type }, context: { country, device, page_type, request_uri, utm_*, gclid } }` |
-| Run test POST body | `content` + `context` (context had page_type) | Same canonical `buildTesterContextPayload()` |
-| Server compatibility doc context | `page_type: other` from post | `page_type: product` from simulated context; `natural_page_type: other` preserved |
-| Evaluator scenario | Had page_type when form filled | Unchanged; gclid now included |
+Compatibility metadata was used as a destructive editor mutation instead of a warning. The bridge treated "incompatible for this editor context" as "must clear saved assignment" even when that assignment already existed.
 
 ## Files changed
 
 | File | Why |
 |------|-----|
-| `admin/js/rwgc-visibility-rule-tester.js` | `buildTesterContextPayload()`; compatibility/run use same payload; applied targets table; preview buttons; clearer detected-context chips |
-| `admin/css/rwgc-rule-tester.css` | Applied targets table + result sections |
-| `includes/class-rwgc-visibility-rule-tester.php` | `normalize_tester_request()`, `build_document_context()`, `compatibility_for_tester()`, `build_applied_targets()`, `build_preview_response()` |
-| `includes/class-rwgc-visibility-rule-preview.php` | Pass `gclid` into scenario snapshot |
-| `includes/class-rwgc-rule-tester-frontend-preview.php` | **New** — signed token, frontend context override, admin banner, no-cache, skip attribution cookies |
-| `includes/class-rwgc-rest.php` | `POST /targeting/rule-tester/preview-url` |
-| `includes/class-rwgc-visibility-rule-tester-assets.php` | Labels + `previewUrl` |
-| `includes/class-rwgc-plugin.php` | Require + init frontend preview |
-| `includes/context/class-rwgc-context-attribution.php` | `rwgc_context_attribution_should_persist` filter hook |
-| `reactwoo-geocore.php`, `readme.txt` | v1.8.110 |
-
-## Assignment lookup — before / after
-
-- **Before:** Assignments fetched on content change; only shown in Applied Target mode dropdown; rule test did not list where rule is applied.
-- **After:** `run()` scans assignments for selected content, filters by `rule_id`, returns `applied_targets[]` with mode, visibility outcome, and reason. Applied Target mode unchanged for single-element drill-down.
-
-## Preview token / security
-
-- HMAC-SHA256 signed JSON (`wp_salt('rwgc_rule_tester_preview')`), 15-minute TTL, bound to `uid` (logged-in admin).
-- URL: `?rwgc_preview=1&rwgc_preview_token=SIGNED` — no unsigned country/device/page_type query overrides.
-- Frontend: overrides `rwgc_geo_data` + `rwgc_context_snapshot_values`; `nocache_headers()`; skips attribution cookie writes; admin banner + exit link.
-- Hook: `rwgc_rule_tester_preview_bootstrapped` for satellites (Optimise/analytics opt-out).
+| `assets/js/rwgc-elementor-library-bridge.js` | Preserve the current incompatible option on rebuild, keep it selectable for display, and show the compatibility warning without clearing the saved applied-rule ID. Explicit user selection of the placeholder can still clear the rule. |
+| `tests/Admin/RWGCElementorLibraryBridgeRegressionTest.php` | Static regression coverage for preserving current incompatible assignments and preventing the incompatible guard from writing an empty applied-rule ID. |
 
 ## What was not changed
 
-- `RWGC_Rule_Evaluator` semantics
-- Frontend visibility logic (except signed preview override path)
-- Geo Commerce / Optimise / Geo AI / Pro
+- Rule evaluator semantics.
+- Rule compatibility status calculation.
+- Rule Tester preview/token behavior.
+- Geo Commerce / Optimise / Geo AI / Pro code.
+- Existing unrelated `RWGCTargetingAssistantUiRegressionTest` expectations.
 
-## Commands run
+## Commands run and results
 
 ```bash
-# Run after pull:
-php -l includes/class-rwgc-visibility-rule-tester.php
-php -l includes/class-rwgc-rule-tester-frontend-preview.php
-php -l includes/class-rwgc-visibility-rule-preview.php
-php -l includes/class-rwgc-rest.php
-php -l includes/context/class-rwgc-context-attribution.php
-npm run package:zip
+sudo apt-get update && sudo apt-get install -y php-cli php-xml php-mbstring composer
+composer install --no-interaction --prefer-dist
+vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr tests/Admin/RWGCElementorLibraryBridgeRegressionTest.php
+# OK (2 tests, 15 assertions)
+
+vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr tests/Admin
+# Failed: 7 existing RWGCTargetingAssistantUiRegressionTest static expectation failures unrelated to this bridge file.
+
+php -l tests/Admin/RWGCElementorLibraryBridgeRegressionTest.php
+# No syntax errors detected
 ```
 
-## Remaining limitations
+## Remaining errors
 
-- Assignment discovery is Elementor-centric (`RWGC_Elementor_Assignment_Discovery` + `rwgc_rule_tester_assignments` filter); Gutenberg/Commerce assignments appear only if extensions hook the filter.
-- Preview simulates visitor context on the **selected content URL**; it does not navigate to a separate product permalink when simulating product page type on a page variant (evaluator/tester still evaluate correctly; visual preview is page-based).
-- PHPUnit not re-run locally in this pass (vendor/env dependent).
-
-## Acceptance retest
-
-1. Rule Tester → Free Delivery → Home (Variant) → Page type **Product** → compatibility must **not** say "current context is Other".
-2. Run test with Google Ads preset → rule should match when country/device/page type match.
-3. Applied targets table lists Elementor section/product assignments on Home Variant.
-4. Open simulated preview → banner visible; visibility matches tester; no fake geo cookies after exit.
+- `tests/Admin` has unrelated failures in `RWGCTargetingAssistantUiRegressionTest` around targeting-assistant static UI expectations (`popupTargetHint`, resolver helper names, etc.). The new bridge regression test passes in isolation.
