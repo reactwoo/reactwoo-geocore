@@ -2,7 +2,7 @@
 
 ## Status
 
-**needs-review** - fix implemented; validation pending local PHP tooling.
+**done**
 
 ## Bug fixed
 
@@ -40,13 +40,10 @@ Trigger:
 - `git show --stat --summary ...` - inspected v1.8.106 through v1.8.112 change areas.
 - `vendor/bin/phpunit -c phpunit.xml.dist --stderr` - failed before validation because `vendor/bin/phpunit` is not installed.
 - `php -v && composer --version` - failed because PHP is not installed in the container.
+- `sudo apt-get update && sudo apt-get install -y php-cli php-xml php-mbstring composer` - installed PHP/Composer tooling.
+- `composer install --no-interaction --prefer-dist` - installed PHPUnit dependencies; generated vendor metadata was restored afterward.
+- `vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr tests/Targeting/RWGCTargetingSurfaceEvaluatorTest.php` - passed (5 tests, 11 assertions).
 
 ## Remaining errors
 
-- Local PHP/PHPUnit validation is pending until PHP and Composer dependencies are installed.
-
-## Next validation
-
-```bash
-vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr tests/Targeting/RWGCTargetingSurfaceEvaluatorTest.php
-```
+- None.
