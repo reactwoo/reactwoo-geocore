@@ -224,9 +224,10 @@ class RWGC_Targeting_Surface_Evaluator {
 		}
 
 		if ( $visibility_on ) {
-			$set             = null;
-			$portable_match  = true;
-			$library_rule_id = 0;
+			$set                    = null;
+			$portable_match         = true;
+			$empty_visibility_rules = false;
+			$library_rule_id        = 0;
 			if ( ! empty( $settings['rwgc_visibility_rule_library'] ) ) {
 				$library_rule_id = absint( $settings['rwgc_visibility_rule_library'] );
 			} elseif ( ! empty( $settings['rwgc_applied_visibility_rule_id'] ) ) {
@@ -260,9 +261,10 @@ class RWGC_Targeting_Surface_Evaluator {
 					$snapshot         = RWGC_Context_Resolver::resolve_current();
 					$portable_match   = RWGC_Rule_Evaluator::matches( $set, $snapshot );
 				}
-			} elseif ( self::uses_portable_rules( $settings ) || self::has_resolved_portable_config( $settings ) ) {
-				$portable_match = true;
-				$result['reason'] = 'visibility_rules_empty';
+			} else {
+				$portable_match         = false;
+				$empty_visibility_rules = true;
+				$result['reason']       = 'visibility_rules_empty';
 			}
 			$result['portable_match'] = $portable_match;
 			$rules_mode               = self::get_visibility_rules_mode( $settings, is_array( $set ) ? $set : null );
@@ -271,14 +273,16 @@ class RWGC_Targeting_Surface_Evaluator {
 				? rwgc_visibility_mode_allows_render( $rules_mode, $portable_match )
 				: $portable_match;
 			$should_render            = $should_render && $visibility_show;
-			$result['reason']         = $country_on ? 'country_and_visibility_rules' : 'visibility_rules';
+			if ( ! $empty_visibility_rules ) {
+				$result['reason'] = $country_on ? 'country_and_visibility_rules' : 'visibility_rules';
+			}
 		}
 
 		$rules_match = true;
 		if ( $country_on && ! empty( self::parse_countries( $settings ) ) ) {
 			$rules_match = $rules_match && $result['country_match'];
 		}
-		if ( $visibility_on && isset( $set ) && is_array( $set ) ) {
+		if ( $visibility_on ) {
 			$rules_match = $rules_match && $result['portable_match'];
 		}
 
