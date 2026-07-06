@@ -1,92 +1,49 @@
-# Cursor output — Rule Tester result hierarchy + rendered impacts (v1.8.111)
+# Cursor output - Critical bug investigation
 
 ## Status
 
 **done**
 
-## Result hierarchy — before / after
+## Bug fixed
 
-| Before | After |
-|--------|-------|
-| Dominant headline: `Rule match: NO MATCH` | **Summary** block: Page match YES/NO, applied targets count, rendered impacts count, visible/hidden tallies |
-| Single “Rule evaluation” section | Separate sections: Page/context evaluation · Applied target detection · Direct assignments · Rendered product impacts |
-| Red “no match” styling when targets exist | Neutral panel styling when page does not match but targets/impacts were found |
-| Generic assignment reasons | Spec copy for show_if / hide_if outcomes |
+Unresolved configured visibility rules were treated as a successful portable match in `RWGC_Targeting_Surface_Evaluator::evaluate()`.
 
-## Response shape — before / after
+Impact:
+- `show_if` surfaces with a deleted/corrupt saved rule could render for every visitor.
+- `hide_if` surfaces with a deleted/corrupt saved rule could be hidden for every visitor.
 
-**Before (`run()` extras):**
-```json
-{
-  "applied_targets": [],
-  "preview": {},
-  "document_context": {}
-}
-```
-
-**After:**
-```json
-{
-  "result_summary": {
-    "page_match": false,
-    "page_match_label": "NO",
-    "applied_targets_count": 2,
-    "rendered_impacts_count": 1,
-    "visible_outcomes": 1,
-    "hidden_outcomes": 2,
-    "why_page_no_match": ["…"]
-  },
-  "applied_targets": [],
-  "rendered_impacts": [],
-  "rendered_impacts_meta": {
-    "dynamic_query_detected": false,
-    "note": ""
-  }
-}
-```
-
-## Rendered impact collector
-
-- **Geo Core:** `RWGC_Rule_Tester_Rendered_Impacts` — discovers product IDs in post content shortcodes, Woo blocks, and Elementor product widgets; evaluates products with `_geocore_product_rule_ids` matching the selected visibility rule using simulated tester context (no duplicate evaluator logic).
-- **Hook:** `rwgc_rule_tester_collect_rendered_impacts` (+ `rwgc_rule_tester_discover_product_sources` for extensions).
-- **Geo Commerce:** `RWGCM_Rule_Tester_Rendered_Impacts` — reports matching commerce rule actions (`product_visibility`, `price_adjustment`, display overlays) for discovered products when portable targeting matches the selected visibility rule JSON.
-
-## Geo Commerce integration
-
-**Required** — thin hook implementation in `reactwoo-geo-commerce` (no filtering logic duplicated in Geo Core).
+Trigger:
+1. Apply a saved visibility rule to an Elementor surface.
+2. Save the surface in `show_if` or `hide_if` mode.
+3. Delete, trash, or corrupt the saved rule so the library ID no longer resolves.
+4. Load a page containing that surface.
 
 ## Files changed
 
-**Geo Core**
-- `includes/class-rwgc-rule-tester-rendered-impacts.php` (new)
-- `includes/class-rwgc-visibility-rule-tester.php` — `result_summary`, `rendered_impacts`, reason copy
-- `includes/class-rwgc-plugin.php`
-- `admin/js/rwgc-visibility-rule-tester.js`
-- `admin/css/rwgc-rule-tester.css`
-- `includes/class-rwgc-visibility-rule-tester-assets.php`
-- `reactwoo-geocore.php`, `readme.txt` → v1.8.111
+- `includes/targeting/class-rwgc-targeting-surface-evaluator.php`
+  - Treat enabled visibility-rules layers with no resolvable rule set as `portable_match = false`.
+  - Preserve `visibility_rules_empty` as the evaluation reason.
+  - Include unresolved visibility rules in `rules_match`.
+- `tests/Targeting/RWGCTargetingSurfaceEvaluatorTest.php`
+  - Added regression coverage for stale library IDs in both `show_if` and `hide_if`.
 
-**Geo Commerce**
-- `includes/class-rwgcm-rule-tester-rendered-impacts.php` (new)
-- `includes/class-rwgcm-plugin.php`
+## What was not changed
 
-## Commands run
+- No rule registry behavior was changed.
+- No Elementor editor UI behavior was changed.
+- No preview/tester medium-severity UX issues were changed.
 
-```bash
-php -l includes/class-rwgc-rule-tester-rendered-impacts.php
-php -l includes/class-rwgc-visibility-rule-tester.php
-php -l includes/class-rwgcm-rule-tester-rendered-impacts.php
-npm run package:zip   # geocore
-```
+## Commands run and results
 
-## Remaining limitations
+- `git status --short --branch` - clean at start on `cursor/critical-bug-investigation-29c6`.
+- `git log --oneline --decorate -n 20` - inspected recent release commits.
+- `git show --stat --summary ...` - inspected v1.8.106 through v1.8.112 change areas.
+- `vendor/bin/phpunit -c phpunit.xml.dist --stderr` - failed before validation because `vendor/bin/phpunit` is not installed.
+- `php -v && composer --version` - failed because PHP is not installed in the container.
+- `sudo apt-get update && sudo apt-get install -y php-cli php-xml php-mbstring composer` - installed PHP/Composer tooling.
+- `composer install --no-interaction --prefer-dist` - installed PHPUnit dependencies; generated vendor metadata was restored afterward.
+- `vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr tests/Targeting/RWGCTargetingSurfaceEvaluatorTest.php` - passed (5 tests, 11 assertions).
 
-- Dynamic Woo shortcodes (`[products category="…"]`, featured/best-selling, etc.) set `dynamic_query_detected` and show preview note — static ID parsing only.
-- Geo Commerce collector only links to the selected visibility rule when portable JSON matches exactly.
-- Commerce `product_visibility` storefront hook may still be partial; tester reports rule outcomes from rule store, not live `woocommerce_product_is_visible` filter.
+## Remaining errors
 
-## Acceptance retest
-
-1. Free Delivery + Home Variant + non-matching traffic → **Page match: NO**, **Applied targets found: 2**, targets table with correct show/hide reasons, no misleading “rule missing” headline.
-2. Product in shortcode with geo rule meta → listed under **Rendered product impacts** with product name, source, outcome, reason.
-3. Preview link unchanged.
+- None.
