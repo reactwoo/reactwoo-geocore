@@ -995,6 +995,75 @@
 		}
 	}
 
+	function renderRenderedImpactsTable(impacts) {
+		if (!impacts || !impacts.length) {
+			return '<p class="description">' + esc(labels().noRenderedImpacts || '') + '</p>';
+		}
+		var html = '<table class="rwgc-rule-tester-targets"><thead><tr>';
+		html += '<th>' + esc(labels().productColumn || 'Product') + '</th>';
+		html += '<th>' + esc(labels().sourceColumn || 'Source') + '</th>';
+		html += '<th>' + esc(labels().ruleColumn || 'Rule') + '</th>';
+		html += '<th>' + esc(labels().outcomeColumn || 'Outcome') + '</th>';
+		html += '</tr></thead><tbody>';
+		impacts.forEach(function (row) {
+			var outcome = row.outcome || '';
+			var visible = outcome === 'visible';
+			var hidden = outcome === 'hidden';
+			var cls = visible ? 'rwgc-outcome--visible' : (hidden ? 'rwgc-outcome--hidden' : '');
+			var outcomeLabel = outcome;
+			if (visible) {
+				outcomeLabel = labels().visibleTitle || 'Visible';
+			} else if (hidden) {
+				outcomeLabel = labels().hiddenTitle || 'Hidden';
+			} else if (outcome) {
+				outcomeLabel = outcome.replace(/_/g, ' ');
+			}
+			html += '<tr>';
+			html += '<td>' + esc(row.product_name || row.product_id || '') + '</td>';
+			html += '<td>' + esc(row.source_label || row.source || '') + '</td>';
+			html += '<td>' + esc(row.rule_label || row.rule_id || '') + '</td>';
+			html += '<td class="' + cls + '">' + esc(outcomeLabel) + '</td>';
+			html += '</tr>';
+			if (row.reason) {
+				html += '<tr class="rwgc-rule-tester-targets__reason"><td colspan="4">' + esc(row.reason) + '</td></tr>';
+			}
+		});
+		html += '</tbody></table>';
+		return html;
+	}
+
+	function renderResultSummary(summary, data) {
+		if (!summary) {
+			return '';
+		}
+		var html = '<section class="rwgc-rule-tester-result__section rwgc-rule-tester-result__summary">';
+		html += '<h4>' + esc(labels().summaryTitle || 'Summary') + '</h4>';
+		html += '<ul class="rwgc-rule-tester-summary-stats">';
+		html += '<li><strong>' + esc(labels().pageMatchLabel || 'Page match') + ':</strong> ' + esc(summary.page_match_label || (summary.page_match ? 'YES' : 'NO')) + '</li>';
+		html += '<li><strong>' + esc(labels().appliedTargetsFound || 'Applied targets found') + ':</strong> ' + esc(String(summary.applied_targets_count || 0)) + '</li>';
+		html += '<li><strong>' + esc(labels().renderedImpactsFound || 'Rendered product impacts') + ':</strong> ' + esc(String(summary.rendered_impacts_count || 0)) + '</li>';
+		html += '<li><strong>' + esc(labels().visibleOutcomes || 'Visible outcomes') + ':</strong> ' + esc(String(summary.visible_outcomes || 0)) + '</li>';
+		html += '<li><strong>' + esc(labels().hiddenOutcomes || 'Hidden outcomes') + ':</strong> ' + esc(String(summary.hidden_outcomes || 0)) + '</li>';
+		html += '</ul>';
+		if (!summary.page_match && summary.why_page_no_match && summary.why_page_no_match.length) {
+			html += '<div class="rwgc-rule-tester-result__why">';
+			html += '<strong>' + esc(labels().whyNoPageMatchTitle || 'Why the page/context did not match') + '</strong>';
+			html += '<ul>';
+			summary.why_page_no_match.forEach(function (line) {
+				if (line) {
+					html += '<li>' + esc(line) + '</li>';
+				}
+			});
+			html += '</ul></div>';
+		}
+		var meta = data.rendered_impacts_meta || {};
+		if (meta.note) {
+			html += '<p class="description">' + esc(meta.note) + '</p>';
+		}
+		html += '</section>';
+		return html;
+	}
+
 	function renderResult(data) {
 		var result = document.getElementById('rwgc-tester-result');
 		if (!result || !data) {
@@ -1010,67 +1079,68 @@
 			result.innerHTML = '<span class="rwgc-rule-tester-result__badge">' + esc(labels().incompleteTitle || 'CANNOT TEST') + '</span><p>' + esc(data.error || labels().missingContext || '') + '</p>';
 			return;
 		}
-		var isMatch = !!data.matches;
-		var title = isMatch ? (labels().matchTitle || 'MATCH') : (labels().noMatchTitle || 'NO MATCH');
-		var cls = isMatch ? 'rwgc-rule-tester-result--match' : 'rwgc-rule-tester-result--no-match';
-		var html = '';
 
-		html += '<section class="rwgc-rule-tester-result__section">';
-		html += '<h4>' + esc(labels().ruleEvaluationTitle || 'Rule evaluation') + '</h4>';
+		var summary = data.result_summary || {};
+		var applied = data.applied_targets || [];
+		var rendered = data.rendered_impacts || [];
+		var isMatch = !!data.matches;
+		var cls = isMatch ? 'rwgc-rule-tester-result--match' : 'rwgc-rule-tester-result--neutral';
+		var html = '';
 
 		if (data.visibility) {
 			var visible = data.visibility === 'visible';
-			html += '<p><strong>' + esc(labels().ruleMatchLabel || 'Rule match') + ':</strong> ' + esc(title) + '</p>';
-			html += '<span class="rwgc-rule-tester-result__badge">' + esc(visible ? (labels().visibleTitle || 'VISIBLE') : (labels().hiddenTitle || 'HIDDEN')) + '</span>';
+			html += '<section class="rwgc-rule-tester-result__section">';
+			html += '<h4>' + esc(labels().pageEvalTitle || 'Page/context evaluation') + '</h4>';
+			html += '<p><strong>' + esc(labels().pageMatchLabel || 'Page match') + ':</strong> ' + esc(isMatch ? 'YES' : 'NO') + '</p>';
+			html += '<p><strong>' + esc(labels().targetOutcomesTitle || 'Target outcome') + ':</strong> <span class="rwgc-rule-tester-result__badge">' + esc(visible ? (labels().visibleTitle || 'VISIBLE') : (labels().hiddenTitle || 'HIDDEN')) + '</span></p>';
 			if (data.mode_label) {
 				html += '<p><strong>' + esc(labels().appliedModeLabel || 'Applied mode') + ':</strong> ' + esc(data.mode_label) + '</p>';
 			}
 			if (data.reason) {
 				html += '<p>' + esc(data.reason) + '</p>';
 			}
+			html += '</section>';
 			cls = visible ? 'rwgc-rule-tester-result--match' : 'rwgc-rule-tester-result--no-match';
 		} else {
-			html += '<p><strong>' + esc(labels().ruleMatchLabel || 'Rule match') + ':</strong> <span class="rwgc-rule-tester-result__badge">' + esc(title) + '</span></p>';
-		}
+			html += renderResultSummary(summary, data);
 
-		var docCtx = data.document_context || (data.compatibility && data.compatibility.document_context) || null;
-		if (docCtx && docCtx.content_note) {
-			html += '<p class="description">' + esc(docCtx.content_note) + '</p>';
-		}
-
-		if (data.compatibility && data.compatibility.reasons && data.compatibility.reasons.length) {
-			html += '<div class="rwgc-rule-tester-compat-warning"><strong>' + esc(labels().compatibilityWarning || 'Compatibility warning') + '</strong><ul>';
-			data.compatibility.reasons.forEach(function (line) {
-				if (line) {
-					html += '<li>' + esc(line) + '</li>';
-				}
-			});
-			html += '</ul></div>';
-		}
-		if (data.summary_intro) {
-			html += '<p>' + esc(data.summary_intro) + '</p>';
-		}
-		var lines = data.summary_lines || [];
-		if ((!lines || !lines.length) && data.conditions && data.conditions.length) {
-			lines = data.conditions.map(function (row) {
-				return row.message || '';
-			}).filter(Boolean);
-		}
-		if (lines && lines.length) {
-			html += '<ul>';
-			lines.forEach(function (line) {
-				if (line) {
-					html += '<li>' + esc(line) + '</li>';
-				}
-			});
-			html += '</ul>';
-		}
-		html += '</section>';
-
-		if (!data.visibility) {
 			html += '<section class="rwgc-rule-tester-result__section">';
-			html += '<h4>' + esc(labels().appliedTargetsTitle || 'Applied targets on selected content') + '</h4>';
-			html += renderAppliedTargetsTable(data.applied_targets || []);
+			html += '<h4>' + esc(labels().pageEvalTitle || 'Page/context evaluation') + '</h4>';
+			html += '<p><strong>' + esc(labels().pageMatchLabel || 'Page match') + ':</strong> ' + esc(summary.page_match_label || (isMatch ? 'YES' : 'NO')) + '</p>';
+			if (data.summary_intro) {
+				html += '<p>' + esc(data.summary_intro) + '</p>';
+			}
+			var lines = data.summary_lines || [];
+			if (lines && lines.length) {
+				html += '<ul>';
+				lines.forEach(function (line) {
+					if (line) {
+						html += '<li>' + esc(line) + '</li>';
+					}
+				});
+				html += '</ul>';
+			}
+			html += '</section>';
+
+			html += '<section class="rwgc-rule-tester-result__section">';
+			html += '<h4>' + esc(labels().targetDetectionTitle || 'Applied target detection') + '</h4>';
+			html += '<p>' + esc(String(applied.length)) + ' ' + esc(applied.length === 1 ? 'target' : 'targets') + ' ' + esc('found using this rule.') + '</p>';
+			if (summary.visible_outcomes || summary.hidden_outcomes) {
+				html += '<p class="rwgc-rule-tester-outcome-tally">' + esc(String(summary.visible_outcomes || 0)) + ' ' + esc(labels().visibleTitle || 'visible') + ' · ' + esc(String(summary.hidden_outcomes || 0)) + ' ' + esc(labels().hiddenTitle || 'hidden') + '</p>';
+			}
+			html += '</section>';
+
+			html += '<section class="rwgc-rule-tester-result__section">';
+			html += '<h4>' + esc(labels().directAssignmentsTitle || 'Direct assignments on selected content') + '</h4>';
+			html += renderAppliedTargetsTable(applied);
+			html += '</section>';
+
+			html += '<section class="rwgc-rule-tester-result__section">';
+			html += '<h4>' + esc(labels().renderedImpactsTitle || 'Rendered product impacts') + '</h4>';
+			if (rendered.length) {
+				html += '<p>' + esc(String(rendered.length)) + ' ' + esc(rendered.length === 1 ? 'product affected inside shortcode/widget.' : 'products affected inside shortcodes/widgets.') + '</p>';
+			}
+			html += renderRenderedImpactsTable(rendered);
 			html += '</section>';
 		}
 

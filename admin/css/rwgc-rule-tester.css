@@ -270,6 +270,32 @@
 	color: #fff;
 }
 
+.rwgc-rule-tester-result--neutral {
+	border-color: #c3c4c7;
+	background: #f6f7f7;
+}
+
+.rwgc-rule-tester-summary-stats {
+	margin: 0;
+	padding-left: 18px;
+}
+
+.rwgc-rule-tester-summary-stats li {
+	margin-bottom: 4px;
+}
+
+.rwgc-rule-tester-result__why {
+	margin-top: 10px;
+}
+
+.rwgc-rule-tester-result__why ul {
+	margin: 6px 0 0 18px;
+}
+
+.rwgc-rule-tester-outcome-tally {
+	font-weight: 600;
+}
+
 .rwgc-rule-tester-result--error {
 	border-color: #fca5a5;
 	background: #fef2f2;

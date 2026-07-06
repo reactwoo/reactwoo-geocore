@@ -135,14 +135,36 @@ class RWGC_Visibility_Rule_Tester {
 		$rule_id = isset( $request['rule_id'] ) ? absint( $request['rule_id'] ) : 0;
 		$matched = ! empty( $detailed['matches'] );
 
+		$applied_targets  = self::build_applied_targets( $request, $rule_id, $matched );
+		$rendered         = class_exists( 'RWGC_Rule_Tester_Rendered_Impacts', false )
+			? RWGC_Rule_Tester_Rendered_Impacts::collect( $request, $rule_id, $norm, $matched )
+			: array(
+				'impacts'                => array(),
+				'dynamic_query_detected' => false,
+				'note'                   => '',
+			);
+		$rendered_impacts = isset( $rendered['impacts'] ) && is_array( $rendered['impacts'] ) ? $rendered['impacts'] : array();
+
 		return array_merge(
 			$detailed,
 			array(
-				'logic_preview'     => $logic,
-				'compatibility'     => $compat,
-				'applied_targets'   => self::build_applied_targets( $request, $rule_id, $matched ),
-				'preview'           => self::build_preview_response( $request, $rule_id ),
-				'document_context'  => $norm['document_context'],
+				'logic_preview'          => $logic,
+				'compatibility'          => $compat,
+				'applied_targets'          => $applied_targets,
+				'rendered_impacts'       => $rendered_impacts,
+				'rendered_impacts_meta'  => array(
+					'dynamic_query_detected' => ! empty( $rendered['dynamic_query_detected'] ),
+					'note'                   => (string) ( $rendered['note'] ?? '' ),
+				),
+				'result_summary'         => self::build_result_summary(
+					$matched,
+					$applied_targets,
+					$rendered_impacts,
+					$norm,
+					$detailed
+				),
+				'preview'                => self::build_preview_response( $request, $rule_id ),
+				'document_context'       => $norm['document_context'],
 			)
 		);
 	}
@@ -544,14 +566,86 @@ class RWGC_Visibility_Rule_Tester {
 		$mode = function_exists( 'rwgc_normalize_visibility_mode' ) ? rwgc_normalize_visibility_mode( $mode ) : $mode;
 		if ( 'hide_if' === $mode ) {
 			if ( $matched ) {
-				return __( 'The element is hidden because the rule matched.', 'reactwoo-geocore' );
+				return __( 'The rule matched, so this hide-on-match target is hidden.', 'reactwoo-geocore' );
 			}
-			return __( 'The element remains visible because the hide rule did not match.', 'reactwoo-geocore' );
+			return __( 'The rule did not match, so this hide-on-match target remains visible.', 'reactwoo-geocore' );
 		}
 		if ( $visible ) {
-			return __( 'The element is visible because the rule matched.', 'reactwoo-geocore' );
+			return __( 'The rule matched, so this show-on-match target is visible.', 'reactwoo-geocore' );
 		}
-		return __( 'The element is hidden because the rule did not match.', 'reactwoo-geocore' );
+		return __( 'The rule did not match, so this show-on-match target is hidden.', 'reactwoo-geocore' );
+	}
+
+	/**
+	 * @param bool                           $matched          Rule matched simulated visitor.
+	 * @param array<int,array<string,mixed>> $applied_targets  Direct assignments.
+	 * @param array<int,array<string,mixed>> $rendered_impacts Rendered product impacts.
+	 * @param array<string,mixed>            $norm             Normalized tester payload.
+	 * @param array<string,mixed>            $detailed         Detailed evaluator output.
+	 * @return array<string,mixed>
+	 */
+	private static function build_result_summary( $matched, array $applied_targets, array $rendered_impacts, array $norm, array $detailed ) {
+		$visible_outcomes = 0;
+		$hidden_outcomes  = 0;
+
+		foreach ( $applied_targets as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			if ( 'visible' === ( $row['visibility'] ?? '' ) ) {
+				++$visible_outcomes;
+			} elseif ( 'hidden' === ( $row['visibility'] ?? '' ) ) {
+				++$hidden_outcomes;
+			}
+		}
+		foreach ( $rendered_impacts as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			if ( 'visible' === ( $row['outcome'] ?? '' ) ) {
+				++$visible_outcomes;
+			} elseif ( 'hidden' === ( $row['outcome'] ?? '' ) ) {
+				++$hidden_outcomes;
+			}
+		}
+
+		$why_no_match = array();
+		if ( ! $matched ) {
+			$doc = isset( $norm['document_context'] ) && is_array( $norm['document_context'] ) ? $norm['document_context'] : array();
+			if ( ! empty( $doc['content_note'] ) ) {
+				$why_no_match[] = (string) $doc['content_note'];
+			}
+			foreach ( (array) ( $detailed['condition_results'] ?? array() ) as $cond ) {
+				if ( ! is_array( $cond ) || 'pass' === ( $cond['status'] ?? '' ) ) {
+					continue;
+				}
+				$line = trim( (string) ( $cond['detail'] ?? '' ) );
+				if ( '' === $line ) {
+					$line = trim( (string) ( $cond['label'] ?? '' ) );
+				}
+				if ( '' !== $line ) {
+					$why_no_match[] = $line;
+				}
+			}
+			if ( empty( $why_no_match ) && ! empty( $detailed['summary_lines'] ) ) {
+				foreach ( (array) $detailed['summary_lines'] as $line ) {
+					$line = trim( (string) $line );
+					if ( '' !== $line && false === stripos( $line, 'matched' ) ) {
+						$why_no_match[] = $line;
+					}
+				}
+			}
+		}
+
+		return array(
+			'page_match'               => (bool) $matched,
+			'page_match_label'         => $matched ? 'YES' : 'NO',
+			'applied_targets_count'    => count( $applied_targets ),
+			'rendered_impacts_count'   => count( $rendered_impacts ),
+			'visible_outcomes'         => $visible_outcomes,
+			'hidden_outcomes'          => $hidden_outcomes,
+			'why_page_no_match'        => array_values( array_unique( array_filter( $why_no_match ) ) ),
+		);
 	}
 
 	/**
