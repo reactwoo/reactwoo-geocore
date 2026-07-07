@@ -59,6 +59,7 @@ class RWGC_Rule_Tester_Frontend_Preview {
 		}
 
 		add_action( 'send_headers', array( __CLASS__, 'send_no_cache_headers' ), 0 );
+		add_action( 'wp', array( __CLASS__, 'reset_resolver_after_routing' ), 2 );
 		add_filter( 'rwgc_geo_data', array( __CLASS__, 'filter_geo_data' ), 999 );
 		add_filter( 'rwgc_context_snapshot_values', array( __CLASS__, 'filter_context_snapshot' ), 999 );
 		add_filter( 'rwgc_context_attribution_should_persist', array( __CLASS__, 'filter_skip_persist' ), 999 );
@@ -259,10 +260,12 @@ class RWGC_Rule_Tester_Frontend_Preview {
 			$merged['request_uri'] = sanitize_text_field( (string) $context['request_uri'] );
 		}
 		if ( isset( $context['utm_source'] ) ) {
-			$merged['source'] = sanitize_text_field( (string) $context['utm_source'] );
+			$merged['source']     = sanitize_text_field( (string) $context['utm_source'] );
+			$merged['utm_source'] = $merged['source'];
 		}
 		if ( isset( $context['utm_medium'] ) ) {
-			$merged['medium'] = sanitize_text_field( (string) $context['utm_medium'] );
+			$merged['medium']     = sanitize_text_field( (string) $context['utm_medium'] );
+			$merged['utm_medium'] = $merged['medium'];
 		}
 		if ( ! empty( $context['gclid'] ) ) {
 			$merged['gclid'] = '1';
@@ -270,8 +273,27 @@ class RWGC_Rule_Tester_Frontend_Preview {
 			$merged['gclid'] = '';
 		}
 
+		if ( ! isset( $merged['attribution'] ) || ! is_array( $merged['attribution'] ) ) {
+			$merged['attribution'] = array();
+		}
+		$merged['attribution']['source'] = isset( $merged['source'] ) ? (string) $merged['source'] : '';
+		$merged['attribution']['medium'] = isset( $merged['medium'] ) ? (string) $merged['medium'] : '';
+		$merged['attribution']['gclid']  = ! empty( $merged['gclid'] ) ? '1' : '';
+
 		$merged['rule_tester_preview'] = true;
 		return $merged;
+	}
+
+	/**
+	 * Page-version routing clears the resolver cache on `wp`; rebuild with preview overrides.
+	 *
+	 * @return void
+	 */
+	public static function reset_resolver_after_routing() {
+		if ( ! self::is_active() || ! class_exists( 'RWGC_Context_Resolver', false ) ) {
+			return;
+		}
+		RWGC_Context_Resolver::reset_cache();
 	}
 
 	/**

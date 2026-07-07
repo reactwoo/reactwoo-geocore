@@ -398,10 +398,91 @@ class RWGC_Visibility_Rule_Tester {
 
 		$data        = self::get_assignments( $id, $type );
 		$assignments = isset( $data['assignments'] ) && is_array( $data['assignments'] ) ? $data['assignments'] : array();
+		$norm        = self::normalize_tester_request( $request );
+		$context     = isset( $norm['context'] ) && is_array( $norm['context'] ) ? $norm['context'] : array();
+		$rule_cache  = self::assignment_rule_match_cache( $assignments, $context );
+		$visibility  = self::assignment_render_visibility_map( $assignments, $rule_cache );
 		$targets     = array();
 
 		foreach ( $assignments as $row ) {
 			if ( ! is_array( $row ) || absint( $row['rule_id'] ?? 0 ) !== $rule_id ) {
+				continue;
+			}
+			$assignment_id = (string) ( $row['assignment_id'] ?? '' );
+			$mode          = (string) ( $row['mode_internal'] ?? $row['mode'] ?? 'show_if' );
+			if ( class_exists( 'RWGC_Elementor_Assignment_Discovery', false ) ) {
+				$mode = RWGC_Elementor_Assignment_Discovery::mode_from_api_key( $mode );
+			} elseif ( function_exists( 'rwgc_normalize_visibility_mode' ) ) {
+				$mode = rwgc_normalize_visibility_mode( $mode );
+			}
+			$element_matched = ! empty( $rule_cache[ $rule_id ] );
+			$visible         = isset( $visibility[ $assignment_id ] ) && 'visible' === $visibility[ $assignment_id ];
+			$reason          = self::assignment_visibility_reason( $mode, $element_matched, $visible );
+			if ( $visible && self::assignment_hidden_by_ancestor( $row, $visibility, $assignments ) ) {
+				$visible = false;
+				$reason  = __( 'Hidden because a parent Elementor section/container is not rendered for this visitor.', 'reactwoo-geocore' );
+			}
+
+			$targets[] = array(
+				'assignment_id'        => $assignment_id,
+				'parent_assignment_id' => (string) ( $row['parent_assignment_id'] ?? '' ),
+				'target_label'         => (string) ( $row['element_label'] ?? '' ),
+				'target_type'          => (string) ( $row['element_type'] ?? '' ),
+				'source'               => (string) ( $row['source'] ?? 'elementor' ),
+				'mode'                 => class_exists( 'RWGC_Elementor_Assignment_Discovery', false )
+					? RWGC_Elementor_Assignment_Discovery::mode_api_key( $mode )
+					: $mode,
+				'mode_label'           => (string) ( $row['mode_label'] ?? '' ),
+				'rule_matches'         => (bool) $element_matched,
+				'visibility'           => $visible ? 'visible' : 'hidden',
+				'reason'               => $reason,
+			);
+		}
+
+		return $targets;
+	}
+
+	/**
+	 * @param array<int,array<string,mixed>> $assignments Elementor assignments.
+	 * @param array<string,mixed>            $context     Simulated visitor context.
+	 * @return array<int,bool>
+	 */
+	private static function assignment_rule_match_cache( array $assignments, array $context ) {
+		$cache = array();
+		foreach ( $assignments as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$rule_id = absint( $row['rule_id'] ?? 0 );
+			if ( $rule_id <= 0 || isset( $cache[ $rule_id ] ) ) {
+				continue;
+			}
+			$raw     = (string) get_post_meta( $rule_id, RWGC_Visibility_Rule_CPT::META_PORTABLE, true );
+			$decoded = json_decode( $raw, true );
+			if ( ! is_array( $decoded ) || ! class_exists( 'RWGC_Visibility_Rule_Preview', false ) ) {
+				$cache[ $rule_id ] = false;
+				continue;
+			}
+			$detailed          = RWGC_Visibility_Rule_Preview::evaluate_detailed( $decoded, $context );
+			$cache[ $rule_id ] = ! empty( $detailed['matches'] );
+		}
+		return $cache;
+	}
+
+	/**
+	 * @param array<int,array<string,mixed>> $assignments Elementor assignments.
+	 * @param array<int,bool>                $rule_cache  Rule match cache.
+	 * @return array<string,string> assignment_id => visible|hidden
+	 */
+	private static function assignment_render_visibility_map( array $assignments, array $rule_cache ) {
+		$map = array();
+		foreach ( $assignments as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$assignment_id = (string) ( $row['assignment_id'] ?? '' );
+			$rule_id       = absint( $row['rule_id'] ?? 0 );
+			if ( '' === $assignment_id || $rule_id <= 0 ) {
 				continue;
 			}
 			$mode = (string) ( $row['mode_internal'] ?? $row['mode'] ?? 'show_if' );
@@ -410,26 +491,44 @@ class RWGC_Visibility_Rule_Tester {
 			} elseif ( function_exists( 'rwgc_normalize_visibility_mode' ) ) {
 				$mode = rwgc_normalize_visibility_mode( $mode );
 			}
+			$matched = ! empty( $rule_cache[ $rule_id ] );
 			$visible = function_exists( 'rwgc_visibility_mode_allows_render' )
 				? rwgc_visibility_mode_allows_render( $mode, $matched )
 				: $matched;
+			$map[ $assignment_id ] = $visible ? 'visible' : 'hidden';
+		}
+		return $map;
+	}
 
-			$targets[] = array(
-				'assignment_id' => (string) ( $row['assignment_id'] ?? '' ),
-				'target_label'  => (string) ( $row['element_label'] ?? '' ),
-				'target_type'   => (string) ( $row['element_type'] ?? '' ),
-				'source'        => (string) ( $row['source'] ?? 'elementor' ),
-				'mode'          => class_exists( 'RWGC_Elementor_Assignment_Discovery', false )
-					? RWGC_Elementor_Assignment_Discovery::mode_api_key( $mode )
-					: $mode,
-				'mode_label'    => (string) ( $row['mode_label'] ?? '' ),
-				'rule_matches'  => (bool) $matched,
-				'visibility'    => $visible ? 'visible' : 'hidden',
-				'reason'        => self::assignment_visibility_reason( $mode, $matched, $visible ),
-			);
+	/**
+	 * @param array<string,mixed>            $row          Assignment row.
+	 * @param array<string,string>           $visibility   Render map.
+	 * @param array<int,array<string,mixed>> $assignments  All assignments (parent chain lookup).
+	 * @return bool
+	 */
+	private static function assignment_hidden_by_ancestor( array $row, array $visibility, array $assignments ) {
+		$parent_map = array();
+		foreach ( $assignments as $assignment_row ) {
+			if ( ! is_array( $assignment_row ) ) {
+				continue;
+			}
+			$aid = (string) ( $assignment_row['assignment_id'] ?? '' );
+			if ( '' === $aid ) {
+				continue;
+			}
+			$parent_map[ $aid ] = (string) ( $assignment_row['parent_assignment_id'] ?? '' );
 		}
 
-		return $targets;
+		$ancestor = (string) ( $row['parent_assignment_id'] ?? '' );
+		$depth    = 0;
+		while ( '' !== $ancestor && $depth < 24 ) {
+			if ( isset( $visibility[ $ancestor ] ) && 'hidden' === $visibility[ $ancestor ] ) {
+				return true;
+			}
+			$ancestor = isset( $parent_map[ $ancestor ] ) ? (string) $parent_map[ $ancestor ] : '';
+			++$depth;
+		}
+		return false;
 	}
 
 	/**

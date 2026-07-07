@@ -13,6 +13,7 @@
 | `docs/geo-core-cursor-master-plan.md` | Product/architecture source of truth |
 | `docs/releases-and-git-tags.md` | Version bumps, **git annotated tags**, **single push** (`main` + tag), staging/R2; avoid duplicate CI / Windows git hangs |
 | `.cursor/rules/release.mdc` | Agent release commands for this repo (commit → tag → one push) |
+| `.cursor/rules/cursor-git-tagged-releases-only.mdc` | **Do not** push `cursor/*` branches or PRs from Cursor — tagged `main` releases only |
 | `docs/phases/phase-1.md` | Phase 1 (core refactor) — done |
 | `docs/phases/phase-2.md` | Phase 2 (multi-country scaffolding) — done |
 | `docs/phases/phase-3.md` | Phase 3 (free UX) — complete |

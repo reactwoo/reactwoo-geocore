@@ -1,0 +1,27 @@
+---
+description: Cursor agents ship GitHub changes only as tagged releases on main
+alwaysApply: true
+---
+
+# Cursor → GitHub: tagged releases only
+
+Failed **Geo Core tests** on `cursor/*` PRs come from **Cursor Cloud** pushing WIP branches. Product releases use **annotated tags on `main`** (`publish-update.yml`).
+
+## Allowed
+
+1. Local edits and **local commit** (when the user asks).
+2. **Release push** only: version bump → `git tag -a vVERSION` → `git push origin main "vVERSION"` → verify tag on origin.
+
+## Forbidden (unless user explicitly asks)
+
+- `git push` without a `v*` tag in the same command.
+- Pushing `cursor/*` or any feature branch to `origin`.
+- `gh pr create` / Cursor Cloud auto-PR for incomplete work.
+
+## If the user says “commit” but not “release” / “tag” / “push”
+
+Commit locally only. Do not push.
+
+## If the user says “tag” or “release”
+
+Run the full sequence in `.cursor/rules/release.mdc`.

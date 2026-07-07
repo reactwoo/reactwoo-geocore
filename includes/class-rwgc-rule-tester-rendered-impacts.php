@@ -97,37 +97,121 @@ class RWGC_Rule_Tester_Rendered_Impacts {
 			if ( $product_id <= 0 || ! empty( $seen[ $product_id ] ) ) {
 				continue;
 			}
-			if ( ! RWGC_Product_Meta::has_geo_override( $product_id ) ) {
+			$impact = self::product_meta_impact_row( $product_id, $rule_id, $rule_label, $matched, $source_row );
+			if ( null === $impact ) {
 				continue;
 			}
-			$rule_ids = RWGC_Product_Meta::get_rule_ids( $product_id );
-			if ( empty( $rule_ids ) || ! in_array( $rule_id, $rule_ids, true ) ) {
-				continue;
-			}
-
-			$mode    = RWGC_Product_Meta::get_visibility_mode( $product_id );
-			$visible = function_exists( 'rwgc_visibility_mode_allows_render' )
-				? rwgc_visibility_mode_allows_render( $mode, $matched )
-				: $matched;
-
-			$out[] = array(
-				'target_type'  => 'product',
-				'source'       => sanitize_key( (string) ( $source_row['source'] ?? 'woocommerce_shortcode' ) ),
-				'source_label' => (string) ( $source_row['source_label'] ?? __( 'WooCommerce shortcode', 'reactwoo-geocore' ) ),
-				'product_id'   => $product_id,
-				'product_name' => get_the_title( $product_id ) ?: (string) $product_id,
-				'rule_id'      => $rule_id,
-				'rule_label'   => $rule_label,
-				'mode'         => $mode,
-				'mode_label'   => self::mode_label( $mode ),
-				'rule_matches' => $matched,
-				'outcome'      => $visible ? 'visible' : 'hidden',
-				'reason'       => self::product_visibility_reason( $mode, $matched, $visible ),
-			);
+			$out[]               = $impact;
 			$seen[ $product_id ] = true;
 		}
 
+		if ( ! empty( $discovery['dynamic_query_detected'] ) ) {
+			foreach ( self::products_linked_to_visibility_rule( $rule_id ) as $product_id ) {
+				if ( ! empty( $seen[ $product_id ] ) ) {
+					continue;
+				}
+				$impact = self::product_meta_impact_row(
+					$product_id,
+					$rule_id,
+					$rule_label,
+					$matched,
+					array(
+						'source'       => 'woocommerce_dynamic_grid',
+						'source_label' => __( 'WooCommerce dynamic product grid', 'reactwoo-geocore' ),
+					)
+				);
+				if ( null === $impact ) {
+					continue;
+				}
+				$out[]               = $impact;
+				$seen[ $product_id ] = true;
+			}
+		}
+
 		return $out;
+	}
+
+	/**
+	 * @param int                 $product_id   Product ID.
+	 * @param int                 $rule_id      Visibility rule ID.
+	 * @param string              $rule_label   Rule label.
+	 * @param bool                $matched      Whether the rule matched.
+	 * @param array<string,mixed> $source_row   Discovery source metadata.
+	 * @return array<string,mixed>|null
+	 */
+	private static function product_meta_impact_row( $product_id, $rule_id, $rule_label, $matched, array $source_row ) {
+		$product_id = absint( $product_id );
+		$rule_id    = absint( $rule_id );
+		if ( $product_id <= 0 || $rule_id <= 0 || ! class_exists( 'RWGC_Product_Meta', false ) ) {
+			return null;
+		}
+		if ( ! RWGC_Product_Meta::has_geo_override( $product_id ) ) {
+			return null;
+		}
+		$rule_ids = RWGC_Product_Meta::get_rule_ids( $product_id );
+		if ( empty( $rule_ids ) || ! in_array( $rule_id, $rule_ids, true ) ) {
+			return null;
+		}
+
+		$mode    = RWGC_Product_Meta::get_visibility_mode( $product_id );
+		$visible = function_exists( 'rwgc_visibility_mode_allows_render' )
+			? rwgc_visibility_mode_allows_render( $mode, $matched )
+			: $matched;
+
+		return array(
+			'target_type'  => 'product',
+			'source'       => sanitize_key( (string) ( $source_row['source'] ?? 'woocommerce_shortcode' ) ),
+			'source_label' => (string) ( $source_row['source_label'] ?? __( 'WooCommerce shortcode', 'reactwoo-geocore' ) ),
+			'product_id'   => $product_id,
+			'product_name' => get_the_title( $product_id ) ?: (string) $product_id,
+			'rule_id'      => $rule_id,
+			'rule_label'   => $rule_label,
+			'mode'         => $mode,
+			'mode_label'   => self::mode_label( $mode ),
+			'rule_matches' => $matched,
+			'outcome'      => $visible ? 'visible' : 'hidden',
+			'reason'       => self::product_visibility_reason( $mode, $matched, $visible ),
+		);
+	}
+
+	/**
+	 * Products with Geo Core product meta referencing a visibility rule.
+	 *
+	 * @param int $rule_id Visibility rule post ID.
+	 * @return int[]
+	 */
+	private static function products_linked_to_visibility_rule( $rule_id ) {
+		$rule_id = absint( $rule_id );
+		if ( $rule_id <= 0 || ! class_exists( 'RWGC_Product_Meta', false ) ) {
+			return array();
+		}
+
+		$query = new WP_Query(
+			array(
+				'post_type'              => 'product',
+				'post_status'            => array( 'publish', 'private' ),
+				'posts_per_page'         => 100,
+				'fields'                 => 'ids',
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => false,
+				'meta_query'             => array(
+					array(
+						'key'     => RWGC_Product_Meta::META_RULE_IDS,
+						'value'   => '"' . $rule_id . '"',
+						'compare' => 'LIKE',
+					),
+				),
+			)
+		);
+
+		$ids = array();
+		foreach ( (array) $query->posts as $product_id ) {
+			$product_id = absint( $product_id );
+			if ( $product_id > 0 ) {
+				$ids[] = $product_id;
+			}
+		}
+		return $ids;
 	}
 
 	/**
@@ -251,6 +335,17 @@ class RWGC_Rule_Tester_Rendered_Impacts {
 					foreach ( (array) $ids as $pid ) {
 						self::push_source( absint( $pid ), 'elementor_product_widget', __( 'Elementor product widget', 'reactwoo-geocore' ), $out, $seen );
 					}
+				}
+			}
+			if ( 'shortcode' === $widget ) {
+				$shortcode = '';
+				if ( ! empty( $settings['shortcode'] ) ) {
+					$shortcode = (string) $settings['shortcode'];
+				} elseif ( ! empty( $settings['editor'] ) ) {
+					$shortcode = (string) $settings['editor'];
+				}
+				if ( '' !== trim( $shortcode ) ) {
+					self::append_sources_from_text( $shortcode, 'elementor_shortcode', __( 'Elementor shortcode', 'reactwoo-geocore' ), $out, $seen );
 				}
 			}
 

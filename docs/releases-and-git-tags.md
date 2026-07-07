@@ -59,12 +59,10 @@ Replace `VERSION` with the exact version string (e.g. `1.8.20`). The annotated t
 
 **Do not** chain everything in one line (`commit && tag && archive && push main && push tag`). On Windows Git Bash, `git tag -a` and the **second** `git push` have been observed to **segfault** (exit `139`) or fail with fork errors; agents then retry and the terminal appears to hang.
 
-**Do not** run two separate pushes (`git push origin main` then `git push origin vVERSION`) unless the combined push failed. Two pushes mean:
+**Do not** run two separate pushes (`git push origin main` then `git push origin vVERSION`) unless the combined push failed. One combined push updates `main` and publishes the tag.
 
-1. **Push to `main`** → triggers **Geo Core tests** workflow (PHPUnit on every main push).
-2. **Push tag `v*`** → triggers **Publish ReactWoo Geo Core Update** (R2 + API) — this is the release that matters.
-
-For shipping a version, only the **tag** workflow publishes the zip. The extra **main** push is only needed to update the branch pointer on GitHub (can be done in **one** push with the tag).
+- **Push tag `v*`** → triggers **Publish ReactWoo Geo Core Update** (R2 + API) — this is the release that matters.
+- **Geo Core tests** runs on **pull requests** to `main` only (not on tag pushes). Cursor Cloud WIP PRs on `cursor/*` branches are skipped in CI; agents should **not** push those branches — ship tagged releases on `main` only (see `.cursor/rules/cursor-git-tagged-releases-only.mdc`).
 
 **Recommended agent sequence (Geo Core):**
 

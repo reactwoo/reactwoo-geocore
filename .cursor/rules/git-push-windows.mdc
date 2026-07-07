@@ -21,6 +21,9 @@ Run **commit**, **tag**, and **push** as **separate** commands (do not chain wit
 
 ## Never
 
+- Push `main` or any branch **without** the release tag in the same `git push origin main "vVERSION"` command.
+- Push feature branches or `cursor/*` branches to `origin`.
+- Open PRs or use Cursor Cloud auto-PR for WIP — ship tagged releases on `main` only (unless the user explicitly requests a PR).
 - Stop after commit/tag without pushing (CI will not publish).
 - Set `GIT_SSH_COMMAND` unless diagnosing SSH auth (origin is already SSH).
 - Background a push and declare the release complete.

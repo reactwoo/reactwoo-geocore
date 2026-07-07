@@ -65,7 +65,7 @@ class RWGC_Elementor_Assignment_Discovery {
 	 * @param array<int,array<string,mixed>> $assignments Output list.
 	 * @return void
 	 */
-	private static function walk_elements( array $elements, array &$assignments ) {
+	private static function walk_elements( array $elements, array &$assignments, $parent_assignment_id = '' ) {
 		foreach ( $elements as $element ) {
 			if ( ! is_array( $element ) ) {
 				continue;
@@ -77,17 +77,19 @@ class RWGC_Elementor_Assignment_Discovery {
 				$settings = RWGC_Surface_Settings::normalize( $settings );
 			}
 
-			$label = self::element_label( $element, $settings );
+			$label         = self::element_label( $element, $settings );
+			$assignment_id = 'elementor:' . $el_type . ':' . $el_id;
 			self::append_surface_assignment(
 				$assignments,
-				'elementor:' . $el_type . ':' . $el_id,
+				$assignment_id,
 				$el_type,
 				$label,
-				$settings
+				$settings,
+				$parent_assignment_id
 			);
 
 			if ( ! empty( $element['elements'] ) && is_array( $element['elements'] ) ) {
-				self::walk_elements( $element['elements'], $assignments );
+				self::walk_elements( $element['elements'], $assignments, $assignment_id );
 			}
 		}
 	}
@@ -97,10 +99,11 @@ class RWGC_Elementor_Assignment_Discovery {
 	 * @param string                         $assignment_id Stable id.
 	 * @param string                         $element_type  section|container|widget|document.
 	 * @param string                         $label         Human label.
-	 * @param array<string,mixed>            $settings      Elementor settings.
+	 * @param array<string,mixed>            $settings              Elementor settings.
+	 * @param string                         $parent_assignment_id  Parent assignment id (if nested).
 	 * @return void
 	 */
-	private static function append_surface_assignment( array &$assignments, $assignment_id, $element_type, $label, array $settings ) {
+	private static function append_surface_assignment( array &$assignments, $assignment_id, $element_type, $label, array $settings, $parent_assignment_id = '' ) {
 		if ( ! self::has_visibility_rule_assignment( $settings ) ) {
 			return;
 		}
@@ -117,8 +120,9 @@ class RWGC_Elementor_Assignment_Discovery {
 
 		$post = get_post( $rule_id );
 		$assignments[] = array(
-			'assignment_id' => $assignment_id,
-			'source'        => 'elementor',
+			'assignment_id'        => $assignment_id,
+			'parent_assignment_id' => (string) $parent_assignment_id,
+			'source'               => 'elementor',
 			'element_type'  => sanitize_key( $element_type ),
 			'element_label' => $label,
 			'rule_id'       => $rule_id,

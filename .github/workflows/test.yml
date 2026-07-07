@@ -12,6 +12,8 @@ permissions:
 
 jobs:
   test:
+    # Cursor Cloud opens WIP PRs on cursor/* branches — we ship tagged releases on main only.
+    if: ${{ !startsWith(github.head_ref, 'cursor/') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

@@ -25,6 +25,8 @@ Use plain git push (see `.cursor/rules/git-push-windows.mdc`). Do **not** wrap w
 ## Do not
 
 - Mark a release complete after commit/tag only.
+- Push `main` or any branch without the matching `vVERSION` tag in the same push.
+- Push `cursor/*` or other feature branches; open PRs from Cursor unless the user explicitly asks.
 - Chain `commit && tag && archive && push && push` in one line.
 - Run two pushes to origin unless the combined push failed and you are retrying only the missing ref.
 - Run local `git archive` before tag push unless the user needs a zip before CI (tag push runs `publish-update.yml`).
