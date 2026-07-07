@@ -423,12 +423,14 @@ class RWGC_Visibility_Rule_Tester {
 				$reason  = __( 'Hidden because a parent Elementor section/container is not rendered for this visitor.', 'reactwoo-geocore' );
 			}
 
+			$source = sanitize_key( (string) ( $row['source'] ?? 'elementor' ) );
 			$targets[] = array(
 				'assignment_id'        => $assignment_id,
 				'parent_assignment_id' => (string) ( $row['parent_assignment_id'] ?? '' ),
 				'target_label'         => (string) ( $row['element_label'] ?? '' ),
 				'target_type'          => (string) ( $row['element_type'] ?? '' ),
-				'source'               => (string) ( $row['source'] ?? 'elementor' ),
+				'source'               => $source,
+				'source_label'         => self::assignment_source_label( $source ),
 				'mode'                 => class_exists( 'RWGC_Elementor_Assignment_Discovery', false )
 					? RWGC_Elementor_Assignment_Discovery::mode_api_key( $mode )
 					: $mode,
@@ -653,6 +655,24 @@ class RWGC_Visibility_Rule_Tester {
 			'request_uri'   => isset( $content['url'] ) ? (string) $content['url'] : '',
 			'document_type' => 'manual',
 		);
+	}
+
+	/**
+	 * @param string $source Source slug (elementor, etc.).
+	 * @return string
+	 */
+	private static function assignment_source_label( $source ) {
+		$labels = array(
+			'elementor' => __( 'Elementor', 'reactwoo-geocore' ),
+		);
+		$source = sanitize_key( (string) $source );
+		if ( isset( $labels[ $source ] ) ) {
+			return $labels[ $source ];
+		}
+		if ( '' === $source ) {
+			return '';
+		}
+		return ucwords( str_replace( array( '_', '-' ), ' ', $source ) );
 	}
 
 	/**

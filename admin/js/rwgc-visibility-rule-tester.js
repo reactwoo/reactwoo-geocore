@@ -931,6 +931,25 @@
 			});
 	}
 
+	function formatTargetType(type) {
+		var raw = String(type || '').trim();
+		if (!raw) {
+			return '';
+		}
+		return raw.charAt(0).toUpperCase() + raw.slice(1);
+	}
+
+	function formatSourceLabel(row) {
+		if (row.source_label) {
+			return row.source_label;
+		}
+		var raw = String(row.source || '').trim();
+		if (!raw) {
+			return '';
+		}
+		return raw.charAt(0).toUpperCase() + raw.slice(1).replace(/_/g, ' ');
+	}
+
 	function renderAppliedTargetsTable(targets) {
 		if (!targets || !targets.length) {
 			return '<p class="description">' + esc(labels().noAppliedTargets || 'This rule was evaluated successfully, but it is not applied to any detected section, product, block, popup, or element on this selected content.') + '</p>';
@@ -946,8 +965,8 @@
 			var visible = row.visibility === 'visible';
 			html += '<tr>';
 			html += '<td>' + esc(row.target_label || row.assignment_id || '') + '</td>';
-			html += '<td>' + esc(row.target_type || '') + '</td>';
-			html += '<td>' + esc(row.source || '') + '</td>';
+			html += '<td>' + esc(formatTargetType(row.target_type)) + '</td>';
+			html += '<td>' + esc(formatSourceLabel(row)) + '</td>';
 			html += '<td>' + esc(row.mode_label || row.mode || '') + '</td>';
 			html += '<td class="' + (visible ? 'rwgc-outcome--visible' : 'rwgc-outcome--hidden') + '">' + esc(visible ? (labels().visibleTitle || 'Visible') : (labels().hiddenTitle || 'Hidden')) + '</td>';
 			html += '</tr>';
@@ -1084,7 +1103,10 @@
 		var applied = data.applied_targets || [];
 		var rendered = data.rendered_impacts || [];
 		var isMatch = !!data.matches;
-		var cls = isMatch ? 'rwgc-rule-tester-result--match' : 'rwgc-rule-tester-result--neutral';
+		var hasOutcomes = applied.length > 0 || rendered.length > 0;
+		var cls = isMatch
+			? 'rwgc-rule-tester-result--match'
+			: (hasOutcomes ? 'rwgc-rule-tester-result--neutral' : 'rwgc-rule-tester-result--no-match');
 		var html = '';
 
 		if (data.visibility) {
