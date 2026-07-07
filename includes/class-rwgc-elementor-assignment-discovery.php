@@ -31,23 +31,28 @@ class RWGC_Elementor_Assignment_Discovery {
 			return $out;
 		}
 
-		$raw = (string) get_post_meta( $content_id, '_elementor_data', true );
-		if ( '' !== trim( $raw ) ) {
-			$data = json_decode( $raw, true );
-			if ( is_array( $data ) ) {
-				self::walk_elements( $data, $out['assignments'] );
-			}
-		}
-
-		$page_settings = get_post_meta( $content_id, '_elementor_page_settings', true );
+		$root_parent_assignment_id = '';
+		$page_settings             = get_post_meta( $content_id, '_elementor_page_settings', true );
 		if ( is_array( $page_settings ) ) {
-			self::append_surface_assignment(
+			$document_assignment_id = 'elementor:document:' . $content_id;
+			$document_added         = self::append_surface_assignment(
 				$out['assignments'],
-				'elementor:document:' . $content_id,
+				$document_assignment_id,
 				'document',
 				get_the_title( $content_id ) ?: __( 'Document', 'reactwoo-geocore' ),
 				$page_settings
 			);
+			if ( $document_added ) {
+				$root_parent_assignment_id = $document_assignment_id;
+			}
+		}
+
+		$raw = (string) get_post_meta( $content_id, '_elementor_data', true );
+		if ( '' !== trim( $raw ) ) {
+			$data = json_decode( $raw, true );
+			if ( is_array( $data ) ) {
+				self::walk_elements( $data, $out['assignments'], $root_parent_assignment_id );
+			}
 		}
 
 		/**
@@ -79,7 +84,7 @@ class RWGC_Elementor_Assignment_Discovery {
 
 			$label         = self::element_label( $element, $settings );
 			$assignment_id = 'elementor:' . $el_type . ':' . $el_id;
-			self::append_surface_assignment(
+			$assignment_added = self::append_surface_assignment(
 				$assignments,
 				$assignment_id,
 				$el_type,
@@ -88,8 +93,9 @@ class RWGC_Elementor_Assignment_Discovery {
 				$parent_assignment_id
 			);
 
+			$child_parent_assignment_id = $assignment_added ? $assignment_id : $parent_assignment_id;
 			if ( ! empty( $element['elements'] ) && is_array( $element['elements'] ) ) {
-				self::walk_elements( $element['elements'], $assignments, $assignment_id );
+				self::walk_elements( $element['elements'], $assignments, $child_parent_assignment_id );
 			}
 		}
 	}
@@ -101,15 +107,15 @@ class RWGC_Elementor_Assignment_Discovery {
 	 * @param string                         $label         Human label.
 	 * @param array<string,mixed>            $settings              Elementor settings.
 	 * @param string                         $parent_assignment_id  Parent assignment id (if nested).
-	 * @return void
+	 * @return bool True when an assignment row was appended.
 	 */
 	private static function append_surface_assignment( array &$assignments, $assignment_id, $element_type, $label, array $settings, $parent_assignment_id = '' ) {
 		if ( ! self::has_visibility_rule_assignment( $settings ) ) {
-			return;
+			return false;
 		}
 		$rule_id = self::assigned_rule_id( $settings );
 		if ( $rule_id <= 0 ) {
-			return;
+			return false;
 		}
 		$mode = 'show_if';
 		if ( class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
@@ -131,6 +137,7 @@ class RWGC_Elementor_Assignment_Discovery {
 			'mode_internal' => self::mode_key( $mode ),
 			'mode_label'    => self::mode_label( $mode ),
 		);
+		return true;
 	}
 
 	/**
