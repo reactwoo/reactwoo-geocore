@@ -939,15 +939,28 @@
 		return raw.charAt(0).toUpperCase() + raw.slice(1);
 	}
 
+	function formatSourceSlug(source) {
+		var raw = String(source || '').trim();
+		if (!raw) {
+			return '';
+		}
+		return raw
+			.replace(/[_-]+/g, ' ')
+			.split(/\s+/)
+			.filter(function (word) {
+				return word.length > 0;
+			})
+			.map(function (word) {
+				return word.charAt(0).toUpperCase() + word.slice(1);
+			})
+			.join(' ');
+	}
+
 	function formatSourceLabel(row) {
 		if (row.source_label) {
 			return row.source_label;
 		}
-		var raw = String(row.source || '').trim();
-		if (!raw) {
-			return '';
-		}
-		return raw.charAt(0).toUpperCase() + raw.slice(1).replace(/_/g, ' ');
+		return formatSourceSlug(row.source);
 	}
 
 	function renderAppliedTargetsTable(targets) {
@@ -1039,7 +1052,7 @@
 			}
 			html += '<tr>';
 			html += '<td>' + esc(row.product_name || row.product_id || '') + '</td>';
-			html += '<td>' + esc(row.source_label || row.source || '') + '</td>';
+			html += '<td>' + esc(formatSourceLabel(row)) + '</td>';
 			html += '<td>' + esc(row.rule_label || row.rule_id || '') + '</td>';
 			html += '<td class="' + cls + '">' + esc(outcomeLabel) + '</td>';
 			html += '</tr>';

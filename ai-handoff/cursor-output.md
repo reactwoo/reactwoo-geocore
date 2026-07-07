@@ -2,7 +2,7 @@
 
 ## Status
 
-**done** (Geo Core **v1.8.114** + Geo Commerce **v0.3.24**)
+**done** (Geo Core **v1.8.115** + Geo Commerce **v0.3.24**)
 
 ## Result hierarchy — before / after
 
