@@ -1,92 +1,42 @@
-# Cursor output — Rule Tester result hierarchy + rendered impacts (v1.8.111)
+# Cursor output — Critical bug investigation (v1.8.113)
 
 ## Status
 
 **done**
 
-## Result hierarchy — before / after
+## Bug fixed
 
-| Before | After |
-|--------|-------|
-| Dominant headline: `Rule match: NO MATCH` | **Summary** block: Page match YES/NO, applied targets count, rendered impacts count, visible/hidden tallies |
-| Single “Rule evaluation” section | Separate sections: Page/context evaluation · Applied target detection · Direct assignments · Rendered product impacts |
-| Red “no match” styling when targets exist | Neutral panel styling when page does not match but targets/impacts were found |
-| Generic assignment reasons | Spec copy for show_if / hide_if outcomes |
-
-## Response shape — before / after
-
-**Before (`run()` extras):**
-```json
-{
-  "applied_targets": [],
-  "preview": {},
-  "document_context": {}
-}
-```
-
-**After:**
-```json
-{
-  "result_summary": {
-    "page_match": false,
-    "page_match_label": "NO",
-    "applied_targets_count": 2,
-    "rendered_impacts_count": 1,
-    "visible_outcomes": 1,
-    "hidden_outcomes": 2,
-    "why_page_no_match": ["…"]
-  },
-  "applied_targets": [],
-  "rendered_impacts": [],
-  "rendered_impacts_meta": {
-    "dynamic_query_detected": false,
-    "note": ""
-  }
-}
-```
-
-## Rendered impact collector
-
-- **Geo Core:** `RWGC_Rule_Tester_Rendered_Impacts` — discovers product IDs in post content shortcodes, Woo blocks, and Elementor product widgets; evaluates products with `_geocore_product_rule_ids` matching the selected visibility rule using simulated tester context (no duplicate evaluator logic).
-- **Hook:** `rwgc_rule_tester_collect_rendered_impacts` (+ `rwgc_rule_tester_discover_product_sources` for extensions).
-- **Geo Commerce:** `RWGCM_Rule_Tester_Rendered_Impacts` — reports matching commerce rule actions (`product_visibility`, `price_adjustment`, display overlays) for discovered products when portable targeting matches the selected visibility rule JSON.
-
-## Geo Commerce integration
-
-**Required** — thin hook implementation in `reactwoo-geo-commerce` (no filtering logic duplicated in Geo Core).
+Rule Tester parent-aware Elementor assignment discovery passed every raw Elementor parent ID to descendants, even when that parent had no Geo Core assignment row. `assignment_hidden_by_ancestor()` can only traverse assignment rows, so an assigned widget under an unassigned wrapper could miss a hidden assigned ancestor and be reported as visible even though the frontend would suppress it. Document-level Elementor assignments had the same disconnect from element assignments, while frontend document targeting can suppress the entire rendered document.
 
 ## Files changed
 
-**Geo Core**
-- `includes/class-rwgc-rule-tester-rendered-impacts.php` (new)
-- `includes/class-rwgc-visibility-rule-tester.php` — `result_summary`, `rendered_impacts`, reason copy
-- `includes/class-rwgc-plugin.php`
-- `admin/js/rwgc-visibility-rule-tester.js`
-- `admin/css/rwgc-rule-tester.css`
-- `includes/class-rwgc-visibility-rule-tester-assets.php`
-- `reactwoo-geocore.php`, `readme.txt` → v1.8.111
+- `includes/class-rwgc-elementor-assignment-discovery.php` — descendants now inherit the nearest assigned ancestor ID through unassigned wrappers, seeded by an assigned document root when present.
+- `tests/Targeting/RWGCElementorAssignmentDiscoveryTest.php` — regression tests for assigned section → unassigned container → assigned widget and document assignment → unassigned container → assigned widget.
 
-**Geo Commerce**
-- `includes/class-rwgcm-rule-tester-rendered-impacts.php` (new)
-- `includes/class-rwgcm-plugin.php`
+## What was not changed
 
-## Commands run
+- No broad Rule Tester or Elementor frontend refactor.
+- Did not change rendered product impact dynamic query behavior; a lower-severity tester completeness concern remains around serialized product rule meta lookup.
+
+## Commands run and results
 
 ```bash
-php -l includes/class-rwgc-rule-tester-rendered-impacts.php
-php -l includes/class-rwgc-visibility-rule-tester.php
-php -l includes/class-rwgcm-rule-tester-rendered-impacts.php
-npm run package:zip   # geocore
+sudo apt-get update && sudo apt-get install -y php-cli php-xml php-mbstring composer
+composer install --no-interaction --prefer-dist
+php -l includes/class-rwgc-elementor-assignment-discovery.php
+php -l tests/Targeting/RWGCElementorAssignmentDiscoveryTest.php
+vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr tests/Targeting/RWGCElementorAssignmentDiscoveryTest.php
+git checkout -- vendor/autoload.php vendor/composer/InstalledVersions.php vendor/composer/LICENSE vendor/composer/autoload_classmap.php vendor/composer/autoload_psr4.php vendor/composer/autoload_real.php vendor/composer/autoload_static.php vendor/composer/installed.json vendor/composer/installed.php vendor/composer/platform_check.php
+php -l includes/class-rwgc-elementor-assignment-discovery.php
+php -l tests/Targeting/RWGCElementorAssignmentDiscoveryTest.php
 ```
 
-## Remaining limitations
+Results:
 
-- Dynamic Woo shortcodes (`[products category="…"]`, featured/best-selling, etc.) set `dynamic_query_detected` and show preview note — static ID parsing only.
-- Geo Commerce collector only links to the selected visibility rule when portable JSON matches exactly.
-- Commerce `product_visibility` storefront hook may still be partial; tester reports rule outcomes from rule store, not live `woocommerce_product_is_visible` filter.
+- PHP lint passed for changed files.
+- Isolated PHPUnit regression passed: `OK (2 tests, 10 assertions)`.
+- Composer-generated tracked vendor metadata was restored after validation.
 
-## Acceptance retest
+## Remaining errors
 
-1. Free Delivery + Home Variant + non-matching traffic → **Page match: NO**, **Applied targets found: 2**, targets table with correct show/hide reasons, no misleading “rule missing” headline.
-2. Product in shortcode with geo rule meta → listed under **Rendered product impacts** with product name, source, outcome, reason.
-3. Preview link unchanged.
+None for the fixed issue.
