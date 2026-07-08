@@ -68,6 +68,13 @@ $platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_pla
 							<?php if ( ! empty( $row['preview_url'] ) ) : ?>
 								<a class="button button-small" href="<?php echo esc_url( (string) $row['preview_url'] ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Preview', 'reactwoo-geocore' ); ?></a>
 							<?php endif; ?>
+							<?php if ( function_exists( 'rwgc_can_link_ux_opportunity_review' ) && rwgc_can_link_ux_opportunity_review() && ! empty( $row['variant_id'] ) ) : ?>
+								<a class="button button-small" href="<?php echo esc_url( rwgc_ux_opportunity_review_admin_url( array(
+									'variant_page_id' => (int) $row['variant_id'],
+									'page_id'         => (int) ( $row['master_id'] ?? 0 ),
+									'source'          => 'variants',
+								) ) ); ?>"><?php esc_html_e( 'Review this variant with AI', 'reactwoo-geocore' ); ?></a>
+							<?php endif; ?>
 						</td>
 					</tr>
 				<?php endforeach; ?>

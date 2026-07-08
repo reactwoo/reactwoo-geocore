@@ -79,6 +79,38 @@ if ( ! function_exists( 'rwgc_ux_opportunity_review_admin_url' ) ) {
 	}
 }
 
+if ( ! function_exists( 'rwgc_is_geo_ai_active' ) ) {
+	/**
+	 * Whether the Geo AI satellite plugin is installed and active.
+	 *
+	 * @return bool
+	 */
+	function rwgc_is_geo_ai_active() {
+		if ( ! class_exists( 'RWGA_Plugin', false ) ) {
+			return false;
+		}
+		$map = function_exists( 'rwgc_get_suite_capability_map' ) ? rwgc_get_suite_capability_map() : array();
+		return ! empty( $map['geo_ai_active'] );
+	}
+}
+
+if ( ! function_exists( 'rwgc_can_link_ux_opportunity_review' ) ) {
+	/**
+	 * Whether the current user may open Geo AI UX opportunity review screens.
+	 *
+	 * @return bool
+	 */
+	function rwgc_can_link_ux_opportunity_review() {
+		if ( ! rwgc_is_geo_ai_active() || ! function_exists( 'rwgc_ux_opportunity_review_admin_url' ) ) {
+			return false;
+		}
+		if ( ! class_exists( 'RWGA_Capabilities', false ) ) {
+			return false;
+		}
+		return current_user_can( RWGA_Capabilities::CAP_VIEW_REPORTS );
+	}
+}
+
 if ( ! function_exists( 'rwgc_advanced_targeting_enabled' ) ) {
 	/**
 	 * Whether multi-condition portable targeting UI is available (GeoCore Pro).

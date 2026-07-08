@@ -175,6 +175,9 @@ $rwgc_render_rule_chips = static function ( array $chips ) {
 									<div class="rwgc-rule-row__actions">
 										<a class="rwgc-btn rwgc-btn--primary rwgc-btn--sm" href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit rule', 'reactwoo-geocore' ); ?></a>
 										<button type="button" class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" data-rwgc-open-rule-tester data-rule-id="<?php echo esc_attr( (string) $rule_id ); ?>"><?php esc_html_e( 'Test', 'reactwoo-geocore' ); ?></button>
+										<?php if ( function_exists( 'rwgc_can_link_ux_opportunity_review' ) && rwgc_can_link_ux_opportunity_review() ) : ?>
+											<a class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" href="<?php echo esc_url( rwgc_ux_opportunity_review_admin_url( array( 'rule_id' => (string) $rule_id, 'source' => 'rules' ) ) ); ?>"><?php esc_html_e( 'Review this rule with AI', 'reactwoo-geocore' ); ?></a>
+										<?php endif; ?>
 										<a class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" href="<?php echo esc_url( $dup_url ); ?>"><?php esc_html_e( 'Duplicate', 'reactwoo-geocore' ); ?></a>
 										<a class="rwgc-btn rwgc-btn--danger rwgc-btn--sm" href="<?php echo esc_url( $del_url ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Move this rule to trash?', 'reactwoo-geocore' ) ); ?>');"><?php esc_html_e( 'Trash', 'reactwoo-geocore' ); ?></a>
 									</div>

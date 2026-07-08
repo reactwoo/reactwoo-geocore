@@ -54,6 +54,9 @@ $page_title            = $is_new ? __( 'Add visibility rule', 'reactwoo-geocore'
 			<button type="submit" class="button button-primary" form="rwgc-visibility-rule-form"><?php echo esc_html( $save_label ); ?></button>
 			<a class="button" href="#rwgc-rule-logic-preview"><?php esc_html_e( 'Preview logic', 'reactwoo-geocore' ); ?></a>
 			<button type="button" class="button" data-rwgc-open-rule-tester><?php esc_html_e( 'Test rule', 'reactwoo-geocore' ); ?></button>
+			<?php if ( $post_id > 0 && function_exists( 'rwgc_can_link_ux_opportunity_review' ) && rwgc_can_link_ux_opportunity_review() ) : ?>
+				<a class="button" href="<?php echo esc_url( rwgc_ux_opportunity_review_admin_url( array( 'rule_id' => (string) $post_id, 'source' => 'rules' ) ) ); ?>"><?php esc_html_e( 'Review this rule with AI', 'reactwoo-geocore' ); ?></a>
+			<?php endif; ?>
 		</div>
 	</div>
 

@@ -36,13 +36,29 @@ $platform_shell  = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_pl
 		</div>
 	<?php endif; ?>
 
-	<?php if ( is_array( $ai_provider ) && 'missing' !== ( $ai_provider['status'] ?? '' ) && function_exists( 'rwgc_ux_opportunity_review_admin_url' ) ) : ?>
+	<?php if ( function_exists( 'rwgc_is_geo_ai_active' ) && rwgc_is_geo_ai_active() && function_exists( 'rwgc_ux_opportunity_review_admin_url' ) ) : ?>
+		<?php
+		$suite_map       = function_exists( 'rwgc_get_suite_capability_map' ) ? rwgc_get_suite_capability_map() : array();
+		$geo_ai_licensed = ! empty( $suite_map['geo_ai_licensed'] );
+		$remote_ai       = ! empty( $suite_map['remote_ai_available'] );
+		?>
 		<div class="rwgc-card rwgc-insights-panel" style="margin-bottom:1rem;">
-			<?php RWGC_Admin_UI::render_section_header( __( 'UX opportunity review', 'reactwoo-geocore' ) ); ?>
-			<p class="description"><?php esc_html_e( 'Run a capability-aware UX review for a page, product, or variant. Recommendations respect which Geo suite products are installed and licensed.', 'reactwoo-geocore' ); ?></p>
+			<?php RWGC_Admin_UI::render_section_header( __( 'AI UX Review', 'reactwoo-geocore' ) ); ?>
+			<p class="description"><?php esc_html_e( 'Use Geo AI to find UX and conversion opportunities across targeted pages, variants, and products.', 'reactwoo-geocore' ); ?></p>
+			<ul class="rwga-capability-list" style="display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0 0 12px;padding:0;">
+				<li><span class="rwgc-geo-badge rwgc-geo-badge--success"><?php esc_html_e( 'Local deterministic review available', 'reactwoo-geocore' ); ?></span></li>
+				<li>
+					<span class="rwgc-geo-badge rwgc-geo-badge--<?php echo $remote_ai ? 'success' : 'locked'; ?>">
+						<?php echo $remote_ai ? esc_html__( 'Remote Geo AI connected', 'reactwoo-geocore' ) : esc_html__( 'Remote Geo AI requires valid licence', 'reactwoo-geocore' ); ?>
+					</span>
+				</li>
+				<?php if ( ! $geo_ai_licensed ) : ?>
+					<li><span class="rwgc-geo-badge rwgc-geo-badge--locked"><?php esc_html_e( 'Licence required to run reviews', 'reactwoo-geocore' ); ?></span></li>
+				<?php endif; ?>
+			</ul>
 			<p>
 				<a class="rwgc-btn rwgc-btn--primary" href="<?php echo esc_url( rwgc_ux_opportunity_review_admin_url( array( 'source' => 'insights' ) ) ); ?>">
-					<?php esc_html_e( 'Open UX opportunity review', 'reactwoo-geocore' ); ?>
+					<?php esc_html_e( 'Open UX Review', 'reactwoo-geocore' ); ?>
 				</a>
 			</p>
 		</div>
