@@ -139,7 +139,7 @@
 					title += ' — ' + row.scope_summary;
 				}
 				var $opt = $('<option></option>').val(String(row.id)).text(title);
-				if (disableIncompatible) {
+				if (disableIncompatible && String(row.id) !== current) {
 					$opt.prop('disabled', true);
 				}
 				if (row.compatibility && row.compatibility.reason) {
@@ -155,13 +155,7 @@
 		appendGroup(labels.unavailableGroup || 'Not available for this context', unavailable, true);
 
 		if (current && rowsById[current]) {
-			var rowStatus = rowsById[current].compatibility ? rowsById[current].compatibility.status : 'compatible';
-			if (rowStatus !== 'incompatible') {
-				$select.val(current);
-			} else {
-				$select.val('');
-				persistAppliedRuleId($('#elementor-panel-inner'), '');
-			}
+			$select.val(current);
 		}
 	}
 
@@ -205,8 +199,9 @@
 					return;
 				}
 				if (row && row.compatibility && row.compatibility.status === 'incompatible') {
-					$(this).val('');
-					persistAppliedRuleId($panel, '');
+					var existing = appliedRuleInput($panel);
+					var existingId = existing && existing.length ? String(existing.val() || '') : '';
+					$(this).val(existingId && rowsById[existingId] ? existingId : '');
 					return;
 				}
 				if (row && row.json) {
