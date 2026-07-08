@@ -68,7 +68,7 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$this->assertNotFalse( $incompatible_pos );
 		$incompatible_block = substr( $bind, $incompatible_pos, 360 );
 		$this->assertStringContainsString( 'existingId', $incompatible_block );
-		$this->assertStringNotContainsString( "persistAppliedRuleId($panel, '');", $incompatible_block );
+		$this->assertStringNotContainsString( 'persistAppliedRuleId($panel, \'\');', $incompatible_block );
 	}
 
 	public function test_resolution_hub_sticky_right_sidebar_layout(): void {
