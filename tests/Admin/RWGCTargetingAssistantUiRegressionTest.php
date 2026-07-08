@@ -33,6 +33,15 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 	}
 
 	/**
+	 * @return string
+	 */
+	private function elementor_library_bridge_js() {
+		$path = dirname( __DIR__, 2 ) . '/assets/js/rwgc-elementor-library-bridge.js';
+		$this->assertFileExists( $path );
+		return (string) file_get_contents( $path );
+	}
+
+	/**
 	 * @param string $js     Assistant script source.
 	 * @param string $start  Function name to slice from.
 	 * @param string $end    Function name to slice until.
@@ -44,6 +53,22 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$to = strpos( $js, 'function ' . $end, $from + 1 );
 		$this->assertNotFalse( $to, 'Missing function ' . $end );
 		return substr( $js, $from, $to - $from );
+	}
+
+	public function test_elementor_library_bridge_preserves_incompatible_existing_rule(): void {
+		$js      = $this->elementor_library_bridge_js();
+		$rebuild = $this->js_between( $js, 'rebuildLibrarySelect', 'showCompatibilityNotice' );
+		$bind    = $this->js_between( $js, 'bindLibrarySelect', 'scan' );
+
+		$this->assertStringContainsString( 'disableIncompatible && String(row.id) !== current', $rebuild );
+		$this->assertStringContainsString( '$select.val(current);', $rebuild );
+		$this->assertStringNotContainsString( "persistAppliedRuleId($('#elementor-panel-inner'), '');", $rebuild );
+
+		$incompatible_pos = strpos( $bind, "row.compatibility.status === 'incompatible'" );
+		$this->assertNotFalse( $incompatible_pos );
+		$incompatible_block = substr( $bind, $incompatible_pos, 360 );
+		$this->assertStringContainsString( 'existingId', $incompatible_block );
+		$this->assertStringNotContainsString( 'persistAppliedRuleId($panel, \'\');', $incompatible_block );
 	}
 
 	public function test_resolution_hub_sticky_right_sidebar_layout(): void {
