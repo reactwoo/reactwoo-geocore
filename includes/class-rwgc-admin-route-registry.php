@@ -367,7 +367,7 @@ class RWGC_Admin_Route_Registry {
 				'menu_slug' => 'rwgc-insights-ai',
 				'section'   => 'insights',
 				'route'     => 'ai-opportunities',
-				'label'     => __( 'AI opportunities', 'reactwoo-geocore' ),
+				'label'     => __( 'AI UX Reviewer', 'reactwoo-geocore' ),
 				'order'     => 10,
 			),
 			array(

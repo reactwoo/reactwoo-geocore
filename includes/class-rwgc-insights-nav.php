@@ -52,7 +52,7 @@ class RWGC_Insights_Nav {
 		$items = array(
 			'rwgc-insights-hub'         => __( 'Capability map', 'reactwoo-geocore' ),
 			'rwgc-insights-readiness'   => __( 'Setup', 'reactwoo-geocore' ),
-			'rwgc-insights-ai'          => __( 'AI opportunities', 'reactwoo-geocore' ),
+			'rwgc-insights-ai'          => __( 'AI UX Reviewer', 'reactwoo-geocore' ),
 			'rwgc-usage-audience'       => __( 'Audience', 'reactwoo-geocore' ),
 			'rwgc-usage-campaign'       => __( 'Campaigns', 'reactwoo-geocore' ),
 			'rwgc-insights-experiments' => __( 'Experiences', 'reactwoo-geocore' ),

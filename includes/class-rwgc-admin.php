@@ -284,7 +284,7 @@ class RWGC_Admin {
 				'section'   => 'insights',
 				'route'     => 'ai-opportunities',
 				'menu_slug' => 'rwgc-insights-ai',
-				'label'     => __( 'AI opportunities', 'reactwoo-geocore' ),
+				'label'     => __( 'AI UX Reviewer', 'reactwoo-geocore' ),
 				'order'     => 10,
 				'callback'  => array( 'RWGC_Insights', 'render_ai_opportunities_page' ),
 			)
