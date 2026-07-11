@@ -71,6 +71,13 @@ if ( ! function_exists( 'rwgc_ux_opportunity_review_admin_url' ) ) {
 	 * @return string
 	 */
 	function rwgc_ux_opportunity_review_admin_url( array $args = array() ) {
+		if ( class_exists( 'RWGO_Optimise_Hub', false ) && class_exists( 'RWGO_AI_Module', false ) && RWGO_AI_Module::uses_optimise_hub() ) {
+			unset( $args['page'] );
+			if ( ! isset( $args['source'] ) ) {
+				$args['source'] = 'insights';
+			}
+			return RWGO_Optimise_Hub::tab_url( 'ai-review', $args );
+		}
 		$base = array(
 			'page'   => 'rwga-ux-opportunity-review',
 			'source' => 'insights',
@@ -90,7 +97,13 @@ if ( ! function_exists( 'rwgc_is_geo_ai_active' ) ) {
 			return false;
 		}
 		$map = function_exists( 'rwgc_get_suite_capability_map' ) ? rwgc_get_suite_capability_map() : array();
-		return ! empty( $map['geo_ai_active'] );
+		if ( ! empty( $map['geo_ai_active'] ) ) {
+			return true;
+		}
+		if ( ! empty( $map['optimise']['ai_review'] ) ) {
+			return true;
+		}
+		return false;
 	}
 }
 

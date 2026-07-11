@@ -26,7 +26,19 @@ class RWGC_Suite_Capability_Map {
 			'geo_ai_active'             => self::plugin_active( 'reactwoo-geo-ai/reactwoo-geo-ai.php' ),
 			'geo_ai_licensed'           => false,
 			'geo_optimise_active'       => self::plugin_active( 'reactwoo-geo-optimise/reactwoo-geo-optimise.php' ),
-			'geo_optimise_licensed'     => self::plugin_active( 'reactwoo-geo-optimise/reactwoo-geo-optimise.php' ),
+			'geo_optimise_licensed'     => false,
+			'legacy_geo_ai_detected'    => self::plugin_active( 'reactwoo-geo-ai/reactwoo-geo-ai.php' ),
+			'optimise'                  => array(
+				'active'          => self::plugin_active( 'reactwoo-geo-optimise/reactwoo-geo-optimise.php' ),
+				'version'         => defined( 'RWGO_VERSION' ) ? (string) RWGO_VERSION : '',
+				'license'         => 'inactive',
+				'ai_review'       => false,
+				'recommendations' => false,
+				'drafts'          => false,
+				'experiments'     => self::plugin_active( 'reactwoo-geo-optimise/reactwoo-geo-optimise.php' ),
+				'goals'           => self::plugin_active( 'reactwoo-geo-optimise/reactwoo-geo-optimise.php' ),
+				'reports'         => self::plugin_active( 'reactwoo-geo-optimise/reactwoo-geo-optimise.php' ),
+			),
 			'geo_commerce_active'       => self::plugin_active( 'reactwoo-geo-commerce/reactwoo-geo-commerce.php' ),
 			'geo_commerce_licensed'     => self::plugin_active( 'reactwoo-geo-commerce/reactwoo-geo-commerce.php' ),
 			'woocommerce_active'        => class_exists( 'WooCommerce', false ),
@@ -46,6 +58,10 @@ class RWGC_Suite_Capability_Map {
 
 		if ( $map['geo_ai_active'] && class_exists( 'RWGA_Engine', false ) ) {
 			$map['remote_ai_available'] = (bool) RWGA_Engine::should_try_remote();
+		}
+
+		if ( $map['geo_optimise_active'] && class_exists( 'RWGO_Platform_Client', false ) ) {
+			$map['geo_optimise_licensed'] = RWGO_Platform_Client::is_configured();
 		}
 
 		if ( ! $map['geo_commerce_licensed'] || ! $map['woocommerce_active'] ) {

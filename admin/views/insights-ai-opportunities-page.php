@@ -54,8 +54,8 @@ $geo_ai_active  = function_exists( 'rwgc_is_geo_ai_active' ) && rwgc_is_geo_ai_a
 		);
 		?>
 		<div class="rwgc-card rwgc-insights-panel">
-			<h2><?php esc_html_e( 'Install Geo AI', 'reactwoo-geocore' ); ?></h2>
-			<p class="description"><?php esc_html_e( 'Activate Geo AI to run AI UX reviews, see priority findings, scores, and capability-aware recommendations across your Geo suite.', 'reactwoo-geocore' ); ?></p>
+			<h2><?php esc_html_e( 'Geo Optimise required', 'reactwoo-geocore' ); ?></h2>
+			<p class="description"><?php esc_html_e( 'Activate ReactWoo Geo Optimise to run AI UX reviews, see priority findings, scores, and capability-aware recommendations across your Geo suite.', 'reactwoo-geocore' ); ?></p>
 		</div>
 	<?php endif; ?>
 </div>
