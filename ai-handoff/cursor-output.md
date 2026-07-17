@@ -2,7 +2,7 @@
 
 ## Status
 
-**needs-review** — implementation complete; validation pending.
+**done**
 
 ## Bug and root cause
 
@@ -27,8 +27,11 @@
 
 - Read-only commit and caller-chain inspection: completed.
 - Cross-repository Optimise integration contract check: completed; the v1.8.118 embedded `RWGA_*` compatibility classes are intentional and not a bug.
-- Tests and syntax checks: pending.
+- `php -l includes/class-rwgc-routing.php` — passed.
+- `php -l includes/integrations/class-rwgc-cache-compat.php` — passed.
+- `php -l tests/Targeting/RWGCRuleTesterFrontendPreviewIsolationTest.php` — passed.
+- `vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr tests/Targeting/RWGCRuleTesterFrontendPreviewIsolationTest.php` — passed (2 tests, 2 assertions).
 
 ## Remaining errors
 
-- None known; validation has not run yet.
+- None.
