@@ -40,6 +40,9 @@ class RWGC_Cache_Compat {
 	 * @return void
 	 */
 	public static function maybe_set_country_cookie() {
+		if ( class_exists( 'RWGC_Rule_Tester_Frontend_Preview', false ) && RWGC_Rule_Tester_Frontend_Preview::is_active() ) {
+			return;
+		}
 		if ( headers_sent() || isset( $_COOKIE[ self::COUNTRY_COOKIE ] ) ) {
 			return;
 		}

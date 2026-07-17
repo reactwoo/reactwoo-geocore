@@ -481,6 +481,9 @@ class RWGC_Routing {
 		} elseif ( defined( 'DOING_CRON' ) && DOING_CRON ) {
 			$reason = 'cron';
 			$out    = true;
+		} elseif ( class_exists( 'RWGC_Rule_Tester_Frontend_Preview', false ) && RWGC_Rule_Tester_Frontend_Preview::is_active() ) {
+			$reason = 'rule_tester_preview';
+			$out    = true;
 		} elseif ( is_feed() || is_trackback() || is_robots() || is_preview() ) {
 			$reason = 'feed_trackback_robots_preview';
 			$out    = true;
