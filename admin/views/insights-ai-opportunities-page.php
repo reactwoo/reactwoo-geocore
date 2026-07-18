@@ -31,6 +31,7 @@ $geo_ai_active  = function_exists( 'rwgc_is_geo_ai_active' ) && rwgc_is_geo_ai_a
 		}
 		RWGA_UX_Reviewer_UI::render_workspace(
 			array(
+				'display_mode'     => ! empty( $cards ) ? 'result' : 'fresh',
 				'source'          => 'insights',
 				'page_id'         => isset( $_GET['page_id'] ) ? (int) $_GET['page_id'] : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				'product_id'      => isset( $_GET['product_id'] ) ? (int) $_GET['product_id'] : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
