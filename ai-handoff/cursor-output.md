@@ -1,4 +1,30 @@
-# Cursor output — Rule Tester result hierarchy + rendered impacts
+# Cursor output — Critical bug investigation
+
+## Status
+
+**done** — fixed cached AI UX review results being discarded in the Insights embed.
+
+## Files changed and why
+
+- `admin/views/insights-ai-opportunities-page.php` — selects reviewer `result` mode when the current user has cached review cards; the merged Geo Optimise reviewer clears cards in its default `fresh` mode.
+- `tests/Admin/RWGCInsightsAiOpportunitiesViewTest.php` — verifies cached cards use `result` mode and an empty cache uses `fresh` mode.
+
+## What was not changed
+
+- No Geo Optimise or merged Geo AI code was changed; Geo Core now follows the existing `RWGA_UX_Reviewer_UI::render_workspace()` contract.
+- No version or release metadata was changed.
+
+## Commands run and results
+
+- Validation pending.
+
+## Remaining errors
+
+- None known.
+
+---
+
+# Previous output — Rule Tester result hierarchy + rendered impacts
 
 ## Status
 
