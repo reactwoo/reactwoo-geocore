@@ -16,7 +16,9 @@
 
 ## Commands run and results
 
-- Validation pending.
+- `php -l admin/views/insights-ai-opportunities-page.php` — pass.
+- `php -l tests/Admin/RWGCInsightsAiOpportunitiesViewTest.php` — pass.
+- `vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr tests/Admin/RWGCInsightsAiOpportunitiesViewTest.php` — pass: 2 tests, 4 assertions.
 
 ## Remaining errors
 
