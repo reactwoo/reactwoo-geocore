@@ -1,4 +1,44 @@
-# Cursor output — Rule Tester result hierarchy + rendered impacts
+# Cursor output — Critical bug investigation (2026-07-19)
+
+## Status
+
+**done**
+
+## Bugs fixed
+
+1. Elementor's library bridge cleared `rwgc_applied_visibility_rule_id` while rebuilding the controls whenever an existing rule was marked incompatible. Opening and then saving an Elementor document could silently remove production targeting. Existing incompatible assignments are now preserved as read-only; only an explicit clear or replacement writes the setting.
+2. WooCommerce cart and checkout documents were classified as `other`, which falsely marked cart/checkout-scoped rules incompatible and made the destructive path easy to trigger. Both compatibility classifiers now preserve the specific WooCommerce page type.
+3. `admin/js/rwgc-visibility-rule-preview.js` had orphaned statements and calls to deleted functions, causing a parse-time syntax error on every visibility-rule editor load. The textarea refresh binding is restored as one valid function.
+
+## Files changed
+
+- `assets/js/rwgc-elementor-library-bridge.js` — preserve incompatible existing assignments.
+- `includes/class-rwgc-rule-context-compatibility.php` — identify cart and checkout documents.
+- `includes/class-rwgc-visibility-rule-tester.php` — identify cart and checkout documents.
+- `admin/js/rwgc-visibility-rule-preview.js` — repair the live-preview event binding.
+- `tests/Admin/RWGCElementorLibraryBridgeRegressionTest.php` — lock in non-destructive bridge behavior.
+- `tests/Admin/RWGCVisibilityRulePreviewScriptRegressionTest.php` — lock in the repaired script structure.
+- `tests/Targeting/RWGCRuleContextCompatibilityTest.php` — cover WooCommerce page classifications.
+
+## Not changed
+
+- No rule evaluation, frontend rendering, persistence API, or cross-plugin capability behavior was refactored.
+- Other lower-confidence tester result discrepancies found during audit were not changed.
+
+## Validation
+
+- `node --check assets/js/rwgc-elementor-library-bridge.js` — passed.
+- `node --check admin/js/rwgc-visibility-rule-preview.js` — passed.
+- `php -l` on both changed PHP classes — passed.
+- Focused PHPUnit: 6 tests / 15 assertions, 2 tests / 10 assertions, and 1 test / 4 assertions — all passed.
+
+## Remaining errors
+
+None in the focused validation.
+
+---
+
+# Previous output — Rule Tester result hierarchy + rendered impacts
 
 ## Status
 
