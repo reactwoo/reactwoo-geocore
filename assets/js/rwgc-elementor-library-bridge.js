@@ -155,13 +155,9 @@
 		appendGroup(labels.unavailableGroup || 'Not available for this context', unavailable, true);
 
 		if (current && rowsById[current]) {
-			var rowStatus = rowsById[current].compatibility ? rowsById[current].compatibility.status : 'compatible';
-			if (rowStatus !== 'incompatible') {
-				$select.val(current);
-			} else {
-				$select.val('');
-				persistAppliedRuleId($('#elementor-panel-inner'), '');
-			}
+			// Existing assignments are read-only when incompatible. Never clear
+			// persisted Elementor settings merely by opening the controls.
+			$select.val(current);
 		}
 	}
 
@@ -205,8 +201,6 @@
 					return;
 				}
 				if (row && row.compatibility && row.compatibility.status === 'incompatible') {
-					$(this).val('');
-					persistAppliedRuleId($panel, '');
 					return;
 				}
 				if (row && row.json) {

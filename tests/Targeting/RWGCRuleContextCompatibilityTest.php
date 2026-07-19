@@ -7,6 +7,18 @@
 
 use PHPUnit\Framework\TestCase;
 
+if ( ! function_exists( 'wc_get_page_id' ) ) {
+	/**
+	 * @param string $page Page type.
+	 * @return int
+	 */
+	function wc_get_page_id( $page ) {
+		return isset( $GLOBALS['rwgc_test_wc_page_ids'][ $page ] )
+			? (int) $GLOBALS['rwgc_test_wc_page_ids'][ $page ]
+			: -1;
+	}
+}
+
 /**
  * RWGC_Rule_Context_Compatibility tests.
  */
@@ -94,6 +106,38 @@ class RWGC_Rule_Context_Compatibility_Test extends TestCase {
 			)
 		);
 		$this->assertSame( 'compatible', $result['status'] );
+	}
+
+	/**
+	 * @return void
+	 */
+	public function test_woocommerce_cart_and_checkout_pages_keep_specific_page_types() {
+		$GLOBALS['rwgc_test_wc_page_ids'] = array(
+			'shop'     => 10,
+			'cart'     => 20,
+			'checkout' => 30,
+		);
+
+		$method = new ReflectionMethod( RWGC_Rule_Context_Compatibility::class, 'infer_page_type_for_post' );
+		$method->setAccessible( true );
+
+		$cart            = new class() extends WP_Post {
+			/** @var string */
+			public $post_type = 'page';
+		};
+		$cart->ID        = 20;
+		$checkout        = new class() extends WP_Post {
+			/** @var string */
+			public $post_type = 'page';
+		};
+		$checkout->ID    = 30;
+
+		$this->assertSame( 'cart', $method->invoke( null, $cart ) );
+		$this->assertSame( 'checkout', $method->invoke( null, $checkout ) );
+
+		require_once dirname( __DIR__, 2 ) . '/includes/class-rwgc-visibility-rule-tester.php';
+		$this->assertSame( 'cart', RWGC_Visibility_Rule_Tester::page_type_for_post_public( $cart ) );
+		$this->assertSame( 'checkout', RWGC_Visibility_Rule_Tester::page_type_for_post_public( $checkout ) );
 	}
 
 	/**

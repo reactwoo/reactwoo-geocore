@@ -847,8 +847,12 @@ class RWGC_Visibility_Rule_Tester {
 			return 'product';
 		}
 		if ( 'page' === $post->post_type ) {
-			if ( function_exists( 'wc_get_page_id' ) && (int) wc_get_page_id( 'shop' ) === (int) $post->ID ) {
-				return 'shop';
+			if ( function_exists( 'wc_get_page_id' ) ) {
+				foreach ( array( 'shop', 'cart', 'checkout' ) as $woocommerce_page_type ) {
+					if ( (int) wc_get_page_id( $woocommerce_page_type ) === (int) $post->ID ) {
+						return $woocommerce_page_type;
+					}
+				}
 			}
 			if ( (int) get_option( 'page_on_front' ) === (int) $post->ID ) {
 				return 'homepage';
