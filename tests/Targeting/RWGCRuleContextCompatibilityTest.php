@@ -22,7 +22,7 @@ if ( ! function_exists( 'wc_get_page_id' ) ) {
 /**
  * RWGC_Rule_Context_Compatibility tests.
  */
-class RWGC_Rule_Context_Compatibility_Test extends TestCase {
+class RWGCRuleContextCompatibilityTest extends TestCase {
 
 	/**
 	 * @return void
