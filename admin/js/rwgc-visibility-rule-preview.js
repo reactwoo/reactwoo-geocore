@@ -99,9 +99,7 @@
 		});
 	}
 
-	document.addEventListener('DOMContentLoaded', function () {
-		bindTextareaRefresh();
-	});
+	function bindTextareaRefresh() {
 		var textarea = document.getElementById('rwgc_portable_targeting');
 		if (!textarea) {
 			return;
@@ -117,8 +115,5 @@
 		textarea.addEventListener('change', schedule);
 	}
 
-	document.addEventListener('DOMContentLoaded', function () {
-		bindTestPanel();
-		bindTextareaRefresh();
-	});
+	document.addEventListener('DOMContentLoaded', bindTextareaRefresh);
 })(window, document);
