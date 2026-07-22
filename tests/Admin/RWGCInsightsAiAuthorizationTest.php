@@ -29,21 +29,31 @@ class RWGCInsightsAiAuthorizationTest extends TestCase {
 
 	private function boot_view_dependencies(): void {
 		if ( ! class_exists( 'RWGA_Plugin', false ) ) {
-			class RWGA_Plugin {}
+			class_alias( get_class( new class() {} ), 'RWGA_Plugin' );
 		}
 
 		if ( ! class_exists( 'RWGA_Capabilities', false ) ) {
-			class RWGA_Capabilities {
-				const CAP_VIEW_REPORTS = 'rwga_view_ai_reports';
-			}
+			class_alias(
+				get_class(
+					new class() {
+						const CAP_VIEW_REPORTS = 'rwga_view_ai_reports';
+					}
+				),
+				'RWGA_Capabilities'
+			);
 		}
 
 		if ( ! class_exists( 'RWGC_Suite_Capability_Map', false ) ) {
-			class RWGC_Suite_Capability_Map {
-				public static function get_map() {
-					return array( 'geo_ai_active' => true );
-				}
-			}
+			class_alias(
+				get_class(
+					new class() {
+						public static function get_map() {
+							return array( 'geo_ai_active' => true );
+						}
+					}
+				),
+				'RWGC_Suite_Capability_Map'
+			);
 		}
 
 		if ( ! function_exists( 'current_user_can' ) ) {
@@ -73,23 +83,33 @@ class RWGCInsightsAiAuthorizationTest extends TestCase {
 		}
 
 		if ( ! class_exists( 'RWGC_Admin_UI', false ) ) {
-			class RWGC_Admin_UI {
-				public static function render_page_header( $title, $description ) {
-					unset( $title, $description );
-				}
-			}
+			class_alias(
+				get_class(
+					new class() {
+						public static function render_page_header( $title, $description ) {
+							unset( $title, $description );
+						}
+					}
+				),
+				'RWGC_Admin_UI'
+			);
 		}
 
 		if ( ! class_exists( 'RWGA_UX_Reviewer_UI', false ) ) {
-			class RWGA_UX_Reviewer_UI {
-				public static $render_calls = 0;
-				public static $workspace_args = array();
+			class_alias(
+				get_class(
+					new class() {
+						public static $render_calls = 0;
+						public static $workspace_args = array();
 
-				public static function render_workspace( array $args = array() ) {
-					self::$render_calls++;
-					self::$workspace_args = $args;
-				}
-			}
+						public static function render_workspace( array $args = array() ) {
+							self::$render_calls++;
+							self::$workspace_args = $args;
+						}
+					}
+				),
+				'RWGA_UX_Reviewer_UI'
+			);
 		}
 
 		require_once dirname( __DIR__, 2 ) . '/includes/functions-rwgc.php';

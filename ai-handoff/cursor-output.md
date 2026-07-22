@@ -21,6 +21,7 @@
 - `vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr tests/Admin/RWGCInsightsAiAuthorizationTest.php` — pass: 2 tests, 4 assertions.
 - `vendor/bin/phpunit -c phpunit.xml.dist --stderr` — the new tests pass; the suite finishes with 7 pre-existing failures in `RWGCTargetingAssistantUiRegressionTest` against unchanged targeting-assistant JavaScript.
 - Review identified that the first test implementation defined doubles during PHPUnit discovery; they now initialize only inside isolated test processes.
+- First containment validation exposed that PHP rejects named class declarations nested in a test method; doubles now use runtime `class_alias()` values instead.
 
 ## Remaining errors
 
