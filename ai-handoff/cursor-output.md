@@ -1,4 +1,30 @@
-# Cursor output — Rule Tester result hierarchy + rendered impacts
+# Cursor output — Critical bug investigation
+
+## Status
+
+**needs-review** — fixed the Insights AI UX Reviewer capability bypass; validation pending.
+
+## Files changed and why
+
+- `admin/views/insights-ai-opportunities-page.php` — requires Geo AI's report-view capability before loading the embedded reviewer or cached findings.
+- `tests/Admin/RWGCInsightsAiAuthorizationTest.php` — covers denied and authorized users.
+
+## What was not changed
+
+- Geo AI workflow execution permissions and standalone pages were not changed.
+- No release/version metadata or unrelated open critical-bug fixes were changed.
+
+## Commands run and results
+
+- Validation not run yet.
+
+## Remaining errors
+
+- Focused and full test validation pending.
+
+---
+
+# Previous output — Rule Tester result hierarchy + rendered impacts
 
 ## Status
 
