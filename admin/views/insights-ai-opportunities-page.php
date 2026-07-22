@@ -11,6 +11,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
 $geo_ai_active  = function_exists( 'rwgc_is_geo_ai_active' ) && rwgc_is_geo_ai_active();
+$reviewer_ready = $geo_ai_active && class_exists( 'RWGA_UX_Reviewer_UI', false );
+$can_view       = $reviewer_ready
+	&& function_exists( 'rwgc_can_link_ux_opportunity_review' )
+	&& rwgc_can_link_ux_opportunity_review();
 ?>
 <div class="wrap rwgc-wrap rwgc-suite rwgc-insights-dashboard rwgc-insights-ai-reviewer">
 	<?php
@@ -19,7 +23,7 @@ $geo_ai_active  = function_exists( 'rwgc_is_geo_ai_active' ) && rwgc_is_geo_ai_a
 	}
 	?>
 
-	<?php if ( $geo_ai_active && class_exists( 'RWGA_UX_Reviewer_UI', false ) ) : ?>
+	<?php if ( $can_view ) : ?>
 		<?php
 		$uid = get_current_user_id();
 		$cards = array();
@@ -46,6 +50,17 @@ $geo_ai_active  = function_exists( 'rwgc_is_geo_ai_active' ) && rwgc_is_geo_ai_a
 			)
 		);
 		?>
+	<?php elseif ( $reviewer_ready ) : ?>
+		<?php
+		RWGC_Admin_UI::render_page_header(
+			__( 'AI UX Reviewer', 'reactwoo-geocore' ),
+			__( 'Review targeted pages, variants, products, and rules for UX and conversion opportunities.', 'reactwoo-geocore' )
+		);
+		?>
+		<div class="rwgc-card rwgc-insights-panel">
+			<h2><?php esc_html_e( 'Access restricted', 'reactwoo-geocore' ); ?></h2>
+			<p class="description"><?php esc_html_e( 'You do not have permission to view AI UX reviews.', 'reactwoo-geocore' ); ?></p>
+		</div>
 	<?php else : ?>
 		<?php
 		RWGC_Admin_UI::render_page_header(
