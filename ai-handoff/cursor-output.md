@@ -2,7 +2,7 @@
 
 ## Status
 
-**needs-review** — fixed the Insights AI UX Reviewer capability bypass; isolated test-double validation pending.
+**done** — fixed the Insights AI UX Reviewer capability bypass.
 
 ## Files changed and why
 
@@ -22,11 +22,11 @@
 - `vendor/bin/phpunit -c phpunit.xml.dist --stderr` — the new tests pass; the suite finishes with 7 pre-existing failures in `RWGCTargetingAssistantUiRegressionTest` against unchanged targeting-assistant JavaScript.
 - Review identified that the first test implementation defined doubles during PHPUnit discovery; they now initialize only inside isolated test processes.
 - First containment validation exposed that PHP rejects named class declarations nested in a test method; doubles now use runtime `class_alias()` values instead.
+- Re-ran focused and full PHPUnit after containment changes; the focused test passes and the full suite has only the same 7 unrelated failures.
 
 ## Remaining errors
 
 - Full-suite baseline: 7 unrelated targeting-assistant UI regression assertions fail because expected helper names/strings are absent from unchanged `admin/js/rwgc-targeting-assistant.js`.
-- Re-run the isolated regression test after test-double containment changes.
 
 ---
 
