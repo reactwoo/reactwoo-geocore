@@ -2,7 +2,7 @@
 
 ## Status
 
-**needs-review** — fixed the Insights AI UX Reviewer capability bypass; validation pending.
+**done** — fixed the Insights AI UX Reviewer capability bypass.
 
 ## Files changed and why
 
@@ -16,11 +16,14 @@
 
 ## Commands run and results
 
-- Validation not run yet.
+- `php -l admin/views/insights-ai-opportunities-page.php` — pass.
+- `php -l tests/Admin/RWGCInsightsAiAuthorizationTest.php` — pass.
+- `vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr tests/Admin/RWGCInsightsAiAuthorizationTest.php` — pass: 2 tests, 4 assertions.
+- `vendor/bin/phpunit -c phpunit.xml.dist --stderr` — the new tests pass; the suite finishes with 7 pre-existing failures in `RWGCTargetingAssistantUiRegressionTest` against unchanged targeting-assistant JavaScript.
 
 ## Remaining errors
 
-- Focused and full test validation pending.
+- Full-suite baseline: 7 unrelated targeting-assistant UI regression assertions fail because expected helper names/strings are absent from unchanged `admin/js/rwgc-targeting-assistant.js`.
 
 ---
 
