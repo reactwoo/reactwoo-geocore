@@ -229,7 +229,16 @@
 		return out;
 	}
 
-	function seedPopupTargetCardResolutions( card, idx, id, label ) {
+	function clearTargetCardResolutions( idx ) {
+		var prefix = cardKey( idx ) + '|target|';
+		Object.keys( state.cardResolutions ).forEach( function ( key ) {
+			if ( key.indexOf( prefix ) === 0 ) {
+				delete state.cardResolutions[ key ];
+			}
+		} );
+	}
+
+	function seedPopupTargetCardResolutions( card, idx, id, label, extra ) {
 		if ( ! id ) {
 			return;
 		}
@@ -238,10 +247,20 @@
 			id: String( id ),
 			label: label || '',
 		};
+		if ( extra && extra.created_by_assistant ) {
+			resolution.created_by_assistant = true;
+		}
+		if ( extra && extra.created_status ) {
+			resolution.created_status = extra.created_status;
+		}
+		if ( extra && extra.edit_url ) {
+			resolution.edit_url = extra.edit_url;
+		}
+		// Always overwrite every target raw alias for this card. Skipping existing
+		// keys left stale auto-match IDs under requiredResolutions.raw after Change popup.
+		clearTargetCardResolutions( idx );
 		popupTargetRawCandidates( card, idx ).forEach( function ( raw ) {
-			if ( ! fieldResolution( idx, 'target', raw ) ) {
-				state.cardResolutions[ fieldKey( idx, 'target', raw ) ] = resolution;
-			}
+			state.cardResolutions[ fieldKey( idx, 'target', raw ) ] = resolution;
 		} );
 	}
 
@@ -2358,16 +2377,12 @@
 		if ( ! card ) {
 			return;
 		}
-		var raw = rawKey || targetFieldRaw( card, idx );
-		var resolution = {
-			kind: 'chosen',
-			id: String( target.id || '' ),
-			label: target.label || '',
+		var raw = targetFieldRaw( card, idx ) || rawKey || '';
+		var resolutionExtra = {
 			created_by_assistant: !! target.created_by_assistant,
 			created_status: target.created_status || '',
 			edit_url: target.edit_url || '',
 		};
-		state.cardResolutions[ fieldKey( idx, 'target', raw ) ] = resolution;
 		if ( ! card.target ) {
 			card.target = {};
 		}
@@ -2386,8 +2401,23 @@
 		if ( target.edit_url ) {
 			card.target.edit_url = target.edit_url;
 		}
-		seedPopupTargetCardResolutions( card, idx, target.id, target.label || card.target.label );
-		recordConditionLearning( idx, 'target', raw, resolution );
+		seedPopupTargetCardResolutions(
+			card,
+			idx,
+			target.id,
+			target.label || card.target.label,
+			resolutionExtra
+		);
+		recordConditionLearning(
+			idx,
+			'target',
+			raw,
+			state.cardResolutions[ fieldKey( idx, 'target', raw ) ] || {
+				kind: 'chosen',
+				id: String( target.id || '' ),
+				label: target.label || '',
+			}
+		);
 	}
 
 	function syncProposalPayload() {
@@ -2840,7 +2870,11 @@
 		if ( ! card ) {
 			return;
 		}
-		var detected = raw || ( card.target && card.target.raw ) || ( card.target && card.target.label ) || '';
+		var detected = targetFieldRaw( card, idx )
+			|| raw
+			|| ( card.target && card.target.raw )
+			|| ( card.target && card.target.label )
+			|| '';
 		state.popupResolver = {
 			mode: 'popup',
 			view: initialView || 'start',
@@ -3293,7 +3327,7 @@
 		if ( ! card.uses_shared_target && ( t.raw || ( t.resolved && t.resolved.name ) ) ) {
 			var targetValue = ( t.inherited && t.inheritedFrom )
 				? ( ( i18n.cardSameAs || 'Same as' ) + ' ' + t.inheritedFrom )
-				: t.raw;
+				: ( t.type === 'popup' ? ( targetFieldRaw( card, idx ) || t.raw ) : t.raw );
 			var targetReq = ( card.requiredResolutions || [] ).find( function ( r ) {
 				return r.field === 'target';
 			} );
@@ -3857,10 +3891,15 @@
 			if ( ! visuallyResolved ) {
 				return;
 			}
-			var exported = collected.some( function ( row ) {
-				return row.card === idx && row.field === 'target' && row.id;
+			var exported = null;
+			collected.some( function ( row ) {
+				if ( row.card === idx && row.field === 'target' && row.id ) {
+					exported = row;
+					return true;
+				}
+				return false;
 			} );
-			if ( ! exported ) {
+			if ( ! exported || String( exported.id ) !== String( id ) ) {
 				mismatches.push( {
 					card: idx,
 					field: 'target',
