@@ -343,19 +343,19 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 	public function test_popup_retarget_overwrites_all_target_resolution_aliases(): void {
 		$js = $this->assistant_js();
 
-		$seed = $this->js_between( $js, 'function seedPopupTargetCardResolutions', 'function popupTargetResolvedFromCard' );
+		$seed = $this->js_between( $js, 'seedPopupTargetCardResolutions', 'popupTargetResolvedFromCard' );
 		$this->assertStringContainsString( 'function clearTargetCardResolutions', $js );
 		$this->assertStringContainsString( 'clearTargetCardResolutions( idx )', $seed );
 		$this->assertStringNotContainsString( 'if ( ! fieldResolution( idx, \'target\', raw ) )', $seed );
 
-		$update = $this->js_between( $js, 'function updateActionTargetFromResolution', 'function syncProposalPayload' );
+		$update = $this->js_between( $js, 'updateActionTargetFromResolution', 'syncProposalPayload' );
 		$this->assertStringContainsString( 'targetFieldRaw( card, idx )', $update );
 		$this->assertStringContainsString( 'resolutionExtra', $update );
 
-		$open = $this->js_between( $js, 'function openPopupTargetResolver', 'function openFirstUnresolvedDrawer' );
+		$open = $this->js_between( $js, 'openPopupTargetResolver', 'openFirstUnresolvedDrawer' );
 		$this->assertStringContainsString( 'targetFieldRaw( card, idx )', $open );
 
-		$mismatch = $this->js_between( $js, 'function executePayloadTargetMismatches', 'function showTargetExecuteMismatchMessage' );
+		$mismatch = $this->js_between( $js, 'executePayloadTargetMismatches', 'showTargetExecuteMismatchMessage' );
 		$this->assertStringContainsString( 'String( exported.id ) !== String( id )', $mismatch );
 	}
 
