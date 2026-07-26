@@ -149,6 +149,10 @@ class RWGC_Routing {
 		);
 
 		// Also support Elementor-only editing flow (without Gutenberg sidebar save).
+		// Elementor SWITCHER default/off is ""; only honor an explicit "yes".
+		// An empty/absent Elementor value must defer to Suite/post-meta routing —
+		// otherwise a normal Elementor Update after Suite variant setup silently
+		// disables redirects while _rwgc_route_enabled remains "1".
 		$elementor_settings = get_post_meta( $page_id, '_elementor_page_settings', true );
 		if ( is_array( $elementor_settings ) && ! empty( $elementor_settings['rwgc_route_enabled'] ) && 'yes' === (string) $elementor_settings['rwgc_route_enabled'] ) {
 			$config['enabled'] = true;
@@ -161,8 +165,6 @@ class RWGC_Routing {
 			if ( isset( $elementor_settings['rwgc_route_country_iso2'] ) ) {
 				$config['country_iso2'] = strtoupper( sanitize_text_field( (string) $elementor_settings['rwgc_route_country_iso2'] ) );
 			}
-		} elseif ( is_array( $elementor_settings ) && isset( $elementor_settings['rwgc_route_enabled'] ) && '' === (string) $elementor_settings['rwgc_route_enabled'] ) {
-			$config['enabled'] = false;
 		}
 
 		return self::sanitize_config( $config, $page_id );
