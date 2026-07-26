@@ -1,123 +1,53 @@
-# Cursor output — Rule Tester result hierarchy + rendered impacts
+# Cursor output — critical bug hunt (v1.8.118 / 934c590)
 
 ## Status
 
-**done** (Geo Core **v1.8.115** + Geo Commerce **v0.3.24**)
+**needs-review** — 1 NEW critical candidate (not covered by open PRs #1–#44; distinct from rejected IP spoofing)
 
-## Result hierarchy — before / after
+## Finding
 
-| Before | After |
-|--------|-------|
-| Dominant headline: `Rule match: NO MATCH` | **Summary** block: Page match YES/NO, applied targets count, rendered impacts count, visible/hidden tallies |
-| Single “Rule evaluation” section | Separate sections: Page/context evaluation · Applied target detection · Direct assignments · Rendered product impacts |
-| Red “no match” styling even when targets exist | Neutral panel when page does not match but direct targets or rendered impacts were found; amber only when nothing was found |
-| Generic assignment reasons | Spec copy for show_if / hide_if outcomes |
-| Source column showed raw slugs (`elementor`) | Human labels (`Elementor`) via `source_label` + JS formatter |
+### Elementor empty `rwgc_route_enabled` silently disables Suite/post-meta page routing
 
-## Direct assignment detection
+- **Files:** `includes/class-rwgc-routing.php` (`get_page_route_config`), `includes/class-rwgc-elementor.php` (document SWITCHER `rwgc_route_enabled`, default `''`)
+- **Trigger:**
+  1. Create a country variant via Suite / `RWGC_Variant_Manager` (post meta `_rwgc_route_enabled=1` on master).
+  2. Open the master page in Elementor → Document Settings → Advanced → Geo Visibility.
+  3. Leave **Enable Page Variant Routing** Off (default) and Update, **or** toggle it On then Off and Update.
+  4. Elementor persists `rwgc_route_enabled: ""` in `_elementor_page_settings`.
+  5. Visit the master as a matching-country visitor — no redirect.
+- **Impact:** Persisted Suite/Gutenberg routing keeps looking enabled in post meta / admin meta box, but frontend `maybe_route_request()` reads `enabled=false` and never redirects. Country variants stop working after ordinary Elementor content edits.
+- **Root cause:** `get_page_route_config()` force-disables when Elementor has the key set to empty string, overriding non-empty post meta. Elementor SWITCHER off/default is `''`, so “not using Elementor routing” is indistinguishable from “explicitly disable all routing”.
+- **Minimal fix:** Treat Elementor `rwgc_route_enabled === 'yes'` as enable/merge override only. Do **not** force `enabled=false` on empty/absent Elementor values; defer to post meta. If Elementor must be able to disable, require an explicit non-empty off value and/or sync disable into post meta on Elementor save.
 
-- Scans Elementor `_elementor_data` on selected page/post/product for visibility-rule assignments matching the selected rule ID.
-- Computes per-target visibility with `rwgc_visibility_mode_allows_render()` and parent-chain suppression (ancestor hidden → child hidden).
-- Returns `applied_targets[]` with target label, type, source, mode, outcome (`visibility`), and reason.
+## Paths checked (OK, rejected, or already covered)
 
-## Rendered impact collector
+| Area | Result |
+|------|--------|
+| IP header spoofing (`RWGC_GeoIP::get_current_ip`) | Rejected per task |
+| Assistant REST / create_popup / can_execute / popup retarget | #28 / #33 / #44 |
+| Surface evaluator fail-open / empty portable / unresolved library | #31 / #37 |
+| Visibility rule repository wipe / wrong-post update | #17 / #18 |
+| Elementor library wipe / page_type incompatible | #35 / #42 |
+| Popup site-wide inject | #26 |
+| Rule Tester preview isolation / reporting-only | #40 / below bar |
+| Page Version query spoof | #20 / #21 |
+| Gutenberg `hideCountries` / MaxMind settings wipe | #24 |
+| Rule builder filtered selection truncation | #5 / #6 |
+| Registry↔repository recursion fatal | #25 |
+| Document `?elementor-preview` bypass | #16 |
+| Unsigned `rwgc_cc` LiteSpeed vary | by-design / rejected |
+| Insights AI auth / display_mode | #43 / #41 |
+| REST write endpoints + permission callbacks | re-traced; no new bypass beyond #28 |
+| Cache_Compat cookie writers | first-visit set / preview isolation = #40 |
+| Assistant JS execute beyond can_execute | #33 / #44 only |
+| Gutenberg post-geo `sanitize_portable` wipe | same class as #17; lower novelty than routing override |
+| Variant applications sync / experience workflow | auth + nonce OK; no new wipe |
 
-- **Hook:** `rwgc_rule_tester_collect_rendered_impacts` (args: `$impacts`, `$tester_context`, `$rule_id`, `$content`).
-- **Discovery hook:** `rwgc_rule_tester_discover_product_sources` for extensions.
-- **Geo Core (`RWGC_Rule_Tester_Rendered_Impacts`):** Parses static product IDs from post content shortcodes, Woo blocks, Elementor product widgets; evaluates products with `_geocore_product_rule_ids` for the selected rule using simulated tester context (uses existing visibility mode helpers — no duplicate evaluator).
-- **Dynamic grids:** When `[products category="…"]` / featured / best-selling tags are detected, sets `dynamic_query_detected` and falls back to products linked to the rule meta; shows preview note.
-- **Geo Commerce (`RWGCM_Rule_Tester_Rendered_Impacts`):** Reports commerce rule actions (`product_visibility`, `price_adjustment`, badges/overlays) for discovered products when portable targeting JSON matches the selected visibility rule.
+## Not changed
 
-## Geo Commerce integration
+No code changes (hunt/report only).
 
-**Required** — thin hook in `reactwoo-geo-commerce` (v0.3.24). No WooCommerce filtering logic duplicated in Geo Core.
+## Commands
 
-## Response shape — before / after
-
-**Before (`run()` extras):**
-```json
-{
-  "applied_targets": [],
-  "preview": {},
-  "document_context": {}
-}
-```
-
-**After:**
-```json
-{
-  "result_summary": {
-    "page_match": false,
-    "page_match_label": "NO",
-    "applied_targets_count": 2,
-    "rendered_impacts_count": 1,
-    "visible_outcomes": 1,
-    "hidden_outcomes": 2,
-    "why_page_no_match": ["Home (Variant) is a page/variant, not a product page.", "Traffic did not match any branch."]
-  },
-  "applied_targets": [
-    {
-      "target_label": "Free Delivery Banner",
-      "target_type": "section",
-      "source": "elementor",
-      "source_label": "Elementor",
-      "mode_label": "Hide when rule matches",
-      "visibility": "visible",
-      "reason": "The rule did not match, so this hide-on-match target remains visible."
-    }
-  ],
-  "rendered_impacts": [
-    {
-      "target_type": "product",
-      "source": "woocommerce_shortcode",
-      "source_label": "WooCommerce shortcode",
-      "product_id": 123,
-      "product_name": "Winter Jacket",
-      "rule_id": 456,
-      "rule_label": "Free Delivery",
-      "outcome": "hidden",
-      "reason": "This product was removed from the rendered shortcode output by a geo product visibility rule."
-    }
-  ],
-  "rendered_impacts_meta": {
-    "dynamic_query_detected": false,
-    "note": ""
-  },
-  "preview": { "url": "…", "expires": 0 }
-}
-```
-
-## Files changed
-
-**Geo Core**
-- `includes/class-rwgc-rule-tester-rendered-impacts.php`
-- `includes/class-rwgc-visibility-rule-tester.php` — `result_summary`, `rendered_impacts`, `source_label`, reason copy
-- `includes/class-rwgc-plugin.php`
-- `admin/js/rwgc-visibility-rule-tester.js`
-- `admin/css/rwgc-rule-tester.css`
-- `includes/class-rwgc-visibility-rule-tester-assets.php`
-
-**Geo Commerce**
-- `includes/class-rwgcm-rule-tester-rendered-impacts.php`
-- `includes/class-rwgcm-plugin.php`
-
-## Commands run
-
-```bash
-php -l includes/class-rwgc-visibility-rule-tester.php
-php -l includes/class-rwgc-rule-tester-rendered-impacts.php
-php -l includes/class-rwgcm-rule-tester-rendered-impacts.php
-```
-
-## Remaining limitations
-
-- Dynamic Woo shortcodes do not execute a live product query in admin; `dynamic_query_detected` triggers meta-linked fallback + preview note.
-- Geo Commerce collector links to the selected visibility rule only when portable JSON matches exactly.
-- Commerce `product_visibility` storefront filter may differ from rule-store evaluation in edge cases; preview remains visual source of truth.
-- **Next hook (optional):** Geo Commerce could register a runtime collector during simulated shortcode render (`rwgc_rule_tester_simulate_product_query`) to report exact query results without static parsing.
-
-## Acceptance retest
-
-1. Free Delivery + Home Variant + non-matching traffic → **Page match: NO**, **Applied targets found: 2**, section visible / container hidden with spec reasons; no misleading “rule missing” headline.
-2. Product in shortcode with geo rule meta → **Rendered product impacts** lists product name, source, outcome, reason.
-3. Preview link unchanged; dynamic grids show preview confirmation note.
+- `git rev-parse HEAD` → `934c590`
+- `gh pr list` / targeted `rg` + `Read` of repository, REST, admin visibility saves, routing, cache-compat, Elementor/Gutenberg, rule tester preview, assistant JS, variant applications, experience workflow, product meta
