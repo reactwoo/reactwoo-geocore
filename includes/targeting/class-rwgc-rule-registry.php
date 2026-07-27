@@ -19,6 +19,20 @@ class RWGC_Rule_Registry {
 	const LEGACY_ID_PREFIX    = 'legacy_';
 
 	/**
+	 * Request-level cache for portable library rows.
+	 *
+	 * @var array<int, array<string, mixed>>|null
+	 */
+	private static $rwgc_library_rows_cache = null;
+
+	/**
+	 * Request-level cache for legacy geo_rule rows.
+	 *
+	 * @var array<int, array<string, mixed>>|null
+	 */
+	private static $legacy_geo_rule_rows_cache = null;
+
+	/**
 	 * Normalized rules for builder dropdowns and admin pickers.
 	 *
 	 * @return array<int, array<string, mixed>>
@@ -158,50 +172,82 @@ class RWGC_Rule_Registry {
 	 * @return array<int, array<string, mixed>>
 	 */
 	private static function get_rwgc_library_rows() {
-		if ( ! class_exists( 'RWGC_Visibility_Rule_CPT', false ) ) {
-			return array();
+		if ( null !== self::$rwgc_library_rows_cache ) {
+			if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) && RWGC_Elementor_Config_Debug::enabled() ) {
+				RWGC_Elementor_Config_Debug::log(
+					'RWGC_Rule_Registry::get_rwgc_library_rows',
+					array(
+						'cache' => 'hit',
+						'rows'  => count( self::$rwgc_library_rows_cache ),
+					)
+				);
+			}
+			return self::$rwgc_library_rows_cache;
 		}
 
-		$posts = get_posts(
-			array(
-				'post_type'      => RWGC_Visibility_Rule_CPT::POST_TYPE,
-				'post_status'    => array( 'publish', 'draft' ),
-				'posts_per_page' => 200,
-				'orderby'        => 'modified',
-				'order'          => 'DESC',
-			)
-		);
+		$build = static function () {
+			if ( ! class_exists( 'RWGC_Visibility_Rule_CPT', false ) ) {
+				return array();
+			}
 
-		$rows = array();
-		foreach ( $posts as $post ) {
-			if ( ! $post instanceof WP_Post ) {
-				continue;
-			}
-			$set = self::rule_set_from_post_meta( (int) $post->ID, RWGC_Visibility_Rule_CPT::META_PORTABLE );
-			if ( null === $set ) {
-				continue;
-			}
-			$mode = isset( $set['mode'] ) ? (string) $set['mode'] : 'show_if';
-			$json = wp_json_encode( $set );
-			$rows[] = array(
-				'id'             => (string) (int) $post->ID,
-				'source'         => self::SOURCE_RWGC_LIBRARY,
-				'label'          => $post->post_title ? $post->post_title : __( 'Untitled visibility rule', 'reactwoo-geocore' ),
-				'rules'          => $set,
-				'visibilityMode' => function_exists( 'rwgc_normalize_visibility_mode' ) ? rwgc_normalize_visibility_mode( $mode ) : 'show_if',
-				'json'           => is_string( $json ) ? $json : '',
+			$posts = get_posts(
+				array(
+					'post_type'      => RWGC_Visibility_Rule_CPT::POST_TYPE,
+					'post_status'    => array( 'publish', 'draft' ),
+					'posts_per_page' => 200,
+					'orderby'        => 'modified',
+					'order'          => 'DESC',
+				)
 			);
+
+			$rows = array();
+			foreach ( $posts as $post ) {
+				if ( ! $post instanceof WP_Post ) {
+					continue;
+				}
+				$set = self::rule_set_from_post_meta( (int) $post->ID, RWGC_Visibility_Rule_CPT::META_PORTABLE );
+				if ( null === $set ) {
+					continue;
+				}
+				$mode = isset( $set['mode'] ) ? (string) $set['mode'] : 'show_if';
+				$json = wp_json_encode( $set );
+				$rows[] = array(
+					'id'             => (string) (int) $post->ID,
+					'source'         => self::SOURCE_RWGC_LIBRARY,
+					'label'          => $post->post_title ? $post->post_title : __( 'Untitled visibility rule', 'reactwoo-geocore' ),
+					'rules'          => $set,
+					'visibilityMode' => function_exists( 'rwgc_normalize_visibility_mode' ) ? rwgc_normalize_visibility_mode( $mode ) : 'show_if',
+					'json'           => is_string( $json ) ? $json : '',
+				);
+			}
+
+			return $rows;
+		};
+
+		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) && RWGC_Elementor_Config_Debug::enabled() ) {
+			self::$rwgc_library_rows_cache = RWGC_Elementor_Config_Debug::time(
+				'RWGC_Rule_Registry::get_rwgc_library_rows',
+				$build,
+				array( 'cache' => 'miss' )
+			);
+			return self::$rwgc_library_rows_cache;
 		}
 
-		return $rows;
+		self::$rwgc_library_rows_cache = $build();
+		return self::$rwgc_library_rows_cache;
 	}
 
 	/**
 	 * @return array<int, array<string, mixed>>
 	 */
 	private static function get_legacy_geo_rule_rows() {
+		if ( null !== self::$legacy_geo_rule_rows_cache ) {
+			return self::$legacy_geo_rule_rows_cache;
+		}
+
 		if ( ! post_type_exists( 'geo_rule' ) ) {
-			return array();
+			self::$legacy_geo_rule_rows_cache = array();
+			return self::$legacy_geo_rule_rows_cache;
 		}
 
 		$posts = get_posts(
@@ -240,7 +286,8 @@ class RWGC_Rule_Registry {
 			);
 		}
 
-		return $rows;
+		self::$legacy_geo_rule_rows_cache = $rows;
+		return self::$legacy_geo_rule_rows_cache;
 	}
 
 	/**

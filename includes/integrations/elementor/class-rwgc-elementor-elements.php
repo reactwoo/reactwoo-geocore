@@ -23,6 +23,20 @@ class RWGC_Elementor_Elements {
 	private static $registered_stack_instances = array();
 
 	/**
+	 * Request-level cache for enriched visibility library rows (keyed by document post id).
+	 *
+	 * @var array<string, array<int, array<string, mixed>>>
+	 */
+	private static $visibility_library_rows_cache = array();
+
+	/**
+	 * Request-level cache for Elementor SELECT options (id => title only).
+	 *
+	 * @var array<string, string>|null
+	 */
+	private static $visibility_library_select_options_cache = null;
+
+	/**
 	 * @return void
 	 */
 	public static function init() {
@@ -80,38 +94,67 @@ class RWGC_Elementor_Elements {
 	 * @return array<int, array{id:int,title:string,json:string}>
 	 */
 	public static function get_visibility_library_rows() {
-		$rows = array();
-		if ( class_exists( 'RWGC_Rule_Registry', false ) ) {
-			$rows = RWGC_Rule_Registry::get_library_picker_rows();
-		} elseif ( class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
-			$rows = RWGC_Visibility_Rule_Repository::get_library_picker_rows();
-		}
-
 		$context = self::get_editor_document_context();
-		if ( ! class_exists( 'RWGC_Rule_Context_Compatibility', false ) ) {
-			return $rows;
+		$cache_key = isset( $context['post_id'] ) ? (string) absint( $context['post_id'] ) : '0';
+
+		if ( isset( self::$visibility_library_rows_cache[ $cache_key ] ) ) {
+			if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) && RWGC_Elementor_Config_Debug::enabled() ) {
+				RWGC_Elementor_Config_Debug::log(
+					'RWGC_Elementor_Elements::get_visibility_library_rows',
+					array(
+						'cache' => 'hit',
+						'rows'  => count( self::$visibility_library_rows_cache[ $cache_key ] ),
+					)
+				);
+			}
+			return self::$visibility_library_rows_cache[ $cache_key ];
 		}
 
-		$enriched = array();
-		foreach ( $rows as $row ) {
-			if ( ! is_array( $row ) ) {
-				continue;
+		$build = static function () use ( $context ) {
+			$rows = array();
+			if ( class_exists( 'RWGC_Rule_Registry', false ) ) {
+				$rows = RWGC_Rule_Registry::get_library_picker_rows();
+			} elseif ( class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
+				$rows = RWGC_Visibility_Rule_Repository::get_library_picker_rows();
 			}
-			$json = isset( $row['json'] ) ? (string) $row['json'] : '';
-			$set  = '' !== trim( $json ) ? json_decode( $json, true ) : null;
-			$compat = RWGC_Rule_Context_Compatibility::evaluate( is_array( $set ) ? $set : null, $context );
-			$reason = ! empty( $compat['reasons'] ) && is_array( $compat['reasons'] )
-				? implode( ' ', $compat['reasons'] )
-				: '';
-			$row['scope_summary'] = (string) ( $compat['scope_summary'] ?? '' );
-			$row['compatibility'] = array(
-				'status'  => (string) ( $compat['status'] ?? 'compatible' ),
-				'reason'  => $reason,
-				'reasons' => isset( $compat['reasons'] ) && is_array( $compat['reasons'] ) ? $compat['reasons'] : array(),
+
+			if ( ! class_exists( 'RWGC_Rule_Context_Compatibility', false ) ) {
+				return $rows;
+			}
+
+			$enriched = array();
+			foreach ( $rows as $row ) {
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+				$json = isset( $row['json'] ) ? (string) $row['json'] : '';
+				$set  = '' !== trim( $json ) ? json_decode( $json, true ) : null;
+				$compat = RWGC_Rule_Context_Compatibility::evaluate( is_array( $set ) ? $set : null, $context );
+				$reason = ! empty( $compat['reasons'] ) && is_array( $compat['reasons'] )
+					? implode( ' ', $compat['reasons'] )
+					: '';
+				$row['scope_summary'] = (string) ( $compat['scope_summary'] ?? '' );
+				$row['compatibility'] = array(
+					'status'  => (string) ( $compat['status'] ?? 'compatible' ),
+					'reason'  => $reason,
+					'reasons' => isset( $compat['reasons'] ) && is_array( $compat['reasons'] ) ? $compat['reasons'] : array(),
+				);
+				$enriched[] = $row;
+			}
+			return $enriched;
+		};
+
+		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) && RWGC_Elementor_Config_Debug::enabled() ) {
+			self::$visibility_library_rows_cache[ $cache_key ] = RWGC_Elementor_Config_Debug::time(
+				'RWGC_Elementor_Elements::get_visibility_library_rows',
+				$build,
+				array( 'cache' => 'miss' )
 			);
-			$enriched[] = $row;
+			return self::$visibility_library_rows_cache[ $cache_key ];
 		}
-		return $enriched;
+
+		self::$visibility_library_rows_cache[ $cache_key ] = $build();
+		return self::$visibility_library_rows_cache[ $cache_key ];
 	}
 
 	/**
@@ -147,17 +190,30 @@ class RWGC_Elementor_Elements {
 	 * @return array<string, string>
 	 */
 	public static function get_visibility_library_select_options() {
+		if ( null !== self::$visibility_library_select_options_cache ) {
+			return self::$visibility_library_select_options_cache;
+		}
+
+		// Titles only — full JSON/compatibility lives in the editor localised payload once.
 		$options = array(
 			'' => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ),
 		);
-		foreach ( self::get_visibility_library_rows() as $row ) {
+		$rows = array();
+		if ( class_exists( 'RWGC_Rule_Registry', false ) ) {
+			$rows = RWGC_Rule_Registry::get_library_picker_rows();
+		} elseif ( class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
+			$rows = RWGC_Visibility_Rule_Repository::get_library_picker_rows();
+		}
+		foreach ( $rows as $row ) {
 			if ( empty( $row['id'] ) ) {
 				continue;
 			}
 			$key = (string) $row['id'];
 			$options[ $key ] = isset( $row['title'] ) ? (string) $row['title'] : $key;
 		}
-		return $options;
+
+		self::$visibility_library_select_options_cache = $options;
+		return self::$visibility_library_select_options_cache;
 	}
 
 	/**
@@ -189,37 +245,55 @@ class RWGC_Elementor_Elements {
 	public static function add_geo_targeting_controls( $element, $args = null ) {
 		unset( $args );
 
-		if ( ! is_object( $element ) || ! method_exists( $element, 'get_controls' ) ) {
-			return;
+		$stack_name = '';
+		if ( is_object( $element ) && method_exists( $element, 'get_name' ) ) {
+			$stack_name = (string) $element->get_name();
 		}
 
-		$controls = $element->get_controls();
-		if ( is_array( $controls ) && ( isset( $controls['egp_geo_tools'] ) || isset( $controls['rwgc_geo_section'] ) ) ) {
-			return;
-		}
-		$stack_guard_key = '';
-		if ( method_exists( $element, 'get_unique_name' ) ) {
-			$stack_guard_key = (string) $element->get_unique_name();
-		}
-		if ( '' === $stack_guard_key && function_exists( 'spl_object_hash' ) ) {
-			$stack_guard_key = spl_object_hash( $element );
-		}
-		if ( '' !== $stack_guard_key ) {
-			if ( isset( self::$registered_stack_instances[ $stack_guard_key ] ) ) {
+		$run = static function () use ( $element, $stack_name ) {
+			if ( ! is_object( $element ) || ! method_exists( $element, 'get_controls' ) ) {
 				return;
 			}
-			self::$registered_stack_instances[ $stack_guard_key ] = true;
+
+			$controls = $element->get_controls();
+			if ( is_array( $controls ) && ( isset( $controls['egp_geo_tools'] ) || isset( $controls['rwgc_geo_section'] ) ) ) {
+				return;
+			}
+			$stack_guard_key = '';
+			if ( method_exists( $element, 'get_unique_name' ) ) {
+				$stack_guard_key = (string) $element->get_unique_name();
+			}
+			if ( '' === $stack_guard_key && function_exists( 'spl_object_hash' ) ) {
+				$stack_guard_key = spl_object_hash( $element );
+			}
+			if ( '' !== $stack_guard_key ) {
+				if ( isset( self::$registered_stack_instances[ $stack_guard_key ] ) ) {
+					return;
+				}
+				self::$registered_stack_instances[ $stack_guard_key ] = true;
+			}
+
+			if ( class_exists( 'RWGC_Elementor_Geo_Controls', false ) ) {
+				RWGC_Elementor_Geo_Controls::register_section(
+					$element,
+					array(
+						'section_id'   => 'egp_geo_tools',
+						'countries_ui' => 'select2',
+					)
+				);
+			}
+		};
+
+		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) && RWGC_Elementor_Config_Debug::enabled() ) {
+			RWGC_Elementor_Config_Debug::time(
+				'RWGC_Elementor_Elements::add_geo_targeting_controls',
+				$run,
+				array( 'stack' => $stack_name )
+			);
+			return;
 		}
 
-		if ( class_exists( 'RWGC_Elementor_Geo_Controls', false ) ) {
-			RWGC_Elementor_Geo_Controls::register_section(
-				$element,
-				array(
-					'section_id'   => 'egp_geo_tools',
-					'countries_ui' => 'select2',
-				)
-			);
-		}
+		$run();
 	}
 
 	/**

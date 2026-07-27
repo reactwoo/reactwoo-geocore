@@ -1,26 +1,30 @@
 # Current task
 
-Verify and fix v1.8.106+ Rules page / Rule Tester styling on staging.
+Investigate Elementor’s Elements panel failing to load when the ReactWoo plugin suite is active.
 
-## Status
+## Problem
 
-**done** (code fix in **v1.8.107**) — re-verify on staging after update.
+Opening an Elementor document causes the Elements panel to spin indefinitely.
 
-## Root cause (suspected)
+The widget-configuration AJAX request fails:
 
-Rules/tester CSS depended on hook suffix containing `rwgc-visibility-rules` only. On some app-shell admin screens, enqueue could run before `rwgc-suite` was registered, leaving buttons/cards unstyled.
+```text
+POST /wp-admin/admin-ajax.php
+HTTP 503 Service Unavailable
 
-## Fix (v1.8.107)
+common.min.js → sendBatch()
+editor.min.js → requestWidgetsConfig()
+```
 
-- `RWGC_Visibility_Rule_Tester_Assets::is_visibility_rules_screen()` — hook + `$_GET['page']` + screen id + filter
-- Enqueue priority 25 + `ensure_suite_styles()` bootstrap
-- Modal dialog header/body/footer structure
-- `.rwgc-btn` fallbacks in `rwgc-rules-page.css`
+## Diagnostic constraints
 
-## Staging verification checklist
+- Do not patch production until evidence identifies the owner.
+- Add temporary opt-in instrumentation gated by `RW_ELEMENTOR_CONFIG_DEBUG`.
+- Isolation test: all → disable WHMCS → disable WHMCS+Geo Core → API Manager / Support Portal → Flow last.
 
-1. Plugins → Geo Core version **1.8.107**
-2. Network: `rwgc-rules-page.css?ver=1.8.107` and `rwgc-rule-tester.css?ver=1.8.107` — 200
-3. Targeting → Rules — card layout, pills, suite buttons
-4. Test rule modal — wide two-column, country select, traffic presets
-5. Hard refresh / purge optimisation cache if styles still stale
+## Suspected owners
+
+- Geo Core repeated rule/control construction
+- WHMCS Bridge widget option construction / Loop Grid duplicate injection
+- API Manager or Support Portal global request work
+- Server/WAF limit unrelated to the suite

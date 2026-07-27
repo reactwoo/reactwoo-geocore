@@ -36,4 +36,12 @@
 
 ---
 
-<!-- Add real issues below -->
+### Elementor Elements panel — widgets-config 503 (suite)
+
+**Symptoms:** Elements panel spins; `admin-ajax.php` `elementor_ajax` / `get_widgets_config` returns HTTP 503.
+
+**Tried (Local reactwoo.local):** Opt-in `RW_ELEMENTOR_CONFIG_DEBUG` instrumentation; file probe of full widget stacks; isolation activating Geo Core / WHMCS / GeoCore Pro. With empty visibility-rule and WHMCS catalogs, all passes returned HTTP 200 (~1.0–1.1s, ~234–237 widgets). No 503 reproduced.
+
+**Likely causes (unproven on Local):** Geo Core uncached `get_rwgc_library_rows()` under large rule libraries; WHMCS unbounded option `get_posts`; Loop Grid inject without per-stack guard if multiple query section IDs fire; host timeout / response size on denser staging data. Support Portal not installed on Local; Flow has no Elementor registration.
+
+**Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence.
