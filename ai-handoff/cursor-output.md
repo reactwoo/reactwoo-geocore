@@ -1,30 +1,38 @@
-# Cursor output — Elementor widgets-config fix + release
+# Cursor output — critical bug hunt 2026-07-30
 
 ## Status
 
-**done** — Geo Core **v1.8.119** + WHMCS Bridge **v1.1.2.2** (request-level caches + Loop Grid idempotence).
+**done** — New critical: Gutenberg post portable targeting wipe. Fixed on `cursor/critical-bug-investigation-0834` (`7b5abe7`), PR #46.
 
-## Root cause addressed
+## Bug and impact
 
-Elementor `get_widgets_config` rebuilds control stacks; Geo Core re-queried/serialised visibility rules and WHMCS rebuilt option lists without request caches. Loop Grid inject lacked a per-stack guard across multiple query section IDs.
+Saving a page/post in the block editor could permanently clear `_rwgc_post_portable_targeting` when submitted portable JSON sanitized to no usable rules (e.g. Pro-only campaign/weather conditions while GeoCore Pro is inactive, or empty `rules`). Post-level geo targeting was lost with no error; restricted content could then render without the intended rules.
+
+## Root cause
+
+`RWGC_Gutenberg_Post_Geo::sanitize_portable()` (REST/meta `sanitize_callback`) returned `''` whenever `RWGC_Targeting_Rule_Set_Schema::sanitize()` returned null. Block-editor REST saves re-submit registered meta, so a failed sanitize wiped stored targeting. Same wipe pattern as visibility-rule library (#17/#18), but those PRs do not cover this Gutenberg surface.
 
 ## Fix
 
-### Geo Core
-- `RWGC_Rule_Registry`: request-level static cache for library + legacy rows
-- `RWGC_Elementor_Elements`: cache enriched library rows by document post id; SELECT options cache titles-only (full JSON stays in `rwgcElementorLibrary` localize)
-
-### WHMCS Bridge
-- `RW_WHMCS_Elementor_Option_Cache`: shared caches for templates, product groups, TLDs, currencies (ids-first queries)
-- Loop Grid inject: per-stack idempotence + existing-control check
+Preserve non-empty submitted JSON when sanitize yields no usable set. Explicit empty string still clears.
 
 ## Files changed
 
-Geo Core: rule-registry, elementor-elements, debug helper (opt-in), version/readme
-WHMCS: option-cache, loop-grid inject, three widgets, bridge bootstrap, debug helper, version/readme
+- `includes/integrations/gutenberg/class-rwgc-gutenberg-post-geo.php`
+- `tests/Targeting/RWGCGutenbergPostGeoSanitizeTest.php` (new)
+- `ai-handoff/cursor-output.md`
 
-## Acceptance
+## What was not changed
 
-- Rule library / option lists loaded once per request type
-- Loop Grid section registered once per stack
-- No evaluator/pricing/routing changes
+- Visibility-rule CPT/repository sanitize (#17/#18)
+- Elementor library bridge wipe (#35/#42)
+- Other open criticals (#26, #28, #31/#37, #33, #40, #41, #43, #45, etc.)
+
+## Validation
+
+- Focused PHPUnit: `tests/Targeting/RWGCGutenbergPostGeoSanitizeTest.php`
+- Second-pass hunt after #46: no additional NEW critical beyond open PRs #1–#46
+
+## Remaining known criticals (already open)
+
+Highest remaining unmerged: #25, #26, #28, #31/#37, #33, #35/#42, #40, #41, #43, #44, #45, #17/#18, #21.

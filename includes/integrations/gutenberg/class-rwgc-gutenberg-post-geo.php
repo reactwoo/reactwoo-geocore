@@ -184,6 +184,13 @@ class RWGC_Gutenberg_Post_Geo {
 	}
 
 	/**
+	 * Sanitize post-level portable targeting JSON for REST/meta writes.
+	 *
+	 * Empty string remains a valid explicit clear. Non-empty JSON that sanitizes
+	 * to no usable rules (invalid document, or Pro-only conditions while Pro is
+	 * inactive) must not be rewritten as '' — that permanently wiped page/post
+	 * targeting on ordinary block-editor saves.
+	 *
 	 * @param mixed $value Raw JSON.
 	 * @return string
 	 */
@@ -191,11 +198,19 @@ class RWGC_Gutenberg_Post_Geo {
 		if ( ! is_string( $value ) ) {
 			return '';
 		}
-		if ( ! class_exists( 'RWGC_Targeting_Rule_Set_Schema', false ) ) {
+		$raw = $value;
+		if ( '' === trim( $raw ) ) {
 			return '';
 		}
-		$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $value );
-		return is_array( $set ) ? wp_json_encode( $set ) : '';
+		if ( ! class_exists( 'RWGC_Targeting_Rule_Set_Schema', false ) ) {
+			return $raw;
+		}
+		$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $raw );
+		if ( ! is_array( $set ) ) {
+			return $raw;
+		}
+		$encoded = wp_json_encode( $set );
+		return is_string( $encoded ) ? $encoded : $raw;
 	}
 
 	/**
