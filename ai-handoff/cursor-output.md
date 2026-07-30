@@ -1,30 +1,28 @@
-# Cursor output — Elementor widgets-config fix + release
+# Cursor output — critical bug hunt (v1.8.119 / c6fd7d3)
 
 ## Status
 
-**done** — Geo Core **v1.8.119** + WHMCS Bridge **v1.1.2.2** (request-level caches + Loop Grid idempotence).
+**done** — one NEW critical: Gutenberg post-level portable meta wipe on failed sanitize.
 
-## Root cause addressed
+## Finding
 
-Elementor `get_widgets_config` rebuilds control stacks; Geo Core re-queried/serialised visibility rules and WHMCS rebuilt option lists without request caches. Loop Grid inject lacked a per-stack guard across multiple query section IDs.
+`RWGC_Gutenberg_Post_Geo::sanitize_portable()` returned `''` when non-empty JSON sanitized to no usable rules (Pro-only conditions with Pro inactive, empty `rules`, schema missing). Block-editor REST saves then permanently cleared `_rwgc_post_portable_targeting`.
+
+Distinct from open PRs #17/#18 (visibility-rule library repository/admin save only).
 
 ## Fix
 
-### Geo Core
-- `RWGC_Rule_Registry`: request-level static cache for library + legacy rows
-- `RWGC_Elementor_Elements`: cache enriched library rows by document post id; SELECT options cache titles-only (full JSON stays in `rwgcElementorLibrary` localize)
-
-### WHMCS Bridge
-- `RW_WHMCS_Elementor_Option_Cache`: shared caches for templates, product groups, TLDs, currencies (ids-first queries)
-- Loop Grid inject: per-stack idempotence + existing-control check
+Preserve non-empty submitted JSON when sanitize yields no usable set. Explicit empty string still clears. Added `tests/Targeting/RWGCGutenbergPostGeoSanitizeTest.php`.
 
 ## Files changed
 
-Geo Core: rule-registry, elementor-elements, debug helper (opt-in), version/readme
-WHMCS: option-cache, loop-grid inject, three widgets, bridge bootstrap, debug helper, version/readme
+- `includes/integrations/gutenberg/class-rwgc-gutenberg-post-geo.php`
+- `tests/Targeting/RWGCGutenbergPostGeoSanitizeTest.php`
 
-## Acceptance
+## Not changed
 
-- Rule library / option lists loaded once per request type
-- Loop Grid section registered once per stack
-- No evaluator/pricing/routing changes
+Known open-PR issues (#25 recursion, #26 popups, #28/#33 assistant, #31/#37 fail-open, #35/#42 Elementor wipe, #40 preview, #41/#43 Insights, #45 routing SWITCHER, LiteSpeed/IP spoofing, rule-tester below-bar).
+
+## Validation
+
+`vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr tests/Targeting/RWGCGutenbergPostGeoSanitizeTest.php` → OK (4 tests, 11 assertions).
