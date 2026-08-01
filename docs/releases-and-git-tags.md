@@ -88,8 +88,19 @@ This is the **plugin release pipeline** for **Geo Core**, **GeoCore Pro**, **Geo
 **On tag `v*` (each plugin repo’s `publish-update.yml`):**
 
 1. Build zip (`npm run package:zip` / `scripts/package_zip.py`).
-2. Upload to R2: `aws s3 cp … s3://{R2_BUCKET}/plugins/{slug}/{version}/{slug}.zip`.
-3. Register metadata: `POST https://api.reactwoo.com/api/v5/updates/publish` with **`Authorization: Bearer <UPDATES_PUBLISH_TOKEN>`**.
+2. Upload to R2 (immutable): `s3://{R2_BUCKET}/plugins/{slug}/{version}/{slug}.zip`.
+3. **Geo Core also** uploads mutable latest pointers (same zip + metadata):
+   - `plugins/reactwoo-geocore/latest/reactwoo-geocore.zip`
+   - `plugins/reactwoo-geocore/latest.json` (`version`, `sha256`, `artifact_key`, `latest_key`, …)
+4. Register metadata: `POST https://api.reactwoo.com/api/v5/updates/publish` with **`Authorization: Bearer <UPDATES_PUBLISH_TOKEN>`**.
+
+**Stable download URL (private R2 — prefer this over raw R2 keys):**
+
+- Redirect: `GET https://api.reactwoo.com/api/v5/updates/latest/reactwoo-geocore` → 302 signed URL
+- Metadata: `GET https://api.reactwoo.com/api/v5/updates/latest/reactwoo-geocore?format=json`
+- Optional: `?key=latest` signs the mutable `…/latest/….zip` object instead of the versioned key
+
+WordPress auto-updates still use **`POST /api/v5/updates/check`** (unchanged).
 
 **No `git` runs on the server for this path.** GitHub Actions does not SSH to cPanel and does not `git pull` on `api.reactwoo.com`. Orbi’s “password authentication is not supported for Git operations” message in **`api.reactwoo.com/logs/err.log`** refers only to the **API self-deploy webhook** (`POST /api/v5/deploy` → `git fetch`), not to Geo plugin R2 publishes.
 
