@@ -100,6 +100,11 @@ class RWGC_Variant_Manager {
 			return new \WP_Error( 'rwgc_vm_insert', __( 'Could not create the new page.', 'reactwoo-geocore' ) );
 		}
 
+		if ( 'duplicate' === $mode ) {
+			// post_content alone is not enough for Elementor-built pages; document JSON lives in post meta.
+			self::copy_elementor_document_meta( $master_page_id, $new_id );
+		}
+
 		// Ensure master is configured as the default page for routing.
 		$mconf = RWGC_Routing::get_page_route_config( $master_page_id );
 		RWGC_Routing::save_page_route_config(
@@ -153,6 +158,75 @@ class RWGC_Variant_Manager {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Copy Elementor document meta from a master page onto a newly created variant.
+	 *
+	 * Suite "Duplicate default page" only inserts `post_content`. Elementor stores the editable
+	 * document in `_elementor_data` / `_elementor_edit_mode`, so without this copy the variant
+	 * opens blank in Elementor and can fail to render as a builder document for geo traffic.
+	 *
+	 * Route keys inside `_elementor_page_settings` are stripped so master's Elementor routing
+	 * SWITCHER values cannot override the Suite variant meta written after insert.
+	 *
+	 * @param int $source_page_id Master page ID.
+	 * @param int $dest_page_id   New variant page ID.
+	 * @return bool True when Elementor builder meta was copied.
+	 */
+	public static function copy_elementor_document_meta( $source_page_id, $dest_page_id ) {
+		$source_page_id = absint( $source_page_id );
+		$dest_page_id   = absint( $dest_page_id );
+		if ( $source_page_id <= 0 || $dest_page_id <= 0 || $source_page_id === $dest_page_id ) {
+			return false;
+		}
+
+		$edit_mode = (string) get_post_meta( $source_page_id, '_elementor_edit_mode', true );
+		$data_raw  = get_post_meta( $source_page_id, '_elementor_data', true );
+		$has_data  = ( is_string( $data_raw ) && '' !== $data_raw ) || ( is_array( $data_raw ) && ! empty( $data_raw ) );
+
+		if ( 'builder' !== $edit_mode && ! $has_data ) {
+			return false;
+		}
+
+		if ( '' !== $edit_mode ) {
+			update_post_meta( $dest_page_id, '_elementor_edit_mode', $edit_mode );
+		} else {
+			update_post_meta( $dest_page_id, '_elementor_edit_mode', 'builder' );
+		}
+
+		if ( $has_data ) {
+			update_post_meta( $dest_page_id, '_elementor_data', $data_raw );
+		}
+
+		foreach ( array( '_elementor_version', '_elementor_pro_version', '_elementor_template_type' ) as $meta_key ) {
+			$value = get_post_meta( $source_page_id, $meta_key, true );
+			if ( '' !== $value && false !== $value && null !== $value ) {
+				update_post_meta( $dest_page_id, $meta_key, $value );
+			}
+		}
+
+		$page_settings = get_post_meta( $source_page_id, '_elementor_page_settings', true );
+		if ( is_array( $page_settings ) ) {
+			$clean = $page_settings;
+			foreach ( array_keys( $clean ) as $key ) {
+				if ( 0 === strpos( (string) $key, 'rwgc_route_' ) ) {
+					unset( $clean[ $key ] );
+				}
+			}
+			update_post_meta( $dest_page_id, '_elementor_page_settings', $clean );
+		}
+
+		// Page template (e.g. Elementor Canvas) affects frontend chrome.
+		$template = get_post_meta( $source_page_id, '_wp_page_template', true );
+		if ( is_string( $template ) && '' !== $template ) {
+			update_post_meta( $dest_page_id, '_wp_page_template', $template );
+		}
+
+		// CSS is post-ID specific; force regeneration on next Elementor render/save.
+		delete_post_meta( $dest_page_id, '_elementor_css' );
+
+		return true;
 	}
 
 	/**

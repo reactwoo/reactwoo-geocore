@@ -2,30 +2,31 @@
 
 ## Status
 
-**done** — Geo Core **v1.8.120** publish pipeline dual-uploads R2 `latest/` + `latest.json`; reactwoo-api **0.1.54** adds `GET /api/v5/updates/latest/:slug`.
+**done** — Critical bug hunt on tip `87fb935` / v1.8.120. Fixed one NEW high-confidence critical (not covered by open PRs #1–#46).
 
-## Files changed
+## Bug and impact
 
-### reactwoo-geocore
-- `.github/workflows/publish-update.yml` — after versioned zip upload, also write `plugins/reactwoo-geocore/latest/reactwoo-geocore.zip` + `latest.json` (no-cache)
-- `docs/releases-and-git-tags.md` — document latest keys + API stable URL
-- `reactwoo-geocore.php`, `readme.txt` — version **1.8.120**
+Suite **Duplicate default page (recommended)** / `ai_adapt` create a country variant without Elementor document meta. Matching-country visitors can be routed to a draft/published page that has only `post_content`, while `_elementor_data` / `_elementor_edit_mode` stay empty — Elementor editor opens blank and builder frontend rendering breaks.
 
-### reactwoo-api
-- `src/routes/updates.ts` — `GET /latest/:slug` (302 or `?format=json`)
-- `src/services/pluginReleases.ts` — `getLatestRelease`, `latestArtifactKey`, helpers
-- `docs/PRODUCTION-SERVER.md`, `CHANGELOG.md`, `package.json` → **0.1.54**
+**Trigger:** Elementor-built master page → Suite Create page version → Duplicate default page (or AI adapt) → open/edit/publish the new variant.
+
+## Root cause
+
+`RWGC_Variant_Manager::create_country_variant()` only copied `$master->post_content`. No `rwgc_variant_created` listener compensated. Open PR #15 only restores the create-variant admin route.
+
+## Fix
+
+- After successful insert in duplicate mode, copy Elementor builder meta (`_elementor_data`, edit mode, version, template type, page settings, `_wp_page_template`).
+- Strip `rwgc_route_*` keys from copied `_elementor_page_settings` so master Elementor SWITCHER values cannot override Suite variant routing meta (related to #45).
+- Clear `_elementor_css` on the destination so CSS regenerates for the new post ID.
+- Added `tests/Engine/RWGCVariantManagerElementorCopyTest.php`.
 
 ## What was not changed
 
-- WordPress `/updates/check` flow (unchanged)
-- Other satellite publish workflows (Geo Core only for dual-upload for now)
-- Public R2/custom domain (still private bucket + signed URLs)
+- Blank / link-existing modes
+- Open PRs #17/#18/#21/#25/#26/#28/#31/#33/#35/#37/#40–#46 (still unmerged)
+- R2 latest publish workflow (no product correctness bug found)
 
 ## Commands run
 
-- `npm run build` in reactwoo-api — pass
-
-## Remaining
-
-- Deploy/push both repos so CI creates the first `latest/` objects and API serves the redirect.
+- `vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr tests/Engine/RWGCVariantManagerElementorCopyTest.php` → OK (4 tests, 20 assertions)
