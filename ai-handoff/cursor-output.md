@@ -2,30 +2,28 @@
 
 ## Status
 
-**done** — Geo Core **v1.8.120** publish pipeline dual-uploads R2 `latest/` + `latest.json`; reactwoo-api **0.1.54** adds `GET /api/v5/updates/latest/:slug`.
+**done** — Atomic Geo Visibility for Geo Core **v1.8.121**.
 
 ## Files changed
 
-### reactwoo-geocore
-- `.github/workflows/publish-update.yml` — after versioned zip upload, also write `plugins/reactwoo-geocore/latest/reactwoo-geocore.zip` + `latest.json` (no-cache)
-- `docs/releases-and-git-tags.md` — document latest keys + API stable URL
-- `reactwoo-geocore.php`, `readme.txt` — version **1.8.120**
-
-### reactwoo-api
-- `src/routes/updates.ts` — `GET /latest/:slug` (302 or `?format=json`)
-- `src/services/pluginReleases.ts` — `getLatestRelease`, `latestArtifactKey`, helpers
-- `docs/PRODUCTION-SERVER.md`, `CHANGELOG.md`, `package.json` → **0.1.54**
+- `includes/integrations/elementor/class-rwgc-elementor-atomic-geo.php` — new Atomic bridge (`props-schema` + `controls` → Geo Visibility section)
+- `includes/integrations/class-rwgc-integrations-loader.php` — load/init Atomic bridge
+- `includes/targeting/class-rwgc-surface-settings.php` — unwrap Atomic `{$$type,value}` + boolean → `yes`/`''`; mirror library → applied id
+- `includes/integrations/elementor/class-rwgc-elementor-frontend.php` — prefer `get_atomic_settings()`; nestable Atomic `should_render` hooks
+- `reactwoo-geocore.php`, `readme.txt` — **1.8.121**
+- `docs/TARGETING-RULES-PLAN.md` — Atomic dual-path note
 
 ## What was not changed
 
-- WordPress `/updates/check` flow (unchanged)
-- Other satellite publish workflows (Geo Core only for dual-upload for now)
-- Public R2/custom domain (still private bucket + signed URLs)
+- Classic Advanced-tab registration (`RWGC_Elementor_Geo_Controls` / Elements hooks)
+- reactwoo-atomic widgets (ownership stays in Geo Core)
+- Full Select2 country UI / portable rule-builder textarea inside Atomic
 
 ## Commands run
 
-- `npm run build` in reactwoo-api — pass
+- `php -l` on changed PHP files — pass
 
-## Remaining
+## Remaining (manual)
 
-- Deploy/push both repos so CI creates the first `latest/` objects and API serves the redirect.
+- Editor: Atomic Carousel/Off-Canvas show **Geo Visibility** under Settings; classic Advanced still works
+- Frontend: country ISO string + Pro library rule hide/show; nestable Off-Canvas `should_render`; builder edit skips hide

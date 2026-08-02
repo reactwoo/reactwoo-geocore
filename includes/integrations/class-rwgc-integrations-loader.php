@@ -21,6 +21,7 @@ class RWGC_Integrations_Loader {
 		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-config-debug.php';
 		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-geo-controls.php';
 		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-elements.php';
+		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-atomic-geo.php';
 		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-frontend.php';
 		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-popups.php';
 		require_once RWGC_PATH . 'includes/integrations/gutenberg/class-rwgc-gutenberg-post-geo.php';
@@ -36,6 +37,7 @@ class RWGC_Integrations_Loader {
 
 		RWGC_Cache_Compat::init();
 		RWGC_Elementor_Elements::init();
+		RWGC_Elementor_Atomic_Geo::init();
 		RWGC_Elementor_Frontend::init();
 		RWGC_Elementor_Popups::init();
 		RWGC_Gutenberg_Post_Geo::init();

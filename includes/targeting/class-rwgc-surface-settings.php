@@ -19,7 +19,10 @@ class RWGC_Surface_Settings {
 	 * @return array<string, mixed>
 	 */
 	public static function normalize( array $settings ) {
-		$out = $settings;
+		$out = self::unwrap_atomic_props( $settings );
+
+		$out['egp_enable_geo_targeting']     = self::normalize_yes_flag( $out['egp_enable_geo_targeting'] ?? null );
+		$out['rwgc_enable_visibility_rules'] = self::normalize_yes_flag( $out['rwgc_enable_visibility_rules'] ?? null );
 
 		if ( empty( $out['egp_enable_geo_targeting'] ) && ! empty( $out['egp_geo_enabled'] ) && 'yes' === (string) $out['egp_geo_enabled'] ) {
 			$out['egp_enable_geo_targeting'] = 'yes';
@@ -48,7 +51,51 @@ class RWGC_Surface_Settings {
 			$out['rwgc_portable_geo_targeting'] = (string) $out['egp_portable_geo_targeting'];
 		}
 
+		// Atomic has no classic library JS bridge — mirror library select into applied id for the evaluator.
+		$library_id = trim( (string) ( $out['rwgc_visibility_rule_library'] ?? '' ) );
+		if ( '' !== $library_id ) {
+			$out['rwgc_applied_visibility_rule_id'] = $library_id;
+		}
+
 		return $out;
+	}
+
+	/**
+	 * Unwrap Elementor Atomic `{ $$type, value }` props when present.
+	 *
+	 * @param array<string, mixed> $settings Raw settings.
+	 * @return array<string, mixed>
+	 */
+	private static function unwrap_atomic_props( array $settings ) {
+		$out = array();
+		foreach ( $settings as $key => $value ) {
+			if ( is_array( $value ) && array_key_exists( '$$type', $value ) && array_key_exists( 'value', $value ) ) {
+				$out[ $key ] = $value['value'];
+				continue;
+			}
+			$out[ $key ] = $value;
+		}
+		return $out;
+	}
+
+	/**
+	 * Map Atomic booleans / classic switcher values to `'yes'` or `''`.
+	 *
+	 * @param mixed $value Raw flag.
+	 * @return string
+	 */
+	private static function normalize_yes_flag( $value ) {
+		if ( true === $value || 1 === $value || '1' === $value ) {
+			return 'yes';
+		}
+		if ( is_string( $value ) && 'yes' === strtolower( trim( $value ) ) ) {
+			return 'yes';
+		}
+		if ( false === $value || null === $value || '' === $value || 0 === $value || '0' === $value ) {
+			return '';
+		}
+		// Preserve unexpected truthy strings (legacy) only when already classic yes.
+		return ( 'yes' === (string) $value ) ? 'yes' : '';
 	}
 
 	/**

@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.120
+Stable tag: 1.8.121
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -44,7 +44,7 @@ After setup, you can use Geo Core in multiple ways:
 * **PHP helpers**: `rwgc_get_visitor_country()`, `rwgc_get_visitor_currency()`, `rwgc_get_visitor_data()`
 * **REST endpoints** (when enabled in settings): `/wp-json/reactwoo-geocore/v1/location` (visitor geo), `/wp-json/reactwoo-geocore/v1/capabilities` (plugin discovery: event types and hooks; no visitor PII)
 * **Gutenberg**: Use the **Geo Content** block to show/hide content by country
-* **Elementor (free baseline)**: Use Page/Popup document settings for basic show/hide by country
+* **Elementor (free baseline)**: Use Page/Popup document settings for basic show/hide by country. Classic widgets/sections use **Advanced → Geo Visibility**; Elementor Atomic (V4) widgets use a sibling **Geo Visibility** Settings section (ISO country codes + Pro saved rules).
 * **Page Variant Routing (free)**: Edit any page and use "Geo Variant Routing (Free)" to set page role (Master/Secondary) with server-side redirect mapping (1 secondary country mapping per master)
 
 For an in-dashboard guide, open **Geo Core → Usage** in wp-admin.
@@ -78,6 +78,10 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.121 =
+* **Elementor Atomic:** Geo Visibility section on Atomic (V4) widgets/elements via `elementor/atomic-widgets` filters (country on/off, show/hide, ISO codes, Pro library rules). Classic Advanced tab unchanged.
+* **Elementor:** Frontend prefers `get_atomic_settings()` and hooks nestable Atomic `should_render` types; Surface_Settings unwraps Atomic props / booleans for the shared evaluator.
 
 = 1.8.120 =
 * **Release:** Publish pipeline dual-uploads a mutable R2 latest zip + `latest.json` for stable download paths; API documents `GET /api/v5/updates/latest/reactwoo-geocore`.

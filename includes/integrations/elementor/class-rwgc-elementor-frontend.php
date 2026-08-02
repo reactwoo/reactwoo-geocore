@@ -15,6 +15,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 class RWGC_Elementor_Frontend {
 
 	/**
+	 * Nestable Atomic elTypes already hooked this request.
+	 *
+	 * @var array<string, bool>
+	 */
+	private static $atomic_hooks_registered = array();
+
+	/**
 	 * @return void
 	 */
 	public static function init() {
@@ -28,7 +35,54 @@ class RWGC_Elementor_Frontend {
 			add_action( "elementor/frontend/{$type}/before_render", array( __CLASS__, 'before_render' ), 10, 1 );
 		}
 
+		// Atomic nestables use their element slug as get_type() (not widget|section|…).
+		add_action( 'elementor/frontend/init', array( __CLASS__, 'register_atomic_nestable_hooks' ), 20 );
+
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_styles' ), 20 );
+	}
+
+	/**
+	 * Register should_render for Atomic nestable element types after Elementor registers them.
+	 *
+	 * @return void
+	 */
+	public static function register_atomic_nestable_hooks() {
+		if ( ! class_exists( '\Elementor\Plugin', false ) || ! isset( \Elementor\Plugin::$instance->elements_manager ) ) {
+			return;
+		}
+
+		$manager = \Elementor\Plugin::$instance->elements_manager;
+		if ( ! method_exists( $manager, 'get_element_types' ) ) {
+			return;
+		}
+
+		$classic = array( 'section', 'column', 'container', 'widget' );
+		$atomic_base = '\Elementor\Modules\AtomicWidgets\Elements\Base\Atomic_Element_Base';
+
+		foreach ( $manager->get_element_types() as $type => $instance ) {
+			$type = (string) $type;
+			if ( '' === $type || isset( self::$atomic_hooks_registered[ $type ] ) || in_array( $type, $classic, true ) ) {
+				continue;
+			}
+
+			if ( ! is_object( $instance ) ) {
+				continue;
+			}
+
+			$is_atomic_nestable = class_exists( $atomic_base, false ) && is_a( $instance, $atomic_base );
+			if ( ! $is_atomic_nestable && ! method_exists( $instance, 'get_atomic_settings' ) ) {
+				continue;
+			}
+
+			// Skip leaf widgets — they still report type "widget" via Widget_Base.
+			if ( 'widget' === $type ) {
+				continue;
+			}
+
+			self::$atomic_hooks_registered[ $type ] = true;
+			add_filter( "elementor/frontend/{$type}/should_render", array( __CLASS__, 'filter_should_render' ), 10, 2 );
+			add_action( "elementor/frontend/{$type}/before_render", array( __CLASS__, 'before_render' ), 10, 1 );
+		}
 	}
 
 	/**
@@ -48,6 +102,36 @@ class RWGC_Elementor_Frontend {
 	}
 
 	/**
+	 * Resolve display settings — prefer Atomic resolved props when available.
+	 *
+	 * @param \Elementor\Element_Base $element Element.
+	 * @return array<string, mixed>
+	 */
+	private static function get_element_settings( $element ) {
+		$settings = array();
+
+		if ( is_object( $element ) && method_exists( $element, 'get_atomic_settings' ) ) {
+			$atomic = $element->get_atomic_settings();
+			if ( is_array( $atomic ) ) {
+				$settings = $atomic;
+			}
+		}
+
+		if ( empty( $settings ) && is_object( $element ) && method_exists( $element, 'get_settings_for_display' ) ) {
+			$display = $element->get_settings_for_display();
+			if ( is_array( $display ) ) {
+				$settings = $display;
+			}
+		}
+
+		if ( class_exists( 'RWGC_Surface_Settings', false ) ) {
+			$settings = RWGC_Surface_Settings::normalize( $settings );
+		}
+
+		return $settings;
+	}
+
+	/**
 	 * Skip rendering geo-hidden elements (preferred over display:none for flex rows/containers).
 	 *
 	 * @param bool                    $should_render Elementor default.
@@ -55,7 +139,7 @@ class RWGC_Elementor_Frontend {
 	 * @return bool
 	 */
 	public static function filter_should_render( $should_render, $element ) {
-		if ( ! $should_render || ! is_object( $element ) || ! method_exists( $element, 'get_settings_for_display' ) ) {
+		if ( ! $should_render || ! is_object( $element ) ) {
 			return (bool) $should_render;
 		}
 
@@ -63,12 +147,9 @@ class RWGC_Elementor_Frontend {
 			return true;
 		}
 
-		$settings = $element->get_settings_for_display();
-		if ( ! is_array( $settings ) ) {
+		$settings = self::get_element_settings( $element );
+		if ( empty( $settings ) ) {
 			return (bool) $should_render;
-		}
-		if ( class_exists( 'RWGC_Surface_Settings', false ) ) {
-			$settings = RWGC_Surface_Settings::normalize( $settings );
 		}
 
 		if ( class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
@@ -87,7 +168,7 @@ class RWGC_Elementor_Frontend {
 	 * @return void
 	 */
 	public static function before_render( $element ) {
-		if ( ! is_object( $element ) || ! method_exists( $element, 'get_settings_for_display' ) ) {
+		if ( ! is_object( $element ) ) {
 			return;
 		}
 
@@ -95,12 +176,9 @@ class RWGC_Elementor_Frontend {
 			return;
 		}
 
-		$settings = $element->get_settings_for_display();
-		if ( ! is_array( $settings ) ) {
+		$settings = self::get_element_settings( $element );
+		if ( empty( $settings ) ) {
 			return;
-		}
-		if ( class_exists( 'RWGC_Surface_Settings', false ) ) {
-			$settings = RWGC_Surface_Settings::normalize( $settings );
 		}
 
 		if ( class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
