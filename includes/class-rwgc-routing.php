@@ -248,6 +248,69 @@ class RWGC_Routing {
 	}
 
 	/**
+	 * Build route config from the page meta box request.
+	 *
+	 * The current meta box UI no longer posts legacy inline fields
+	 * (`rwgc_route_country_page_id`, `rwgc_route_default_page_id`). When those
+	 * keys are absent, preserve existing values so a normal page Update cannot
+	 * wipe Phase-2 inline master mappings.
+	 *
+	 * @param array<string, mixed> $request  Request-like array (typically $_POST).
+	 * @param array<string, mixed> $existing Existing sanitized config from get_page_route_config().
+	 * @return array<string, mixed>
+	 */
+	public static function route_config_from_meta_box_request( array $request, array $existing ) {
+		$has_country_page = array_key_exists( 'rwgc_route_country_page_id', $request );
+		$has_default_page = array_key_exists( 'rwgc_route_default_page_id', $request );
+
+		return array(
+			'enabled'         => ! empty( $request['rwgc_route_enabled'] ),
+			'default_page_id' => $has_default_page
+				? absint( wp_unslash( $request['rwgc_route_default_page_id'] ) )
+				: ( isset( $existing['default_page_id'] ) ? absint( $existing['default_page_id'] ) : 0 ),
+			'country_iso2'    => isset( $request['rwgc_route_country_iso2'] )
+				? sanitize_text_field( wp_unslash( $request['rwgc_route_country_iso2'] ) )
+				: '',
+			'country_page_id' => $has_country_page
+				? absint( wp_unslash( $request['rwgc_route_country_page_id'] ) )
+				: ( isset( $existing['country_page_id'] ) ? absint( $existing['country_page_id'] ) : 0 ),
+			'role'            => isset( $request['rwgc_route_role'] )
+				? sanitize_key( wp_unslash( $request['rwgc_route_role'] ) )
+				: 'master',
+			'master_page_id'  => isset( $request['rwgc_route_master_page_id'] )
+				? absint( wp_unslash( $request['rwgc_route_master_page_id'] ) )
+				: 0,
+		);
+	}
+
+	/**
+	 * Master config after attaching a Suite country variant.
+	 *
+	 * Clears legacy inline ISO2→page mapping when it targets the same country so
+	 * priority-55 inline variants cannot shadow the Suite child (priority 50).
+	 *
+	 * @param array<string, mixed> $master_config Existing get_page_route_config() output.
+	 * @param string               $country_iso2  Suite variant country.
+	 * @return array<string, mixed>
+	 */
+	public static function master_config_for_suite_variant( array $master_config, $country_iso2 ) {
+		$out            = $master_config;
+		$out['enabled'] = true;
+		$out['role']    = 'master';
+
+		$country_iso2 = strtoupper( sanitize_text_field( (string) $country_iso2 ) );
+		$inline_iso   = isset( $out['country_iso2'] ) ? strtoupper( (string) $out['country_iso2'] ) : '';
+		$inline_page  = isset( $out['country_page_id'] ) ? absint( $out['country_page_id'] ) : 0;
+
+		if ( '' !== $country_iso2 && $inline_page > 0 && $inline_iso === $country_iso2 ) {
+			$out['country_iso2']    = '';
+			$out['country_page_id'] = 0;
+		}
+
+		return $out;
+	}
+
+	/**
 	 * Persist sanitized route config to page meta.
 	 *
 	 * @param int   $page_id Page ID.

@@ -1622,13 +1622,10 @@ class RWGC_Admin {
 			return;
 		}
 
-		$config = array(
-			'enabled'         => ! empty( $_POST['rwgc_route_enabled'] ),
-			'default_page_id' => isset( $_POST['rwgc_route_default_page_id'] ) ? absint( wp_unslash( $_POST['rwgc_route_default_page_id'] ) ) : 0,
-			'country_iso2'    => isset( $_POST['rwgc_route_country_iso2'] ) ? sanitize_text_field( wp_unslash( $_POST['rwgc_route_country_iso2'] ) ) : '',
-			'country_page_id' => isset( $_POST['rwgc_route_country_page_id'] ) ? absint( wp_unslash( $_POST['rwgc_route_country_page_id'] ) ) : 0,
-			'role'            => isset( $_POST['rwgc_route_role'] ) ? sanitize_key( wp_unslash( $_POST['rwgc_route_role'] ) ) : 'master',
-			'master_page_id'  => isset( $_POST['rwgc_route_master_page_id'] ) ? absint( wp_unslash( $_POST['rwgc_route_master_page_id'] ) ) : 0,
+		$existing = RWGC_Routing::get_page_route_config( (int) $post_id );
+		$config   = RWGC_Routing::route_config_from_meta_box_request(
+			is_array( $_POST ) ? $_POST : array(),
+			$existing
 		);
 
 		if ( ! empty( $config['enabled'] ) && 'variant' === $config['role'] ) {
