@@ -101,15 +101,12 @@ class RWGC_Variant_Manager {
 		}
 
 		// Ensure master is configured as the default page for routing.
-		$mconf = RWGC_Routing::get_page_route_config( $master_page_id );
+		// Clear same-country legacy inline mapping so it cannot shadow this Suite child.
 		RWGC_Routing::save_page_route_config(
 			$master_page_id,
-			array_merge(
-				$mconf,
-				array(
-					'enabled' => true,
-					'role'    => 'master',
-				)
+			RWGC_Routing::master_config_for_suite_variant(
+				RWGC_Routing::get_page_route_config( $master_page_id ),
+				$country_iso2
 			)
 		);
 
@@ -214,15 +211,12 @@ class RWGC_Variant_Manager {
 			return new \WP_Error( 'rwgc_vm_taken', __( 'That country is already used for another variant of this page.', 'reactwoo-geocore' ) );
 		}
 
-		$mconf = RWGC_Routing::get_page_route_config( $master_page_id );
+		// Clear same-country legacy inline mapping so it cannot shadow this Suite child.
 		RWGC_Routing::save_page_route_config(
 			$master_page_id,
-			array_merge(
-				$mconf,
-				array(
-					'enabled' => true,
-					'role'    => 'master',
-				)
+			RWGC_Routing::master_config_for_suite_variant(
+				RWGC_Routing::get_page_route_config( $master_page_id ),
+				$country_iso2
 			)
 		);
 
