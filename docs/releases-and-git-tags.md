@@ -100,6 +100,8 @@ This is the **plugin release pipeline** for **Geo Core**, **GeoCore Pro**, **Geo
 - Metadata: `GET https://api.reactwoo.com/api/v5/updates/latest/reactwoo-geocore?format=json`
 - Optional: `?key=latest` signs the mutable `…/latest/….zip` object instead of the versioned key
 
+**My Account (paid satellites):** Geo Core free stays on the public `GET /latest/:slug` path above. Paid satellites are **not** on `UPDATES_FREE_SLUGS`. Customers with an active subscription download via reactwoo.com My Account → API Manager proxy → **`POST /api/v5/updates/store-download`** (Bearer **`UPDATES_STORE_DOWNLOAD_TOKEN`**). Product meta **`_reactwoo_plugin_slug`** maps the Woo product to the catalog slug. Satellite CI dual-uploads `plugins/{slug}/latest/{slug}.zip` like Core.
+
 WordPress auto-updates still use **`POST /api/v5/updates/check`** (unchanged).
 
 **No `git` runs on the server for this path.** GitHub Actions does not SSH to cPanel and does not `git pull` on `api.reactwoo.com`. Orbi’s “password authentication is not supported for Git operations” message in **`api.reactwoo.com/logs/err.log`** refers only to the **API self-deploy webhook** (`POST /api/v5/deploy` → `git fetch`), not to Geo plugin R2 publishes.
