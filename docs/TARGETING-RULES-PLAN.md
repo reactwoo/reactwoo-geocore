@@ -32,7 +32,7 @@ Portable JSON rule sets (`enabled`, `mode`, `match`, `rules[]` with nested `cond
 ## Test checklist (manual)
 
 1. **Elementor — legacy:** enable geo, countries only, no portable switch → behaviour unchanged. Classic stacks keep **Advanced → Geo Visibility**.
-1b. **Elementor Atomic (V4):** sibling **Geo Visibility** section via `RWGC_Elementor_Atomic_Geo` (`elementor/atomic-widgets/props-schema` + `controls`); same `egp_*` / `rwgc_*` keys; countries as comma-separated ISO text; Pro library Select; evaluator via `RWGC_Surface_Settings::normalize()` + nestable `should_render`.
+1b. **Elementor Atomic (V4):** **Geo Visibility** via `RWGC_Elementor_Atomic_Geo` on `elementor/init` (`props-schema` + `controls`); injects into General `settings` (fallback sibling section); same `egp_*` / `rwgc_*` keys; countries as comma-separated ISO text; Pro library Select; evaluator via `RWGC_Surface_Settings::normalize()` + nestable `should_render`.
 2. **Elementor — portable country only:** paste JSON with one rule `country` `in` `["GB"]`, mode `show`, enabled `true` → UK sees content, others not.
 3. **Empty country list:** condition `country` `in` `[]` omitted or empty array → rule still passes (all countries).
 4. **Top-level `match`:** two rules, `any` vs `all` — verify OR vs AND across rules.

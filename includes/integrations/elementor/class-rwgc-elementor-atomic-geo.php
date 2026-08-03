@@ -1,8 +1,9 @@
 <?php
 /**
- * Elementor Atomic (V4) Geo Visibility section via official Atomic filters.
+ * Elementor Atomic (V4) Geo Visibility controls via official Atomic filters.
  *
  * Classic Advanced-tab controls stay in {@see RWGC_Elementor_Geo_Controls}.
+ * Atomic has no Advanced tab — controls land under General (`settings` section).
  *
  * @package ReactWoo_Geo_Core
  */
@@ -20,14 +21,15 @@ class RWGC_Elementor_Atomic_Geo {
 	 * @return void
 	 */
 	public static function init() {
-		add_action( 'elementor/loaded', array( __CLASS__, 'register_hooks' ), 20 );
+		// Match Elementor promotions: wait for elementor/init so experiments + Atomic API exist.
+		add_action( 'elementor/init', array( __CLASS__, 'register_hooks' ), 20 );
 	}
 
 	/**
 	 * @return void
 	 */
 	public static function register_hooks() {
-		if ( ! self::atomic_api_available() ) {
+		if ( ! self::is_atomic_widgets_active() ) {
 			return;
 		}
 
@@ -36,15 +38,35 @@ class RWGC_Elementor_Atomic_Geo {
 	}
 
 	/**
+	 * Elementor experiment gate (same as promotions module).
+	 *
+	 * @return bool
+	 */
+	private static function is_atomic_widgets_active() {
+		if ( ! class_exists( '\Elementor\Plugin', false ) ) {
+			return false;
+		}
+
+		$plugin = \Elementor\Plugin::$instance;
+		if ( ! $plugin || ! isset( $plugin->experiments ) || ! is_object( $plugin->experiments ) ) {
+			return false;
+		}
+
+		return (bool) $plugin->experiments->is_feature_active( 'e_atomic_elements' );
+	}
+
+	/**
+	 * Autoload Atomic API classes when filters run (editor / widget config).
+	 *
 	 * @return bool
 	 */
 	private static function atomic_api_available() {
-		return class_exists( '\Elementor\Modules\AtomicWidgets\Controls\Section', false )
-			&& class_exists( '\Elementor\Modules\AtomicWidgets\Controls\Types\Switch_Control', false )
-			&& class_exists( '\Elementor\Modules\AtomicWidgets\Controls\Types\Select_Control', false )
-			&& class_exists( '\Elementor\Modules\AtomicWidgets\Controls\Types\Text_Control', false )
-			&& class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\Boolean_Prop_Type', false )
-			&& class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type', false );
+		return class_exists( '\Elementor\Modules\AtomicWidgets\Controls\Section' )
+			&& class_exists( '\Elementor\Modules\AtomicWidgets\Controls\Types\Switch_Control' )
+			&& class_exists( '\Elementor\Modules\AtomicWidgets\Controls\Types\Select_Control' )
+			&& class_exists( '\Elementor\Modules\AtomicWidgets\Controls\Types\Text_Control' )
+			&& class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\Boolean_Prop_Type' )
+			&& class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type' );
 	}
 
 	/**
@@ -54,6 +76,10 @@ class RWGC_Elementor_Atomic_Geo {
 	 * @return array<string, mixed>
 	 */
 	public static function filter_props_schema( $schema ) {
+		if ( ! self::atomic_api_available() ) {
+			return is_array( $schema ) ? $schema : array();
+		}
+
 		if ( ! is_array( $schema ) ) {
 			$schema = array();
 		}
@@ -61,19 +87,33 @@ class RWGC_Elementor_Atomic_Geo {
 		$boolean = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\Boolean_Prop_Type';
 		$string  = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type';
 
-		$schema['egp_enable_geo_targeting']        = $boolean::make()->default( false );
-		$schema['rwgc_country_visibility_mode']    = $string::make()->enum( array( 'show_if', 'hide_if' ) )->default( 'show_if' );
-		$schema['egp_countries']                   = $string::make()->default( '' );
-		$schema['rwgc_enable_visibility_rules']    = $boolean::make()->default( false );
-		$schema['rwgc_visibility_rules_mode']      = $string::make()->enum( array( 'show_if', 'hide_if' ) )->default( 'show_if' );
-		$schema['rwgc_visibility_rule_library']    = $string::make()->default( '' );
-		$schema['rwgc_applied_visibility_rule_id'] = $string::make()->default( '' );
+		if ( ! isset( $schema['egp_enable_geo_targeting'] ) ) {
+			$schema['egp_enable_geo_targeting'] = $boolean::make()->default( false );
+		}
+		if ( ! isset( $schema['rwgc_country_visibility_mode'] ) ) {
+			$schema['rwgc_country_visibility_mode'] = $string::make()->enum( array( 'show_if', 'hide_if' ) )->default( 'show_if' );
+		}
+		if ( ! isset( $schema['egp_countries'] ) ) {
+			$schema['egp_countries'] = $string::make()->default( '' );
+		}
+		if ( ! isset( $schema['rwgc_enable_visibility_rules'] ) ) {
+			$schema['rwgc_enable_visibility_rules'] = $boolean::make()->default( false );
+		}
+		if ( ! isset( $schema['rwgc_visibility_rules_mode'] ) ) {
+			$schema['rwgc_visibility_rules_mode'] = $string::make()->enum( array( 'show_if', 'hide_if' ) )->default( 'show_if' );
+		}
+		if ( ! isset( $schema['rwgc_visibility_rule_library'] ) ) {
+			$schema['rwgc_visibility_rule_library'] = $string::make()->default( '' );
+		}
+		if ( ! isset( $schema['rwgc_applied_visibility_rule_id'] ) ) {
+			$schema['rwgc_applied_visibility_rule_id'] = $string::make()->default( '' );
+		}
 
 		return $schema;
 	}
 
 	/**
-	 * Append a sibling Geo Visibility section (not Advanced tab).
+	 * Inject Geo Visibility into General (`settings`) when present; otherwise append a sibling section.
 	 *
 	 * @param array<int, mixed>       $controls Existing Atomic sections.
 	 * @param \Elementor\Element_Base $element  Element instance.
@@ -82,32 +122,100 @@ class RWGC_Elementor_Atomic_Geo {
 	public static function filter_controls( $controls, $element = null ) {
 		unset( $element );
 
+		if ( ! self::atomic_api_available() ) {
+			return is_array( $controls ) ? $controls : array();
+		}
+
 		if ( ! is_array( $controls ) ) {
 			$controls = array();
 		}
 
-		$section = self::build_geo_visibility_section();
-		if ( null === $section ) {
+		if ( self::controls_already_injected( $controls ) ) {
 			return $controls;
 		}
 
-		$controls[] = $section;
+		$items = self::build_geo_visibility_items();
+		if ( empty( $items ) ) {
+			return $controls;
+		}
+
+		$section_class = '\Elementor\Modules\AtomicWidgets\Controls\Section';
+		$settings      = self::find_settings_section( $controls );
+
+		if ( $settings instanceof $section_class ) {
+			foreach ( $items as $item ) {
+				$settings->add_item( $item );
+			}
+			return $controls;
+		}
+
+		$controls[] = $section_class::make()
+			->set_label( __( 'Geo Visibility', 'reactwoo-geocore' ) )
+			->set_id( 'rwgc_geo_visibility' )
+			->set_items( $items );
+
 		return $controls;
 	}
 
 	/**
-	 * @return \Elementor\Modules\AtomicWidgets\Controls\Section|null
+	 * @param array<int, mixed> $controls Controls list.
+	 * @return bool
 	 */
-	private static function build_geo_visibility_section() {
+	private static function controls_already_injected( array $controls ) {
 		$section_class = '\Elementor\Modules\AtomicWidgets\Controls\Section';
-		$switch        = '\Elementor\Modules\AtomicWidgets\Controls\Types\Switch_Control';
-		$select        = '\Elementor\Modules\AtomicWidgets\Controls\Types\Select_Control';
-		$text          = '\Elementor\Modules\AtomicWidgets\Controls\Types\Text_Control';
+
+		foreach ( $controls as $section ) {
+			if ( ! ( $section instanceof $section_class ) ) {
+				continue;
+			}
+
+			if ( 'rwgc_geo_visibility' === $section->get_id() ) {
+				return true;
+			}
+
+			foreach ( (array) $section->get_items() as $item ) {
+				if ( is_object( $item ) && method_exists( $item, 'get_bind' ) && 'egp_enable_geo_targeting' === $item->get_bind() ) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * @param array<int, mixed> $controls Controls list.
+	 * @return object|null
+	 */
+	private static function find_settings_section( array $controls ) {
+		$section_class = '\Elementor\Modules\AtomicWidgets\Controls\Section';
+
+		foreach ( $controls as $section ) {
+			if ( $section instanceof $section_class && 'settings' === $section->get_id() ) {
+				return $section;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * @return array<int, mixed>
+	 */
+	private static function build_geo_visibility_items() {
+		$switch = '\Elementor\Modules\AtomicWidgets\Controls\Types\Switch_Control';
+		$select = '\Elementor\Modules\AtomicWidgets\Controls\Types\Select_Control';
+		$text   = '\Elementor\Modules\AtomicWidgets\Controls\Types\Text_Control';
 
 		$items = array(
 			$switch::bind_to( 'egp_enable_geo_targeting' )
 				->set_label( __( 'Enable country targeting', 'reactwoo-geocore' ) )
-				->set_description( __( 'Limit by visitor country. Leave countries empty to allow all countries.', 'reactwoo-geocore' ) ),
+				->set_description( __( 'Limit by visitor country. Leave countries empty to allow all countries.', 'reactwoo-geocore' ) )
+				->set_meta(
+					array(
+						'topDivider' => true,
+					)
+				),
 			$select::bind_to( 'rwgc_country_visibility_mode' )
 				->set_label( __( 'Country visibility', 'reactwoo-geocore' ) )
 				->set_options(
@@ -133,18 +241,7 @@ class RWGC_Elementor_Atomic_Geo {
 			$items = array_merge( $items, self::build_visibility_rules_items( $switch, $select ) );
 		}
 
-		$section = $section_class::make()
-			->set_label( __( 'Geo Visibility', 'reactwoo-geocore' ) )
-			->set_id( 'rwgc_geo_visibility' )
-			->set_items( $items );
-
-		if ( ! $pro_enabled ) {
-			$section->set_description(
-				__( 'Multi-condition visibility (device, UTM, audiences, and more) requires GeoCore Pro. Country targeting above is included in GeoCore Free.', 'reactwoo-geocore' )
-			);
-		}
-
-		return $section;
+		return $items;
 	}
 
 	/**
@@ -158,7 +255,12 @@ class RWGC_Elementor_Atomic_Geo {
 		return array(
 			$switch::bind_to( 'rwgc_enable_visibility_rules' )
 				->set_label( __( 'Enable visibility rules', 'reactwoo-geocore' ) )
-				->set_description( __( 'Use a saved library rule. Independent of country targeting.', 'reactwoo-geocore' ) ),
+				->set_description( __( 'Use a saved library rule. Independent of country targeting.', 'reactwoo-geocore' ) )
+				->set_meta(
+					array(
+						'topDivider' => true,
+					)
+				),
 			$select::bind_to( 'rwgc_visibility_rules_mode' )
 				->set_label( __( 'Visibility rules mode', 'reactwoo-geocore' ) )
 				->set_options(
