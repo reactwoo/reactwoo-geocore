@@ -2,28 +2,37 @@
 
 ## Status
 
-**done** — Atomic Geo Visibility for Geo Core **v1.8.121**.
+**done** — Critical bug hunt (cron `eda296cd`, 2026-08-03): **no new critical bug**.
 
-## Files changed
+## Scope
 
-- `includes/integrations/elementor/class-rwgc-elementor-atomic-geo.php` — new Atomic bridge (`props-schema` + `controls` → Geo Visibility section)
-- `includes/integrations/class-rwgc-integrations-loader.php` — load/init Atomic bridge
-- `includes/targeting/class-rwgc-surface-settings.php` — unwrap Atomic `{$$type,value}` + boolean → `yes`/`''`; mirror library → applied id
-- `includes/integrations/elementor/class-rwgc-elementor-frontend.php` — prefer `get_atomic_settings()`; nestable Atomic `should_render` hooks
-- `reactwoo-geocore.php`, `readme.txt` — **1.8.121**
-- `docs/TARGETING-RULES-PLAN.md` — Atomic dual-path note
+- Tip: `d4ff4b1` / **v1.8.122** (`origin/main`)
+- New since last hunt (`87fb935` / #48): Atomic Geo Visibility (`0f41724`), docs/version bumps only otherwise
+- Open PRs still covering known criticals: #1–#48 (do not duplicate)
+
+## Reviewed
+
+- `RWGC_Elementor_Atomic_Geo` props-schema + controls (API matches Elementor Atomic Switch/Select/Text/Section)
+- `RWGC_Elementor_Frontend::get_element_settings()` preferring `get_atomic_settings()` (Props_Resolver already unwraps; classic widgets unchanged)
+- Nestable hooks for `e-div-block` / `e-flexbox` / `e-grid` / tabs (registered after `elements_registered`, before `frontend/init`)
+- `RWGC_Surface_Settings::normalize_yes_flag` / `unwrap_atomic_props` / library→applied mirror
+
+## Rejected (not new criticals)
+
+1. Library ID active while Enable switch off — pre-existing evaluator `has_resolved_portable_config` behavior; Atomic only exposes select always-on
+2. Atomic path omitting classic portable JSON keys — Atomic UI is library/country only; no migration plants those keys
+3. Classic SWITCHER/`egp_countries` array shapes fatalling Atomic Props_Parser — no supported classic→Atomic settings copy
 
 ## What was not changed
 
-- Classic Advanced-tab registration (`RWGC_Elementor_Geo_Controls` / Elements hooks)
-- reactwoo-atomic widgets (ownership stays in Geo Core)
-- Full Select2 country UI / portable rule-builder textarea inside Atomic
+- No product code fix (confidence bar not met for a PR)
+- Open PR issues (#17/#18/#21/#25–#28/#31/#33/#35/#37/#40–#48) left as-is
 
 ## Commands run
 
-- `php -l` on changed PHP files — pass
+- `git log` / `gh pr list` — tip + open PR inventory
+- Elementor Atomic upstream cross-check (`get_atomic_settings`, `should_render`, Select options shape)
 
-## Remaining (manual)
+## Remaining
 
-- Editor: Atomic Carousel/Off-Canvas show **Geo Visibility** under Settings; classic Advanced still works
-- Frontend: country ISO string + Pro library rule hide/show; nestable Off-Canvas `should_render`; builder edit skips hide
+- None for this hunt. Expected outcome: no PR.
