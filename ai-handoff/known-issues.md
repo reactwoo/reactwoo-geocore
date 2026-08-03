@@ -36,6 +36,18 @@
 
 ---
 
+### Elementor geo popup cannot close in matching country
+
+**Symptoms:** Allowed-country popup opens but X / overlay / Escape leaves it stuck on screen.
+
+**Tried:** Session dismiss flags + fallback stop (1.8.x) — reopen stopped, but modal still stuck when force-show used `display:flex !important`.
+
+**Likely causes:** `forceShowModalDom` !important styles not cleared on close; early `return` after `modal.hide()`.
+
+**Do not retry:** Relying on Elementor `hide()` alone after force-show without clearing `!important` inline styles.
+
+---
+
 ### Elementor Elements panel — widgets-config 503 (suite)
 
 **Symptoms:** Elements panel spins; `admin-ajax.php` `elementor_ajax` / `get_widgets_config` returns HTTP 503.

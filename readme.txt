@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.8.124
+Stable tag: 1.8.125
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.125 =
+* **Elementor Popups:** Fix geo-allowed popups that could not be closed after force-show (`display:flex !important` was never cleared on dismiss).
 
 = 1.8.124 =
 * **Elementor Atomic:** Replace comma-separated ISO country text with a selectable country chips control (canonical country list), matching classic Geo Visibility UX.
