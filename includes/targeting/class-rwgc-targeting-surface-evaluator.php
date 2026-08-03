@@ -310,8 +310,18 @@ class RWGC_Targeting_Surface_Evaluator {
 	 */
 	public static function parse_countries( array $settings ) {
 		$raw = isset( $settings['egp_countries'] ) ? $settings['egp_countries'] : '';
+		if ( is_array( $raw ) && array_key_exists( '$$type', $raw ) && array_key_exists( 'value', $raw ) ) {
+			$raw = $raw['value'];
+		}
 		if ( is_array( $raw ) ) {
-			$list = $raw;
+			$list = array();
+			foreach ( $raw as $item ) {
+				if ( is_array( $item ) && array_key_exists( 'value', $item ) ) {
+					$list[] = $item['value'];
+				} else {
+					$list[] = $item;
+				}
+			}
 		} elseif ( is_string( $raw ) && '' !== trim( $raw ) ) {
 			$list = preg_split( '/[\s,]+/', $raw, -1, PREG_SPLIT_NO_EMPTY );
 			$list = is_array( $list ) ? $list : array();

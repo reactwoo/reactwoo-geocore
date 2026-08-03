@@ -64,9 +64,10 @@ class RWGC_Elementor_Atomic_Geo {
 		return class_exists( '\Elementor\Modules\AtomicWidgets\Controls\Section' )
 			&& class_exists( '\Elementor\Modules\AtomicWidgets\Controls\Types\Switch_Control' )
 			&& class_exists( '\Elementor\Modules\AtomicWidgets\Controls\Types\Select_Control' )
-			&& class_exists( '\Elementor\Modules\AtomicWidgets\Controls\Types\Text_Control' )
+			&& class_exists( '\Elementor\Modules\AtomicWidgets\Controls\Types\Chips_Control' )
 			&& class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\Boolean_Prop_Type' )
-			&& class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type' );
+			&& class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type' )
+			&& class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Array_Prop_Type' );
 	}
 
 	/**
@@ -84,8 +85,9 @@ class RWGC_Elementor_Atomic_Geo {
 			$schema = array();
 		}
 
-		$boolean = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\Boolean_Prop_Type';
-		$string  = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type';
+		$boolean      = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\Boolean_Prop_Type';
+		$string       = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type';
+		$string_array = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Array_Prop_Type';
 
 		if ( ! isset( $schema['egp_enable_geo_targeting'] ) ) {
 			$schema['egp_enable_geo_targeting'] = $boolean::make()->default( false );
@@ -93,9 +95,8 @@ class RWGC_Elementor_Atomic_Geo {
 		if ( ! isset( $schema['rwgc_country_visibility_mode'] ) ) {
 			$schema['rwgc_country_visibility_mode'] = $string::make()->enum( array( 'show_if', 'hide_if' ) )->default( 'show_if' );
 		}
-		if ( ! isset( $schema['egp_countries'] ) ) {
-			$schema['egp_countries'] = $string::make()->default( '' );
-		}
+		// Always use selectable string-array (never CSV / free-typed ISO text).
+		$schema['egp_countries'] = $string_array::make()->default( array() );
 		if ( ! isset( $schema['rwgc_enable_visibility_rules'] ) ) {
 			$schema['rwgc_enable_visibility_rules'] = $boolean::make()->default( false );
 		}
@@ -205,7 +206,7 @@ class RWGC_Elementor_Atomic_Geo {
 	private static function build_geo_visibility_items() {
 		$switch = '\Elementor\Modules\AtomicWidgets\Controls\Types\Switch_Control';
 		$select = '\Elementor\Modules\AtomicWidgets\Controls\Types\Select_Control';
-		$text   = '\Elementor\Modules\AtomicWidgets\Controls\Types\Text_Control';
+		$chips  = '\Elementor\Modules\AtomicWidgets\Controls\Types\Chips_Control';
 
 		$items = array(
 			$switch::bind_to( 'egp_enable_geo_targeting' )
@@ -230,10 +231,11 @@ class RWGC_Elementor_Atomic_Geo {
 						),
 					)
 				),
-			$text::bind_to( 'egp_countries' )
-				->set_label( __( 'Countries (ISO codes)', 'reactwoo-geocore' ) )
-				->set_placeholder( 'US, GB, DE' )
-				->set_description( __( 'Comma-separated ISO 3166-1 alpha-2 codes (e.g. US, GB, DE).', 'reactwoo-geocore' ) ),
+			$chips::bind_to( 'egp_countries' )
+				->set_label( __( 'Countries', 'reactwoo-geocore' ) )
+				->set_options( self::get_country_chip_options() )
+				->set_free_chips( false )
+				->set_description( __( 'Search and pick countries. Leave empty for all countries.', 'reactwoo-geocore' ) ),
 		);
 
 		$pro_enabled = function_exists( 'rwgc_advanced_targeting_enabled' ) && rwgc_advanced_targeting_enabled();
@@ -280,6 +282,38 @@ class RWGC_Elementor_Atomic_Geo {
 				->set_options( self::get_library_select_options_for_atomic() )
 				->set_description( __( 'Portable library rules only (Targeting → Visibility rules).', 'reactwoo-geocore' ) ),
 		);
+	}
+
+	/**
+	 * Canonical country list as Atomic chips { value, label } rows.
+	 *
+	 * @return array<int, array{value: string, label: string}>
+	 */
+	private static function get_country_chip_options() {
+		static $rows = null;
+		if ( null !== $rows ) {
+			return $rows;
+		}
+
+		$options = array();
+		if ( class_exists( 'RWGC_Elementor_Geo_Controls', false ) ) {
+			$options = RWGC_Elementor_Geo_Controls::get_country_options();
+		} elseif ( class_exists( 'RWGC_Elementor_Elements', false ) ) {
+			$options = RWGC_Elementor_Elements::get_country_options();
+		} elseif ( class_exists( 'RWGC_Countries', false ) ) {
+			$list = RWGC_Countries::get_options();
+			$options = is_array( $list ) ? $list : array();
+		}
+
+		$rows = array();
+		foreach ( $options as $value => $label ) {
+			$rows[] = array(
+				'value' => (string) $value,
+				'label' => (string) $label,
+			);
+		}
+
+		return $rows;
 	}
 
 	/**

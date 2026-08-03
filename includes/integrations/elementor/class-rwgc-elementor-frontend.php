@@ -250,6 +250,10 @@ class RWGC_Elementor_Frontend {
 	 * @return array<int, string>
 	 */
 	private static function parse_countries( array $settings ) {
+		if ( class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
+			return RWGC_Targeting_Surface_Evaluator::parse_countries( $settings );
+		}
+
 		$raw = isset( $settings['egp_countries'] ) ? $settings['egp_countries'] : '';
 		if ( is_array( $raw ) ) {
 			$list = $raw;

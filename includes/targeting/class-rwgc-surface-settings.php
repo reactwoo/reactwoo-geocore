@@ -57,11 +57,13 @@ class RWGC_Surface_Settings {
 			$out['rwgc_applied_visibility_rule_id'] = $library_id;
 		}
 
+		$out['egp_countries'] = self::normalize_country_codes( $out['egp_countries'] ?? null );
+
 		return $out;
 	}
 
 	/**
-	 * Unwrap Elementor Atomic `{ $$type, value }` props when present.
+	 * Unwrap Elementor Atomic `{ $$type, value }` props when present (including nested string-array items).
 	 *
 	 * @param array<string, mixed> $settings Raw settings.
 	 * @return array<string, mixed>
@@ -69,13 +71,53 @@ class RWGC_Surface_Settings {
 	private static function unwrap_atomic_props( array $settings ) {
 		$out = array();
 		foreach ( $settings as $key => $value ) {
-			if ( is_array( $value ) && array_key_exists( '$$type', $value ) && array_key_exists( 'value', $value ) ) {
-				$out[ $key ] = $value['value'];
-				continue;
-			}
-			$out[ $key ] = $value;
+			$out[ $key ] = self::unwrap_atomic_value( $value );
 		}
 		return $out;
+	}
+
+	/**
+	 * @param mixed $value Raw prop value.
+	 * @return mixed
+	 */
+	private static function unwrap_atomic_value( $value ) {
+		if ( is_array( $value ) && array_key_exists( '$$type', $value ) && array_key_exists( 'value', $value ) ) {
+			return self::unwrap_atomic_value( $value['value'] );
+		}
+		if ( is_array( $value ) ) {
+			$unwrapped = array();
+			foreach ( $value as $item ) {
+				$unwrapped[] = self::unwrap_atomic_value( $item );
+			}
+			return $unwrapped;
+		}
+		return $value;
+	}
+
+	/**
+	 * Normalize country list to uppercase ISO2 codes (array or legacy delimited string).
+	 *
+	 * @param mixed $raw Countries prop.
+	 * @return array<int, string>
+	 */
+	private static function normalize_country_codes( $raw ) {
+		if ( is_array( $raw ) ) {
+			$list = $raw;
+		} elseif ( is_string( $raw ) && '' !== trim( $raw ) ) {
+			$list = preg_split( '/[\s,]+/', $raw, -1, PREG_SPLIT_NO_EMPTY );
+			$list = is_array( $list ) ? $list : array();
+		} else {
+			$list = array();
+		}
+
+		$out = array();
+		foreach ( $list as $code ) {
+			$code = strtoupper( sanitize_text_field( (string) $code ) );
+			if ( 2 === strlen( $code ) ) {
+				$out[] = $code;
+			}
+		}
+		return array_values( array_unique( $out ) );
 	}
 
 	/**
