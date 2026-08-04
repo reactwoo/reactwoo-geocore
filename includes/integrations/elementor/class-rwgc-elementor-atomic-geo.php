@@ -67,7 +67,8 @@ class RWGC_Elementor_Atomic_Geo {
 			&& class_exists( '\Elementor\Modules\AtomicWidgets\Controls\Types\Chips_Control' )
 			&& class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\Boolean_Prop_Type' )
 			&& class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type' )
-			&& class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Array_Prop_Type' );
+			&& class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Array_Prop_Type' )
+			&& class_exists( '\Elementor\Modules\AtomicWidgets\PropTypes\Union_Prop_Type' );
 	}
 
 	/**
@@ -88,6 +89,7 @@ class RWGC_Elementor_Atomic_Geo {
 		$boolean      = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\Boolean_Prop_Type';
 		$string       = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type';
 		$string_array = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Array_Prop_Type';
+		$union        = '\Elementor\Modules\AtomicWidgets\PropTypes\Union_Prop_Type';
 
 		if ( ! isset( $schema['egp_enable_geo_targeting'] ) ) {
 			$schema['egp_enable_geo_targeting'] = $boolean::make()->default( false );
@@ -95,8 +97,11 @@ class RWGC_Elementor_Atomic_Geo {
 		if ( ! isset( $schema['rwgc_country_visibility_mode'] ) ) {
 			$schema['rwgc_country_visibility_mode'] = $string::make()->enum( array( 'show_if', 'hide_if' ) )->default( 'show_if' );
 		}
-		// Always use selectable string-array (never CSV / free-typed ISO text).
-		$schema['egp_countries'] = $string_array::make()->default( array() );
+		// Chips use string-array; keep legacy string (ISO / CSV) resolvable so targeting does not fail-open.
+		$schema['egp_countries'] = $union::make()
+			->add_prop_type( $string_array::make() )
+			->add_prop_type( $string::make() )
+			->default( array(), 'string-array' );
 		if ( ! isset( $schema['rwgc_enable_visibility_rules'] ) ) {
 			$schema['rwgc_enable_visibility_rules'] = $boolean::make()->default( false );
 		}

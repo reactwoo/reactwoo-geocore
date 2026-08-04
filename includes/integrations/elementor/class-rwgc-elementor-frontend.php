@@ -104,11 +104,24 @@ class RWGC_Elementor_Frontend {
 	/**
 	 * Resolve display settings — prefer Atomic resolved props when available.
 	 *
+	 * When Atomic schema rejects a saved prop (e.g. legacy `string` countries after
+	 * the `string-array` chips change), `get_atomic_settings()` returns null for that
+	 * key while other props remain. Empty countries then fail-open and show FR content
+	 * to UK visitors — recover geo keys from raw `get_settings()`.
+	 *
 	 * @param \Elementor\Element_Base $element Element.
 	 * @return array<string, mixed>
 	 */
 	private static function get_element_settings( $element ) {
 		$settings = array();
+		$raw      = array();
+
+		if ( is_object( $element ) && method_exists( $element, 'get_settings' ) ) {
+			$maybe_raw = $element->get_settings();
+			if ( is_array( $maybe_raw ) ) {
+				$raw = $maybe_raw;
+			}
+		}
 
 		if ( is_object( $element ) && method_exists( $element, 'get_atomic_settings' ) ) {
 			$atomic = $element->get_atomic_settings();
@@ -124,11 +137,80 @@ class RWGC_Elementor_Frontend {
 			}
 		}
 
+		$settings = self::merge_raw_geo_settings( $settings, $raw );
+
 		if ( class_exists( 'RWGC_Surface_Settings', false ) ) {
 			$settings = RWGC_Surface_Settings::normalize( $settings );
 		}
 
 		return $settings;
+	}
+
+	/**
+	 * Overlay raw geo props when Atomic resolve dropped them (null / empty countries).
+	 *
+	 * @param array<string, mixed> $settings Resolved / display settings.
+	 * @param array<string, mixed> $raw      Raw element settings.
+	 * @return array<string, mixed>
+	 */
+	private static function merge_raw_geo_settings( array $settings, array $raw ) {
+		if ( empty( $raw ) ) {
+			return $settings;
+		}
+
+		$geo_keys = array(
+			'egp_enable_geo_targeting',
+			'egp_geo_enabled',
+			'egp_countries',
+			'rwgc_country_visibility_mode',
+			'rwgc_enable_visibility_rules',
+			'rwgc_visibility_rules_mode',
+			'rwgc_visibility_rule_library',
+			'rwgc_applied_visibility_rule_id',
+			'rwgc_visibility_mode',
+			'rwgc_geo_mode',
+			'rwgc_use_portable_geo_targeting',
+			'egp_use_portable_geo_targeting',
+			'rwgc_portable_geo_targeting',
+			'egp_portable_geo_targeting',
+		);
+
+		foreach ( $geo_keys as $key ) {
+			if ( ! array_key_exists( $key, $raw ) || ! self::raw_geo_value_has_data( $raw[ $key ] ) ) {
+				continue;
+			}
+
+			$resolved_missing = ! array_key_exists( $key, $settings ) || null === $settings[ $key ];
+			$resolved_empty_countries = ( 'egp_countries' === $key )
+				&& array_key_exists( $key, $settings )
+				&& (
+					( is_array( $settings[ $key ] ) && array() === $settings[ $key ] )
+					|| ( is_string( $settings[ $key ] ) && '' === trim( $settings[ $key ] ) )
+				);
+
+			if ( $resolved_missing || $resolved_empty_countries ) {
+				$settings[ $key ] = $raw[ $key ];
+			}
+		}
+
+		return $settings;
+	}
+
+	/**
+	 * @param mixed $value Raw setting value.
+	 * @return bool
+	 */
+	private static function raw_geo_value_has_data( $value ) {
+		if ( null === $value || false === $value || '' === $value ) {
+			return false;
+		}
+		if ( is_array( $value ) ) {
+			if ( array_key_exists( '$$type', $value ) && array_key_exists( 'value', $value ) ) {
+				return self::raw_geo_value_has_data( $value['value'] );
+			}
+			return array() !== $value;
+		}
+		return true;
 	}
 
 	/**

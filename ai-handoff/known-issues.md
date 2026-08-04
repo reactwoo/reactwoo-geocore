@@ -36,6 +36,18 @@
 
 ---
 
+### Atomic France content visible from UK (empty countries fail-open)
+
+**Symptoms:** After chips control (1.8.124), content gated to France shows for UK visitors.
+
+**Tried:** Preferring only `get_atomic_settings()` — drops legacy `string` countries when schema is `string-array` only.
+
+**Likely causes:** Elementor `Props_Resolver` returns `null` when `$$type` ≠ schema key; evaluator treats empty countries as match-all.
+
+**Do not retry:** Changing empty-list product rule to fail-closed without product sign-off; forcing ISO CSV text control again.
+
+---
+
 ### Elementor geo popup cannot close in matching country
 
 **Symptoms:** Allowed-country popup opens but X / overlay / Escape leaves it stuck on screen.
