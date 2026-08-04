@@ -71,6 +71,32 @@ class RWGC_Elementor_Atomic_Geo {
 	}
 
 	/**
+	 * Countries prop schema: chips write string-array; keep legacy Atomic CSV strings resolvable.
+	 *
+	 * Elementor's props resolver returns null when `$$type` does not match the schema key.
+	 * Documents saved with the 1.8.122–1.8.123 Text_Control used `$$type: string`; a
+	 * string-array-only schema dropped those values and failed open (empty country list).
+	 *
+	 * @return object
+	 */
+	private static function make_countries_prop_type() {
+		$string       = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type';
+		$string_array = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Array_Prop_Type';
+		$union        = '\Elementor\Modules\AtomicWidgets\PropTypes\Union_Prop_Type';
+
+		$array_type = $string_array::make()->default( array() );
+
+		if ( class_exists( $union, false ) || class_exists( $union ) ) {
+			return $union::make()
+				->add_prop_type( $array_type )
+				->add_prop_type( $string::make()->default( '' ) )
+				->default( array(), 'string-array' );
+		}
+
+		return $array_type;
+	}
+
+	/**
 	 * Merge geo keys into every Atomic props schema (required or Atomic drops controls on save).
 	 *
 	 * @param array<string, mixed> $schema Props schema.
@@ -85,9 +111,8 @@ class RWGC_Elementor_Atomic_Geo {
 			$schema = array();
 		}
 
-		$boolean      = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\Boolean_Prop_Type';
-		$string       = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type';
-		$string_array = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Array_Prop_Type';
+		$boolean = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\Boolean_Prop_Type';
+		$string  = '\Elementor\Modules\AtomicWidgets\PropTypes\Primitives\String_Prop_Type';
 
 		if ( ! isset( $schema['egp_enable_geo_targeting'] ) ) {
 			$schema['egp_enable_geo_targeting'] = $boolean::make()->default( false );
@@ -95,8 +120,8 @@ class RWGC_Elementor_Atomic_Geo {
 		if ( ! isset( $schema['rwgc_country_visibility_mode'] ) ) {
 			$schema['rwgc_country_visibility_mode'] = $string::make()->enum( array( 'show_if', 'hide_if' ) )->default( 'show_if' );
 		}
-		// Always use selectable string-array (never CSV / free-typed ISO text).
-		$schema['egp_countries'] = $string_array::make()->default( array() );
+		// Chips UI + legacy CSV string documents (see make_countries_prop_type()).
+		$schema['egp_countries'] = self::make_countries_prop_type();
 		if ( ! isset( $schema['rwgc_enable_visibility_rules'] ) ) {
 			$schema['rwgc_enable_visibility_rules'] = $boolean::make()->default( false );
 		}

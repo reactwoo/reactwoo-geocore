@@ -108,20 +108,22 @@ class RWGC_Elementor_Frontend {
 	 * @return array<string, mixed>
 	 */
 	private static function get_element_settings( $element ) {
-		$settings = array();
+		$settings     = array();
+		$raw_settings = self::get_raw_element_settings( $element );
 
 		if ( is_object( $element ) && method_exists( $element, 'get_atomic_settings' ) ) {
 			$atomic = $element->get_atomic_settings();
-			if ( is_array( $atomic ) ) {
+			if ( is_array( $atomic ) && ! empty( $atomic ) ) {
 				$settings = $atomic;
+				// Schema type mismatches (legacy CSV string vs string-array) resolve to null.
+				if ( self::atomic_countries_need_raw_fallback( $settings, $raw_settings ) ) {
+					$settings['egp_countries'] = $raw_settings['egp_countries'];
+				}
 			}
 		}
 
-		if ( empty( $settings ) && is_object( $element ) && method_exists( $element, 'get_settings_for_display' ) ) {
-			$display = $element->get_settings_for_display();
-			if ( is_array( $display ) ) {
-				$settings = $display;
-			}
+		if ( empty( $settings ) ) {
+			$settings = $raw_settings;
 		}
 
 		if ( class_exists( 'RWGC_Surface_Settings', false ) ) {
@@ -129,6 +131,63 @@ class RWGC_Elementor_Frontend {
 		}
 
 		return $settings;
+	}
+
+	/**
+	 * Raw Elementor settings (may still carry Atomic `{ $$type, value }` envelopes).
+	 *
+	 * @param \Elementor\Element_Base $element Element.
+	 * @return array<string, mixed>
+	 */
+	private static function get_raw_element_settings( $element ) {
+		if ( ! is_object( $element ) ) {
+			return array();
+		}
+
+		if ( method_exists( $element, 'get_settings' ) ) {
+			$raw = $element->get_settings();
+			if ( is_array( $raw ) && ! empty( $raw ) ) {
+				return $raw;
+			}
+		}
+
+		if ( method_exists( $element, 'get_settings_for_display' ) ) {
+			$display = $element->get_settings_for_display();
+			if ( is_array( $display ) ) {
+				return $display;
+			}
+		}
+
+		return array();
+	}
+
+	/**
+	 * @param array<string, mixed> $atomic Resolved Atomic settings.
+	 * @param array<string, mixed> $raw    Raw element settings.
+	 * @return bool
+	 */
+	private static function atomic_countries_need_raw_fallback( array $atomic, array $raw ) {
+		if ( ! array_key_exists( 'egp_countries', $raw ) ) {
+			return false;
+		}
+
+		$resolved = $atomic['egp_countries'] ?? null;
+		if ( is_string( $resolved ) && '' !== trim( $resolved ) ) {
+			return false;
+		}
+		if ( is_array( $resolved ) && ! empty( $resolved ) ) {
+			return false;
+		}
+
+		$legacy = $raw['egp_countries'];
+		if ( is_string( $legacy ) && '' !== trim( $legacy ) ) {
+			return true;
+		}
+		if ( is_array( $legacy ) && ! empty( $legacy ) ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**

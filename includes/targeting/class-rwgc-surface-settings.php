@@ -84,14 +84,33 @@ class RWGC_Surface_Settings {
 		if ( is_array( $value ) && array_key_exists( '$$type', $value ) && array_key_exists( 'value', $value ) ) {
 			return self::unwrap_atomic_value( $value['value'] );
 		}
-		if ( is_array( $value ) ) {
+		// Chip / option-shaped rows: prefer the ISO code in `value`, do not reindex labels.
+		if ( is_array( $value ) && self::is_list_array( $value ) ) {
 			$unwrapped = array();
 			foreach ( $value as $item ) {
+				if ( is_array( $item ) && array_key_exists( 'value', $item ) && ! array_key_exists( '$$type', $item ) ) {
+					$unwrapped[] = self::unwrap_atomic_value( $item['value'] );
+					continue;
+				}
 				$unwrapped[] = self::unwrap_atomic_value( $item );
 			}
 			return $unwrapped;
 		}
 		return $value;
+	}
+
+	/**
+	 * @param array<mixed> $value Array value.
+	 * @return bool
+	 */
+	private static function is_list_array( array $value ) {
+		if ( function_exists( 'array_is_list' ) ) {
+			return array_is_list( $value );
+		}
+		if ( array() === $value ) {
+			return true;
+		}
+		return array_keys( $value ) === range( 0, count( $value ) - 1 );
 	}
 
 	/**
@@ -101,8 +120,19 @@ class RWGC_Surface_Settings {
 	 * @return array<int, string>
 	 */
 	private static function normalize_country_codes( $raw ) {
+		if ( is_array( $raw ) && array_key_exists( '$$type', $raw ) && array_key_exists( 'value', $raw ) ) {
+			$raw = self::unwrap_atomic_value( $raw );
+		}
+
 		if ( is_array( $raw ) ) {
-			$list = $raw;
+			$list = array();
+			foreach ( $raw as $item ) {
+				if ( is_array( $item ) && array_key_exists( 'value', $item ) ) {
+					$list[] = $item['value'];
+				} else {
+					$list[] = $item;
+				}
+			}
 		} elseif ( is_string( $raw ) && '' !== trim( $raw ) ) {
 			$list = preg_split( '/[\s,]+/', $raw, -1, PREG_SPLIT_NO_EMPTY );
 			$list = is_array( $list ) ? $list : array();
@@ -112,6 +142,9 @@ class RWGC_Surface_Settings {
 
 		$out = array();
 		foreach ( $list as $code ) {
+			if ( is_array( $code ) ) {
+				continue;
+			}
 			$code = strtoupper( sanitize_text_field( (string) $code ) );
 			if ( 2 === strlen( $code ) ) {
 				$out[] = $code;
