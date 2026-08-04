@@ -48,6 +48,18 @@
 
 ---
 
+### Atomic Geo countries wiped after chips schema (1.8.124+)
+
+**Symptoms:** Atomic Flexbox/Div with country targeting from 1.8.122–1.8.123 Text_Control CSV shows to all countries (`show_if`) or hides from everyone (`hide_if`) after upgrade to chips/`string-array` schema.
+
+**Tried:** N/A — fixed in critical-bug investigation (union schema + raw settings fallback).
+
+**Likely causes:** Elementor `Props_Resolver` returns null when stored `$$type` (`string`) ≠ schema key (`string-array`); frontend used only resolved Atomic settings.
+
+**Do not retry:** Assuming empty Atomic countries always mean “allow all” without checking raw document envelopes for legacy CSV strings.
+
+---
+
 ### Elementor Elements panel — widgets-config 503 (suite)
 
 **Symptoms:** Elements panel spins; `admin-ajax.php` `elementor_ajax` / `get_widgets_config` returns HTTP 503.
