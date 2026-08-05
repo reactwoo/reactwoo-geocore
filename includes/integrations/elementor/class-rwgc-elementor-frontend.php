@@ -22,6 +22,22 @@ class RWGC_Elementor_Frontend {
 	private static $atomic_hooks_registered = array();
 
 	/**
+	 * Known Atomic nestable elTypes (Twig containers). Leaf Atomic widgets still use type "widget".
+	 *
+	 * @var array<int, string>
+	 */
+	private static $known_atomic_nestables = array(
+		'e-flexbox',
+		'e-div-block',
+		'e-grid',
+		'e-tabs',
+		'e-tabs-menu',
+		'e-tab',
+		'e-tabs-content',
+		'e-tabs-content-area',
+	);
+
+	/**
 	 * @return void
 	 */
 	public static function init() {
@@ -31,32 +47,57 @@ class RWGC_Elementor_Frontend {
 
 		$elements = array( 'section', 'column', 'container', 'widget' );
 		foreach ( $elements as $type ) {
-			add_filter( "elementor/frontend/{$type}/should_render", array( __CLASS__, 'filter_should_render' ), 10, 2 );
-			add_action( "elementor/frontend/{$type}/before_render", array( __CLASS__, 'before_render' ), 10, 1 );
+			self::hook_element_type( $type );
 		}
 
-		// Atomic nestables use their element slug as get_type() (not widget|section|…).
-		add_action( 'elementor/frontend/init', array( __CLASS__, 'register_atomic_nestable_hooks' ), 20 );
+		// Atomic nestables use elType = e-flexbox / e-div-block / … (not widget|section).
+		// Do NOT wait on elementor/frontend/init — that is a JS hook and never fires in PHP.
+		foreach ( self::$known_atomic_nestables as $type ) {
+			self::hook_element_type( $type );
+		}
+
+		// Discover any additional Atomic nestables once Elementor finishes registering types.
+		add_action( 'elementor/elements/elements_registered', array( __CLASS__, 'register_atomic_nestable_hooks' ), 20 );
 
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_styles' ), 20 );
 	}
 
 	/**
-	 * Register should_render for Atomic nestable element types after Elementor registers them.
+	 * Attach should_render + before_render for one Elementor elType.
 	 *
+	 * @param string $type Element type slug.
 	 * @return void
 	 */
-	public static function register_atomic_nestable_hooks() {
-		if ( ! class_exists( '\Elementor\Plugin', false ) || ! isset( \Elementor\Plugin::$instance->elements_manager ) ) {
+	private static function hook_element_type( $type ) {
+		$type = (string) $type;
+		if ( '' === $type || isset( self::$atomic_hooks_registered[ $type ] ) ) {
 			return;
 		}
 
-		$manager = \Elementor\Plugin::$instance->elements_manager;
-		if ( ! method_exists( $manager, 'get_element_types' ) ) {
+		self::$atomic_hooks_registered[ $type ] = true;
+		add_filter( "elementor/frontend/{$type}/should_render", array( __CLASS__, 'filter_should_render' ), 10, 2 );
+		add_action( "elementor/frontend/{$type}/before_render", array( __CLASS__, 'before_render' ), 10, 1 );
+	}
+
+	/**
+	 * Register should_render for Atomic nestable element types after Elementor registers them.
+	 *
+	 * @param mixed $manager Optional Elements_Manager from elements_registered.
+	 * @return void
+	 */
+	public static function register_atomic_nestable_hooks( $manager = null ) {
+		if ( null === $manager ) {
+			if ( ! class_exists( '\Elementor\Plugin', false ) || ! isset( \Elementor\Plugin::$instance->elements_manager ) ) {
+				return;
+			}
+			$manager = \Elementor\Plugin::$instance->elements_manager;
+		}
+
+		if ( ! is_object( $manager ) || ! method_exists( $manager, 'get_element_types' ) ) {
 			return;
 		}
 
-		$classic = array( 'section', 'column', 'container', 'widget' );
+		$classic     = array( 'section', 'column', 'container', 'widget' );
 		$atomic_base = '\Elementor\Modules\AtomicWidgets\Elements\Base\Atomic_Element_Base';
 
 		foreach ( $manager->get_element_types() as $type => $instance ) {
@@ -74,14 +115,7 @@ class RWGC_Elementor_Frontend {
 				continue;
 			}
 
-			// Skip leaf widgets — they still report type "widget" via Widget_Base.
-			if ( 'widget' === $type ) {
-				continue;
-			}
-
-			self::$atomic_hooks_registered[ $type ] = true;
-			add_filter( "elementor/frontend/{$type}/should_render", array( __CLASS__, 'filter_should_render' ), 10, 2 );
-			add_action( "elementor/frontend/{$type}/before_render", array( __CLASS__, 'before_render' ), 10, 1 );
+			self::hook_element_type( $type );
 		}
 	}
 
@@ -97,7 +131,7 @@ class RWGC_Elementor_Frontend {
 		wp_enqueue_style( 'rwgc-elementor-frontend' );
 		wp_add_inline_style(
 			'rwgc-elementor-frontend',
-			'.elementor-element.rwgc-geo-element-hidden{display:none!important;visibility:hidden!important;}'
+			'.elementor-element.rwgc-geo-element-hidden,.e-atomic-element.rwgc-geo-element-hidden{display:none!important;visibility:hidden!important;}'
 		);
 	}
 

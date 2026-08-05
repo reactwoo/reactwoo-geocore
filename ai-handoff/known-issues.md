@@ -36,6 +36,18 @@
 
 ---
 
+### Atomic Flexbox geo never hides on frontend (hooks never registered)
+
+**Symptoms:** US-only (or FR-only) Atomic Flexbox still renders for UK visitors even when chips show the correct country.
+
+**Tried:** Fixing string vs string-array country resolve (1.8.126) — settings were fine; hooks still missing.
+
+**Likely causes:** `register_atomic_nestable_hooks` waited on PHP `elementor/frontend/init`, which is JS-only and never runs. Atomic Twig also skips Elementor wrapper attribute CSS hides.
+
+**Do not retry:** Relying on `elementor/frontend/init` in PHP; CSS-only hide for Twig Atomic containers without `should_render`.
+
+---
+
 ### Atomic France content visible from UK (empty countries fail-open)
 
 **Symptoms:** After chips control (1.8.124), content gated to France shows for UK visitors.
