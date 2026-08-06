@@ -2,7 +2,7 @@
 
 ## Status
 
-**done** — NEW critical fixed: Elementor `rwgc_route_*` overlays reclassifying Suite masters at tip `c50e0be`.
+**done** — NEW critical fixed as **PR #50** (`23c7133` on `cursor/critical-bug-investigation-bada`): Elementor `rwgc_route_*` overlays reclassifying Suite masters at tip `c50e0be`.
 
 ## Bug
 
