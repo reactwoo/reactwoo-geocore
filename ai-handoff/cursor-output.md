@@ -2,22 +2,30 @@
 
 ## Status
 
-**done** — Atomic Flexbox frontend geo hide fix for Geo Core **v1.8.127**.
+**done** — NEW critical fixed: Elementor `rwgc_route_*` overlays reclassifying Suite masters at tip `c50e0be`.
 
-## Files changed
+## Bug
 
-- `includes/integrations/elementor/class-rwgc-elementor-frontend.php` — register `e-flexbox` / `e-div-block` / `e-grid` (and tabs) `should_render` immediately; stop waiting on JS-only `elementor/frontend/init`; discover extras via `elementor/elements/elements_registered`
-- `reactwoo-geocore.php`, `readme.txt` — **1.8.127**
+When `_elementor_page_settings['rwgc_route_enabled'] === 'yes'`, `get_page_route_config()` overlaid Elementor `role` / `master_page_id` / `country_iso2` onto Suite post meta. A Suite master edited as Secondary in Elementor stopped loading Suite children (`Legacy_Route_Mapper` returns empty variants for `role=variant`). Stale Elementor country could also rebind legacy `country_page_id`.
 
-## Root cause
+Not covered by #45 (empty SWITCHER only), #47 (strip on variant copy), or #48 (same-country inline shadow).
 
-Atomic nestable hooks were attached on `elementor/frontend/init`, which exists only in Elementor’s **JS** frontend and never fires in PHP. US-only Flexbox therefore never received `should_render`, and Twig containers ignore classic wrapper CSS hides.
+## Fix
 
-## What was not changed
+- `includes/class-rwgc-routing.php` — when post meta `_rwgc_route_enabled=1`, Elementor `yes` only reinforces enabled; role/country/master stay post-meta authoritative. Elementor-only pages (post meta not enabled) still overlay full fields.
+- `tests/Engine/RWGCRoutingElementorOverlayTest.php` — regression coverage.
 
-- Evaluator / empty-country product rule
-- Atomic chips control / schema union (1.8.126)
+## Trigger
 
-## Remaining (manual)
+1. Suite → create FR variant for master M; publish.
+2. Elementor on M → Enable Page Variant Routing On, role Secondary, set master+country; Update.
+3. Before fix: FR visitor on M stays on master (Suite child ignored).
+4. After fix: master role preserved; Suite child discovery works.
 
-- Publish Home (Variant), hard-refresh as UK — “UNITED STATES” Flexbox must not render
+## Validation
+
+`vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr tests/Engine/RWGCRoutingElementorOverlayTest.php` → OK (3 tests, 12 assertions)
+
+## Checked / not re-reported
+
+Gutenberg portable wipe (#46), visibility sanitize/ID (#17/#18), page-version query (#21), assistant REST (#28), Suite Elementor copy (#47), inline wipe/shadow (#48), empty SWITCHER (#45).

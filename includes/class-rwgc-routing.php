@@ -152,14 +152,23 @@ class RWGC_Routing {
 		$elementor_settings = get_post_meta( $page_id, '_elementor_page_settings', true );
 		if ( is_array( $elementor_settings ) && ! empty( $elementor_settings['rwgc_route_enabled'] ) && 'yes' === (string) $elementor_settings['rwgc_route_enabled'] ) {
 			$config['enabled'] = true;
-			if ( isset( $elementor_settings['rwgc_route_role'] ) ) {
-				$config['role'] = sanitize_key( (string) $elementor_settings['rwgc_route_role'] );
-			}
-			if ( isset( $elementor_settings['rwgc_route_master_page_id'] ) ) {
-				$config['master_page_id'] = absint( $elementor_settings['rwgc_route_master_page_id'] );
-			}
-			if ( isset( $elementor_settings['rwgc_route_country_iso2'] ) ) {
-				$config['country_iso2'] = strtoupper( sanitize_text_field( (string) $elementor_settings['rwgc_route_country_iso2'] ) );
+			/*
+			 * When Suite / page meta already authored routing (`_rwgc_route_enabled=1`), keep
+			 * post-meta role/country/master authoritative. Elementor Document Settings stored
+			 * with role=variant (or a stale country) must not reclassify a Suite master and
+			 * suppress child discovery, or rebind legacy inline country_page_id to the wrong ISO2.
+			 * Elementor-only pages (post meta not enabled) still overlay the full route fields.
+			 */
+			if ( 1 !== $enabled ) {
+				if ( isset( $elementor_settings['rwgc_route_role'] ) ) {
+					$config['role'] = sanitize_key( (string) $elementor_settings['rwgc_route_role'] );
+				}
+				if ( isset( $elementor_settings['rwgc_route_master_page_id'] ) ) {
+					$config['master_page_id'] = absint( $elementor_settings['rwgc_route_master_page_id'] );
+				}
+				if ( isset( $elementor_settings['rwgc_route_country_iso2'] ) ) {
+					$config['country_iso2'] = strtoupper( sanitize_text_field( (string) $elementor_settings['rwgc_route_country_iso2'] ) );
+				}
 			}
 		} elseif ( is_array( $elementor_settings ) && isset( $elementor_settings['rwgc_route_enabled'] ) && '' === (string) $elementor_settings['rwgc_route_enabled'] ) {
 			$config['enabled'] = false;
