@@ -89,9 +89,10 @@ This is the **plugin release pipeline** for **Geo Core**, **GeoCore Pro**, **Geo
 
 1. Build zip (`npm run package:zip` / `scripts/package_zip.py`).
 2. Upload to R2 (immutable): `s3://{R2_BUCKET}/plugins/{slug}/{version}/{slug}.zip`.
-3. **Geo Core also** uploads mutable latest pointers (same zip + metadata):
+3. **Geo Core also** uploads mutable latest pointers (same zip + metadata) **only** when `channel=stable` and the version is a numeric release (`1.8.127`, not `1.8.127-rc1`):
    - `plugins/reactwoo-geocore/latest/reactwoo-geocore.zip`
    - `plugins/reactwoo-geocore/latest.json` (`version`, `sha256`, `artifact_key`, `latest_key`, …)
+   - CI refuses a `version` override that disagrees with the packaged plugin header (prevents overwriting an immutable version key with different bytes).
 4. Register metadata: `POST https://api.reactwoo.com/api/v5/updates/publish` with **`Authorization: Bearer <UPDATES_PUBLISH_TOKEN>`**.
 
 **Stable download URL (private R2 — prefer this over raw R2 keys):**
