@@ -55,16 +55,29 @@ jobs:
         run: |
           set -euo pipefail
 
+          HEADER_VERSION="$(sed -n "s/^ \* Version: //p" "${MAIN_PHP}" | head -n1 | tr -d '\r')"
+          if [[ -z "${HEADER_VERSION}" ]]; then
+            echo "Could not read Version: from ${MAIN_PHP}."
+            exit 1
+          fi
+
           if [[ -n "${{ github.event.inputs.version || '' }}" ]]; then
             VERSION="${{ github.event.inputs.version }}"
           elif [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             VERSION="${GITHUB_REF_NAME#v}"
           else
-            VERSION="$(sed -n "s/^ \* Version: //p" "${MAIN_PHP}" | head -n1 | tr -d '\r')"
+            VERSION="${HEADER_VERSION}"
           fi
 
           if [[ -z "${VERSION}" ]]; then
             echo "Could not determine plugin version."
+            exit 1
+          fi
+
+          # The zip is always built from the checked-out tree. A mismatched override would
+          # republish different bytes under an existing immutable version key / latest label.
+          if [[ "${VERSION}" != "${HEADER_VERSION}" ]]; then
+            echo "Refusing to publish: resolved version '${VERSION}' does not match plugin header '${HEADER_VERSION}' in ${MAIN_PHP}."
             exit 1
           fi
 
@@ -81,6 +94,13 @@ jobs:
           LATEST_META_KEY="plugins/${PLUGIN_SLUG}/latest.json"
           SHA256="$(sha256sum "${PLUGIN_SLUG}.zip" | awk '{print $1}')"
 
+          # Mutable latest pointers are the free stable download path. Never point them at
+          # beta/rc/nightly channels or pre-release version strings (e.g. 1.9.0-rc1).
+          UPDATE_LATEST="false"
+          if [[ "${CHANNEL}" == "stable" && "${VERSION}" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+            UPDATE_LATEST="true"
+          fi
+
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "min_php=${MIN_PHP}" >> "$GITHUB_OUTPUT"
           echo "tested_up_to=${TESTED_UP_TO}" >> "$GITHUB_OUTPUT"
@@ -90,6 +110,7 @@ jobs:
           echo "latest_key=${LATEST_KEY}" >> "$GITHUB_OUTPUT"
           echo "latest_meta_key=${LATEST_META_KEY}" >> "$GITHUB_OUTPUT"
           echo "sha256=${SHA256}" >> "$GITHUB_OUTPUT"
+          echo "update_latest=${UPDATE_LATEST}" >> "$GITHUB_OUTPUT"
 
       - name: Configure AWS CLI for R2
         shell: bash
@@ -130,6 +151,7 @@ jobs:
             --cache-control "public, max-age=31536000, immutable"
 
       - name: Upload latest pointer artifacts to R2
+        if: steps.meta.outputs.update_latest == 'true'
         shell: bash
         env:
           VERSION: ${{ steps.meta.outputs.version }}
@@ -167,6 +189,8 @@ jobs:
           PY
 
           # Mutable "latest" objects — short/no cache so downloaders do not stick on a stale zip.
+          # Upload JSON after zip so a mid-step failure cannot leave latest.json pointing at a
+          # missing/partial latest zip from this run (versioned artifact_key remains authoritative).
           aws s3 cp "${PLUGIN_SLUG}.zip" "s3://${{ secrets.R2_BUCKET }}/${LATEST_KEY}" \
             --endpoint-url "${{ steps.r2.outputs.endpoint }}" \
             --content-type "application/zip" \
