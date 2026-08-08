@@ -40,6 +40,14 @@ class RWGC_Cache_Compat {
 	 * @return void
 	 */
 	public static function maybe_set_country_cookie() {
+		// Admin ?rwgc_preview_country=XX overrides rwgc_geo_data; do not bake the
+		// simulated ISO2 into the 24h cache-vary cookie (sibling of Rule Tester isolation).
+		if ( class_exists( 'RWGC_Preview', false ) && RWGC_Preview::is_active() ) {
+			return;
+		}
+		if ( class_exists( 'RWGC_Rule_Tester_Frontend_Preview', false ) && RWGC_Rule_Tester_Frontend_Preview::is_active() ) {
+			return;
+		}
 		if ( headers_sent() || isset( $_COOKIE[ self::COUNTRY_COOKIE ] ) ) {
 			return;
 		}
