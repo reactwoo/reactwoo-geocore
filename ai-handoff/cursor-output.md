@@ -2,22 +2,35 @@
 
 ## Status
 
-**done** — Atomic Flexbox frontend geo hide fix for Geo Core **v1.8.127**.
+**done** — Critical bug hunt on tip `c50e0be` (Atomic Geo Visibility / frontend geo enforcement): **NO_NEW_CRITICAL**.
 
-## Files changed
+## Areas checked
 
-- `includes/integrations/elementor/class-rwgc-elementor-frontend.php` — register `e-flexbox` / `e-div-block` / `e-grid` (and tabs) `should_render` immediately; stop waiting on JS-only `elementor/frontend/init`; discover extras via `elementor/elements/elements_registered`
-- `reactwoo-geocore.php`, `readme.txt` — **1.8.127**
+- `includes/integrations/elementor/class-rwgc-elementor-frontend.php` — nestable hooks (known list + `elements_registered`), `get_element_settings` / `merge_raw_geo_settings`, `should_render` + `before_render`, builder bypass
+- `includes/integrations/elementor/class-rwgc-elementor-atomic-geo.php` — props schema (union countries), controls injection, Pro library items, `atomic_api_available` Union gate
+- `includes/targeting/class-rwgc-surface-settings.php` — Atomic unwrap, yes-flag normalize, country ISO2 normalize, library→applied id mirror
+- `includes/targeting/class-rwgc-targeting-surface-evaluator.php` — country/visibility layers, empty-countries fail-open product rule, unresolved visibility fail-open (#37/#31)
+- `includes/integrations/elementor/class-rwgc-elementor-popups.php` — force-print / location inject (#26), page-settings country array-only parse (#22)
 
-## Root cause
+## Explicitly not re-reported
 
-Atomic nestable hooks were attached on `elementor/frontend/init`, which exists only in Elementor’s **JS** frontend and never fires in PHP. US-only Flexbox therefore never received `should_render`, and Twig containers ignore classic wrapper CSS hides.
+- Atomic countries fail-open after chips (`7f4df76` / PR #49)
+- Atomic Flexbox hooks never registered (`c50e0be`)
+- Empty countries intentional fail-open
+- Popup force-print sitewide (#26)
+- Elementor SWITCHER empty (#45)
+- Document settings overlay (#50)
 
 ## What was not changed
 
-- Evaluator / empty-country product rule
-- Atomic chips control / schema union (1.8.126)
+No production code changes (investigation-only).
 
-## Remaining (manual)
+## Commands run
 
-- Publish Home (Variant), hard-refresh as UK — “UNITED STATES” Flexbox must not render
+- `git rev-parse HEAD` → `c50e0be…`
+- `gh pr list` (open #1–#51 context)
+- Diff tip vs `origin/cursor/critical-bug-investigation-0478` (PR #49 extras already tracked)
+
+## Remaining
+
+None for this hunt scope.

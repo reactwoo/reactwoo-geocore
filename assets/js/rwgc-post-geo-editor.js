@@ -10,6 +10,7 @@
 	var useSelect = wp.data.useSelect;
 	var useDispatch = wp.data.useDispatch;
 	var useState = wp.element.useState;
+	var useRef = wp.element.useRef;
 	var ToggleControl = wp.components.ToggleControl;
 	var SelectControl = wp.components.SelectControl;
 	var ComboboxControl = wp.components.ComboboxControl;
@@ -22,6 +23,9 @@
 			return select( 'core/editor' ).getEditedPostAttribute( 'meta' ) || {};
 		}, [] );
 		var editPost = useDispatch( 'core/editor' ).editPost;
+		var metaValuesRef = useRef( metaValues );
+		metaValuesRef.current = metaValues;
+		var rbMountedRef = useRef( false );
 
 		var countryOn = metaValues[ meta.countryEnabled ] === 'yes';
 		var visibilityOn = metaValues[ meta.visibilityEnabled ] === 'yes';
@@ -43,6 +47,8 @@
 			metaValues[ meta.visibilityMode ] === 'hide_if' ? 'hide_if' : 'show_if';
 		var countries = Array.isArray( metaValues[ meta.countries ] ) ? metaValues[ meta.countries ] : [];
 		var portable = metaValues[ meta.portable ] || '';
+		var visibilityModeRef = useRef( visibilityMode );
+		visibilityModeRef.current = visibilityMode;
 
 		var countryOptions = Object.keys( config.countries || {} ).map( function ( code ) {
 			return {
@@ -57,9 +63,9 @@
 
 		var [ comboKey, setComboKey ] = useState( 0 );
 
-		function updateMeta( key, value ) {
-			var next = Object.assign( {}, metaValues );
-			next[ key ] = value;
+		function updateMeta( patch ) {
+			var next = Object.assign( {}, metaValuesRef.current, patch );
+			metaValuesRef.current = next;
 			editPost( { meta: next } );
 		}
 
@@ -67,37 +73,72 @@
 			if ( ! code || countries.indexOf( code ) !== -1 ) {
 				return;
 			}
-			updateMeta( meta.countries, countries.concat( [ code ] ) );
+			updateMeta(
+				( function () {
+					var o = {};
+					o[ meta.countries ] = countries.concat( [ code ] );
+					return o;
+				} )()
+			);
 			setComboKey( comboKey + 1 );
 		}
 
 		function removeCountry( code ) {
 			updateMeta(
-				meta.countries,
-				countries.filter( function ( c ) {
-					return c !== code;
-				} )
+				( function () {
+					var o = {};
+					o[ meta.countries ] = countries.filter( function ( c ) {
+						return c !== code;
+					} );
+					return o;
+				} )()
 			);
 		}
 
 		useEffect(
 			function () {
 				if ( ! config.advancedTargeting || ! visibilityOn || ! window.ReactWooRuleBuilder ) {
-					return;
+					return undefined;
 				}
 				var textarea = document.getElementById( 'rwgc-post-portable-targeting' );
 				if ( ! textarea || textarea.getAttribute( 'data-rwgc-rb-mounted' ) ) {
-					return;
+					return undefined;
 				}
 				window.ReactWooRuleBuilder.mount( {
 					textarea: textarea,
 					getMode: function () {
-						return visibilityMode;
+						return visibilityModeRef.current === 'hide_if' ? 'hide_if' : 'show_if';
+					},
+					onChange: function ( json ) {
+						if ( metaValuesRef.current[ meta.portable ] === json ) {
+							return;
+						}
+						var patch = {};
+						patch[ meta.portable ] = typeof json === 'string' ? json : '';
+						updateMeta( patch );
 					},
 					allowAllConditionTypes: true,
 				} );
+				rbMountedRef.current = true;
+				return undefined;
 			},
-			[ config.advancedTargeting, visibilityOn, visibilityMode ]
+			[ config.advancedTargeting, visibilityOn ]
+		);
+
+		useEffect(
+			function () {
+				if ( ! visibilityOn || ! rbMountedRef.current || ! window.ReactWooRuleBuilder ) {
+					return;
+				}
+				var textarea = document.getElementById( 'rwgc-post-portable-targeting' );
+				if ( ! textarea ) {
+					return;
+				}
+				if ( typeof window.ReactWooRuleBuilder.setValue === 'function' ) {
+					window.ReactWooRuleBuilder.setValue( textarea, portable );
+				}
+			},
+			[ portable, visibilityOn ]
 		);
 
 		var active = countryOn || visibilityOn;
@@ -115,7 +156,9 @@
 				label: 'Enable country targeting',
 				checked: countryOn,
 				onChange: function ( val ) {
-					updateMeta( meta.countryEnabled, val ? 'yes' : '' );
+					var patch = {};
+					patch[ meta.countryEnabled ] = val ? 'yes' : '';
+					updateMeta( patch );
 				},
 			} ),
 			countryOn &&
@@ -127,7 +170,9 @@
 						{ label: 'Hide when country matches', value: 'hide_if' },
 					],
 					onChange: function ( val ) {
-						updateMeta( meta.countryMode, val );
+						var patch = {};
+						patch[ meta.countryMode ] = val;
+						updateMeta( patch );
 					},
 				} ),
 			countryOn &&
@@ -183,8 +228,10 @@
 						label: 'Enable visibility rules',
 						checked: visibilityOn,
 						onChange: function ( val ) {
-							updateMeta( meta.visibilityEnabled, val ? 'yes' : '' );
-							updateMeta( meta.usePortable, val ? 'yes' : '' );
+							var patch = {};
+							patch[ meta.visibilityEnabled ] = val ? 'yes' : '';
+							patch[ meta.usePortable ] = val ? 'yes' : '';
+							updateMeta( patch );
 						},
 					} ),
 					visibilityOn &&
@@ -196,7 +243,9 @@
 								{ label: 'Hide when rules match', value: 'hide_if' },
 							],
 							onChange: function ( val ) {
-								updateMeta( meta.visibilityMode, val );
+								var patch = {};
+								patch[ meta.visibilityMode ] = val;
+								updateMeta( patch );
 							},
 						} ),
 					visibilityOn &&
@@ -206,7 +255,9 @@
 							style: { display: 'none' },
 							value: portable,
 							onChange: function ( e ) {
-								updateMeta( meta.portable, e.target.value );
+								var patch = {};
+								patch[ meta.portable ] = e.target.value;
+								updateMeta( patch );
 							},
 						} )
 				),
