@@ -2,34 +2,46 @@
 
 ## Status
 
-**done** — Critical bug hunt on tip `c50e0be` (Atomic Geo Visibility / frontend geo enforcement): **NO_NEW_CRITICAL**.
+**done** — Critical bug hunt on tip `c50e0be`: fixed two high-severity issues on `cursor/critical-bug-investigation-84ea` (PR #52).
 
-## Areas checked
+## Bugs fixed
 
-- `includes/integrations/elementor/class-rwgc-elementor-frontend.php` — nestable hooks (known list + `elements_registered`), `get_element_settings` / `merge_raw_geo_settings`, `should_render` + `before_render`, builder bypass
-- `includes/integrations/elementor/class-rwgc-elementor-atomic-geo.php` — props schema (union countries), controls injection, Pro library items, `atomic_api_available` Union gate
-- `includes/targeting/class-rwgc-surface-settings.php` — Atomic unwrap, yes-flag normalize, country ISO2 normalize, library→applied id mirror
-- `includes/targeting/class-rwgc-targeting-surface-evaluator.php` — country/visibility layers, empty-countries fail-open product rule, unresolved visibility fail-open (#37/#31)
-- `includes/integrations/elementor/class-rwgc-elementor-popups.php` — force-print / location inject (#26), page-settings country array-only parse (#22)
+### 1. Gutenberg post Geo Rule Builder never saved portable meta
 
-## Explicitly not re-reported
+**Impact:** Post/page sidebar visibility rules never persisted (`_rwgc_post_portable_targeting` stayed empty/stale). Toggle-off could leave `_rwgc_post_visibility_rules_enabled=yes`.
 
-- Atomic countries fail-open after chips (`7f4df76` / PR #49)
-- Atomic Flexbox hooks never registered (`c50e0be`)
-- Empty countries intentional fail-open
-- Popup force-print sitewide (#26)
-- Elementor SWITCHER empty (#45)
-- Document settings overlay (#50)
+**Root cause:** `ReactWooRuleBuilder.mount` lacked `onChange`; builder only wrote via jQuery `textarea` events that React controlled meta ignored. Sequential single-key `updateMeta` clobbered sibling keys.
+
+**Fix:** `onChange` → batched `metaValuesRef` patches; visibility toggle writes both flags in one call.
+
+### 2. Admin `?rwgc_preview_country=` persisted simulated country into `rwgc_cc`
+
+**Impact:** Documented dashboard preview could bake the simulated ISO2 into the 24h LiteSpeed/vary cookie. After exit (or logout), cache misses can store real-IP HTML under the simulated-country vary key — wrong geo content for real visitors until purge. Sibling of open #40 (Rule Tester path only).
+
+**Root cause:** `RWGC_Cache_Compat::maybe_set_country_cookie()` always called `rwgc_get_visitor_country()`, which honors `RWGC_Preview::filter_geo_data`.
+
+**Fix:** `RWGC_Preview::is_active()` + skip cookie persistence while admin preview (and Rule Tester preview) is active.
+
+## Files changed
+
+- `assets/js/rwgc-post-geo-editor.js`
+- `tests/js/rwgc-post-geo-editor-sync.test.js`
+- `includes/class-rwgc-preview.php`
+- `includes/integrations/class-rwgc-cache-compat.php`
+- `tests/Targeting/RWGCPreviewCacheCookieIsolationTest.php`
+- `ai-handoff/cursor-output.md`
 
 ## What was not changed
 
-No production code changes (investigation-only).
+- Open PRs #17–#51 (routing overlays, Suite Elementor copy, R2 latest, page-version spoof, portable fail-open, signed Rule Tester routing bypass beyond the cookie gate, etc.)
+- Atomic Geo Visibility (already on main / previously hunted)
 
-## Commands run
+## Commands run and results
 
-- `git rev-parse HEAD` → `c50e0be…`
-- `gh pr list` (open #1–#51 context)
-- Diff tip vs `origin/cursor/critical-bug-investigation-0478` (PR #49 extras already tracked)
+- `node --check assets/js/rwgc-post-geo-editor.js` — OK
+- `node tests/js/rwgc-post-geo-editor-sync.test.js` — OK
+- `php -l` on changed PHP — OK
+- `php vendor/phpunit/phpunit/phpunit --bootstrap tests/bootstrap.php --stderr tests/Targeting/RWGCPreviewCacheCookieIsolationTest.php` — OK (2 tests, 3 assertions)
 
 ## Remaining
 

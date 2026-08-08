@@ -55,6 +55,15 @@ class RWGC_Preview {
 	}
 
 	/**
+	 * Whether an authorized admin geo preview override is active on this request.
+	 *
+	 * @return bool
+	 */
+	public static function is_active() {
+		return '' !== self::get_requested_iso2() && self::can_preview_geo();
+	}
+
+	/**
 	 * Whether the current user may use geo preview overrides.
 	 *
 	 * @return bool
