@@ -2,22 +2,32 @@
 
 ## Status
 
-**done** — Atomic Flexbox frontend geo hide fix for Geo Core **v1.8.127**.
+**done** — Critical bug hunt (cron automation `eda296cd`, 2026-08-09). **NO_NEW_CRITICAL** on tip `c50e0be`.
+
+## Scope inspected
+
+- Recent commits since Atomic Geo / Flexbox / popup close / chips migration (`0f41724`…`c50e0be`)
+- Elementor Atomic geo schema/controls, `merge_raw_geo_settings`, nestable `should_render` hooks
+- Popup force-print / location inject / close path (known #26)
+- Routing Suite ↔ Elementor SWITCHER / overlay / duplicate / inline wipe (#45/#47/#48/#50)
+- Gutenberg post geo editor sync + preview cookie (#52)
+- Settings MaxMind wipe, visibility-rule repository/CPT, page-version query spoof, R2 latest (#23/#24/#18/#21/#51)
+- REST write gates, variant-rule applications → `_elementor_page_settings`, cache cookies
 
 ## Files changed
 
-- `includes/integrations/elementor/class-rwgc-elementor-frontend.php` — register `e-flexbox` / `e-div-block` / `e-grid` (and tabs) `should_render` immediately; stop waiting on JS-only `elementor/frontend/init`; discover extras via `elementor/elements/elements_registered`
-- `reactwoo-geocore.php`, `readme.txt` — **1.8.127**
-
-## Root cause
-
-Atomic nestable hooks were attached on `elementor/frontend/init`, which exists only in Elementor’s **JS** frontend and never fires in PHP. US-only Flexbox therefore never received `should_render`, and Twig containers ignore classic wrapper CSS hides.
+- `ai-handoff/cursor-output.md` — hunt outcome only (no product code)
 
 ## What was not changed
 
-- Evaluator / empty-country product rule
-- Atomic chips control / schema union (1.8.126)
+- Product PHP/JS/workflows — no high-confidence new critical with a concrete trigger beyond open PRs #1–#52
 
-## Remaining (manual)
+## Commands / validation
 
-- Publish Home (Variant), hard-refresh as UK — “UNITED STATES” Flexbox must not render
+- `git log` / `gh pr list` against tip `c50e0be`
+- Traced Elementor frontend, popups, surface settings/evaluator, routing, preview/cache paths
+- Cross-checked automation memory and open PR titles/bodies for duplicates
+
+## Remaining
+
+- None for this automation run. Expected outcome when tip is unchanged and prior hunts already filed #50–#52.
