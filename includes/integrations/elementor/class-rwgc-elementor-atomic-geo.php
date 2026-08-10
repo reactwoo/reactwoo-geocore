@@ -95,7 +95,9 @@ class RWGC_Elementor_Atomic_Geo {
 			$schema['egp_enable_geo_targeting'] = $boolean::make()->default( false );
 		}
 		if ( ! isset( $schema['rwgc_country_visibility_mode'] ) ) {
-			$schema['rwgc_country_visibility_mode'] = $string::make()->enum( array( 'show_if', 'hide_if' ) )->default( 'show_if' );
+			// No schema default: a baked-in show_if masks legacy rwgc_visibility_mode=hide_if
+			// and prevents Surface_Settings from recovering the saved country mode.
+			$schema['rwgc_country_visibility_mode'] = $string::make()->enum( array( 'show_if', 'hide_if' ) );
 		}
 		// Chips use string-array; keep legacy string (ISO / CSV) resolvable so targeting does not fail-open.
 		$schema['egp_countries'] = $union::make()
@@ -106,7 +108,10 @@ class RWGC_Elementor_Atomic_Geo {
 			$schema['rwgc_enable_visibility_rules'] = $boolean::make()->default( false );
 		}
 		if ( ! isset( $schema['rwgc_visibility_rules_mode'] ) ) {
-			$schema['rwgc_visibility_rules_mode'] = $string::make()->enum( array( 'show_if', 'hide_if' ) )->default( 'show_if' );
+			// No schema default: Atomic has no classic library JS bridge to sync mode from the
+			// selected rule. A baked-in show_if is treated as an explicit surface mode and
+			// inverted hide_if library rules on the frontend.
+			$schema['rwgc_visibility_rules_mode'] = $string::make()->enum( array( 'show_if', 'hide_if' ) );
 		}
 		if ( ! isset( $schema['rwgc_visibility_rule_library'] ) ) {
 			$schema['rwgc_visibility_rule_library'] = $string::make()->default( '' );
