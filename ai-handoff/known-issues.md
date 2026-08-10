@@ -72,6 +72,18 @@
 
 ---
 
+### Atomic library hide_if inverted by schema default show_if
+
+**Symptoms:** Atomic element with a saved `hide_if` library rule still shows content when the rule matches (and may hide when it should show).
+
+**Tried:** Relying on evaluator fallthrough to `rule_set['mode']` while Atomic schema defaulted `rwgc_visibility_rules_mode` to `show_if` (treated as explicit).
+
+**Likely causes:** No classic library JS mode sync on Atomic; persisted schema default masked library mode.
+
+**Do not retry:** Re-adding `->default( 'show_if' )` on Atomic mode props; syncing library mode over classic inline-portable surfaces.
+
+---
+
 ### Elementor Elements panel — widgets-config 503 (suite)
 
 **Symptoms:** Elements panel spins; `admin-ajax.php` `elementor_ajax` / `get_widgets_config` returns HTTP 503.

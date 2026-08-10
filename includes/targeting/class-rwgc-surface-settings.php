@@ -55,6 +55,19 @@ class RWGC_Surface_Settings {
 		$library_id = trim( (string) ( $out['rwgc_visibility_rule_library'] ?? '' ) );
 		if ( '' !== $library_id ) {
 			$out['rwgc_applied_visibility_rule_id'] = $library_id;
+
+			// Classic Elementor copies the library JSON (incl. mode) into the portable textarea
+			// and syncs the mode control via JS. Atomic only stores the library id; older Atomic
+			// schemas also persisted a show_if default that masked hide_if library rules. When no
+			// inline portable payload is present, adopt the saved rule's mode (library-only path).
+			$has_inline_portable = ( ! empty( $out['rwgc_portable_geo_targeting'] ) && '' !== trim( (string) $out['rwgc_portable_geo_targeting'] ) )
+				|| ( ! empty( $out['egp_portable_geo_targeting'] ) && '' !== trim( (string) $out['egp_portable_geo_targeting'] ) );
+			if ( ! $has_inline_portable && class_exists( 'RWGC_Rule_Registry', false ) ) {
+				$set = RWGC_Rule_Registry::get_rule_set_by_id( $library_id );
+				if ( is_array( $set ) && ! empty( $set['mode'] ) ) {
+					$out['rwgc_visibility_rules_mode'] = self::normalize_mode_value( $set['mode'] );
+				}
+			}
 		}
 
 		$out['egp_countries'] = self::normalize_country_codes( $out['egp_countries'] ?? null );

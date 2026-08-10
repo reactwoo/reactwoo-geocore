@@ -51,4 +51,30 @@ final class RWGCTargetingSurfaceEvaluatorTest extends TestCase {
 			)
 		);
 	}
+
+	public function test_unset_surface_mode_uses_library_rule_hide_if(): void {
+		$settings = array(
+			'rwgc_enable_visibility_rules' => 'yes',
+		);
+		$rule_set = array(
+			'mode' => 'hide_if',
+		);
+
+		$this->assertSame(
+			'hide_if',
+			RWGC_Targeting_Surface_Evaluator::get_visibility_rules_mode( $settings, $rule_set )
+		);
+	}
+
+	public function test_library_hide_if_suppresses_render_when_rules_match(): void {
+		$this->assertFalse(
+			rwgc_visibility_mode_allows_render(
+				RWGC_Targeting_Surface_Evaluator::get_visibility_rules_mode(
+					array( 'rwgc_enable_visibility_rules' => 'yes' ),
+					array( 'mode' => 'hide_if' )
+				),
+				true
+			)
+		);
+	}
 }
