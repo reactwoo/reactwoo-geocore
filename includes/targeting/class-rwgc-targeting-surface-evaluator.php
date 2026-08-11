@@ -43,7 +43,49 @@ class RWGC_Targeting_Surface_Evaluator {
 		if ( self::uses_portable_rules( $settings ) ) {
 			return true;
 		}
+		// Explicit modern OFF (Elementor SWITCHER '' / Atomic false) must win over leftover
+		// library id or portable JSON. Legacy docs with no enable key still use payload presence.
+		if ( self::has_explicit_visibility_rules_off( $settings ) ) {
+			return false;
+		}
 		return self::has_resolved_portable_config( $settings );
+	}
+
+	/**
+	 * Whether the modern visibility-rules enable switch is present and off.
+	 *
+	 * @param array<string, mixed> $settings Settings (raw or normalized).
+	 * @return bool
+	 */
+	private static function has_explicit_visibility_rules_off( array $settings ) {
+		// Normalized settings always include this stamp (true|false).
+		if ( array_key_exists( '_rwgc_visibility_rules_explicit_off', $settings ) ) {
+			return ! empty( $settings['_rwgc_visibility_rules_explicit_off'] );
+		}
+
+		// Raw Elementor/page settings: key present and not yes ⇒ explicit OFF.
+		if ( ! array_key_exists( 'rwgc_enable_visibility_rules', $settings ) ) {
+			return false;
+		}
+
+		return ! self::raw_flag_is_yes( $settings['rwgc_enable_visibility_rules'] );
+	}
+
+	/**
+	 * @param mixed $value Raw enable flag (classic yes/'', Atomic bool, or {$$type,value}).
+	 * @return bool
+	 */
+	private static function raw_flag_is_yes( $value ) {
+		if ( is_array( $value ) && array_key_exists( '$$type', $value ) && array_key_exists( 'value', $value ) ) {
+			$value = $value['value'];
+		}
+		if ( true === $value || 1 === $value || '1' === $value ) {
+			return true;
+		}
+		if ( is_string( $value ) && 'yes' === strtolower( trim( $value ) ) ) {
+			return true;
+		}
+		return false;
 	}
 
 	/**

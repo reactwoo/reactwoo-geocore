@@ -21,6 +21,10 @@ class RWGC_Surface_Settings {
 	public static function normalize( array $settings ) {
 		$out = self::unwrap_atomic_props( $settings );
 
+		// Capture before normalize_yes_flag injects '' for missing keys — needed to honor
+		// explicit OFF vs legacy documents that only store library/portable payloads.
+		$had_visibility_enable_key = array_key_exists( 'rwgc_enable_visibility_rules', $out );
+
 		$out['egp_enable_geo_targeting']     = self::normalize_yes_flag( $out['egp_enable_geo_targeting'] ?? null );
 		$out['rwgc_enable_visibility_rules'] = self::normalize_yes_flag( $out['rwgc_enable_visibility_rules'] ?? null );
 
@@ -46,6 +50,13 @@ class RWGC_Surface_Settings {
 				$out['rwgc_enable_visibility_rules'] = 'yes';
 			}
 		}
+
+		// Always stamp so the evaluator can tell "legacy key absent" from "modern switch OFF".
+		// If use_portable flags promoted enable to yes above, this stays false.
+		$out['_rwgc_visibility_rules_explicit_off'] = (
+			$had_visibility_enable_key
+			&& 'yes' !== (string) $out['rwgc_enable_visibility_rules']
+		);
 
 		if ( empty( $out['rwgc_portable_geo_targeting'] ) && ! empty( $out['egp_portable_geo_targeting'] ) ) {
 			$out['rwgc_portable_geo_targeting'] = (string) $out['egp_portable_geo_targeting'];

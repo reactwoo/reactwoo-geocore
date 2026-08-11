@@ -643,6 +643,15 @@ class RWGC_Elementor_Popups {
 	 * @return bool
 	 */
 	private static function page_settings_visibility_enabled( array $page_settings ) {
+		// Share enable semantics with the surface evaluator (explicit OFF beats leftover library/JSON).
+		if ( class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
+			$settings = $page_settings;
+			if ( class_exists( 'RWGC_Surface_Settings', false ) ) {
+				$settings = RWGC_Surface_Settings::normalize( $settings );
+			}
+			return RWGC_Targeting_Surface_Evaluator::is_visibility_rules_enabled( $settings );
+		}
+
 		if ( ! empty( $page_settings['rwgc_enable_visibility_rules'] ) && 'yes' === (string) $page_settings['rwgc_enable_visibility_rules'] ) {
 			return true;
 		}
@@ -651,6 +660,9 @@ class RWGC_Elementor_Popups {
 		}
 		if ( ! empty( $page_settings['egp_use_portable_geo_targeting'] ) && 'yes' === (string) $page_settings['egp_use_portable_geo_targeting'] ) {
 			return true;
+		}
+		if ( array_key_exists( 'rwgc_enable_visibility_rules', $page_settings ) ) {
+			return false;
 		}
 		if ( ! empty( $page_settings['rwgc_applied_visibility_rule_id'] ) ) {
 			return true;
