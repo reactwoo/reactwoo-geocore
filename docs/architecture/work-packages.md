@@ -533,8 +533,7 @@ No autonomous optimisation in this phase.
 - [x] WP0 audit (2026-08-11)  
 - [x] WP1 contracts (2026-08-11) — `includes/contracts/`, `docs/contracts/`, `composer test:contracts`  
 - [x] WP2 capability registry (2026-08-11) — `includes/platform/`, admin Capabilities screen, `composer test:platform-capabilities`  
-
-- [ ] WP3 decision runtime → **Gate A**  
+- [x] WP3 decision runtime (2026-08-11) — `includes/decision/`, `composer test:decision-runtime` (not on visitor render path; Gate A via adapters is WP4)  
 - [ ] WP4 satellite adapters  
 - [ ] WP5–9 slots/adapters/components/variants → **Gates B–C**  
 - [ ] WP10–13 Cloud → **Gate D**  
