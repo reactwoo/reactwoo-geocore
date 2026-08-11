@@ -2,22 +2,25 @@
 
 ## Status
 
-**done** — Atomic Flexbox frontend geo hide fix for Geo Core **v1.8.127**.
+**done** — Explicit visibility-rules OFF now beats leftover Elementor library/portable payloads (critical hunt 2026-08-11).
 
 ## Files changed
 
-- `includes/integrations/elementor/class-rwgc-elementor-frontend.php` — register `e-flexbox` / `e-div-block` / `e-grid` (and tabs) `should_render` immediately; stop waiting on JS-only `elementor/frontend/init`; discover extras via `elementor/elements/elements_registered`
-- `reactwoo-geocore.php`, `readme.txt` — **1.8.127**
+- `includes/targeting/class-rwgc-surface-settings.php` — stamp `_rwgc_visibility_rules_explicit_off` when the modern enable key was present and not yes (after portable-flag promotion)
+- `includes/targeting/class-rwgc-targeting-surface-evaluator.php` — `is_visibility_rules_enabled()` returns false on explicit OFF before `has_resolved_portable_config()`
+- `includes/integrations/elementor/class-rwgc-elementor-popups.php` — popup page-settings visibility gate uses the shared evaluator/normalize path
+- `tests/Targeting/RWGCTargetingSurfaceEvaluatorTest.php` — regression coverage for Atomic/classic OFF, legacy payload-only, and use_portable promotion
 
 ## Root cause
 
-Atomic nestable hooks were attached on `elementor/frontend/init`, which exists only in Elementor’s **JS** frontend and never fires in PHP. US-only Flexbox therefore never received `should_render`, and Twig containers ignore classic wrapper CSS hides.
+`is_visibility_rules_enabled()` fell through to leftover `rwgc_visibility_rule_library` / portable JSON after the enable switch was turned off. Classic Elementor and Atomic keep those values when the switch is hidden/unchecked.
 
 ## What was not changed
 
-- Evaluator / empty-country product rule
-- Atomic chips control / schema union (1.8.126)
+- Empty country list + `hide_if` match-all semantics (intentional / documented)
+- Open PR topics #1–#53 (Atomic hide_if schema default, settings wipe, page-version spoof, etc.)
+- Plugin version / release tag
 
-## Remaining (manual)
+## Validation
 
-- Publish Home (Variant), hard-refresh as UK — “UNITED STATES” Flexbox must not render
+- `php vendor/phpunit/phpunit/phpunit --bootstrap tests/bootstrap.php --stderr tests/Targeting/RWGCTargetingSurfaceEvaluatorTest.php tests/Targeting/RWGCSurfaceSettingsCountriesTest.php` → OK (8 tests)

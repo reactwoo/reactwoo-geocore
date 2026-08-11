@@ -36,6 +36,18 @@
 
 ---
 
+### Visibility rules stay active after enable switch OFF (leftover library/JSON)
+
+**Symptoms:** Elementor classic/Atomic surfaces with a previously selected library rule (or portable JSON) still evaluate that rule after “Enable visibility rules” is turned off.
+
+**Tried:** Gutenberg-only toggle honor in PR #16 — does not patch the shared evaluator; Elementor popup helper also treated leftover library ids as enabled.
+
+**Likely causes:** `is_visibility_rules_enabled()` → `has_resolved_portable_config()` ignores explicit OFF when payloads remain; Elementor does not clear library/JSON on toggle off.
+
+**Do not retry:** Requiring enable=yes for all documents (breaks legacy payload-only settings with no enable key). Use explicit-off stamp from normalize instead.
+
+---
+
 ### Atomic Flexbox geo never hides on frontend (hooks never registered)
 
 **Symptoms:** US-only (or FR-only) Atomic Flexbox still renders for UK visitors even when chips show the correct country.
