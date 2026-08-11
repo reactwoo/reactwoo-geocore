@@ -28,6 +28,7 @@
     "test:experience-slots": "php tests/test-rwgc-experience-slots.php",
     "test:elementor-experience-slots": "php tests/test-rwgc-elementor-experience-slots.php",
     "test:gutenberg-experience-slot": "php tests/test-rwgc-gutenberg-experience-slot.php",
+    "test:components": "php tests/test-rwgc-components.php",
     "test:all": [
       "@test",
       "@test:rules",
@@ -39,7 +40,8 @@
       "@test:decision-parity",
       "@test:experience-slots",
       "@test:elementor-experience-slots",
-      "@test:gutenberg-experience-slot"
+      "@test:gutenberg-experience-slot",
+      "@test:components"
     ]
   },
   "config": {

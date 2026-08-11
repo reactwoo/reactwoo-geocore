@@ -16,6 +16,7 @@ PHP value objects under `includes/contracts/`. Schema version: **`reactwoo_schem
 | [experience-slots.md](./experience-slots.md) | Experience Slot API (WP5) |
 | [elementor-experience-slots.md](./elementor-experience-slots.md) | Elementor adapter (WP6) |
 | [gutenberg-experience-slots.md](./gutenberg-experience-slots.md) | Gutenberg block (WP7) |
+| [components.md](./components.md) | Component System (WP8) |
 | [satellite-capabilities.md](./satellite-capabilities.md) | Pro / Commerce / Optimise adapters |
 
 **WP1 scope:** serialisation/validation only. Runtime pieces (WP2–WP5) are additive and documented in the rows above.

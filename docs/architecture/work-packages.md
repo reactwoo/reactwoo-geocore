@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
 
-**Current active package:** WP8 (ReactWoo Components / Atomic v1) — WP0–WP7 complete.
+**Current active package:** WP9 (Variant System) — WP0–WP8 complete.
 
 ---
 

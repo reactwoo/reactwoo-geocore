@@ -2,28 +2,22 @@
 
 ## Status
 
-**done** — WP5–WP7 (Experience Slot API, Elementor adapter, Gutenberg block).
+**done** — WP5–WP8 (slots, Elementor/Gutenberg adapters, Component System foundation).
 
-## Files changed (WP7)
+## Latest (WP8)
 
-- `blocks/experience-slot/*` — block.json, editor.js/css, style.css
-- `includes/integrations/gutenberg/class-rwgc-gutenberg-experience-slot.php`
-- `includes/integrations/class-rwgc-integrations-loader.php`
-- `tests/test-rwgc-gutenberg-experience-slot.php`
-- `docs/contracts/gutenberg-experience-slots.md`
-- `docs/architecture/work-packages.md` — active → WP8
+- `includes/components/*` — Definition, Registry, Renderer interface, PHP HTML renderer, library of 6 types
+- `assets/css/rw-components.css` — `--rw-*` tokens + namespaced styles
+- `tests/test-rwgc-components.php`
+- Active work package → **WP9 Variant System**
 
 ## What was not changed
 
-- ReactWoo Component System (WP8)
-- Variant authoring (WP9)
-- Cloud Decision Service
+- Elementor/Gutenberg *component* adapters (deferred; slots cover placement)
+- Variant engine (WP9)
+- Cloud
 - No version bump / tag / push
 
 ## Commands run
 
-- `php tests/test-rwgc-gutenberg-experience-slot.php` — passed
-
-## Remaining
-
-- WP8: ReactWoo Components / Atomic v1 (platform-neutral definitions)
+- `php tests/test-rwgc-components.php` — passed
