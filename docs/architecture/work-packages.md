@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
 
-**Current active package:** WP9 (Variant System) — WP0–WP8 complete.
+**Current active package:** WP10 (Cloud Connector — WordPress) — WP0–WP9 complete. Gate C satisfied in Variant Engine tests.
 
 ---
 
@@ -538,8 +538,10 @@ No autonomous optimisation in this phase.
 - [x] WP5 Experience Slot API (2026-08-11) — `includes/slots/`, admin Experience Slots, `composer test:experience-slots` (Gate B foundation; Elementor adapter is WP6)  
 - [x] WP6 Elementor Experience Slot adapter (2026-08-11) — containers/sections, clone-safe binding, frontend markers + Gate B buffer; `composer test:elementor-experience-slots`  
 - [x] WP7 Gutenberg Experience Slot block (2026-08-11) — `reactwoo/experience-slot`, InnerBlocks, clone-safe instanceId; `composer test:gutenberg-experience-slot`  
+- [x] WP8 ReactWoo Component System v1 (2026-08-11) — definitions + php_html renderer for six types; `composer test:components` (builder adapters via Variants WP9)  
+- [x] WP9 Variant Engine (2026-08-11) — DEFAULT/CONTENT/COMPONENT/NATIVE + fallbacks; Gate C via `composer test:variants`  
 
-- [ ] WP8–9 components/variants → **Gates B–C**  
+- [ ] WP10–13 Cloud → **Gate D**  
 - [ ] WP10–13 Cloud → **Gate D**  
 - [ ] WP14–16 analytics/billing/migration → **Gate E**  
 - [ ] WP17–19 hardening  

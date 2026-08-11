@@ -94,6 +94,13 @@ final class RWGC_Contract_Variant extends RWGC_Contract {
 	/**
 	 * @return array<string, mixed>
 	 */
+	public function payload() {
+		return $this->payload;
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
 	public function to_array() {
 		return $this->with_extras(
 			array(

@@ -14,3 +14,5 @@ Types: `default` | `content` | `reactwoo_component` | `native_reference`.
 ```
 
 Convenience input keys (`content`, `component`+`props`, `native_reference`) map into `payload` on parse. Invalid type → `RWGC_Contract_Exception`.
+
+**Runtime (WP9):** see [variant-engine.md](./variant-engine.md) for Resolver / Renderer / Gate C.

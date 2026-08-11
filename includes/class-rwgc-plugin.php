@@ -89,6 +89,8 @@ class RWGC_Plugin {
 		RWGC_Experience_Slots::load();
 		require_once RWGC_PATH . 'includes/components/class-rwgc-components.php';
 		RWGC_Components::load();
+		require_once RWGC_PATH . 'includes/variants/class-rwgc-variants.php';
+		RWGC_Variants::load();
 
 		require_once RWGC_PATH . 'includes/class-rwgc-settings.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-cache.php';
@@ -212,6 +214,7 @@ class RWGC_Plugin {
 		RWGC_WP_Abilities_Adapter::init();
 		RWGC_Experience_Slots::init();
 		RWGC_Components::init();
+		RWGC_Variants::init();
 
 		if ( is_admin() ) {
 			RWGC_Admin_Visibility_Rules::init();
