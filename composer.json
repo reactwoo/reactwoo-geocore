@@ -22,12 +22,14 @@
     "test:rwgc-rule-evaluator": "php tests/test-rwgc-rule-evaluator.php",
     "test:ai-snapshot": "php tests/test-rwgc-ai-snapshot.php",
     "test:contracts": "php tests/test-rwgc-contracts.php",
+    "test:platform-capabilities": "php tests/test-rwgc-platform-capabilities.php",
     "test:all": [
       "@test",
       "@test:rules",
       "@test:rwgc-rule-evaluator",
       "@test:ai-snapshot",
-      "@test:contracts"
+      "@test:contracts",
+      "@test:platform-capabilities"
     ]
   },
   "config": {

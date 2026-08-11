@@ -78,6 +78,11 @@ class RWGC_Plugin {
 
 		require_once RWGC_PATH . 'includes/contracts/class-rwgc-contracts.php';
 		RWGC_Contracts::load();
+		require_once RWGC_PATH . 'includes/platform/class-rwgc-platform-capability-registry.php';
+		require_once RWGC_PATH . 'includes/platform/functions-reactwoo-capabilities.php';
+		require_once RWGC_PATH . 'includes/platform/class-rwgc-platform-capabilities-bootstrap.php';
+		require_once RWGC_PATH . 'includes/platform/class-rwgc-platform-capabilities-admin.php';
+		require_once RWGC_PATH . 'includes/platform/class-rwgc-wp-abilities-adapter.php';
 
 		require_once RWGC_PATH . 'includes/class-rwgc-settings.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-cache.php';
@@ -197,6 +202,9 @@ class RWGC_Plugin {
 		RWGC_Variant_Rule_Applications::init();
 		RWGC_Legacy_Geo_Rule_CPT::init();
 
+		RWGC_Platform_Capabilities_Bootstrap::init();
+		RWGC_WP_Abilities_Adapter::init();
+
 		if ( is_admin() ) {
 			RWGC_Admin_Visibility_Rules::init();
 			RWGC_Admin_Platform::init();
@@ -215,6 +223,7 @@ class RWGC_Plugin {
 			RWGC_Insights_Nav::init();
 			RWGC_Admin_Targeting_Nav::init();
 			RWGC_Admin::init();
+			RWGC_Platform_Capabilities_Admin::init();
 		}
 
 		// Frontend + shared.

@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
 
-**Current active package:** WP2 (Capability Registry) — WP0 audit + WP1 contracts complete.
+**Current active package:** WP3 (Decision Runtime) — WP0–WP2 complete.
 
 ---
 
@@ -532,7 +532,8 @@ No autonomous optimisation in this phase.
 
 - [x] WP0 audit (2026-08-11)  
 - [x] WP1 contracts (2026-08-11) — `includes/contracts/`, `docs/contracts/`, `composer test:contracts`  
-- [ ] WP2 capability registry  
+- [x] WP2 capability registry (2026-08-11) — `includes/platform/`, admin Capabilities screen, `composer test:platform-capabilities`  
+
 - [ ] WP3 decision runtime → **Gate A**  
 - [ ] WP4 satellite adapters  
 - [ ] WP5–9 slots/adapters/components/variants → **Gates B–C**  
