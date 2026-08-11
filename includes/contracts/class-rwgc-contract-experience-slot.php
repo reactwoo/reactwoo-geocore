@@ -93,6 +93,40 @@ final class RWGC_Contract_Experience_Slot extends RWGC_Contract {
 		return $this->id;
 	}
 
+	/** @return string */
+	public function name() {
+		return $this->name;
+	}
+
+	/** @return string */
+	public function page() {
+		return $this->page;
+	}
+
+	/** @return string */
+	public function adapter() {
+		return $this->adapter;
+	}
+
+	/** @return string */
+	public function status() {
+		return $this->status;
+	}
+
+	/**
+	 * @return list<string>
+	 */
+	public function variant_types() {
+		return $this->variant_types;
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	public function metadata() {
+		return $this->metadata;
+	}
+
 	/**
 	 * @return array<string, mixed>
 	 */

@@ -2,22 +2,28 @@
 
 ## Status
 
-**done** — Atomic Flexbox frontend geo hide fix for Geo Core **v1.8.127**.
+**done** — WP5 Experience Slot API in Geo Core (registry, resolver, renderer, admin diagnostics).
 
 ## Files changed
 
-- `includes/integrations/elementor/class-rwgc-elementor-frontend.php` — register `e-flexbox` / `e-div-block` / `e-grid` (and tabs) `should_render` immediately; stop waiting on JS-only `elementor/frontend/init`; discover extras via `elementor/elements/elements_registered`
-- `reactwoo-geocore.php`, `readme.txt` — **1.8.127**
-
-## Root cause
-
-Atomic nestable hooks were attached on `elementor/frontend/init`, which exists only in Elementor’s **JS** frontend and never fires in PHP. US-only Flexbox therefore never received `should_render`, and Twig containers ignore classic wrapper CSS hides.
+- `includes/slots/*` — ID, registry, resolver, renderer, helpers, admin, loader
+- `includes/class-rwgc-plugin.php` — boot `RWGC_Experience_Slots`
+- `includes/contracts/class-rwgc-contract-experience-slot.php` — getters used by slots API
+- `tests/test-rwgc-experience-slots.php` + `composer.json` script `test:experience-slots`
+- `docs/contracts/experience-slots.md`
+- `docs/architecture/work-packages.md` — WP5 complete; active → WP6
 
 ## What was not changed
 
-- Evaluator / empty-country product rule
-- Atomic chips control / schema union (1.8.126)
+- Elementor/Gutenberg adapters (WP6–7)
+- `RWGC_Rule_Evaluator` / visitor render path
+- Cloud Decision Service
+- No version bump / tag / push
 
-## Remaining (manual)
+## Commands run
 
-- Publish Home (Variant), hard-refresh as UK — “UNITED STATES” Flexbox must not render
+- `php tests/test-rwgc-experience-slots.php` — all passed
+
+## Remaining
+
+- WP6: Elementor Experience Slot adapter (containers first; clone via `binding_key`)

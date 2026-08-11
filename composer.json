@@ -25,6 +25,7 @@
     "test:platform-capabilities": "php tests/test-rwgc-platform-capabilities.php",
     "test:decision-runtime": "php tests/test-rwgc-decision-runtime.php",
     "test:decision-parity": "php tests/test-rwgc-decision-parity.php",
+    "test:experience-slots": "php tests/test-rwgc-experience-slots.php",
     "test:all": [
       "@test",
       "@test:rules",
@@ -33,7 +34,8 @@
       "@test:contracts",
       "@test:platform-capabilities",
       "@test:decision-runtime",
-      "@test:decision-parity"
+      "@test:decision-parity",
+      "@test:experience-slots"
     ]
   },
   "config": {

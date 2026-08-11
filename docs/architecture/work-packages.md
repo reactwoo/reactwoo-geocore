@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
 
-**Current active package:** WP5 (Experience Slot API) — WP0–WP4 complete.
+**Current active package:** WP6 (Elementor Experience Slot adapter) — WP0–WP5 complete.
 
 ---
 
@@ -535,8 +535,9 @@ No autonomous optimisation in this phase.
 - [x] WP2 capability registry (2026-08-11) — `includes/platform/`, admin Capabilities screen, `composer test:platform-capabilities`  
 - [x] WP3 decision runtime (2026-08-11) — `includes/decision/`, `composer test:decision-runtime` (not on visitor render path; Gate A via adapters is WP4)  
 - [x] WP4 satellite adapters (2026-08-11) — Pro/Commerce/Optimise capability registration; Gate A `composer test:decision-parity`  
+- [x] WP5 Experience Slot API (2026-08-11) — `includes/slots/`, admin Experience Slots, `composer test:experience-slots` (Gate B foundation; Elementor adapter is WP6)  
 
-- [ ] WP5–9 slots/adapters/components/variants → **Gates B–C**  
+- [ ] WP6–9 adapters/components/variants → **Gates B–C**  
 - [ ] WP10–13 Cloud → **Gate D**  
 - [ ] WP14–16 analytics/billing/migration → **Gate E**  
 - [ ] WP17–19 hardening  

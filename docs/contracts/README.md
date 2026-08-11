@@ -11,5 +11,9 @@ PHP value objects under `includes/contracts/`. Schema version: **`reactwoo_schem
 | [manifest.md](./manifest.md) | Compiled Manifest |
 | [events.md](./events.md) | Event + Goal |
 | [entitlements.md](./entitlements.md) | Entitlement |
+| [capabilities.md](./capabilities.md) (WP2) | Platform Capability Registry |
+| [decision-runtime.md](./decision-runtime.md) | Local Decision Runtime (not on render path) |
+| [experience-slots.md](./experience-slots.md) | Experience Slot API (WP5) |
+| [satellite-capabilities.md](./satellite-capabilities.md) | Pro / Commerce / Optimise adapters |
 
-**WP1 scope:** serialisation/validation only. No Cloud sync, no Decision Runtime, no UI, no migration of existing rules.
+**WP1 scope:** serialisation/validation only. Runtime pieces (WP2–WP5) are additive and documented in the rows above.
