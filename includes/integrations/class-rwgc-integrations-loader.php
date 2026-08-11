@@ -26,6 +26,7 @@ class RWGC_Integrations_Loader {
 		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-popups.php';
 		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-experience-slots.php';
 		require_once RWGC_PATH . 'includes/integrations/gutenberg/class-rwgc-gutenberg-post-geo.php';
+		require_once RWGC_PATH . 'includes/integrations/gutenberg/class-rwgc-gutenberg-experience-slot.php';
 		require_once RWGC_PATH . 'includes/integrations/class-rwgc-cache-compat.php';
 
 		if ( function_exists( 'rwgc_is_woocommerce_active' ) && rwgc_is_woocommerce_active() ) {
@@ -43,6 +44,7 @@ class RWGC_Integrations_Loader {
 		RWGC_Elementor_Popups::init();
 		RWGC_Elementor_Experience_Slots::init();
 		RWGC_Gutenberg_Post_Geo::init();
+		RWGC_Gutenberg_Experience_Slot::init();
 
 		/**
 		 * GeoCore now registers native Elementor element controls and frontend visibility.

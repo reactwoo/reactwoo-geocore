@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
 
-**Current active package:** WP7 (Gutenberg Experience Slot adapter) — WP0–WP6 complete.
+**Current active package:** WP8 (ReactWoo Components / Atomic v1) — WP0–WP7 complete.
 
 ---
 
@@ -537,8 +537,9 @@ No autonomous optimisation in this phase.
 - [x] WP4 satellite adapters (2026-08-11) — Pro/Commerce/Optimise capability registration; Gate A `composer test:decision-parity`  
 - [x] WP5 Experience Slot API (2026-08-11) — `includes/slots/`, admin Experience Slots, `composer test:experience-slots` (Gate B foundation; Elementor adapter is WP6)  
 - [x] WP6 Elementor Experience Slot adapter (2026-08-11) — containers/sections, clone-safe binding, frontend markers + Gate B buffer; `composer test:elementor-experience-slots`  
+- [x] WP7 Gutenberg Experience Slot block (2026-08-11) — `reactwoo/experience-slot`, InnerBlocks, clone-safe instanceId; `composer test:gutenberg-experience-slot`  
 
-- [ ] WP7–9 adapters/components/variants → **Gates B–C**  
+- [ ] WP8–9 components/variants → **Gates B–C**  
 - [ ] WP10–13 Cloud → **Gate D**  
 - [ ] WP14–16 analytics/billing/migration → **Gate E**  
 - [ ] WP17–19 hardening  
