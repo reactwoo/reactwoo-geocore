@@ -18,6 +18,7 @@ PHP value objects under `includes/contracts/`. Schema version: **`reactwoo_schem
 | [gutenberg-experience-slots.md](./gutenberg-experience-slots.md) | Gutenberg block (WP7) |
 | [components.md](./components.md) | Component System (WP8) |
 | [variant-engine.md](./variant-engine.md) | Variant Engine (WP9) |
+| [cloud-connector.md](./cloud-connector.md) | Cloud Connector WP (WP10) |
 | [satellite-capabilities.md](./satellite-capabilities.md) | Pro / Commerce / Optimise adapters |
 
 **WP1 scope:** serialisation/validation only. Runtime pieces (WP2–WP5) are additive and documented in the rows above.

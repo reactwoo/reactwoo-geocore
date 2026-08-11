@@ -91,6 +91,8 @@ class RWGC_Plugin {
 		RWGC_Components::load();
 		require_once RWGC_PATH . 'includes/variants/class-rwgc-variants.php';
 		RWGC_Variants::load();
+		require_once RWGC_PATH . 'includes/cloud/class-rwgc-cloud.php';
+		RWGC_Cloud::load();
 
 		require_once RWGC_PATH . 'includes/class-rwgc-settings.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-cache.php';
@@ -215,6 +217,7 @@ class RWGC_Plugin {
 		RWGC_Experience_Slots::init();
 		RWGC_Components::init();
 		RWGC_Variants::init();
+		RWGC_Cloud::init();
 
 		if ( is_admin() ) {
 			RWGC_Admin_Visibility_Rules::init();

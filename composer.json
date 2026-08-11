@@ -30,6 +30,7 @@
     "test:gutenberg-experience-slot": "php tests/test-rwgc-gutenberg-experience-slot.php",
     "test:components": "php tests/test-rwgc-components.php",
     "test:variants": "php tests/test-rwgc-variants.php",
+    "test:cloud-connector": "php tests/test-rwgc-cloud-connector.php",
     "test:all": [
       "@test",
       "@test:rules",
@@ -43,7 +44,8 @@
       "@test:elementor-experience-slots",
       "@test:gutenberg-experience-slot",
       "@test:components",
-      "@test:variants"
+      "@test:variants",
+      "@test:cloud-connector"
     ]
   },
   "config": {
