@@ -7,12 +7,15 @@ globs:
 
 # ReactWoo Geo Core
 
-- **Source of truth:** `docs/geo-core-cursor-master-plan.md`
+- **Platform / Cloud plan:** `docs/architecture/` (v1 architecture + work packages)
+- **Geo Core phases:** `docs/geo-core-cursor-master-plan.md`
 - **Workflow note:** `docs/AGENTS.md` (single-thread default)
 - **Phase notes:** `docs/phases/` (e.g. `phase-1.md`)
+- **Always-on:** `.cursor/rules/reactwoo-platform.mdc`
 
 ## Rules
 
+- Geo Core owns shared platform infrastructure (capability registry, decision runtime, slots, entitlements). Satellites register capabilities; do not create independent decision engines.
 - Geo Core owns context, rules, variants, fallback; extend with adapters, no big-bang rewrites.
 - New geo-related admin UI must align with **GeoElementor** patterns (see master plan §5).
 - **No CSV / free-typed country lists in user-facing UIs** — use prepopulated selectable controls (master plan §5.1).
