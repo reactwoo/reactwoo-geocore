@@ -39,3 +39,7 @@ Geo Core → **Experience Slots** diagnostics.
 ## Gate B
 
 Selecting variant `default` / empty / missing slot returns the default HTML unchanged. Builder adapters must pass the original render as `$default_content`.
+
+## Elementor (WP6)
+
+See [elementor-experience-slots.md](./elementor-experience-slots.md).
