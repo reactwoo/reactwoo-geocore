@@ -137,6 +137,8 @@ if ( ! function_exists( 'admin_url' ) ) {
 }
 
 $base = dirname( __DIR__ ) . '/includes/';
+require_once $base . 'contracts/class-rwgc-contracts.php';
+RWGC_Contracts::load();
 require_once $base . 'context/class-rwgc-context-attribution.php';
 require_once $base . 'engine/class-rwgc-context.php';
 require_once $base . 'rules/class-rwgc-rule-condition-evaluator.php';

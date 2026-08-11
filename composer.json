@@ -21,11 +21,13 @@
     "test:rules": "php tests/test-rule-condition-evaluator.php",
     "test:rwgc-rule-evaluator": "php tests/test-rwgc-rule-evaluator.php",
     "test:ai-snapshot": "php tests/test-rwgc-ai-snapshot.php",
+    "test:contracts": "php tests/test-rwgc-contracts.php",
     "test:all": [
       "@test",
       "@test:rules",
       "@test:rwgc-rule-evaluator",
-      "@test:ai-snapshot"
+      "@test:ai-snapshot",
+      "@test:contracts"
     ]
   },
   "config": {

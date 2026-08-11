@@ -13,6 +13,7 @@
 | `docs/architecture/` | **ReactWoo Cloud v1 + shared platform** — canonical product/tech plan, work packages, suite audit |
 | `docs/architecture/reactwoo-cloud-v1-architecture-and-delivery-plan.md` | Official Cloud/platform architecture (one decision model; Core executes locally) |
 | `docs/architecture/work-packages.md` | Cursor-ready WP0–WP20; implement one package at a time |
+| `docs/contracts/` | WP1 platform value objects / JSON schema (`reactwoo_schema_version = 1`) |
 | `.cursor/rules/reactwoo-platform.mdc` | Always-on platform engineering rule (all product repos) |
 | `docs/geo-core-cursor-master-plan.md` | Geo Core phase history / suite backlog (phases 1–7); new cross-plugin work follows `docs/architecture/` |
 | `docs/releases-and-git-tags.md` | Version bumps, **git annotated tags**, **single push** (`main` + tag), staging/R2; avoid duplicate CI / Windows git hangs |

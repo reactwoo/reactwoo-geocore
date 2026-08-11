@@ -35,6 +35,9 @@ if ( ! defined( 'RWGC_PLUGIN_SLUG' ) ) {
 if ( ! defined( 'RWGC_TEXT_DOMAIN' ) ) {
 	define( 'RWGC_TEXT_DOMAIN', 'reactwoo-geocore' );
 }
+if ( ! defined( 'RWGC_REACTWOO_SCHEMA_VERSION' ) ) {
+	define( 'RWGC_REACTWOO_SCHEMA_VERSION', 1 );
+}
 
 // Autoload core includes.
 // Settings are needed during activation, so load them before the main plugin class.

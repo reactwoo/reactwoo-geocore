@@ -76,6 +76,9 @@ class RWGC_Plugin {
 			}
 		}
 
+		require_once RWGC_PATH . 'includes/contracts/class-rwgc-contracts.php';
+		RWGC_Contracts::load();
+
 		require_once RWGC_PATH . 'includes/class-rwgc-settings.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-cache.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-maxmind.php';

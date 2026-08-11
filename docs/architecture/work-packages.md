@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
 
-**Current active package:** WP1 (shared contracts) — WP0 audit complete (`current-state.md`, `cloud-migration-impact.md`).
+**Current active package:** WP2 (Capability Registry) — WP0 audit + WP1 contracts complete.
 
 ---
 
@@ -531,8 +531,7 @@ No autonomous optimisation in this phase.
 ## Sequence checklist
 
 - [x] WP0 audit (2026-08-11)  
-
-- [ ] WP1 contracts  
+- [x] WP1 contracts (2026-08-11) — `includes/contracts/`, `docs/contracts/`, `composer test:contracts`  
 - [ ] WP2 capability registry  
 - [ ] WP3 decision runtime → **Gate A**  
 - [ ] WP4 satellite adapters  
