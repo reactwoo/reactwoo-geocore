@@ -23,13 +23,15 @@
     "test:ai-snapshot": "php tests/test-rwgc-ai-snapshot.php",
     "test:contracts": "php tests/test-rwgc-contracts.php",
     "test:platform-capabilities": "php tests/test-rwgc-platform-capabilities.php",
+    "test:decision-runtime": "php tests/test-rwgc-decision-runtime.php",
     "test:all": [
       "@test",
       "@test:rules",
       "@test:rwgc-rule-evaluator",
       "@test:ai-snapshot",
       "@test:contracts",
-      "@test:platform-capabilities"
+      "@test:platform-capabilities",
+      "@test:decision-runtime"
     ]
   },
   "config": {

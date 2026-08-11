@@ -188,6 +188,41 @@ final class RWGC_Contract_Manifest extends RWGC_Contract {
 	}
 
 	/**
+	 * @return list<RWGC_Contract_Experience>
+	 */
+	public function experiences() {
+		return $this->experiences;
+	}
+
+	/**
+	 * @return list<RWGC_Contract_Variant>
+	 */
+	public function variants() {
+		return $this->variants;
+	}
+
+	/**
+	 * @return list<RWGC_Contract_Experiment>
+	 */
+	public function experiments() {
+		return $this->experiments;
+	}
+
+	/**
+	 * @return list<RWGC_Contract_Goal>
+	 */
+	public function goals() {
+		return $this->goals;
+	}
+
+	/**
+	 * @return list<RWGC_Contract_Experience_Slot>
+	 */
+	public function slots() {
+		return $this->slots;
+	}
+
+	/**
 	 * @return array<string, mixed>
 	 */
 	public function to_array() {

@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
 
-**Current active package:** WP3 (Decision Runtime) — WP0–WP2 complete.
+**Current active package:** WP4 (adapt satellites to Capability Registry) — WP0–WP3 complete.
 
 ---
 

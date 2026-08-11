@@ -83,6 +83,8 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/platform/class-rwgc-platform-capabilities-bootstrap.php';
 		require_once RWGC_PATH . 'includes/platform/class-rwgc-platform-capabilities-admin.php';
 		require_once RWGC_PATH . 'includes/platform/class-rwgc-wp-abilities-adapter.php';
+		require_once RWGC_PATH . 'includes/decision/class-rwgc-decision.php';
+		RWGC_Decision::load();
 
 		require_once RWGC_PATH . 'includes/class-rwgc-settings.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-cache.php';

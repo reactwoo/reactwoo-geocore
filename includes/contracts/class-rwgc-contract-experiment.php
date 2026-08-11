@@ -64,6 +64,18 @@ final class RWGC_Contract_Experiment extends RWGC_Contract {
 		return $this->id;
 	}
 
+	/** @return string */
+	public function control() {
+		return $this->control;
+	}
+
+	/**
+	 * @return list<array{id: string, allocation: int|float}>
+	 */
+	public function variants() {
+		return $this->variants;
+	}
+
 	/**
 	 * @return array<string, mixed>
 	 */

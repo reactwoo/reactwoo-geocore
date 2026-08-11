@@ -142,9 +142,51 @@ final class RWGC_Contract_Experience extends RWGC_Contract {
 		return $this->id;
 	}
 
+	/** @return string */
+	public function name() {
+		return $this->name;
+	}
+
+	/** @return string */
+	public function audience_id() {
+		return $this->audience_id;
+	}
+
+	/** @return string */
+	public function slot_id() {
+		return $this->slot_id;
+	}
+
+	/** @return string */
+	public function variant_id() {
+		return $this->variant_id;
+	}
+
+	/** @return string */
+	public function status() {
+		return $this->status;
+	}
+
 	/** @return int */
 	public function priority() {
 		return $this->priority;
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	public function schedule() {
+		return $this->schedule;
+	}
+
+	/** @return string */
+	public function experiment_id() {
+		return $this->experiment_id;
+	}
+
+	/** @return string */
+	public function goal_id() {
+		return $this->goal_id;
 	}
 
 	/**

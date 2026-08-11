@@ -9,6 +9,7 @@ Canonical home for the **ReactWoo Cloud v1** product and technical plan, suite a
 | [current-state.md](./current-state.md) | WP0 audit of the existing suite (**complete**) |
 | [cloud-migration-impact.md](./cloud-migration-impact.md) | WP0 migration risks and recommended order (**complete**) |
 | [../contracts/](../contracts/) | WP1 shared platform contracts (`reactwoo_schema_version = 1`) |
+| [../contracts/decision-runtime.md](../contracts/decision-runtime.md) | WP3 local Decision Runtime (additive; not on visitor render path yet) |
 
 ## Governing rule
 
