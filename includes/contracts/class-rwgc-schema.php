@@ -60,6 +60,10 @@ final class RWGC_Schema {
 		'page_type'            => 'page.type',
 		'request_uri'          => 'page.request_uri',
 		'page_version_url'     => 'page.version_url',
+		'cart_subtotal'        => 'commerce.cart_value',
+		'product_category'     => 'commerce.category',
+		'weather_facet'        => 'weather.facet',
+		'returning_visitor'    => 'visitor.returning',
 	);
 
 	/**
