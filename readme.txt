@@ -2,9 +2,9 @@
 Contributors: reactwoo
 Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
-Tested up to: 6.9
+Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.8.129
+Stable tag: 1.8.130
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.130 =
+* **Compatibility:** Tested up to WordPress 7.0 (Abilities API registration from 1.8.129 remains required on WP 7).
 
 = 1.8.129 =
 * **WP 6.9 Abilities API:** Register ReactWoo abilities on `wp_abilities_api_init` (and category on `wp_abilities_api_categories_init`) so admin notices no longer fire for `reactwoo/geo-*` and related capabilities.
