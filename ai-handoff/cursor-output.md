@@ -2,22 +2,30 @@
 
 ## Status
 
-**done** — Atomic Flexbox frontend geo hide fix for Geo Core **v1.8.127**.
+done
+
+## Summary
+
+Critical hunt on tip `c50e0be`: found LiteSpeed cache vary trusting client `rwgc_cc` / `rwgc_pv` cookies (first-visit shared empty-cookie bucket + forged-cookie poison). Fixed `RWGC_Cache_Compat` to derive LiteSpeed vary groups from server-side GeoIP / Page Version context, always sync cookies to that truth, and stop registering those cookies as `litespeed_vary_cookies`.
 
 ## Files changed
 
-- `includes/integrations/elementor/class-rwgc-elementor-frontend.php` — register `e-flexbox` / `e-div-block` / `e-grid` (and tabs) `should_render` immediately; stop waiting on JS-only `elementor/frontend/init`; discover extras via `elementor/elements/elements_registered`
-- `reactwoo-geocore.php`, `readme.txt` — **1.8.127**
+| File | Why |
+|------|-----|
+| `includes/integrations/class-rwgc-cache-compat.php` | Server-side LiteSpeed vary; cookie sync overwrite; drop client-controlled vary cookies |
+| `tests/Integrations/RWGCCacheCompatTest.php` | Regression coverage for vary group helpers |
 
-## Root cause
+## Not changed
 
-Atomic nestable hooks were attached on `elementor/frontend/init`, which exists only in Elementor’s **JS** frontend and never fires in PHP. US-only Flexbox therefore never received `should_render`, and Twig containers ignore classic wrapper CSS hides.
+- Open PR topics #1–#54 (visibility save, page version spoof, MaxMind wipe, recursion OOM, popups, assistant REST, rule tester, Insights AI, Suite overlays, Atomic chips/hide_if, R2 latest, Gutenberg meta, explicit OFF leftovers, GeoIP XFF, Variant Manager IDOR)
+- WooCommerce product direct-URL purchase eligibility (Geo Commerce owns that surface)
+- Provenance `infer_provenance_from_rule_set` wrong JSON shape (admin-only; `mark_variant_archived` has no callers)
 
-## What was not changed
+## Commands run
 
-- Evaluator / empty-country product rule
-- Atomic chips control / schema union (1.8.126)
+- `php -l includes/integrations/class-rwgc-cache-compat.php` → OK
+- `php vendor/phpunit/phpunit/phpunit --bootstrap tests/bootstrap.php --stderr tests/Integrations/RWGCCacheCompatTest.php` → OK (4 tests, 10 assertions)
 
-## Remaining (manual)
+## Remaining errors
 
-- Publish Home (Variant), hard-refresh as UK — “UNITED STATES” Flexbox must not render
+None for this fix.
