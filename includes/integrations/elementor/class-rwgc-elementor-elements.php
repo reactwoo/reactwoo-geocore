@@ -72,11 +72,18 @@ class RWGC_Elementor_Elements {
 			RWGC_VERSION,
 			true
 		);
+		$countries = array();
+		if ( class_exists( 'RWGC_Countries', false ) ) {
+			$list = RWGC_Countries::get_options();
+			$countries = is_array( $list ) ? $list : array();
+		}
+
 		wp_localize_script(
 			'rwgc-elementor-library-bridge',
 			'rwgcElementorLibrary',
 			array(
 				'library'         => self::get_visibility_library_rows(),
+				'countries'       => $countries,
 				'documentContext' => self::get_editor_document_context(),
 				'labels'          => array(
 					'compatibleGroup'    => __( 'Compatible rules', 'reactwoo-geocore' ),
@@ -86,6 +93,12 @@ class RWGC_Elementor_Elements {
 					'choosePlaceholder'  => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ),
 				),
 			)
+		);
+		// Shared with rule builder / Gutenberg when those screens do not define it.
+		wp_add_inline_script(
+			'rwgc-elementor-library-bridge',
+			'window.rwgcGeoCountryOptions = window.rwgcGeoCountryOptions || ' . wp_json_encode( $countries ) . ';',
+			'before'
 		);
 		wp_enqueue_script( 'rwgc-elementor-library-bridge' );
 	}

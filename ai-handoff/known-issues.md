@@ -78,6 +78,8 @@
 
 **Tried (Local reactwoo.local):** Opt-in `RW_ELEMENTOR_CONFIG_DEBUG` instrumentation; file probe of full widget stacks; isolation activating Geo Core / WHMCS / GeoCore Pro. With empty visibility-rule and WHMCS catalogs, all passes returned HTTP 200 (~1.0–1.1s, ~234–237 widgets). No 503 reproduced.
 
-**Likely causes (unproven on Local):** Geo Core uncached `get_rwgc_library_rows()` under large rule libraries; WHMCS unbounded option `get_posts`; Loop Grid inject without per-stack guard if multiple query section IDs fire; host timeout / response size on denser staging data. Support Portal not installed on Local; Flow has no Elementor registration.
+**Likely causes (unproven on Local):** Geo Core duplicating full ISO country SELECT2 / Atomic chips into every widget stack (payload size); uncached library rows under large rule libraries; WHMCS unbounded options; host LiteSpeed timeout.
+
+**Mitigation shipped (Geo Core 1.8.128):** `RWGC_Elementor_Ajax::is_heavy_elementor_ajax()` empties country + library option lists during bulk `get_widgets_config` / `get_document_config`; countries hydrated once via `rwgc-elementor-library-bridge.js` from editor-localised list. Single-widget `editor_get_widget_config` keeps full options.
 
 **Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence.

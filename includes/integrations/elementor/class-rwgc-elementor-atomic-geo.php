@@ -295,6 +295,11 @@ class RWGC_Elementor_Atomic_Geo {
 	 * @return array<int, array{value: string, label: string}>
 	 */
 	private static function get_country_chip_options() {
+		// Bulk widgets-config: empty chips (full list is huge × Atomic types). Single-widget config keeps full list.
+		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
+			return array();
+		}
+
 		static $rows = null;
 		if ( null !== $rows ) {
 			return $rows;
@@ -302,7 +307,11 @@ class RWGC_Elementor_Atomic_Geo {
 
 		$options = array();
 		if ( class_exists( 'RWGC_Elementor_Geo_Controls', false ) ) {
-			$options = RWGC_Elementor_Geo_Controls::get_country_options();
+			// Bypass heavy-ajax empty return — we already gated above.
+			if ( class_exists( 'RWGC_Countries', false ) ) {
+				$list = RWGC_Countries::get_options();
+				$options = is_array( $list ) ? $list : array();
+			}
 		} elseif ( class_exists( 'RWGC_Elementor_Elements', false ) ) {
 			$options = RWGC_Elementor_Elements::get_country_options();
 		} elseif ( class_exists( 'RWGC_Countries', false ) ) {
@@ -330,6 +339,15 @@ class RWGC_Elementor_Atomic_Geo {
 		$options = array(
 			'' => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ),
 		);
+
+		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
+			return array(
+				array(
+					'value' => '',
+					'label' => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ),
+				),
+			);
+		}
 
 		if ( class_exists( 'RWGC_Elementor_Elements', false ) ) {
 			$options = RWGC_Elementor_Elements::get_visibility_library_select_options();

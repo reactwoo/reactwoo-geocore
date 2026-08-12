@@ -62,6 +62,10 @@ class RWGC_Elementor_Geo_Controls {
 	 * @return void
 	 */
 	public static function add_visitor_preview( $element ) {
+		// Skip MaxMind/preview work while Elementor builds the full widgets-config payload.
+		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
+			return;
+		}
 		$preview = self::build_visitor_preview_markup();
 		if ( '' === $preview ) {
 			return;
@@ -121,6 +125,19 @@ class RWGC_Elementor_Geo_Controls {
 		);
 
 		if ( 'native' === $countries_ui && class_exists( 'RWGC_Elementor_Elements', false ) ) {
+			if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
+				$element->add_control(
+					'egp_countries',
+					array(
+						'type'      => \Elementor\Controls_Manager::HIDDEN,
+						'default'   => '',
+						'condition' => array(
+							'egp_enable_geo_targeting' => 'yes',
+						),
+					)
+				);
+				return;
+			}
 			$element->add_control(
 				'egp_countries_html',
 				array(
@@ -226,9 +243,13 @@ class RWGC_Elementor_Geo_Controls {
 			)
 		);
 
-		$library_options = class_exists( 'RWGC_Elementor_Elements', false )
-			? RWGC_Elementor_Elements::get_visibility_library_select_options()
-			: array( '' => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ) );
+		$library_options = array( '' => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ) );
+		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
+			// Options hydrated once via rwgc-elementor-library-bridge.js (avoids N× library in JSON).
+			$library_options = array( '' => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ) );
+		} elseif ( class_exists( 'RWGC_Elementor_Elements', false ) ) {
+			$library_options = RWGC_Elementor_Elements::get_visibility_library_select_options();
+		}
 
 		$element->add_control(
 			'rwgc_visibility_rule_library',
@@ -341,6 +362,10 @@ class RWGC_Elementor_Geo_Controls {
 	 * @return array<string, string>
 	 */
 	public static function get_country_options() {
+		// Bulk get_widgets_config: omit ~250 ISO rows per widget (LiteSpeed 503). Hydrate via JS once.
+		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
+			return array();
+		}
 		if ( class_exists( 'RWGC_Countries', false ) ) {
 			$list = RWGC_Countries::get_options();
 			if ( is_array( $list ) && ! empty( $list ) ) {
