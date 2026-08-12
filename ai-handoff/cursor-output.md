@@ -2,27 +2,15 @@
 
 ## Status
 
-**done** — WP11 Decision Cloud backend scaffolded as new service `reactwoo-decision-cloud`. Active → WP12 portal.
-
-## Where
-
-`wooalisync/.../plugins/reactwoo-decision-cloud` (Express control plane; **not** react-cloud Google vault).
+**done** — WP12 Cloud portal in `reactwoo-decision-cloud`. Active → WP13.
 
 ## Delivered
 
-- `/api/v1` pair, confirm, manifest (304), heartbeat, capabilities, events/batch
-- CRUD audiences/experiences/variants/goals/experiments/slots with manifest recompile
-- JSON repository + PostgreSQL migration SQL
-- Memory queue abstraction + audit log
-- `npm test` API suite green
+- `/portal` SPA: primary + secondary nav, persistent site context
+- Experience wizard with capability-aware publish checks
+- Visual condition builder
+- Portal API: capability-schemas, org sites, summary, publish-check
 
-## Geo Core docs
+## Commands
 
-- `work-packages.md` / `cloud-connector.md` updated
-
-## Not done
-
-- Portal UI (WP12)
-- Live PostgreSQL driver
-- Stripe
-- No tag/push
+- `npm test` (sequential) in reactwoo-decision-cloud
