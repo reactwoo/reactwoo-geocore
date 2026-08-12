@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
 
-**Current active package:** WP11 (Cloud backend) — WP0–WP10 complete.
+**Current active package:** WP12 (Cloud portal) — WP0–WP11 complete. Decision Cloud service: `reactwoo-decision-cloud`.
 
 ---
 
@@ -541,8 +541,9 @@ No autonomous optimisation in this phase.
 - [x] WP8 ReactWoo Component System v1 (2026-08-11) — definitions + php_html renderer for six types; `composer test:components` (builder adapters via Variants WP9)  
 - [x] WP9 Variant Engine (2026-08-11) — DEFAULT/CONTENT/COMPONENT/NATIVE + fallbacks; Gate C via `composer test:variants`  
 - [x] WP10 Cloud Connector (2026-08-11) — pairing, encrypted credentials, atomic manifest cache, cron/admin sync only; `composer test:cloud-connector`  
+- [x] WP11 Decision Cloud backend (2026-08-12) — new service `reactwoo-decision-cloud` (`/api/v1` pair/confirm/manifest/heartbeat/capabilities/events + CRUD); `npm test`  
 
-- [ ] WP11–13 Cloud backend/portal/wizard → **Gate D**  
+- [ ] WP12–13 portal / brand editor → **Gate D**  
 - [ ] WP10–13 Cloud → **Gate D**  
 - [ ] WP14–16 analytics/billing/migration → **Gate E**  
 - [ ] WP17–19 hardening  

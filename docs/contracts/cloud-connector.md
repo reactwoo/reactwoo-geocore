@@ -71,7 +71,7 @@ Geo Core → **Cloud** — pair, sync now, disconnect.
 
 ## Out of scope (later packages)
 
-- Cloud backend implementation (WP11)
+- Cloud backend implementation (WP11) → **done:** sibling service `reactwoo-decision-cloud`
 - Portal UI (WP12)
-- Event batch upload queue (follow-on)
+- Event batch upload queue on WP (Cloud accepts `/events/batch`; WP enqueue is follow-on)
 - Automatic switch of `management_mode` to cloud (WP16 migration)

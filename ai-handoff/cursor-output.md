@@ -2,21 +2,27 @@
 
 ## Status
 
-**done** — WP10 Cloud Connector (WordPress). Active package → WP11 Cloud backend.
+**done** — WP11 Decision Cloud backend scaffolded as new service `reactwoo-decision-cloud`. Active → WP12 portal.
 
-## Files changed
+## Where
 
-- `includes/cloud/*` — config, credentials, connection, HTTP, pairing, sync, manifest store, scheduler, admin
-- `includes/class-rwgc-plugin.php` — boot Cloud
-- `tests/test-rwgc-cloud-connector.php`
-- `docs/contracts/cloud-connector.md`
+`wooalisync/.../plugins/reactwoo-decision-cloud` (Express control plane; **not** react-cloud Google vault).
 
-## What was not changed
+## Delivered
 
-- Cloud backend (WP11) / portal (WP12)
-- Visitor render path (no Cloud HTTP)
-- No version bump / tag / push
+- `/api/v1` pair, confirm, manifest (304), heartbeat, capabilities, events/batch
+- CRUD audiences/experiences/variants/goals/experiments/slots with manifest recompile
+- JSON repository + PostgreSQL migration SQL
+- Memory queue abstraction + audit log
+- `npm test` API suite green
 
-## Commands run
+## Geo Core docs
 
-- `php tests/test-rwgc-cloud-connector.php` — all passed
+- `work-packages.md` / `cloud-connector.md` updated
+
+## Not done
+
+- Portal UI (WP12)
+- Live PostgreSQL driver
+- Stripe
+- No tag/push
