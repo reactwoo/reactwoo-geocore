@@ -116,4 +116,8 @@
 
 **Mitigation shipped (Geo Core 1.8.142):** If request age ≥ 4s after widget registration, return empty stacks for every widget (`slim-late`). Unhook `RW_WHMCS_Bridge`. Progress log before each `get_stack` on the fast path.
 
-**Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence; more Geo Visibility option-list slimming; more per-widget get_stack time-boxes (cannot interrupt a hung stack).
+**1.8.142 production log (13 Aug 2026):** `ajax_get_widgets_config_start` at 5503ms → unhook (UE/ACPT/WHMCS) → **no `widgets_registered`, no `late_skip`, no shutdown**. Hang is inside `get_widget_types()` / 112 leftover `elementor/widgets/register` callbacks (Elementor Pro `Module`s). Same hook finishes in ~3s on `get_document_config` because that request is not already 5.5s old. Time-box and late-skip never run.
+
+**Mitigation shipped (Geo Core 1.8.143):** `get_widgets_config` / `refresh_widgets_config` return empty maps and do not call `get_widget_types()`. Header `slim-empty`.
+
+**Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence; more Geo Visibility option-list slimming; more per-widget get_stack time-boxes (cannot interrupt a hung stack); calling `get_widget_types()` and then trying to skip stacks.

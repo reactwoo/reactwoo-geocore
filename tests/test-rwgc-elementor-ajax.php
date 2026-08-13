@@ -123,6 +123,7 @@ $cut_stats = array( 'loop_start' => microtime( true ) - 3 );
 rwgc_assert( RWGC_Elementor_Widgets_Config::should_cut_stacks( $cut_stats ), 'stack budget cuts after 400ms' );
 RWGC_Elementor_Config_Debug::set_summary( 'started_at', microtime( true ) - 10 );
 rwgc_assert( RWGC_Elementor_Widgets_Config::should_skip_all_stacks(), 'late boot skips all get_stack' );
+rwgc_assert( RWGC_Elementor_Widgets_Config::should_avoid_widget_manager(), 'avoid get_widget_types on bulk path' );
 rwgc_assert( RWGC_Elementor_Config_Debug::is_our_entry( 'RW_Elementor_WHM_Products_Widget' ), 'WHMCS widget is our entry' );
 rwgc_assert( RWGC_Elementor_Config_Debug::is_our_entry( 'ReactWoo\\Atomic\\Widgets\\Carousel' ), 'Atomic widget is our entry' );
 rwgc_assert( ! RWGC_Elementor_Config_Debug::is_our_entry( 'Elementor\\Widget_Heading' ), 'core heading is not our entry' );

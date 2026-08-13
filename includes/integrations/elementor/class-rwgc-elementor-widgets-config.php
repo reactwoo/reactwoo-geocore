@@ -1,10 +1,13 @@
 <?php
 /**
- * LiteSpeed-safe Elementor widgets-config (replace get_stack for third-party widgets).
+ * LiteSpeed-safe Elementor widgets-config.
  *
- * Elementor 4.2 has no per-widget hydration. `get_widgets_config` / `refresh_widgets_config`
- * call get_stack() for every registered widget. Add-on catalogues (Unlimited Elements, etc.)
- * make that request large enough for LiteSpeed to return HTTP 503 and spin the Elements panel.
+ * Production evidence (1.8.142): the 503 happens inside
+ * `$widgets_manager->get_widget_types()` — 112 leftover `elementor/widgets/register`
+ * callbacks (Elementor Pro Modules) — before any get_stack() or late-skip can run.
+ * These handlers therefore return empty control maps and must not touch the
+ * widgets manager. Filter `rwgc_elementor_avoid_widget_manager` to false to
+ * rebuild stacks on a fast host.
  *
  * @package ReactWoo_Geo_Core
  */
@@ -238,6 +241,10 @@ class RWGC_Elementor_Widgets_Config {
 			$plugin = \Elementor\Plugin::$instance;
 			$plugin->documents->check_permissions( $data['editor_post_id'] ?? 0 );
 
+			if ( self::should_avoid_widget_manager() ) {
+				return self::finish_empty_bulk( 'slim-empty', false );
+			}
+
 			$types = $plugin->widgets_manager->get_widget_types();
 			$stats = self::empty_build_stats();
 			if ( self::should_skip_all_stacks() ) {
@@ -299,6 +306,10 @@ class RWGC_Elementor_Widgets_Config {
 
 			$plugin = \Elementor\Plugin::$instance;
 			$plugin->documents->check_permissions( $data['editor_post_id'] ?? 0 );
+
+			if ( self::should_avoid_widget_manager() ) {
+				return self::finish_empty_bulk( 'slim-empty', true );
+			}
 
 			$types = $plugin->widgets_manager->get_widget_types();
 			$stats = self::empty_build_stats();
@@ -379,6 +390,43 @@ class RWGC_Elementor_Widgets_Config {
 			'controls'      => array(),
 			'tabs_controls' => array(),
 		);
+	}
+
+	/**
+	 * Do not call get_widget_types() on bulk widgets-config.
+	 *
+	 * That method fires every `elementor/widgets/register` callback. On
+	 * production that is 112 leftover registrars and LiteSpeed 503s before
+	 * late-skip can run.
+	 *
+	 * @return bool
+	 */
+	public static function should_avoid_widget_manager() {
+		$avoid = true;
+		if ( function_exists( 'apply_filters' ) ) {
+			return (bool) apply_filters( 'rwgc_elementor_avoid_widget_manager', $avoid );
+		}
+		return $avoid;
+	}
+
+	/**
+	 * @param string $note    Header note.
+	 * @param bool   $refresh Refresh-widgets payload shape.
+	 * @return array<string, mixed>
+	 */
+	private static function finish_empty_bulk( $note, $refresh ) {
+		$stats = self::empty_build_stats();
+		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+			RWGC_Elementor_Config_Debug::checkpoint( 'ajax_empty_return', array( 'note' => (string) $note ) );
+		}
+		self::finish_build_stats( $stats, (string) $note );
+		if ( $refresh ) {
+			return array(
+				'widgets'    => array(),
+				'categories' => array(),
+			);
+		}
+		return array();
 	}
 
 	/**
