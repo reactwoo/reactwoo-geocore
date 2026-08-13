@@ -26,6 +26,10 @@ class RWGC_Elementor_Geo_Controls {
 		if ( ! is_object( $element ) || ! method_exists( $element, 'get_controls' ) ) {
 			return;
 		}
+		// Bulk get_widgets_config: skip the whole section (not just empty options).
+		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
+			return;
+		}
 
 		$args = wp_parse_args(
 			$args,

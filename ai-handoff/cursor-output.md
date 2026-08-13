@@ -4,23 +4,23 @@
 done
 
 ## Task
-Fix Elementor Elements panel spinning again after 1.8.133.
+Elements panel still HTTP 503 after 1.8.134. Omit Geo control trees from bulk widgets-config.
 
 ## Files changed
-- `includes/platform/class-rwgc-wp-abilities-adapter.php` — skip category/ability registration on `elementor_ajax` so `_doing_it_wrong` HTML cannot corrupt widget-config JSON
-- `includes/class-rwgc-elementor.php` — document Geo Visibility uses the same heavy-path empty country/library/page lists as widget stacks
-- `tests/test-rwgc-elementor-ajax.php` — assert abilities skip on `elementor_ajax` only
-- Version 1.8.134
+- `includes/integrations/elementor/class-rwgc-elementor-geo-controls.php` — skip entire Geo Visibility section on heavy ajax
+- `includes/integrations/elementor/class-rwgc-elementor-elements.php` — same early return
+- `includes/integrations/elementor/class-rwgc-elementor-atomic-geo.php` — skip Atomic geo *controls* on heavy ajax; keep props schema
+- `includes/integrations/elementor/class-rwgc-elementor-experience-slots.php` — skip slot section on heavy ajax
+- Version 1.8.135
 
 ## What was not changed
-- 1.8.128 widget-stack country/library slim (`RWGC_Elementor_Ajax::is_heavy_elementor_ajax`)
 - PHP memory / timeout (do not retry)
-- WHMCS Bridge stubs
-- Cloud visitor-path HTTP (still none)
+- WHMCS stubs
+- Single-widget `editor_get_widget_config` still gets full controls
+- Atomic props schema still registered (required so saved geo keys are not dropped)
 
 ## Commands run
 - `php tests/test-rwgc-elementor-ajax.php`
-- `php tests/test-rwgc-platform-capabilities.php`
 
 ## Remaining errors
-- None locally. Production needs 1.8.134 installed; confirm `POST admin-ajax.php` `elementor_ajax` / `get_widgets_config` is HTTP 200 JSON.
+- Chrome `runtime.lastError` / “Receiving end does not exist” is a browser extension, not this 503.

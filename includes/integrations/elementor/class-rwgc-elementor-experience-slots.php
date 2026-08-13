@@ -75,6 +75,9 @@ final class RWGC_Elementor_Experience_Slots {
 	 */
 	public static function register_controls( $element, $args = null ) {
 		unset( $args );
+		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
+			return;
+		}
 		if ( ! is_object( $element ) || ! method_exists( $element, 'start_controls_section' ) ) {
 			return;
 		}

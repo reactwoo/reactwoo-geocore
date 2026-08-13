@@ -86,4 +86,8 @@
 
 **Mitigation shipped (Geo Core 1.8.134):** Skip WP Abilities category/ability registration on any `elementor_ajax`. Slim document Geo Visibility the same way as widget stacks.
 
+**Still 503 after 1.8.134:** Empty option lists were not enough — the full Geo Visibility / Atomic / Experience Slot control trees were still injected into every widget during `get_widgets_config`.
+
+**Mitigation shipped (Geo Core 1.8.135):** Omit those sections entirely on the bulk path. Props schema for Atomic is kept (save-safe). Full UI returns on `editor_get_widget_config`.
+
 **Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence.

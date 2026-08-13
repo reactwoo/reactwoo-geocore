@@ -128,6 +128,10 @@ class RWGC_Elementor_Atomic_Geo {
 	public static function filter_controls( $controls, $element = null ) {
 		unset( $element );
 
+		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
+			return is_array( $controls ) ? $controls : array();
+		}
+
 		if ( ! self::atomic_api_available() ) {
 			return is_array( $controls ) ? $controls : array();
 		}

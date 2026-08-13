@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.8.134
+Stable tag: 1.8.135
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.135 =
+* **Elementor:** Omit Geo Visibility, Atomic geo controls, and Experience Slot sections during bulk `get_widgets_config` (LiteSpeed HTTP 503). Full controls still load on single-widget `editor_get_widget_config`.
 
 = 1.8.134 =
 * **Elementor:** Keep the Elements panel off the WP Abilities registration path (`elementor_ajax`). Notices from that API were corrupting widget-config JSON and spinning the panel again. Document Geo Visibility also omits full country/library/page lists during bulk `get_document_config`.

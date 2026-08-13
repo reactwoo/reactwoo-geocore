@@ -257,6 +257,9 @@ class RWGC_Elementor_Elements {
 	 */
 	public static function add_geo_targeting_controls( $element, $args = null ) {
 		unset( $args );
+		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
+			return;
+		}
 
 		$stack_name = '';
 		if ( is_object( $element ) && method_exists( $element, 'get_name' ) ) {

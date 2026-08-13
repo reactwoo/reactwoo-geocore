@@ -12,8 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Detects heavy Elementor admin-ajax payloads so control stacks stay small.
  *
- * Mirrors the WHMCS Bridge pattern: during get_widgets_config the full country
- * SELECT2 / Atomic chips list must not be duplicated into every widget stack.
+ * Mirrors the WHMCS Bridge pattern: during get_widgets_config do not inject
+ * Geo Visibility / Experience Slot control trees into every widget stack.
  */
 class RWGC_Elementor_Ajax {
 
@@ -51,8 +51,8 @@ class RWGC_Elementor_Ajax {
 	/**
 	 * True while Elementor builds the Elements panel / document config payload.
 	 *
-	 * Uses a light control path (empty country/library option lists). Single-widget
-	 * `editor_get_widget_config` alone keeps full options so pickers stay usable.
+	 * Omits Geo Visibility / Experience Slot sections from bulk stacks. Single-widget
+	 * `editor_get_widget_config` alone keeps the full editor UI.
 	 *
 	 * @return bool
 	 */
