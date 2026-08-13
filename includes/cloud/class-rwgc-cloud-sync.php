@@ -238,6 +238,7 @@ final class RWGC_Cloud_Sync {
 			'manifest'     => self::sync_manifest(),
 			'heartbeat'    => self::heartbeat(),
 			'capabilities' => self::report_capabilities(),
+			'events'       => RWGC_Cloud_Event_Queue::flush(),
 		);
 	}
 

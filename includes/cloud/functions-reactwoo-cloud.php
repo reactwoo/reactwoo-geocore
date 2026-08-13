@@ -37,6 +37,40 @@ if ( ! function_exists( 'reactwoo_cloud_sync_manifest' ) ) {
 	}
 }
 
+if ( ! function_exists( 'reactwoo_cloud_record_event' ) ) {
+	/**
+	 * Queue a Cloud analytics event locally. Never performs HTTP.
+	 *
+	 * @param string               $type Type (e.g. variant.impression).
+	 * @param array<string, mixed> $attrs Attributes.
+	 * @return bool
+	 */
+	function reactwoo_cloud_record_event( $type, array $attrs = array() ) {
+		if ( ! class_exists( 'RWGC_Cloud_Telemetry', false ) ) {
+			return false;
+		}
+		return RWGC_Cloud_Telemetry::record( $type, $attrs );
+	}
+}
+
+if ( ! function_exists( 'reactwoo_cloud_flush_events' ) ) {
+	/**
+	 * Upload queued events (cron/admin only).
+	 *
+	 * @return array<string, mixed>
+	 */
+	function reactwoo_cloud_flush_events() {
+		if ( ! class_exists( 'RWGC_Cloud_Event_Queue', false ) ) {
+			return array(
+				'ok'     => false,
+				'status' => 'unavailable',
+				'error'  => 'unavailable',
+			);
+		}
+		return RWGC_Cloud_Event_Queue::flush();
+	}
+}
+
 if ( ! function_exists( 'reactwoo_cloud_get_manifest' ) ) {
 	/**
 	 * Local cached manifest (never fetches Cloud).

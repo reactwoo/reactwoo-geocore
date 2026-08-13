@@ -63,6 +63,8 @@ reactwoo_cloud_pair( $token );
 reactwoo_cloud_is_connected();
 reactwoo_cloud_sync_manifest(); // admin/cron only
 reactwoo_cloud_get_manifest();  // local cache only — safe to read anywhere
+reactwoo_cloud_record_event( $type, $attrs ); // local queue only — never HTTP
+reactwoo_cloud_flush_events(); // admin/cron only
 ```
 
 ## Admin
@@ -73,5 +75,5 @@ Geo Core → **Cloud** — pair, sync now, disconnect.
 
 - Cloud backend implementation (WP11) → **done:** sibling service `reactwoo-decision-cloud`
 - Portal UI (WP12)
-- Event batch upload queue on WP (Cloud accepts `/events/batch`; WP enqueue is follow-on)
+- Event batch upload queue on WP (Cloud accepts `/events/batch`; WP enqueue is follow-on) → **done WP14:** `RWGC_Cloud_Event_Queue` + `RWGC_Cloud_Telemetry` (cron/admin flush only)
 - Automatic switch of `management_mode` to cloud (WP16 migration)

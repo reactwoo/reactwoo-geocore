@@ -213,7 +213,7 @@ There is **no** first-class Audience / Experience / ExperienceSlot / Manifest en
 - Core: event type discovery via capabilities/hooks; assignment events for satellites
 - Optimise: primary goal event store + frontend tracking; GTM provision/handoff via react-cloud
 - Commerce: attribution / order geo meta
-- **No** batched Cloud Decision event pipeline (`POST /events/batch` for experience/variant impressions)
+- Cloud Decision event pipeline (WP14): local queue → `POST /sites/{id}/events/batch` (cron/admin); daily aggregates + Insights (no session replay / heatmaps)
 
 ---
 

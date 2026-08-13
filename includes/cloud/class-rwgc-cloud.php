@@ -34,6 +34,8 @@ final class RWGC_Cloud {
 		require_once $dir . 'class-rwgc-cloud-pairing.php';
 		require_once $dir . 'class-rwgc-cloud-sync.php';
 		require_once $dir . 'class-rwgc-cloud-scheduler.php';
+		require_once $dir . 'class-rwgc-cloud-event-queue.php';
+		require_once $dir . 'class-rwgc-cloud-telemetry.php';
 		require_once $dir . 'class-rwgc-cloud-admin.php';
 		require_once $dir . 'functions-reactwoo-cloud.php';
 	}
@@ -44,6 +46,7 @@ final class RWGC_Cloud {
 	public static function init() {
 		self::load();
 		RWGC_Cloud_Scheduler::init();
+		RWGC_Cloud_Telemetry::init();
 		if ( is_admin() ) {
 			RWGC_Cloud_Admin::init();
 		}

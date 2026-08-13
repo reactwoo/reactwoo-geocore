@@ -1,5 +1,5 @@
 # Current task
 
-WP13 — Brand Profile + Component Editor (complete).
+WP14 — Events, goals, analytics (complete).
 
-Next: WP14 Events, goals, analytics.
+Next: WP15 Stripe + Cloud entitlements.

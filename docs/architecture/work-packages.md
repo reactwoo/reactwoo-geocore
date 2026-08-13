@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
 
-**Current active package:** WP14 (Events, goals, analytics) — WP0–WP13 complete.
+**Current active package:** WP15 (Stripe + Cloud entitlements) — WP0–WP14 complete.
 
 ---
 
@@ -544,9 +544,10 @@ No autonomous optimisation in this phase.
 - [x] WP11 Decision Cloud backend (2026-08-12) — new service `reactwoo-decision-cloud` (`/api/v1` pair/confirm/manifest/heartbeat/capabilities/events + CRUD); `npm test`  
 - [x] WP12 Cloud portal (2026-08-12) — `/portal` shell, site context, experience wizard, visual conditions, publish-check; `npm test`  
 - [x] WP13 brand/component editor (2026-08-13) — Brand Profile tokens + constrained Component Editor (same WP8 schema/preview); Decision Cloud `0.3.0` + Geo Core presentation attrs  
+- [x] WP14 events/goals/analytics (2026-08-13) — WP async queue + Cloud `POST /events/batch` validation, daily aggregates, Insights (no fabricated uplift); Decision Cloud `0.4.0`  
 
-- [ ] WP14 events/goals/analytics → **Gate E**  
+- [ ] WP15 Stripe + entitlements  
 - [ ] WP10–13 Cloud → **Gate D** (end-to-end site still needed)  
-- [ ] WP14–16 analytics/billing/migration → **Gate E**  
+- [ ] WP14–16 analytics/billing/migration → **Gate E** (metrics pipeline in place; live attribution still needed)  
 - [ ] WP17–19 hardening  
 - [ ] WP20 AI  
