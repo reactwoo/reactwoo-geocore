@@ -76,7 +76,8 @@ final class RWGC_Php_Html_Component_Renderer implements RWGC_Component_Renderer_
 		return self::wrap(
 			'hero',
 			'<div class="rw-hero__content">' . $inner . '</div>' . $media,
-			array( 'role' => 'region', 'aria-label' => $headline !== '' ? $headline : 'Hero' )
+			array( 'role' => 'region', 'aria-label' => $headline !== '' ? $headline : 'Hero' ),
+			$props
 		);
 	}
 
@@ -89,7 +90,9 @@ final class RWGC_Php_Html_Component_Renderer implements RWGC_Component_Renderer_
 		$url   = self::url( $props, 'url', '#' );
 		return self::wrap(
 			'cta',
-			'<a class="rw-cta__link" href="' . esc_url( $url ) . '">' . esc_html( $label ) . '</a>'
+			'<a class="rw-cta__link" href="' . esc_url( $url ) . '">' . esc_html( $label ) . '</a>',
+			array(),
+			$props
 		);
 	}
 
@@ -104,7 +107,7 @@ final class RWGC_Php_Html_Component_Renderer implements RWGC_Component_Renderer_
 		if ( '' !== $url ) {
 			$body = '<a class="rw-promotion-banner__link" href="' . esc_url( $url ) . '">' . $body . '</a>';
 		}
-		return self::wrap( 'promotion_banner', $body, array( 'role' => 'complementary' ) );
+		return self::wrap( 'promotion_banner', $body, array( 'role' => 'complementary' ), $props );
 	}
 
 	/**
@@ -121,9 +124,10 @@ final class RWGC_Php_Html_Component_Renderer implements RWGC_Component_Renderer_
 			'notice',
 			'<p class="rw-notice__text">' . esc_html( $text ) . '</p>',
 			array(
-				'role'            => 'status',
-				'data-rw-tone'    => $tone,
-			)
+				'role'         => 'status',
+				'data-rw-tone' => $tone,
+			),
+			$props
 		);
 	}
 
@@ -148,7 +152,7 @@ final class RWGC_Php_Html_Component_Renderer implements RWGC_Component_Renderer_
 		}
 		$heading = '' !== $title ? '<h3 class="rw-product-rail__title">' . esc_html( $title ) . '</h3>' : '';
 		$body    = $heading . ( '' !== $list ? '<ul class="rw-product-rail__list">' . $list . '</ul>' : '' );
-		return self::wrap( 'product_rail', $body );
+		return self::wrap( 'product_rail', $body, array(), $props );
 	}
 
 	/**
@@ -162,7 +166,7 @@ final class RWGC_Php_Html_Component_Renderer implements RWGC_Component_Renderer_
 		$summary = '' !== $title ? $title : 'Notice';
 		$body    = '<details class="rw-popup__panel"><summary class="rw-popup__summary">' . esc_html( $summary ) . '</summary>';
 		$body   .= '<div class="rw-popup__content">' . esc_html( $content ) . '</div></details>';
-		return self::wrap( 'popup', $body );
+		return self::wrap( 'popup', $body, array(), $props );
 	}
 
 	/**
@@ -171,13 +175,43 @@ final class RWGC_Php_Html_Component_Renderer implements RWGC_Component_Renderer_
 	 * @param array<string, string> $attrs Extra attributes.
 	 * @return string
 	 */
-	private static function wrap( $type, $inner, array $attrs = array() ) {
+	private static function wrap( $type, $inner, array $attrs = array(), array $props = array() ) {
 		$class = 'rw-component rw-component--' . str_replace( '_', '-', (string) $type );
+		$pres  = self::presentation_attrs( $props );
 		$attr  = ' class="' . esc_attr( $class ) . '" data-rw-component="' . esc_attr( (string) $type ) . '"';
+		foreach ( $pres as $k => $v ) {
+			$attr .= ' ' . esc_attr( (string) $k ) . '="' . esc_attr( (string) $v ) . '"';
+		}
 		foreach ( $attrs as $k => $v ) {
 			$attr .= ' ' . esc_attr( (string) $k ) . '="' . esc_attr( (string) $v ) . '"';
 		}
 		return '<div' . $attr . '>' . $inner . '</div>';
+	}
+
+	/**
+	 * Constrained presentation props from the Cloud Component Editor (WP13).
+	 *
+	 * @param array<string, mixed> $props Props (may include presentation keys).
+	 * @return array<string, string>
+	 */
+	private static function presentation_attrs( array $props ) {
+		$map = array(
+			'layout'      => array( 'stacked', 'split' ),
+			'align'       => array( 'start', 'center', 'end' ),
+			'spacing'     => array( 'compact', 'comfortable', 'spacious' ),
+			'color'       => array( 'text', 'accent', 'surface' ),
+			'typography'  => array( 'sans', 'display' ),
+			'shape'       => array( 'default', 'pill', 'square' ),
+			'responsive'  => array( 'default', 'stack_mobile' ),
+		);
+		$out = array();
+		foreach ( $map as $key => $allowed ) {
+			$raw = isset( $props[ $key ] ) ? (string) $props[ $key ] : '';
+			if ( in_array( $raw, $allowed, true ) ) {
+				$out[ 'data-rw-' . $key ] = $raw;
+			}
+		}
+		return $out;
 	}
 
 	/**

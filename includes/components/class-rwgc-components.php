@@ -60,5 +60,41 @@ final class RWGC_Components {
 			defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.0.0'
 		);
 		wp_enqueue_style( 'rw-components' );
+		self::apply_brand_tokens();
+	}
+
+	/**
+	 * Apply confirmed Brand Profile tokens from the locally cached Cloud manifest.
+	 * Never fetches Cloud on the visitor path.
+	 *
+	 * @return void
+	 */
+	public static function apply_brand_tokens() {
+		if ( ! class_exists( 'RWGC_Cloud_Manifest_Store', false ) ) {
+			return;
+		}
+		$raw = RWGC_Cloud_Manifest_Store::current_raw();
+		if ( ! is_array( $raw ) || empty( $raw['brand_profile'] ) || ! is_array( $raw['brand_profile'] ) ) {
+			return;
+		}
+		$profile = $raw['brand_profile'];
+		if ( empty( $profile['confirmed'] ) ) {
+			return;
+		}
+		$vars = isset( $profile['css_variables'] ) && is_array( $profile['css_variables'] ) ? $profile['css_variables'] : array();
+		if ( empty( $vars ) ) {
+			return;
+		}
+		$css = ':root{';
+		foreach ( $vars as $name => $value ) {
+			$key = preg_replace( '/[^a-z0-9\-]/', '', strtolower( (string) $name ) );
+			$val = preg_replace( '/[^a-zA-Z0-9#,.%() "\'\-]/', '', (string) $value );
+			if ( '' === $key || '' === $val || 0 !== strpos( $key, '--rw-' ) ) {
+				continue;
+			}
+			$css .= $key . ':' . $val . ';';
+		}
+		$css .= '}';
+		wp_add_inline_style( 'rw-components', $css );
 	}
 }

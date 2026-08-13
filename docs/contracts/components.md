@@ -29,11 +29,15 @@ reactwoo_render_component( 'hero', array(
 
 - Tokens: `--rw-color-*`, `--rw-font-*`, `--rw-radius-*`, `--rw-space-*`, `--rw-content-width`
 - Markup: `rw-component`, `rw-component--{type}`, `data-rw-component="{type}"`
+- Constrained presentation (WP13): `data-rw-layout|align|spacing|color|typography|shape|responsive`
 - Stylesheet: `assets/css/rw-components.css`
+- Brand Profile tokens from the cached Cloud manifest override `:root` only when **confirmed** (no Cloud fetch on the visitor path)
 - No Shadow DOM in v1
 
-## Out of scope for WP8 foundation
+## Cloud authoring (WP13)
 
-- Elementor / Gutenberg component adapters (use Experience Slot + Variant in WP9+)
-- Cloud preview renderer
-- Brand Profile detection UI
+- Portal Brand page: colours, fonts, radius, spacing, content width, button appearance
+- Site heartbeat may send `brand_hints` — suggestions only; customer confirms
+- Component Editor allowed: content, media, layout, alignment, spacing preset, brand colours, typography token, shape, responsive arrangement
+- Forbidden: arbitrary positioning, z-index, pixel layout, unrestricted CSS, freeform DOM
+- Preview HTML uses the same wrap/classes as `RWGC_Php_Html_Component_Renderer`

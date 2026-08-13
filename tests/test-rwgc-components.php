@@ -91,6 +91,19 @@ rwgc_comp_assert( 'hero has data-rw-component', false !== strpos( $hero, 'data-r
 rwgc_comp_assert( 'hero has rw- namespace class', false !== strpos( $hero, 'rw-component--hero' ) );
 rwgc_comp_assert( 'hero escapes content', false !== strpos( $hero, 'Welcome' ) && false === strpos( $hero, '<script>' ) );
 
+$split = reactwoo_render_component(
+	'hero',
+	array(
+		'headline' => 'Split',
+		'layout'   => 'split',
+		'align'    => 'center',
+		'shape'    => 'pill',
+	)
+);
+rwgc_comp_assert( 'hero presentation layout', false !== strpos( $split, 'data-rw-layout="split"' ) );
+rwgc_comp_assert( 'hero presentation align', false !== strpos( $split, 'data-rw-align="center"' ) );
+rwgc_comp_assert( 'hero ignores unknown presentation', false === strpos( $split, 'data-rw-z-index' ) );
+
 $popup = reactwoo_render_component(
 	'popup',
 	array(

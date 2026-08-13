@@ -142,6 +142,7 @@ final class RWGC_Cloud_Sync {
 			'timestamp'    => gmdate( 'c' ),
 			'core_version' => defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '',
 			'revision'     => (int) RWGC_Cloud_Connection::get()['manifest_revision'],
+			'brand_hints'  => self::brand_hints(),
 		);
 
 		$response = RWGC_Cloud_Http::request(
@@ -238,5 +239,25 @@ final class RWGC_Cloud_Sync {
 			'heartbeat'    => self::heartbeat(),
 			'capabilities' => self::report_capabilities(),
 		);
+	}
+
+	/**
+	 * Theme colour/font guesses for Cloud Brand Profile. Suggestions only — never auto-applied.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function brand_hints() {
+		$hints = array(
+			'source' => 'wordpress_theme',
+		);
+		$bg = get_theme_mod( 'background_color', '' );
+		if ( is_string( $bg ) && preg_match( '/^[0-9a-fA-F]{3,6}$/', $bg ) ) {
+			$hints['color_surface'] = '#' . strtolower( $bg );
+		}
+		$header = get_theme_mod( 'header_textcolor', '' );
+		if ( is_string( $header ) && preg_match( '/^[0-9a-fA-F]{3,6}$/', $header ) && 'blank' !== $header ) {
+			$hints['color_text'] = '#' . strtolower( $header );
+		}
+		return $hints;
 	}
 }
