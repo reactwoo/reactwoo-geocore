@@ -64,6 +64,10 @@ $_REQUEST['actions'] = '{"x":{"action":"unknown_editor_boot","data":{}}}';
 RWGC_Elementor_Ajax::reset_for_tests();
 rwgc_assert( RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'unknown elementor_ajax → heavy' );
 
+$_REQUEST['actions'] = '{"f":{"action":"enqueue_google_fonts","data":{}}}';
+RWGC_Elementor_Ajax::reset_for_tests();
+rwgc_assert( ! RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'enqueue_google_fonts → light' );
+
 require_once dirname( __DIR__ ) . '/includes/platform/class-rwgc-wp-abilities-adapter.php';
 $_REQUEST = array( 'action' => 'elementor_ajax' );
 RWGC_Elementor_Ajax::reset_for_tests();
@@ -96,9 +100,17 @@ rwgc_assert( RWGC_Elementor_Widgets_Config::MAX_SELECT_OPTIONS === count( $slim[
 rwgc_assert( 2 === count( $slim['tiny']['options'] ), 'slim leaves small option maps' );
 rwgc_assert( RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'UniteCreatorElementorIntegrate' ), 'UE integrate is heavy registrar' );
 rwgc_assert( RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'Essential_Addons_Elementor\\Classes\\Bootstrap' ), 'EA registrar is heavy' );
+rwgc_assert( RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'ACPT_Elementor' ), 'ACPT Elementor registrar is heavy' );
 rwgc_assert( ! RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'ElementorPro\\Plugin' ), 'Elementor Pro is not a heavy registrar' );
 
 require_once dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-config-debug.php';
+$_REQUEST = array( 'action' => 'heartbeat' );
+RWGC_Elementor_Ajax::reset_for_tests();
+rwgc_assert( ! RWGC_Elementor_Config_Debug::is_elementor_ajax_request(), 'heartbeat is not elementor_ajax' );
+rwgc_assert( ! RWGC_Elementor_Config_Debug::enabled(), 'debug disabled off elementor_ajax' );
+$_REQUEST = array( 'action' => 'elementor_ajax', 'actions' => '{"get_widgets_config":{"action":"get_widgets_config"}}' );
+RWGC_Elementor_Ajax::reset_for_tests();
+rwgc_assert( RWGC_Elementor_Config_Debug::is_elementor_ajax_request(), 'elementor_ajax is traced' );
 rwgc_assert( RWGC_Elementor_Config_Debug::is_our_entry( 'RW_Elementor_WHM_Products_Widget' ), 'WHMCS widget is our entry' );
 rwgc_assert( RWGC_Elementor_Config_Debug::is_our_entry( 'ReactWoo\\Atomic\\Widgets\\Carousel' ), 'Atomic widget is our entry' );
 rwgc_assert( ! RWGC_Elementor_Config_Debug::is_our_entry( 'Elementor\\Widget_Heading' ), 'core heading is not our entry' );

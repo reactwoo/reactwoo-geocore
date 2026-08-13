@@ -2,11 +2,14 @@
 /**
  * Elementor widgets-config debug trail (LiteSpeed 503).
  *
- * Always records a compact last-run snapshot + response headers on heavy
- * elementor_ajax. Verbose error_log / per-widget lines when enabled:
+ * Records a compact last-run snapshot + response headers on elementor_ajax
+ * only. Never boots on heartbeat, editor HTML, or frontend (1.8.139 wrote
+ * debug.log + update_option on every request and exhausted LiteSpeed workers).
+ *
+ * Verbose error_log / per-widget lines when enabled:
  *
  * - define( 'RW_ELEMENTOR_CONFIG_DEBUG', true ); in wp-config.php
- * - or option `rwgc_elementor_widget_load_debug` = 1 (default on)
+ * - or option `rwgc_elementor_widget_load_debug` = 1 (default on for ajax)
  *
  * Does not log rule JSON, credentials, licence tokens, or customer PII.
  *
@@ -47,11 +50,14 @@ class RWGC_Elementor_Config_Debug {
 	private static $shutdown_registered = false;
 
 	/**
-	 * Verbose per-widget / error_log lines.
+	 * Verbose per-widget / error_log lines. Only meaningful on elementor_ajax.
 	 *
 	 * @return bool
 	 */
 	public static function enabled() {
+		if ( ! self::is_elementor_ajax_request() ) {
+			return false;
+		}
 		if ( defined( 'RW_ELEMENTOR_CONFIG_DEBUG' ) && RW_ELEMENTOR_CONFIG_DEBUG ) {
 			return true;
 		}
@@ -68,10 +74,27 @@ class RWGC_Elementor_Config_Debug {
 	}
 
 	/**
+	 * @return bool
+	 */
+	public static function is_elementor_ajax_request() {
+		if ( class_exists( 'RWGC_Elementor_Ajax', false ) ) {
+			return RWGC_Elementor_Ajax::is_elementor_ajax();
+		}
+		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
+			return false;
+		}
+		$action = isset( $_REQUEST['action'] ) ? sanitize_key( wp_unslash( (string) $_REQUEST['action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		return ( 'elementor_ajax' === $action );
+	}
+
+	/**
 	 * @return void
 	 */
 	public static function boot() {
 		if ( self::$shutdown_registered ) {
+			return;
+		}
+		if ( ! self::is_elementor_ajax_request() ) {
 			return;
 		}
 		self::$shutdown_registered = true;
@@ -261,6 +284,10 @@ class RWGC_Elementor_Config_Debug {
 			'fatal'       => $fatal,
 			'flushed_at'  => gmdate( 'c' ),
 		);
+
+		if ( ! self::is_elementor_ajax_request() ) {
+			return;
+		}
 
 		if ( self::enabled() ) {
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log

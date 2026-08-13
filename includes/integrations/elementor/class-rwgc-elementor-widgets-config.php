@@ -24,7 +24,7 @@ class RWGC_Elementor_Widgets_Config {
 	 * @return void
 	 */
 	public static function init() {
-		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) && RWGC_Elementor_Config_Debug::is_elementor_ajax_request() ) {
 			RWGC_Elementor_Config_Debug::boot();
 		}
 		add_action( 'elementor/ajax/register_actions', array( __CLASS__, 'register_actions' ), 20 );
@@ -110,6 +110,9 @@ class RWGC_Elementor_Widgets_Config {
 	 * @return void
 	 */
 	public static function log_widgets_registered( $manager ) {
+		if ( ! class_exists( 'RWGC_Elementor_Config_Debug', false ) || ! RWGC_Elementor_Config_Debug::is_elementor_ajax_request() ) {
+			return;
+		}
 		$count = 0;
 		if ( is_object( $manager ) && method_exists( $manager, 'get_widget_types' ) ) {
 			$types = $manager->get_widget_types();
@@ -152,6 +155,8 @@ class RWGC_Elementor_Widgets_Config {
 			'Jet_Woo',
 			'PremiumAddons',
 			'Premium_Addons',
+			'ACPT_Elementor',
+			'ACPT\\',
 		);
 		foreach ( $needles as $needle ) {
 			if ( false !== strpos( $class, $needle ) ) {

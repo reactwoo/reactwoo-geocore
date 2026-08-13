@@ -104,4 +104,8 @@
 
 **Debug (1.8.139):** `[RWGC_EL_WIDGETS]` error_log + `X-RWGC-El-Debug` headers + option `rwgc_elementor_widget_load_last` (shutdown flush). Default on via option; disable with `rwgc_elementor_widget_load_debug` = 0.
 
-**Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence.
+**1.8.139 production log (13 Aug 2026):** Logger booted on heartbeat / empty action / editor HTML. Dozens of parallel ~110–270MB requests, 5–8s each, `update_option` on every shutdown. `get_widgets_config` never appeared. Only useful heavy AJAX: `get_document_config` (UE unhooked, ACPT still left, 112 leftover callbacks, 55 widgets, 2732ms). Geo library rows empty/cheap. 503 is LiteSpeed worker exhaustion, not Geo country lists.
+
+**Mitigation shipped (Geo Core 1.8.140):** Debug boots only on `elementor_ajax`. Unhook `ACPT_Elementor`. Treat `enqueue_google_fonts` as light.
+
+**Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence; more Geo Visibility option-list slimming.

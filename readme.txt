@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.8.139
+Stable tag: 1.8.140
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.140 =
+* **Elementor:** Stop the 1.8.139 debug trail from logging and writing options on heartbeat / editor HTML / frontend. Trace only `elementor_ajax`. Unhook ACPT widget registrars on the heavy path. Treat `enqueue_google_fonts` as light so it is not lumped with widgets-config.
 
 = 1.8.139 =
 * **Elementor:** Debug trail for widgets-config (`[RWGC_EL_WIDGETS]` in debug.log, headers `X-RWGC-El-Debug`, last snapshot in option `rwgc_elementor_widget_load_last`). Logs ReactWoo/WHMCS entries, leftover registrars, and shutdown state if LiteSpeed 503s.

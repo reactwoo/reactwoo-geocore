@@ -85,6 +85,12 @@ class RWGC_Elementor_Ajax {
 			return false;
 		}
 
+		$known_light = (bool) preg_match( '/enqueue_google_fonts|introduction_viewed|dismissed_editor_notices/i', $raw );
+		if ( $known_light ) {
+			self::$is_bulk_config = false;
+			return false;
+		}
+
 		// Unknown elementor_ajax action → heavy (Elementor 4.2+ batch names).
 		self::$is_bulk_config = true;
 		return true;
