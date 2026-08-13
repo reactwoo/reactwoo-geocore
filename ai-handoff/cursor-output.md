@@ -4,23 +4,18 @@
 done
 
 ## Task
-Production Elements panel still spins. Latest console 503 is `enqueueFont` → `sendBatch` on `admin-ajax.php`.
+Production admin-ajax 503 persists after 1.8.137.
 
 ## Diagnosis
-`enqueueFont` with `immediately=true` flushes Elementor’s pending AJAX batch, which still includes `get_widgets_config`. Same LiteSpeed 503 as before. Elementor 4.2 has no `editor_get_widget_config`. Bulk config still runs `get_stack()` for every third-party widget.
+1.8.137 skipped `get_stack()` for add-on widgets but Unlimited Elements still registers every addon (`eval` + instantiate + DB preload) on `elementor/widgets/register` before that handler runs.
 
 ## Files changed
-### reactwoo-geocore 1.8.137
-- `includes/integrations/elementor/class-rwgc-elementor-widgets-config.php` — replace bulk widgets-config; skip add-on `get_stack()`; slim large option maps
-- `includes/class-rwgc-plugin.php` — always init the wrapper (including heavy path)
-- Tests for skip/slim helpers
-
-### reactwoo-geo-optimise 0.4.93
-- Skip goal + page-goal control injection on heavy Elementor AJAX
+- `class-rwgc-elementor-widgets-config.php` — unhook heavy addon registrars at priority 0; Throwable guard; `X-RWGC-Widgets-Config` header
+- Version 1.8.138
 
 ## What was not changed
-- PHP memory / timeout (do not retry)
-- Elementor core / Pro / Atomic / ReactWoo widget stacks (still built, options capped)
+- PHP memory / timeout
+- Frontend UE widgets (only skipped during heavy editor AJAX)
 
 ## Commands run
 - `php tests/test-rwgc-elementor-ajax.php`

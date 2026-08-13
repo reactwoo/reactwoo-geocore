@@ -94,5 +94,8 @@ $slim = RWGC_Elementor_Widgets_Config::slim_controls(
 );
 rwgc_assert( RWGC_Elementor_Widgets_Config::MAX_SELECT_OPTIONS === count( $slim['country']['options'] ), 'slim caps large option maps' );
 rwgc_assert( 2 === count( $slim['tiny']['options'] ), 'slim leaves small option maps' );
+rwgc_assert( RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'UniteCreatorElementorIntegrate' ), 'UE integrate is heavy registrar' );
+rwgc_assert( RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'Essential_Addons_Elementor\\Classes\\Bootstrap' ), 'EA registrar is heavy' );
+rwgc_assert( ! RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'ElementorPro\\Plugin' ), 'Elementor Pro is not a heavy registrar' );
 
 exit( $fails > 0 ? 1 : 0 );

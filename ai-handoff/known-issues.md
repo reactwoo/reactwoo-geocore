@@ -98,4 +98,8 @@
 
 **Mitigation shipped (Geo Core 1.8.137 + Geo Optimise 0.4.93):** Replace Elementor `get_widgets_config` / `refresh_widgets_config` so third-party catalogues skip `get_stack()`; cap large select option maps; omit Optimise goal controls on the heavy path.
 
+**Still 503 after 1.8.137:** Skipping `get_stack()` is too late. Unlimited Elements still `eval()`s and registers every addon on `elementor/widgets/register` (plus DB preload) before the AJAX handler runs.
+
+**Mitigation shipped (Geo Core 1.8.138):** Unhook UE / EA / Jet / Premium Addons widget+control registrars at priority 0 on heavy `elementor_ajax`. Header `X-RWGC-Widgets-Config: 1.8.138; slim` proves the build is live.
+
 **Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence.

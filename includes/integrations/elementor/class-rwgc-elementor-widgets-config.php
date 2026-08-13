@@ -25,6 +25,99 @@ class RWGC_Elementor_Widgets_Config {
 	 */
 	public static function init() {
 		add_action( 'elementor/ajax/register_actions', array( __CLASS__, 'register_actions' ), 20 );
+		// Run before add-on catalogues (default priority 10) so they never eval/register.
+		add_action( 'elementor/widgets/register', array( __CLASS__, 'unhook_heavy_addon_registrars' ), 0 );
+		add_action( 'elementor/widgets/widgets_registered', array( __CLASS__, 'unhook_heavy_addon_registrars' ), 0 );
+		add_action( 'elementor/controls/register', array( __CLASS__, 'unhook_heavy_addon_registrars' ), 0 );
+		add_action( 'elementor/controls/controls_registered', array( __CLASS__, 'unhook_heavy_addon_registrars' ), 0 );
+	}
+
+	/**
+	 * Remove Unlimited Elements / similar catalogue callbacks before they register widgets.
+	 *
+	 * UE `onWidgetsRegistered` preloads the addon DB and eval()s a class per widget. That
+	 * runs on every widgets-config request and is enough for LiteSpeed to 503 even when
+	 * Geo Core later skips get_stack().
+	 *
+	 * @return void
+	 */
+	public static function unhook_heavy_addon_registrars() {
+		if ( ! class_exists( 'RWGC_Elementor_Ajax', false ) || ! RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
+			return;
+		}
+
+		$hook_name = function_exists( 'current_filter' ) ? current_filter() : '';
+		if ( '' === $hook_name || ! isset( $GLOBALS['wp_filter'][ $hook_name ] ) ) {
+			return;
+		}
+
+		$hook = $GLOBALS['wp_filter'][ $hook_name ];
+		if ( ! is_object( $hook ) || empty( $hook->callbacks ) || ! is_array( $hook->callbacks ) ) {
+			return;
+		}
+
+		$to_remove = array();
+		foreach ( $hook->callbacks as $priority => $callbacks ) {
+			if ( (int) $priority <= 0 ) {
+				continue;
+			}
+			foreach ( $callbacks as $cb ) {
+				if ( empty( $cb['function'] ) || ! is_array( $cb['function'] ) ) {
+					continue;
+				}
+				$fn    = $cb['function'];
+				$class = is_object( $fn[0] ) ? get_class( $fn[0] ) : (string) $fn[0];
+				if ( self::is_heavy_addon_registrar( $class ) ) {
+					$to_remove[] = array(
+						'fn'       => $fn,
+						'priority' => (int) $priority,
+					);
+				}
+			}
+		}
+
+		foreach ( $to_remove as $item ) {
+			remove_action( $hook_name, $item['fn'], $item['priority'] );
+		}
+	}
+
+	/**
+	 * @param string $class Fully-qualified class name.
+	 * @return bool
+	 */
+	public static function is_heavy_addon_registrar( $class ) {
+		$class = (string) $class;
+		$needles = array(
+			'UniteCreator',
+			'UnlimitedElements',
+			'Unlimited_Elements',
+			'UCAddon_',
+			'Essential_Addons',
+			'EssentialAddons',
+			'Jet_Engine',
+			'Jet_Elements',
+			'Jet_Woo',
+			'PremiumAddons',
+			'Premium_Addons',
+		);
+		foreach ( $needles as $needle ) {
+			if ( false !== strpos( $class, $needle ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @param string $note Slim / error marker for Network-tab confirmation.
+	 * @return void
+	 */
+	private static function send_debug_header( $note ) {
+		if ( headers_sent() ) {
+			return;
+		}
+		$ver = defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '0';
+		header( 'X-RWGC-Widgets-Config: ' . $ver . '; ' . $note );
 	}
 
 	/**
@@ -46,22 +139,30 @@ class RWGC_Elementor_Widgets_Config {
 	 * @return array<string, mixed>
 	 */
 	public static function ajax_get_widgets_config( array $data ) {
-		if ( ! class_exists( '\Elementor\Plugin', false ) ) {
+		try {
+			self::send_debug_header( 'slim' );
+			if ( ! class_exists( '\Elementor\Plugin', false ) ) {
+				return array();
+			}
+
+			$plugin = \Elementor\Plugin::$instance;
+			$plugin->documents->check_permissions( $data['editor_post_id'] ?? 0 );
+
+			$config = array();
+			foreach ( $plugin->widgets_manager->get_widget_types() as $widget_key => $widget ) {
+				if ( isset( $data['exclude'][ $widget_key ] ) ) {
+					continue;
+				}
+				$config[ $widget_key ] = self::widget_controls_payload( $widget );
+			}
+
+			return $config;
+		} catch ( \Exception $e ) {
+			throw $e;
+		} catch ( \Throwable $e ) {
+			self::send_debug_header( 'error' );
 			return array();
 		}
-
-		$plugin = \Elementor\Plugin::$instance;
-		$plugin->documents->check_permissions( $data['editor_post_id'] ?? 0 );
-
-		$config = array();
-		foreach ( $plugin->widgets_manager->get_widget_types() as $widget_key => $widget ) {
-			if ( isset( $data['exclude'][ $widget_key ] ) ) {
-				continue;
-			}
-			$config[ $widget_key ] = self::widget_controls_payload( $widget );
-		}
-
-		return $config;
 	}
 
 	/**
@@ -69,29 +170,45 @@ class RWGC_Elementor_Widgets_Config {
 	 * @return array<string, mixed>
 	 */
 	public static function ajax_refresh_widgets_config( array $data ) {
-		if ( ! class_exists( '\Elementor\Plugin', false ) ) {
-			return array(
-				'widgets'    => array(),
-				'categories' => array(),
-			);
-		}
-
-		$plugin = \Elementor\Plugin::$instance;
-		$plugin->documents->check_permissions( $data['editor_post_id'] ?? 0 );
-
-		$widgets = array();
-		foreach ( $plugin->widgets_manager->get_widget_types() as $widget_key => $widget ) {
-			$widget_config             = $widget->get_config();
-			$payload                   = self::widget_controls_payload( $widget );
-			$widget_config['controls'] = $payload['controls'];
-			$widget_config['tabs_controls'] = $payload['tabs_controls'];
-			$widgets[ $widget_key ]    = $widget_config;
-		}
-
-		return array(
-			'widgets'    => $widgets,
-			'categories' => $plugin->elements_manager->get_categories(),
+		$empty = array(
+			'widgets'    => array(),
+			'categories' => array(),
 		);
+		try {
+			self::send_debug_header( 'slim-refresh' );
+			if ( ! class_exists( '\Elementor\Plugin', false ) ) {
+				return $empty;
+			}
+
+			$plugin = \Elementor\Plugin::$instance;
+			$plugin->documents->check_permissions( $data['editor_post_id'] ?? 0 );
+
+			$widgets = array();
+			foreach ( $plugin->widgets_manager->get_widget_types() as $widget_key => $widget ) {
+				$payload = self::widget_controls_payload( $widget );
+				if ( empty( $payload['controls'] ) ) {
+					$widgets[ $widget_key ] = array(
+						'controls'      => array(),
+						'tabs_controls' => array(),
+					);
+					continue;
+				}
+				$widget_config                  = $widget->get_config();
+				$widget_config['controls']      = $payload['controls'];
+				$widget_config['tabs_controls'] = $payload['tabs_controls'];
+				$widgets[ $widget_key ]         = $widget_config;
+			}
+
+			return array(
+				'widgets'    => $widgets,
+				'categories' => $plugin->elements_manager->get_categories(),
+			);
+		} catch ( \Exception $e ) {
+			throw $e;
+		} catch ( \Throwable $e ) {
+			self::send_debug_header( 'error' );
+			return $empty;
+		}
 	}
 
 	/**
