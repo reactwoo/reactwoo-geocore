@@ -73,4 +73,26 @@ $_REQUEST = array( 'action' => 'heartbeat' );
 RWGC_Elementor_Ajax::reset_for_tests();
 rwgc_assert( ! RWGC_WP_Abilities_Adapter::should_skip_registration(), 'do not skip abilities on other ajax' );
 
+require_once dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-widgets-config.php';
+rwgc_assert( ! RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'heading', 'Elementor\\Widget_Heading' ), 'keep Elementor core heading' );
+rwgc_assert( ! RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'form', 'ElementorPro\\Modules\\Forms\\Widgets\\Form' ), 'keep Elementor Pro form' );
+rwgc_assert( ! RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'rwa-carousel', 'ReactWoo\\Atomic\\Widgets\\Carousel' ), 'keep ReactWoo Atomic' );
+rwgc_assert( RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'ucaddon_slider', 'UniteCreatorElementorWidget' ), 'skip Unlimited Elements' );
+rwgc_assert( RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'eael-info-box', 'Essential_Addons_Elementor\\Classes\\Helper' ), 'skip Essential Addons' );
+
+$slim = RWGC_Elementor_Widgets_Config::slim_controls(
+	array(
+		'country' => array(
+			'type'    => 'select',
+			'options' => array_fill_keys( range( 1, 80 ), 'x' ),
+		),
+		'tiny'    => array(
+			'type'    => 'select',
+			'options' => array( 'a' => 'A', 'b' => 'B' ),
+		),
+	)
+);
+rwgc_assert( RWGC_Elementor_Widgets_Config::MAX_SELECT_OPTIONS === count( $slim['country']['options'] ), 'slim caps large option maps' );
+rwgc_assert( 2 === count( $slim['tiny']['options'] ), 'slim leaves small option maps' );
+
 exit( $fails > 0 ? 1 : 0 );

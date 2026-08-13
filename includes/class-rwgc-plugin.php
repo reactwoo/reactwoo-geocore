@@ -226,6 +226,12 @@ class RWGC_Plugin {
 
 		$heavy_editor = $this->is_heavy_elementor_ajax();
 
+		// Always wrap Elementor bulk widgets-config (LiteSpeed 503). Must run on the heavy path.
+		if ( ! class_exists( 'RWGC_Elementor_Widgets_Config', false ) ) {
+			require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-widgets-config.php';
+		}
+		RWGC_Elementor_Widgets_Config::init();
+
 		if ( ! $heavy_editor ) {
 			RWGC_Platform_Capabilities_Bootstrap::init();
 			RWGC_WP_Abilities_Adapter::init();

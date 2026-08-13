@@ -94,4 +94,8 @@
 
 **Mitigation shipped (Geo Core 1.8.136 + WHMCS 1.1.5.3):** Default unknown/refresh widget-config batches to heavy; skip Geo Core editor-boot services; WHMCS stubs on every `elementor_ajax`.
 
+**Still 503 after 1.8.136 (production reactwoo.com):** Console stack is `enqueueFont` → `sendBatch` — Elementor 4.2 flushes the pending `get_widgets_config` batch when fonts enqueue. Same 503, not a new font endpoint. Elementor 4.2 has **no** `editor_get_widget_config` hydration. Bulk `get_widgets_config` still calls `get_stack()` for every add-on widget (Unlimited Elements `ucaddon_*`, etc.). Slimming Geo sections cannot shrink that.
+
+**Mitigation shipped (Geo Core 1.8.137 + Geo Optimise 0.4.93):** Replace Elementor `get_widgets_config` / `refresh_widgets_config` so third-party catalogues skip `get_stack()`; cap large select option maps; omit Optimise goal controls on the heavy path.
+
 **Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence.
