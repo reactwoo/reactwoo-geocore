@@ -82,4 +82,8 @@
 
 **Mitigation shipped (Geo Core 1.8.128):** `RWGC_Elementor_Ajax::is_heavy_elementor_ajax()` empties country + library option lists during bulk `get_widgets_config` / `get_document_config`; countries hydrated once via `rwgc-elementor-library-bridge.js` from editor-localised list. Single-widget `editor_get_widget_config` keeps full options.
 
+**Regression after 1.8.129–1.8.133:** Panel spun again. WP Abilities registration (and leftover `_doing_it_wrong` HTML when `WP_DEBUG` is on) can run during `elementor_ajax` and break JSON. Document settings still embedded full ISO / library / `get_pages()` lists on `get_document_config`.
+
+**Mitigation shipped (Geo Core 1.8.134):** Skip WP Abilities category/ability registration on any `elementor_ajax`. Slim document Geo Visibility the same way as widget stacks.
+
 **Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence.

@@ -60,7 +60,8 @@ class RWGC_Elementor {
 			)
 		);
 
-		$visitor_preview = self::build_visitor_preview_markup();
+		$heavy           = class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax();
+		$visitor_preview = $heavy ? '' : self::build_visitor_preview_markup();
 		if ( $visitor_preview !== '' ) {
 			$element->add_control(
 				'rwgc_geo_visitor_preview',
@@ -174,12 +175,16 @@ class RWGC_Elementor {
 			);
 
 			if ( class_exists( 'RWGC_Elementor_Elements', false ) ) {
+				$library_options = array( '' => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ) );
+				if ( ! $heavy ) {
+					$library_options = RWGC_Elementor_Elements::get_visibility_library_select_options();
+				}
 				$element->add_control(
 					'rwgc_visibility_rule_library',
 					array(
 						'label'       => __( 'Apply saved visibility rule', 'reactwoo-geocore' ),
 						'type'        => \Elementor\Controls_Manager::SELECT,
-						'options'     => RWGC_Elementor_Elements::get_visibility_library_select_options(),
+						'options'     => $library_options,
 						'label_block' => true,
 						'description' => __( 'Portable library rules only (Targeting → Visibility rules).', 'reactwoo-geocore' ),
 						'condition'   => array(
@@ -463,7 +468,13 @@ class RWGC_Elementor {
 	 * @return array
 	 */
 	private static function get_country_options() {
-		return RWGC_Countries::get_options();
+		if ( class_exists( 'RWGC_Elementor_Geo_Controls', false ) ) {
+			return RWGC_Elementor_Geo_Controls::get_country_options();
+		}
+		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
+			return array();
+		}
+		return class_exists( 'RWGC_Countries', false ) ? RWGC_Countries::get_options() : array();
 	}
 
 	/**
@@ -475,6 +486,9 @@ class RWGC_Elementor {
 		$options = array(
 			'' => __( '-- Select master page --', 'reactwoo-geocore' ),
 		);
+		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
+			return $options;
+		}
 
 		$pages = get_pages(
 			array(

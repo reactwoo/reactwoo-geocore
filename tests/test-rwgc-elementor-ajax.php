@@ -56,4 +56,13 @@ $_REQUEST['actions'] = '{"a":{"action":"get_document_config"},"b":{"action":"edi
 RWGC_Elementor_Ajax::reset_for_tests();
 rwgc_assert( RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'mixed with document config → heavy' );
 
+require_once dirname( __DIR__ ) . '/includes/platform/class-rwgc-wp-abilities-adapter.php';
+$_REQUEST = array( 'action' => 'elementor_ajax' );
+RWGC_Elementor_Ajax::reset_for_tests();
+rwgc_assert( RWGC_WP_Abilities_Adapter::should_skip_registration(), 'skip abilities on elementor_ajax' );
+
+$_REQUEST = array( 'action' => 'heartbeat' );
+RWGC_Elementor_Ajax::reset_for_tests();
+rwgc_assert( ! RWGC_WP_Abilities_Adapter::should_skip_registration(), 'do not skip abilities on other ajax' );
+
 exit( $fails > 0 ? 1 : 0 );
