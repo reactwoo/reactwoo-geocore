@@ -72,6 +72,11 @@ $_REQUEST['actions'] = '{"h":{"action":"rwgc_get_widget_config","data":{"widget"
 RWGC_Elementor_Ajax::reset_for_tests();
 rwgc_assert( ! RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'rwgc_get_widget_config → light' );
 rwgc_assert( RWGC_Elementor_Ajax::is_widget_hydrate_ajax(), 'rwgc_get_widget_config → hydrate' );
+rwgc_assert( RWGC_Elementor_Ajax::is_constrained_elementor_ajax(), 'rwgc_get_widget_config → constrained boot' );
+
+$_REQUEST['actions'] = '{"f":{"action":"enqueue_google_fonts","data":{}}}';
+RWGC_Elementor_Ajax::reset_for_tests();
+rwgc_assert( ! RWGC_Elementor_Ajax::is_constrained_elementor_ajax(), 'fonts are not constrained' );
 
 require_once dirname( __DIR__ ) . '/includes/platform/class-rwgc-wp-abilities-adapter.php';
 $_REQUEST = array( 'action' => 'elementor_ajax' );

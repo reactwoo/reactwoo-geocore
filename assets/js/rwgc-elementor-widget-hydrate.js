@@ -1,9 +1,8 @@
 /**
- * Load one widget's control stack when the inspector opens.
+ * Load one widget's control stack after the Elements panel is ready.
  *
- * Bulk get_widgets_config returns empty maps (LiteSpeed). Elementor 4.2 has no
- * editor_get_widget_config hydrate, so the panel stays blank until this request
- * merges controls into widgetsCache and re-opens the editor.
+ * Must not join the boot `get_widgets_config` batch — that puts get_widget_types()
+ * back on the LiteSpeed 503 path. Wait for panel/state-ready, then send immediately.
  */
 (function ($) {
 	'use strict';
@@ -11,6 +10,8 @@
 	var pending = {};
 	var failed = {};
 	var reopening = false;
+	var panelReady = false;
+	var queued = null;
 
 	function cacheEntry(type) {
 		if (!window.elementor || !elementor.widgetsCache) {
@@ -86,26 +87,49 @@
 			return;
 		}
 		pending[type] = true;
-		elementorCommon.ajax.addRequest('rwgc_get_widget_config', {
-			unique_id: 'rwgc-hydrate-' + type,
-			data: {
-				widget: type,
-				editor_post_id: editorPostId()
-			},
-			success: function (data) {
-				pending[type] = false;
-				applyCache(data);
-				if (hasUsableControls(type)) {
-					reopen(model, view);
-				} else {
+		elementorCommon.ajax.addRequest(
+			'rwgc_get_widget_config',
+			{
+				unique_id: 'rwgc-hydrate-' + type,
+				data: {
+					widget: type,
+					editor_post_id: editorPostId()
+				},
+				success: function (data) {
+					pending[type] = false;
+					applyCache(data);
+					if (hasUsableControls(type)) {
+						reopen(model, view);
+					} else {
+						failed[type] = true;
+					}
+				},
+				error: function () {
+					pending[type] = false;
 					failed[type] = true;
 				}
 			},
-			error: function () {
-				pending[type] = false;
-				failed[type] = true;
-			}
-		});
+			true
+		);
+	}
+
+	function flushQueue() {
+		if (!queued) {
+			return;
+		}
+		var item = queued;
+		queued = null;
+		if (!hasUsableControls(item.type)) {
+			hydrate(item.type, item.model, item.view);
+		}
+	}
+
+	function onPanelReady() {
+		if (panelReady) {
+			return;
+		}
+		panelReady = true;
+		flushQueue();
 	}
 
 	function onOpen(panel, model, view) {
@@ -113,13 +137,41 @@
 			return;
 		}
 		var type = model.get('widgetType');
-		if (!type) {
+		if (!type || hasUsableControls(type)) {
 			return;
 		}
-		if (hasUsableControls(type)) {
+		if (!panelReady) {
+			queued = { type: type, model: model, view: view };
 			return;
 		}
 		hydrate(type, model, view);
+	}
+
+	function attachStateReady() {
+		if (typeof $e === 'undefined') {
+			return false;
+		}
+		if ($e.hooks && typeof $e.hooks.registerAfter === 'function') {
+			try {
+				$e.hooks.registerAfter('panel/state-ready', onPanelReady);
+				return true;
+			} catch (e) {
+				/* fall through */
+			}
+		}
+		if (typeof $e.internal === 'function' && !$e.internal.__rwgcWrapped) {
+			var orig = $e.internal.bind($e);
+			$e.internal = function (command) {
+				var ret = orig.apply($e, arguments);
+				if (command === 'panel/state-ready') {
+					onPanelReady();
+				}
+				return ret;
+			};
+			$e.internal.__rwgcWrapped = true;
+			return true;
+		}
+		return false;
 	}
 
 	function bind() {
@@ -127,6 +179,7 @@
 			return false;
 		}
 		elementor.hooks.addAction('panel/open_editor/widget', onOpen);
+		attachStateReady();
 		return true;
 	}
 

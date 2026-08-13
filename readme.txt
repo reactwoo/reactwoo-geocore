@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.8.144
+Stable tag: 1.8.145
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.145 =
+* **Elementor:** Do not batch single-widget control fetch with `get_widgets_config`. Wait until the Elements panel is ready, then load that widget's controls on a separate request. Skip Cloud/integrations boot on hydrate so LiteSpeed is not 503'd again.
 
 = 1.8.144 =
 * **Elementor:** When a widget is selected, fetch that one widget's controls (`rwgc_get_widget_config`) and fill the inspector. Bulk `get_widgets_config` still returns empty so the Elements panel does not 503.

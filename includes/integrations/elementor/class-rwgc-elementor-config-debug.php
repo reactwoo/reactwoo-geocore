@@ -121,7 +121,14 @@ class RWGC_Elementor_Config_Debug {
 			'action'     => self::request_action_names(),
 		);
 		register_shutdown_function( array( __CLASS__, 'flush_shutdown' ) );
-		self::checkpoint( 'boot', array() );
+		self::checkpoint(
+			'boot',
+			array(
+				'action' => self::request_action_names(),
+				'heavy'  => ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) ? 1 : 0,
+				'hydrate' => ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_widget_hydrate_ajax() ) ? 1 : 0,
+			)
+		);
 	}
 
 	/**

@@ -124,4 +124,8 @@
 
 **Mitigation shipped (Geo Core 1.8.144):** On `panel/open_editor/widget`, request `rwgc_get_widget_config` for that widget (+ `common` / `common-optimized`), merge into `widgetsCache`, re-open the panel. Action is light (full Geo controls). UE/ACPT/WHMCS stay unhooked on that request. Bulk path still `slim-empty`.
 
+**1.8.144 production (13 Aug 2026):** Panel spinning again. Log shows orphan `boot` (no action, no shutdown) then `get_document_config` finished in 2s. No `get_widgets_config` / `slim-empty`. Hydrate `addRequest` joined the boot AJAX batch, so one `admin-ajax` ran empty widgets-config **and** `get_widget_types()` — the 1.8.142 503 path.
+
+**Mitigation shipped (Geo Core 1.8.145):** Queue hydrate until `panel/state-ready`; send `immediately` as its own request; skip Cloud/integrations on hydrate; log action on boot.
+
 **Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence; more Geo Visibility option-list slimming; more per-widget get_stack time-boxes (cannot interrupt a hung stack); calling `get_widget_types()` and then trying to skip stacks.

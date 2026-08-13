@@ -51,7 +51,7 @@ class RWGC_Plugin {
 		 * Target registry init translates provider labels, so defer it to `init`
 		 * (WP 6.7 warns when translation functions run before `init`).
 		 */
-		if ( ! $this->is_heavy_elementor_ajax() ) {
+		if ( ! $this->is_constrained_elementor_ajax() ) {
 			add_action( 'init', array( 'RWGC_Target_Registry', 'init' ), 0 );
 		}
 
@@ -207,6 +207,16 @@ class RWGC_Plugin {
 	}
 
 	/**
+	 * @return bool
+	 */
+	private function is_constrained_elementor_ajax() {
+		if ( ! class_exists( 'RWGC_Elementor_Ajax', false ) ) {
+			require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-ajax.php';
+		}
+		return RWGC_Elementor_Ajax::is_constrained_elementor_ajax();
+	}
+
+	/**
 	 * Register core services and hooks.
 	 *
 	 * @return void
@@ -224,7 +234,8 @@ class RWGC_Plugin {
 		RWGC_Variant_Rule_Applications::init();
 		RWGC_Legacy_Geo_Rule_CPT::init();
 
-		$heavy_editor = $this->is_heavy_elementor_ajax();
+		$heavy_editor      = $this->is_heavy_elementor_ajax();
+		$constrained_editor = $this->is_constrained_elementor_ajax();
 
 		// Always wrap Elementor bulk widgets-config (LiteSpeed 503). Must run on the heavy path.
 		if ( ! class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
@@ -235,7 +246,7 @@ class RWGC_Plugin {
 		}
 		RWGC_Elementor_Widgets_Config::init();
 
-		if ( ! $heavy_editor ) {
+		if ( ! $constrained_editor ) {
 			RWGC_Platform_Capabilities_Bootstrap::init();
 			RWGC_WP_Abilities_Adapter::init();
 			RWGC_Experience_Slots::init();
@@ -266,11 +277,13 @@ class RWGC_Plugin {
 		}
 
 		if ( ! $heavy_editor ) {
+			RWGC_Elementor::init();
+		}
+		if ( ! $constrained_editor ) {
 			RWGC_Shortcodes::init();
 			RWGC_Gutenberg::init();
 			RWGC_Targeting_Rule_Builder_Assets::init();
 			RWGC_Visibility_Rule_Tester_Assets::init();
-			RWGC_Elementor::init();
 			RWGC_Integrations_Loader::init();
 			RWGC_Routing::init();
 			RWGC_Page_Version_Routing::init();

@@ -109,6 +109,15 @@ class RWGC_Elementor_Ajax {
 	}
 
 	/**
+	 * Skip Cloud / integrations boot (heavy panel payloads and single-widget hydrate).
+	 *
+	 * @return bool
+	 */
+	public static function is_constrained_elementor_ajax() {
+		return self::is_heavy_elementor_ajax() || self::is_widget_hydrate_ajax();
+	}
+
+	/**
 	 * Alias used by control builders (filterable).
 	 *
 	 * @return bool
