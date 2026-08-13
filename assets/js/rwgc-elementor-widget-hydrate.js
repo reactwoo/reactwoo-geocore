@@ -1,10 +1,9 @@
 /**
  * Load one widget's control stack when the inspector opens.
  *
- * Bulk get_widgets_config returns empty maps (LiteSpeed). Document config
- * widgets often have no tabs_controls, and Elementor 4.2 setDefaultTab then
- * crashes on `.content` before panel/open_editor hooks run. Seed tabs, then
- * fetch that widget on its own request (immediately, never batched).
+ * Bulk get_widgets_config returns empty maps (LiteSpeed), so document-config
+ * widgets arrive without controls or tabs. Elementor tabs_controls values are
+ * plain strings (Controls_Manager::get_tabs), not objects.
  */
 (function ($) {
 	'use strict';
@@ -15,11 +14,33 @@
 
 	function defaultTabs() {
 		return {
-			content: { title: 'Content' },
-			style: { title: 'Style' },
-			advanced: { title: 'Advanced' },
-			layout: { title: 'Layout' }
+			content: 'Content',
+			style: 'Style',
+			advanced: 'Advanced',
+			layout: 'Layout'
 		};
+	}
+
+	function normalizeTabs(tabs) {
+		if (!tabs || typeof tabs !== 'object' || Array.isArray(tabs)) {
+			return defaultTabs();
+		}
+		var out = {};
+		var fallback = defaultTabs();
+		Object.keys(tabs).forEach(function (key) {
+			var value = tabs[key];
+			if (typeof value === 'string' && value) {
+				out[key] = value;
+			} else if (value && typeof value.title === 'string') {
+				out[key] = value.title;
+			} else {
+				out[key] = fallback[key] || key;
+			}
+		});
+		if (!out.content) {
+			out.content = fallback.content;
+		}
+		return out;
 	}
 
 	function ensureEntry(type) {
@@ -38,34 +59,18 @@
 		if (!entry.controls || typeof entry.controls !== 'object') {
 			entry.controls = {};
 		}
-		if (!entry.tabs_controls || typeof entry.tabs_controls !== 'object') {
-			entry.tabs_controls = defaultTabs();
-		}
-		if (!entry.tabs_controls.content || typeof entry.tabs_controls.content.title !== 'string') {
-			entry.tabs_controls.content = { title: 'Content' };
-		}
+		entry.tabs_controls = normalizeTabs(entry.tabs_controls);
 	}
 
-	function ensureModel(model) {
+	function widgetTypeOf(model) {
 		if (!model || typeof model.get !== 'function') {
 			return '';
 		}
-		var type = model.get('widgetType');
-		if (type) {
-			ensureEntry(type);
-		}
-		return type || '';
-	}
-
-	function cacheEntry(type) {
-		if (!window.elementor || !elementor.widgetsCache) {
-			return null;
-		}
-		return elementor.widgetsCache[type] || null;
+		return model.get('widgetType') || '';
 	}
 
 	function controlCount(type) {
-		var entry = cacheEntry(type);
+		var entry = (window.elementor && elementor.widgetsCache) ? elementor.widgetsCache[type] : null;
 		if (!entry || !entry.controls || typeof entry.controls !== 'object') {
 			return 0;
 		}
@@ -90,14 +95,10 @@
 		}
 		Object.keys(data).forEach(function (name) {
 			ensureEntry(name);
-			if (elementor.widgetsCache[name]) {
-				elementor.widgetsCache[name].commonMerged = false;
-			}
+			elementor.widgetsCache[name].commonMerged = false;
 		});
 		elementor.addWidgetsCache(data);
-		Object.keys(data).forEach(function (name) {
-			ensureEntry(name);
-		});
+		Object.keys(data).forEach(ensureEntry);
 	}
 
 	function reopen(model, view) {
@@ -106,14 +107,11 @@
 		}
 		reopening = true;
 		try {
-			var editor = $e.components && $e.components.get ? $e.components.get('panel/editor') : null;
+			var editor = ($e.components && $e.components.get) ? $e.components.get('panel/editor') : null;
 			if (editor) {
 				editor.activeModelId = null;
 			}
-			$e.run('panel/editor/open', {
-				model: model,
-				view: view
-			});
+			$e.run('panel/editor/open', { model: model, view: view });
 		} catch (e) {
 			if ($e.routes && typeof $e.routes.refreshContainer === 'function') {
 				$e.routes.refreshContainer('panel');
@@ -125,7 +123,7 @@
 	}
 
 	function hydrate(type, model, view) {
-		if (!type || pending[type] || failed[type]) {
+		if (!type || pending[type] || failed[type] || reopening) {
 			return;
 		}
 		if (typeof elementorCommon === 'undefined' || !elementorCommon.ajax || typeof elementorCommon.ajax.addRequest !== 'function') {
@@ -158,12 +156,13 @@
 		);
 	}
 
-	function onOpen(panel, model, view) {
-		if (reopening || !model || typeof model.get !== 'function') {
+	function maybeHydrate(model, view) {
+		var type = widgetTypeOf(model);
+		if (!type) {
 			return;
 		}
-		var type = ensureModel(model);
-		if (!type || hasUsableControls(type)) {
+		ensureEntry(type);
+		if (hasUsableControls(type)) {
 			return;
 		}
 		hydrate(type, model, view);
@@ -175,13 +174,10 @@
 		}
 		var orig = elementor.getElementData.bind(elementor);
 		elementor.getElementData = function (model) {
-			ensureModel(model);
+			ensureEntry(widgetTypeOf(model));
 			var data = orig(model);
-			if (data && (!data.tabs_controls || typeof data.tabs_controls !== 'object' || typeof (data.tabs_controls.content && data.tabs_controls.content.title) !== 'string')) {
-				data.tabs_controls = data.tabs_controls && typeof data.tabs_controls === 'object' ? data.tabs_controls : defaultTabs();
-				if (!data.tabs_controls.content || typeof data.tabs_controls.content.title !== 'string') {
-					data.tabs_controls.content = { title: 'Content' };
-				}
+			if (data && typeof data === 'object') {
+				data.tabs_controls = normalizeTabs(data.tabs_controls);
 			}
 			return data;
 		};
@@ -194,10 +190,15 @@
 		}
 		var orig = $e.run.bind($e);
 		$e.run = function (command, args) {
-			if (command === 'panel/editor/open' && args && args.model) {
-				ensureModel(args.model);
+			var isOpen = ('panel/editor/open' === command && args && args.model);
+			if (isOpen) {
+				ensureEntry(widgetTypeOf(args.model));
 			}
-			return orig.apply($e, arguments);
+			var result = orig.apply($e, arguments);
+			if (isOpen) {
+				maybeHydrate(args.model, args.view);
+			}
+			return result;
 		};
 		$e.run.__rwgcWrapped = true;
 	}
@@ -211,7 +212,9 @@
 		}
 		wrapGetElementData();
 		wrapRun();
-		elementor.hooks.addAction('panel/open_editor/widget', onOpen);
+		elementor.hooks.addAction('panel/open_editor/widget', function (panel, model, view) {
+			maybeHydrate(model, view);
+		});
 		return true;
 	}
 

@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.8.148
+Stable tag: 1.8.149
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.149 =
+* **Elementor:** Single-widget hydrate no longer unhooks add-on registrars, so Unlimited Elements and other catalogue widgets can register and return a real control stack. Tab labels are plain strings (Elementor's own format), replacing the `[object Object]` inspector tabs. Hydrate is also triggered from `panel/editor/open`, so it runs however the widget is selected.
 
 = 1.8.148 =
 * **Elementor:** When hydrating an Unlimited Elements widget, keep the UE registrar hooked so that widget can register. Tab stubs use `{ title: "Content" }` so the inspector no longer shows `[object Object]`.

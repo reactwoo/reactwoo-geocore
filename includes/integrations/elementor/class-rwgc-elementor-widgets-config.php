@@ -156,8 +156,8 @@ class RWGC_Elementor_Widgets_Config {
 		if ( ! class_exists( 'RWGC_Elementor_Ajax', false ) ) {
 			return;
 		}
-		$should_unhook = RWGC_Elementor_Ajax::is_heavy_elementor_ajax() || RWGC_Elementor_Ajax::is_widget_hydrate_ajax();
-		if ( ! $should_unhook ) {
+		// Hydrate asks for one widget by name: its add-on must register to have a stack.
+		if ( RWGC_Elementor_Ajax::is_widget_hydrate_ajax() || ! RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
 			return;
 		}
 
@@ -185,9 +185,6 @@ class RWGC_Elementor_Widgets_Config {
 				$class = is_object( $fn[0] ) ? get_class( $fn[0] ) : (string) $fn[0];
 				$seen[] = $class;
 				if ( self::is_heavy_addon_registrar( $class ) ) {
-					if ( self::hydrate_needs_unlimited_elements() && self::is_unlimited_elements_registrar( $class ) ) {
-						continue;
-					}
 					$to_remove[] = array(
 						'fn'       => $fn,
 						'priority' => (int) $priority,
@@ -249,38 +246,6 @@ class RWGC_Elementor_Widgets_Config {
 			$out[] = end( $parts );
 		}
 		return $out;
-	}
-
-	/**
-	 * @param string $class Fully-qualified class name.
-	 * @return bool
-	 */
-	/**
-	 * Hydrating an Unlimited Elements widget requires its registrar to stay hooked.
-	 *
-	 * @return bool
-	 */
-	public static function hydrate_needs_unlimited_elements() {
-		if ( ! class_exists( 'RWGC_Elementor_Ajax', false ) || ! RWGC_Elementor_Ajax::is_widget_hydrate_ajax() ) {
-			return false;
-		}
-		$name = RWGC_Elementor_Ajax::hydrate_widget_name();
-		return ( '' !== $name && 0 === strpos( $name, 'ucaddon_' ) );
-	}
-
-	/**
-	 * @param string $class Fully-qualified class name.
-	 * @return bool
-	 */
-	public static function is_unlimited_elements_registrar( $class ) {
-		$class   = (string) $class;
-		$needles = array( 'UniteCreator', 'UnlimitedElements', 'Unlimited_Elements', 'UCAddon_' );
-		foreach ( $needles as $needle ) {
-			if ( false !== strpos( $class, $needle ) ) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	/**
@@ -381,14 +346,18 @@ class RWGC_Elementor_Widgets_Config {
 
 			$wanted = array( 'common', 'common-optimized', $name );
 			$out    = array();
+			$counts = array();
 			foreach ( array_unique( $wanted ) as $widget_key ) {
 				$widget = $plugin->widgets_manager->get_widget_types( $widget_key );
 				if ( ! is_object( $widget ) ) {
+					$counts[] = $widget_key . ':missing';
 					continue;
 				}
-				$out[ $widget_key ] = self::widget_controls_payload( $widget );
+				$payload            = self::widget_controls_payload( $widget );
+				$out[ $widget_key ] = $payload;
+				$counts[]           = $widget_key . ':' . count( $payload['controls'] );
 			}
-			if ( ! isset( $out[ $name ] ) ) {
+			if ( empty( $out[ $name ]['controls'] ) ) {
 				$out[ $name ] = self::stub_tabs_payload();
 			}
 
@@ -398,6 +367,7 @@ class RWGC_Elementor_Widgets_Config {
 					array(
 						'widget' => $name,
 						'keys'   => implode( ',', array_keys( $out ) ),
+						'counts' => implode( ',', $counts ),
 					)
 				);
 			}
@@ -573,17 +543,26 @@ class RWGC_Elementor_Widgets_Config {
 	 * @return array{controls: array<string, mixed>, tabs_controls: array<string, mixed>}
 	 */
 	/**
-	 * @return array{controls: array<string, mixed>, tabs_controls: array<string, array{title: string}>}
+	 * Tab labels are plain strings (Controls_Manager::get_tabs), not objects.
+	 *
+	 * @return array{controls: array<string, mixed>, tabs_controls: array<string, string>}
 	 */
 	private static function stub_tabs_payload() {
+		$tabs = array(
+			'content'  => 'Content',
+			'style'    => 'Style',
+			'advanced' => 'Advanced',
+			'layout'   => 'Layout',
+		);
+		if ( class_exists( '\Elementor\Controls_Manager', false ) ) {
+			$registered = \Elementor\Controls_Manager::get_tabs();
+			if ( is_array( $registered ) && ! empty( $registered ) ) {
+				$tabs = $registered;
+			}
+		}
 		return array(
 			'controls'      => array(),
-			'tabs_controls' => array(
-				'content'  => array( 'title' => 'Content' ),
-				'style'    => array( 'title' => 'Style' ),
-				'advanced' => array( 'title' => 'Advanced' ),
-				'layout'   => array( 'title' => 'Layout' ),
-			),
+			'tabs_controls' => $tabs,
 		);
 	}
 
@@ -822,17 +801,18 @@ class RWGC_Elementor_Widgets_Config {
 			return $empty;
 		}
 
-		$name  = (string) $widget->get_name();
-		$class = get_class( $widget );
-		if ( self::should_skip_full_stack( $name, $class ) ) {
-			$hydrate = class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_widget_hydrate_ajax();
-			if ( ! $hydrate ) {
+		$name    = (string) $widget->get_name();
+		$class   = get_class( $widget );
+		$hydrate = class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_widget_hydrate_ajax();
+
+		if ( $hydrate ) {
+			// Hydrate carries the inspector's own widget plus the shared common stacks.
+			$wanted = RWGC_Elementor_Ajax::hydrate_widget_name();
+			if ( $name !== $wanted && 'common' !== $name && 'common-optimized' !== $name ) {
 				return $empty;
 			}
-			$ue = ( 0 === strpos( $name, 'ucaddon_' ) ) || ( false !== strpos( $class, 'UniteCreator' ) );
-			if ( $ue && RWGC_Elementor_Ajax::hydrate_widget_name() !== $name ) {
-				return $empty;
-			}
+		} elseif ( self::should_skip_full_stack( $name, $class ) ) {
+			return $empty;
 		}
 
 		if ( ! method_exists( $widget, 'get_stack' ) ) {
@@ -841,7 +821,6 @@ class RWGC_Elementor_Widgets_Config {
 
 		$stack = $widget->get_stack( false );
 		$controls = ( isset( $stack['controls'] ) && is_array( $stack['controls'] ) ) ? $stack['controls'] : array();
-		$hydrate  = class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_widget_hydrate_ajax();
 
 		return array(
 			'controls'      => $hydrate ? $controls : self::slim_controls( $controls ),

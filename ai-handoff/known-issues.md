@@ -140,4 +140,8 @@
 
 **Mitigation shipped (Geo Core 1.8.148):** Keep UniteCreator hooked when hydrating `ucaddon_*`. Allow get_stack for that one UE widget. Stub tabs include string titles. Heading hydrate still unhooks UE. Risk: UE eval on that one request may 503 — watch for hydrate without `ajax_single_widget`.
 
+**1.8.148 production (13 Aug 2026):** Panel loads (`ajax_early_exit` 4ms), document config 1.8s, render_widget 1.5s — but **no `rwgc_get_widget_config` at all** and tabs still `[object Object]`. Two root causes: `tabs_controls` values are plain strings (`Controls_Manager::get_tabs()`), so both `{}` and `{ title: … }` stringify to `[object Object]`; and hydrate only fired from `panel/open_editor/widget`, which does not run on every selection path.
+
+**Mitigation shipped (Geo Core 1.8.149):** Tab stubs are strings on both sides, and `getElementData` normalizes any object-shaped tab back to its title. Hydrate also fires from the `panel/editor/open` command wrapper. Hydrate no longer unhooks **any** add-on registrar — an unregistered widget has no stack, which is why UE returned `common,common-optimized` only. `ajax_single_widget` now logs per-key control counts (`widget:count` / `widget:missing`). Risk: UE preload/eval on that one request may 503 — watch for hydrate boot without `ajax_single_widget`.
+
 **Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence; more Geo Visibility option-list slimming; more per-widget get_stack time-boxes (cannot interrupt a hung stack); calling `get_widget_types()` and then trying to skip stacks.
