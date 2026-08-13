@@ -128,4 +128,8 @@
 
 **Mitigation shipped (Geo Core 1.8.145):** Queue hydrate until `panel/state-ready`; send `immediately` as its own request; skip Cloud/integrations on hydrate; log action on boot.
 
+**1.8.145 production (13 Aug 2026):** `get_widgets_config` boots (`heavy:1 hydrate:0`) then silence — no handler, no shutdown. `get_document_config` 24s later finishes in 1.8s. Hang is after Geo Core boot, during later plugin load / `init`, before Elementor dispatches our empty handler.
+
+**Mitigation shipped (Geo Core 1.8.146):** On widgets-config-only batches, verify the Elementor nonce and `wp_die` the empty Elementor ajax envelope immediately (`slim-early` / `ajax_early_exit`). Do not wait for `wp_ajax_elementor_ajax`.
+
 **Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence; more Geo Visibility option-list slimming; more per-widget get_stack time-boxes (cannot interrupt a hung stack); calling `get_widget_types()` and then trying to skip stacks.

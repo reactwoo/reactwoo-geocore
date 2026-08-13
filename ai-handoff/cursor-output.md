@@ -4,17 +4,16 @@
 done
 
 ## Task
-1.8.145 — stop hydrate from 503ing the Elements panel.
+1.8.146 — early-finish get_widgets_config before the rest of WordPress boots.
 
 ## Files changed
-- `rwgc-elementor-widget-hydrate.js` — wait for `panel/state-ready`, send immediately (not batched)
-- `class-rwgc-elementor-ajax.php` — `is_constrained_elementor_ajax()`
-- `class-rwgc-plugin.php` — skip Cloud/integrations on hydrate; still init `RWGC_Elementor`
-- `class-rwgc-elementor-config-debug.php` — boot log includes action/heavy/hydrate
-- Version 1.8.145
+- `class-rwgc-elementor-ajax.php` — `early_widgets_config_responses()`
+- `class-rwgc-elementor-widgets-config.php` — nonce-checked JSON exit (`slim-early`)
+- Version 1.8.146
 
 ## What was not changed
-- Bulk `get_widgets_config` still `slim-empty`
+- `get_document_config` still runs normally
+- Hydrate still waits for panel/state-ready
 - PHP memory / timeout
 
 ## Commands run

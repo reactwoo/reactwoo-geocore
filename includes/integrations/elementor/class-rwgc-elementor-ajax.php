@@ -118,6 +118,67 @@ class RWGC_Elementor_Ajax {
 	}
 
 	/**
+	 * Elementor-shaped success rows for an early widgets-config exit.
+	 *
+	 * Null when the batch includes document config, hydrate, or an unknown action.
+	 *
+	 * @return array<string, array{success: bool, code: int, data: mixed}>|null
+	 */
+	public static function early_widgets_config_responses() {
+		$actions = self::decoded_actions();
+		if ( array() === $actions ) {
+			return null;
+		}
+
+		$empty_ok = array(
+			'get_widgets_config'         => array(),
+			'refresh_widgets_config'     => array(
+				'widgets'    => array(),
+				'categories' => array(),
+			),
+			'enqueue_google_fonts'       => array(),
+			'introduction_viewed'        => array(),
+			'dismissed_editor_notices'   => array(),
+		);
+
+		$has_widgets = false;
+		$out         = array();
+		foreach ( $actions as $id => $row ) {
+			$name = '';
+			if ( is_array( $row ) && isset( $row['action'] ) ) {
+				$name = (string) $row['action'];
+			} elseif ( is_string( $id ) ) {
+				$name = (string) $id;
+			}
+			if ( ! isset( $empty_ok[ $name ] ) ) {
+				return null;
+			}
+			if ( 'get_widgets_config' === $name || 'refresh_widgets_config' === $name ) {
+				$has_widgets = true;
+			}
+			$out[ (string) $id ] = array(
+				'success' => true,
+				'code'    => 200,
+				'data'    => $empty_ok[ $name ],
+			);
+		}
+
+		return $has_widgets ? $out : null;
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private static function decoded_actions() {
+		$raw = self::actions_payload_string();
+		if ( '' === $raw ) {
+			return array();
+		}
+		$decoded = json_decode( $raw, true );
+		return is_array( $decoded ) ? $decoded : array();
+	}
+
+	/**
 	 * Alias used by control builders (filterable).
 	 *
 	 * @return bool

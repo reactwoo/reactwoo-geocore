@@ -54,6 +54,9 @@ class RWGC_Elementor_Widgets_Config {
 		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) && RWGC_Elementor_Config_Debug::is_elementor_ajax_request() ) {
 			RWGC_Elementor_Config_Debug::boot();
 		}
+		add_action( 'plugins_loaded', array( __CLASS__, 'maybe_early_finish_widgets_config' ), -1 );
+		add_action( 'wp_ajax_elementor_ajax', array( __CLASS__, 'maybe_early_finish_widgets_config' ), 0 );
+		self::maybe_early_finish_widgets_config();
 		add_action( 'elementor/ajax/register_actions', array( __CLASS__, 'register_actions' ), 20 );
 		add_action( 'elementor/editor/before_enqueue_scripts', array( __CLASS__, 'enqueue_hydrate_script' ) );
 		// Run before add-on catalogues (default priority 10) so they never eval/register.
@@ -62,6 +65,82 @@ class RWGC_Elementor_Widgets_Config {
 		add_action( 'elementor/controls/register', array( __CLASS__, 'unhook_heavy_addon_registrars' ), 0 );
 		add_action( 'elementor/controls/controls_registered', array( __CLASS__, 'unhook_heavy_addon_registrars' ), 0 );
 		add_action( 'elementor/widgets/register', array( __CLASS__, 'log_widgets_registered' ), 999 );
+	}
+
+	/**
+	 * Return empty widgets-config before the rest of WordPress finishes booting.
+	 *
+	 * Production 1.8.145: get_widgets_config logs boot then dies with no handler
+	 * and no shutdown. LiteSpeed kills the request during later plugin load /
+	 * init. The empty map is enough for panel/state-ready.
+	 *
+	 * @return void
+	 */
+	public static function maybe_early_finish_widgets_config() {
+		if ( ! class_exists( 'RWGC_Elementor_Ajax', false ) ) {
+			return;
+		}
+		if ( ! self::should_avoid_widget_manager() ) {
+			return;
+		}
+		$responses = RWGC_Elementor_Ajax::early_widgets_config_responses();
+		if ( ! is_array( $responses ) ) {
+			return;
+		}
+		if ( ! self::verify_elementor_ajax_nonce() ) {
+			return;
+		}
+		$allow = true;
+		if ( function_exists( 'apply_filters' ) ) {
+			$allow = (bool) apply_filters( 'rwgc_elementor_early_finish_widgets_config', $allow );
+		}
+		if ( ! $allow ) {
+			return;
+		}
+
+		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+			RWGC_Elementor_Config_Debug::checkpoint(
+				'ajax_early_exit',
+				array(
+					'keys' => implode( ',', array_keys( $responses ) ),
+				)
+			);
+			RWGC_Elementor_Config_Debug::send_headers( 'slim-early' );
+		} else {
+			self::send_debug_header( 'slim-early' );
+		}
+
+		while ( function_exists( 'ob_get_status' ) && ob_get_status() ) {
+			ob_end_clean();
+		}
+		if ( ! headers_sent() ) {
+			header( 'Content-Type: application/json; charset=UTF-8' );
+		}
+		$json = wp_json_encode(
+			array(
+				'success' => true,
+				'data'    => array(
+					'responses' => $responses,
+				),
+			)
+		);
+		echo is_string( $json ) ? $json : '{"success":true,"data":{"responses":{}}}'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		if ( function_exists( 'wp_die' ) ) {
+			wp_die( '', '', array( 'response' => null ) );
+		}
+		exit;
+	}
+
+	/**
+	 * @return bool
+	 */
+	private static function verify_elementor_ajax_nonce() {
+		if ( ! function_exists( 'wp_verify_nonce' ) ) {
+			return false;
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$nonce = isset( $_REQUEST['_nonce'] ) ? sanitize_text_field( wp_unslash( (string) $_REQUEST['_nonce'] ) ) : '';
+		return ( '' !== $nonce && false !== wp_verify_nonce( $nonce, 'elementor_ajax' ) );
 	}
 
 	/**

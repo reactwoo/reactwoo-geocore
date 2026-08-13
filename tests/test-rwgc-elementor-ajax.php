@@ -78,6 +78,25 @@ $_REQUEST['actions'] = '{"f":{"action":"enqueue_google_fonts","data":{}}}';
 RWGC_Elementor_Ajax::reset_for_tests();
 rwgc_assert( ! RWGC_Elementor_Ajax::is_constrained_elementor_ajax(), 'fonts are not constrained' );
 
+$_REQUEST['actions'] = '{"get_widgets_config":{"action":"get_widgets_config","data":{}}}';
+RWGC_Elementor_Ajax::reset_for_tests();
+$early = RWGC_Elementor_Ajax::early_widgets_config_responses();
+rwgc_assert( is_array( $early ) && isset( $early['get_widgets_config'] ), 'widgets-config can early-finish' );
+rwgc_assert( array() === $early['get_widgets_config']['data'], 'early widgets-config data is empty' );
+
+$_REQUEST['actions'] = '{"a":{"action":"get_widgets_config"},"f":{"action":"enqueue_google_fonts"}}';
+RWGC_Elementor_Ajax::reset_for_tests();
+$early_fonts = RWGC_Elementor_Ajax::early_widgets_config_responses();
+rwgc_assert( is_array( $early_fonts ) && 2 === count( $early_fonts ), 'widgets-config + fonts can early-finish' );
+
+$_REQUEST['actions'] = '{"a":{"action":"get_widgets_config"},"b":{"action":"get_document_config"}}';
+RWGC_Elementor_Ajax::reset_for_tests();
+rwgc_assert( null === RWGC_Elementor_Ajax::early_widgets_config_responses(), 'do not early-finish document config' );
+
+$_REQUEST['actions'] = '{"h":{"action":"rwgc_get_widget_config"}}';
+RWGC_Elementor_Ajax::reset_for_tests();
+rwgc_assert( null === RWGC_Elementor_Ajax::early_widgets_config_responses(), 'do not early-finish hydrate' );
+
 require_once dirname( __DIR__ ) . '/includes/platform/class-rwgc-wp-abilities-adapter.php';
 $_REQUEST = array( 'action' => 'elementor_ajax' );
 RWGC_Elementor_Ajax::reset_for_tests();
