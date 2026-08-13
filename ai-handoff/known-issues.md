@@ -136,4 +136,8 @@
 
 **Mitigation shipped (Geo Core 1.8.147):** Seed `tabs_controls.content` on `getElementData` / `panel/editor/open`, then hydrate immediately (not gated on a missed `panel/state-ready`).
 
+**1.8.147 production (13 Aug 2026):** Hydrate runs. User selected UE Loop Tabs (`ucaddon_ue_listing_tabs`). Response keys were only `common,common-optimized` because UE was unhooked. Inspector tabs showed `[object Object]` because stub tabs were `{}` not `{ title: "Content" }`.
+
+**Mitigation shipped (Geo Core 1.8.148):** Keep UniteCreator hooked when hydrating `ucaddon_*`. Allow get_stack for that one UE widget. Stub tabs include string titles. Heading hydrate still unhooks UE. Risk: UE eval on that one request may 503 — watch for hydrate without `ajax_single_widget`.
+
 **Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence; more Geo Visibility option-list slimming; more per-widget get_stack time-boxes (cannot interrupt a hung stack); calling `get_widget_types()` and then trying to skip stacks.

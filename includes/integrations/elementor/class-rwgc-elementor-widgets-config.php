@@ -185,6 +185,9 @@ class RWGC_Elementor_Widgets_Config {
 				$class = is_object( $fn[0] ) ? get_class( $fn[0] ) : (string) $fn[0];
 				$seen[] = $class;
 				if ( self::is_heavy_addon_registrar( $class ) ) {
+					if ( self::hydrate_needs_unlimited_elements() && self::is_unlimited_elements_registrar( $class ) ) {
+						continue;
+					}
 					$to_remove[] = array(
 						'fn'       => $fn,
 						'priority' => (int) $priority,
@@ -246,6 +249,38 @@ class RWGC_Elementor_Widgets_Config {
 			$out[] = end( $parts );
 		}
 		return $out;
+	}
+
+	/**
+	 * @param string $class Fully-qualified class name.
+	 * @return bool
+	 */
+	/**
+	 * Hydrating an Unlimited Elements widget requires its registrar to stay hooked.
+	 *
+	 * @return bool
+	 */
+	public static function hydrate_needs_unlimited_elements() {
+		if ( ! class_exists( 'RWGC_Elementor_Ajax', false ) || ! RWGC_Elementor_Ajax::is_widget_hydrate_ajax() ) {
+			return false;
+		}
+		$name = RWGC_Elementor_Ajax::hydrate_widget_name();
+		return ( '' !== $name && 0 === strpos( $name, 'ucaddon_' ) );
+	}
+
+	/**
+	 * @param string $class Fully-qualified class name.
+	 * @return bool
+	 */
+	public static function is_unlimited_elements_registrar( $class ) {
+		$class   = (string) $class;
+		$needles = array( 'UniteCreator', 'UnlimitedElements', 'Unlimited_Elements', 'UCAddon_' );
+		foreach ( $needles as $needle ) {
+			if ( false !== strpos( $class, $needle ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -352,6 +387,9 @@ class RWGC_Elementor_Widgets_Config {
 					continue;
 				}
 				$out[ $widget_key ] = self::widget_controls_payload( $widget );
+			}
+			if ( ! isset( $out[ $name ] ) ) {
+				$out[ $name ] = self::stub_tabs_payload();
 			}
 
 			if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
@@ -528,6 +566,24 @@ class RWGC_Elementor_Widgets_Config {
 			'ours_ms'    => 0,
 			'cut'        => 0,
 			'loop_start' => microtime( true ),
+		);
+	}
+
+	/**
+	 * @return array{controls: array<string, mixed>, tabs_controls: array<string, mixed>}
+	 */
+	/**
+	 * @return array{controls: array<string, mixed>, tabs_controls: array<string, array{title: string}>}
+	 */
+	private static function stub_tabs_payload() {
+		return array(
+			'controls'      => array(),
+			'tabs_controls' => array(
+				'content'  => array( 'title' => 'Content' ),
+				'style'    => array( 'title' => 'Style' ),
+				'advanced' => array( 'title' => 'Advanced' ),
+				'layout'   => array( 'title' => 'Layout' ),
+			),
 		);
 	}
 
@@ -770,8 +826,11 @@ class RWGC_Elementor_Widgets_Config {
 		$class = get_class( $widget );
 		if ( self::should_skip_full_stack( $name, $class ) ) {
 			$hydrate = class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_widget_hydrate_ajax();
-			$ue      = ( 0 === strpos( $name, 'ucaddon_' ) ) || ( false !== strpos( $class, 'UniteCreator' ) );
-			if ( ! $hydrate || $ue ) {
+			if ( ! $hydrate ) {
+				return $empty;
+			}
+			$ue = ( 0 === strpos( $name, 'ucaddon_' ) ) || ( false !== strpos( $class, 'UniteCreator' ) );
+			if ( $ue && RWGC_Elementor_Ajax::hydrate_widget_name() !== $name ) {
 				return $empty;
 			}
 		}

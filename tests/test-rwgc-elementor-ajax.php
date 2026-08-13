@@ -97,6 +97,10 @@ $_REQUEST['actions'] = '{"h":{"action":"rwgc_get_widget_config"}}';
 RWGC_Elementor_Ajax::reset_for_tests();
 rwgc_assert( null === RWGC_Elementor_Ajax::early_widgets_config_responses(), 'do not early-finish hydrate' );
 
+$_REQUEST['actions'] = '{"h":{"action":"rwgc_get_widget_config","data":{"widget":"ucaddon_ue_listing_tabs"}}}';
+RWGC_Elementor_Ajax::reset_for_tests();
+rwgc_assert( 'ucaddon_ue_listing_tabs' === RWGC_Elementor_Ajax::hydrate_widget_name(), 'hydrate widget name from payload' );
+
 require_once dirname( __DIR__ ) . '/includes/platform/class-rwgc-wp-abilities-adapter.php';
 $_REQUEST = array( 'action' => 'elementor_ajax' );
 RWGC_Elementor_Ajax::reset_for_tests();
@@ -107,6 +111,13 @@ RWGC_Elementor_Ajax::reset_for_tests();
 rwgc_assert( ! RWGC_WP_Abilities_Adapter::should_skip_registration(), 'do not skip abilities on other ajax' );
 
 require_once dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-widgets-config.php';
+$_REQUEST = array( 'action' => 'elementor_ajax', 'actions' => '{"h":{"action":"rwgc_get_widget_config","data":{"widget":"ucaddon_ue_listing_tabs"}}}' );
+RWGC_Elementor_Ajax::reset_for_tests();
+rwgc_assert( RWGC_Elementor_Widgets_Config::hydrate_needs_unlimited_elements(), 'UE listing tabs need UE registrar' );
+rwgc_assert( RWGC_Elementor_Widgets_Config::is_unlimited_elements_registrar( 'UniteCreatorElementorIntegrate' ), 'UE integrate is UE registrar' );
+$_REQUEST['actions'] = '{"h":{"action":"rwgc_get_widget_config","data":{"widget":"heading"}}}';
+RWGC_Elementor_Ajax::reset_for_tests();
+rwgc_assert( ! RWGC_Elementor_Widgets_Config::hydrate_needs_unlimited_elements(), 'heading hydrate does not keep UE' );
 rwgc_assert( ! RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'heading', 'Elementor\\Widget_Heading' ), 'keep Elementor core heading' );
 rwgc_assert( ! RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'form', 'ElementorPro\\Modules\\Forms\\Widgets\\Form' ), 'keep Elementor Pro form' );
 rwgc_assert( RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'rwa-carousel', 'ReactWoo\\Atomic\\Widgets\\Carousel' ), 'skip Atomic stack on bulk path' );

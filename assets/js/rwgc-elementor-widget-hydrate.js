@@ -15,10 +15,10 @@
 
 	function defaultTabs() {
 		return {
-			content: {},
-			style: {},
-			advanced: {},
-			layout: {}
+			content: { title: 'Content' },
+			style: { title: 'Style' },
+			advanced: { title: 'Advanced' },
+			layout: { title: 'Layout' }
 		};
 	}
 
@@ -41,8 +41,8 @@
 		if (!entry.tabs_controls || typeof entry.tabs_controls !== 'object') {
 			entry.tabs_controls = defaultTabs();
 		}
-		if (!entry.tabs_controls.content) {
-			entry.tabs_controls.content = {};
+		if (!entry.tabs_controls.content || typeof entry.tabs_controls.content.title !== 'string') {
+			entry.tabs_controls.content = { title: 'Content' };
 		}
 	}
 
@@ -177,10 +177,10 @@
 		elementor.getElementData = function (model) {
 			ensureModel(model);
 			var data = orig(model);
-			if (data && (!data.tabs_controls || typeof data.tabs_controls !== 'object' || !data.tabs_controls.content)) {
+			if (data && (!data.tabs_controls || typeof data.tabs_controls !== 'object' || typeof (data.tabs_controls.content && data.tabs_controls.content.title) !== 'string')) {
 				data.tabs_controls = data.tabs_controls && typeof data.tabs_controls === 'object' ? data.tabs_controls : defaultTabs();
-				if (!data.tabs_controls.content) {
-					data.tabs_controls.content = {};
+				if (!data.tabs_controls.content || typeof data.tabs_controls.content.title !== 'string') {
+					data.tabs_controls.content = { title: 'Content' };
 				}
 			}
 			return data;

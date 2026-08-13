@@ -109,6 +109,25 @@ class RWGC_Elementor_Ajax {
 	}
 
 	/**
+	 * Widget name requested by rwgc_get_widget_config.
+	 *
+	 * @return string
+	 */
+	public static function hydrate_widget_name() {
+		if ( ! self::is_widget_hydrate_ajax() ) {
+			return '';
+		}
+		foreach ( self::decoded_actions() as $row ) {
+			if ( ! is_array( $row ) || ( $row['action'] ?? '' ) !== 'rwgc_get_widget_config' ) {
+				continue;
+			}
+			$widget = isset( $row['data']['widget'] ) ? (string) $row['data']['widget'] : '';
+			return function_exists( 'sanitize_key' ) ? sanitize_key( $widget ) : strtolower( $widget );
+		}
+		return '';
+	}
+
+	/**
 	 * Skip Cloud / integrations boot (heavy panel payloads and single-widget hydrate).
 	 *
 	 * @return bool
