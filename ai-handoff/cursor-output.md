@@ -4,18 +4,17 @@
 done
 
 ## Task
-Production admin-ajax 503 persists after 1.8.137.
-
-## Diagnosis
-1.8.137 skipped `get_stack()` for add-on widgets but Unlimited Elements still registers every addon (`eval` + instantiate + DB preload) on `elementor/widgets/register` before that handler runs.
+Add Elementor widgets-config debug logging to track ReactWoo entries on the still-failing 503.
 
 ## Files changed
-- `class-rwgc-elementor-widgets-config.php` — unhook heavy addon registrars at priority 0; Throwable guard; `X-RWGC-Widgets-Config` header
-- Version 1.8.138
+- `class-rwgc-elementor-config-debug.php` — checkpoints, shutdown flush, headers, last snapshot option
+- `class-rwgc-elementor-widgets-config.php` — log unhooks, leftover registrars, our/slow widgets
+- Version 1.8.139
 
 ## What was not changed
 - PHP memory / timeout
-- Frontend UE widgets (only skipped during heavy editor AJAX)
+- Widget skip/unhook policy
 
 ## Commands run
+- `php -l` on debug + widgets-config
 - `php tests/test-rwgc-elementor-ajax.php`

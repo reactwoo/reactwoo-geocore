@@ -98,4 +98,12 @@ rwgc_assert( RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'UniteCrea
 rwgc_assert( RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'Essential_Addons_Elementor\\Classes\\Bootstrap' ), 'EA registrar is heavy' );
 rwgc_assert( ! RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'ElementorPro\\Plugin' ), 'Elementor Pro is not a heavy registrar' );
 
+require_once dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-config-debug.php';
+rwgc_assert( RWGC_Elementor_Config_Debug::is_our_entry( 'RW_Elementor_WHM_Products_Widget' ), 'WHMCS widget is our entry' );
+rwgc_assert( RWGC_Elementor_Config_Debug::is_our_entry( 'ReactWoo\\Atomic\\Widgets\\Carousel' ), 'Atomic widget is our entry' );
+rwgc_assert( ! RWGC_Elementor_Config_Debug::is_our_entry( 'Elementor\\Widget_Heading' ), 'core heading is not our entry' );
+RWGC_Elementor_Config_Debug::set_summary( 'kept', 3 );
+RWGC_Elementor_Config_Debug::checkpoint( 'test_cp', array( 'ok' => 1 ) );
+rwgc_assert( true, 'debug checkpoint does not fatal' );
+
 exit( $fails > 0 ? 1 : 0 );

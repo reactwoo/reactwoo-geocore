@@ -24,12 +24,16 @@ class RWGC_Elementor_Widgets_Config {
 	 * @return void
 	 */
 	public static function init() {
+		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+			RWGC_Elementor_Config_Debug::boot();
+		}
 		add_action( 'elementor/ajax/register_actions', array( __CLASS__, 'register_actions' ), 20 );
 		// Run before add-on catalogues (default priority 10) so they never eval/register.
 		add_action( 'elementor/widgets/register', array( __CLASS__, 'unhook_heavy_addon_registrars' ), 0 );
 		add_action( 'elementor/widgets/widgets_registered', array( __CLASS__, 'unhook_heavy_addon_registrars' ), 0 );
 		add_action( 'elementor/controls/register', array( __CLASS__, 'unhook_heavy_addon_registrars' ), 0 );
 		add_action( 'elementor/controls/controls_registered', array( __CLASS__, 'unhook_heavy_addon_registrars' ), 0 );
+		add_action( 'elementor/widgets/register', array( __CLASS__, 'log_widgets_registered' ), 999 );
 	}
 
 	/**
@@ -57,6 +61,7 @@ class RWGC_Elementor_Widgets_Config {
 		}
 
 		$to_remove = array();
+		$seen      = array();
 		foreach ( $hook->callbacks as $priority => $callbacks ) {
 			if ( (int) $priority <= 0 ) {
 				continue;
@@ -67,18 +72,66 @@ class RWGC_Elementor_Widgets_Config {
 				}
 				$fn    = $cb['function'];
 				$class = is_object( $fn[0] ) ? get_class( $fn[0] ) : (string) $fn[0];
+				$seen[] = $class;
 				if ( self::is_heavy_addon_registrar( $class ) ) {
 					$to_remove[] = array(
 						'fn'       => $fn,
 						'priority' => (int) $priority,
+						'class'    => $class,
 					);
 				}
 			}
 		}
 
+		$unhooked = array();
 		foreach ( $to_remove as $item ) {
 			remove_action( $hook_name, $item['fn'], $item['priority'] );
+			$unhooked[] = $item['class'];
 		}
+
+		$left = array_values( array_diff( array_unique( $seen ), $unhooked ) );
+		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+			RWGC_Elementor_Config_Debug::set_summary( 'unhooked', count( $unhooked ) );
+			RWGC_Elementor_Config_Debug::set_summary( 'left', implode( ',', array_slice( self::short_class_list( $left ), 0, 12 ) ) );
+			RWGC_Elementor_Config_Debug::checkpoint(
+				'unhook',
+				array(
+					'hook'    => $hook_name,
+					'unhook'  => implode( ',', array_slice( self::short_class_list( $unhooked ), 0, 8 ) ),
+					'left'    => implode( ',', array_slice( self::short_class_list( $left ), 0, 12 ) ),
+					'seen_n'  => count( $seen ),
+				)
+			);
+		}
+	}
+
+	/**
+	 * @param object $manager Widgets manager.
+	 * @return void
+	 */
+	public static function log_widgets_registered( $manager ) {
+		$count = 0;
+		if ( is_object( $manager ) && method_exists( $manager, 'get_widget_types' ) ) {
+			$types = $manager->get_widget_types();
+			$count = is_array( $types ) ? count( $types ) : 0;
+		}
+		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+			RWGC_Elementor_Config_Debug::set_summary( 'registered', $count );
+			RWGC_Elementor_Config_Debug::checkpoint( 'widgets_registered', array( 'count' => $count ) );
+		}
+	}
+
+	/**
+	 * @param list<string> $classes Class names.
+	 * @return list<string>
+	 */
+	private static function short_class_list( array $classes ) {
+		$out = array();
+		foreach ( $classes as $class ) {
+			$parts = explode( '\\', (string) $class );
+			$out[] = end( $parts );
+		}
+		return $out;
 	}
 
 	/**
@@ -113,6 +166,10 @@ class RWGC_Elementor_Widgets_Config {
 	 * @return void
 	 */
 	private static function send_debug_header( $note ) {
+		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+			RWGC_Elementor_Config_Debug::send_headers( $note );
+			return;
+		}
 		if ( headers_sent() ) {
 			return;
 		}
@@ -140,26 +197,38 @@ class RWGC_Elementor_Widgets_Config {
 	 */
 	public static function ajax_get_widgets_config( array $data ) {
 		try {
-			self::send_debug_header( 'slim' );
+			if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+				RWGC_Elementor_Config_Debug::checkpoint( 'ajax_get_widgets_config_start', array() );
+			}
 			if ( ! class_exists( '\Elementor\Plugin', false ) ) {
+				self::send_debug_header( 'no-elementor' );
 				return array();
 			}
 
 			$plugin = \Elementor\Plugin::$instance;
 			$plugin->documents->check_permissions( $data['editor_post_id'] ?? 0 );
 
-			$config = array();
+			$config  = array();
+			$stats   = self::empty_build_stats();
 			foreach ( $plugin->widgets_manager->get_widget_types() as $widget_key => $widget ) {
 				if ( isset( $data['exclude'][ $widget_key ] ) ) {
+					++$stats['excluded'];
 					continue;
 				}
-				$config[ $widget_key ] = self::widget_controls_payload( $widget );
+				$config[ $widget_key ] = self::timed_widget_payload( $widget, $widget_key, $stats );
 			}
+			self::finish_build_stats( $stats, 'slim' );
 
 			return $config;
 		} catch ( \Exception $e ) {
+			if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+				RWGC_Elementor_Config_Debug::checkpoint( 'ajax_exception', array( 'msg' => substr( $e->getMessage(), 0, 120 ) ) );
+			}
 			throw $e;
 		} catch ( \Throwable $e ) {
+			if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+				RWGC_Elementor_Config_Debug::checkpoint( 'ajax_error', array( 'msg' => substr( $e->getMessage(), 0, 120 ) ) );
+			}
 			self::send_debug_header( 'error' );
 			return array();
 		}
@@ -175,8 +244,11 @@ class RWGC_Elementor_Widgets_Config {
 			'categories' => array(),
 		);
 		try {
-			self::send_debug_header( 'slim-refresh' );
+			if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+				RWGC_Elementor_Config_Debug::checkpoint( 'ajax_refresh_widgets_config_start', array() );
+			}
 			if ( ! class_exists( '\Elementor\Plugin', false ) ) {
+				self::send_debug_header( 'no-elementor' );
 				return $empty;
 			}
 
@@ -184,8 +256,9 @@ class RWGC_Elementor_Widgets_Config {
 			$plugin->documents->check_permissions( $data['editor_post_id'] ?? 0 );
 
 			$widgets = array();
+			$stats   = self::empty_build_stats();
 			foreach ( $plugin->widgets_manager->get_widget_types() as $widget_key => $widget ) {
-				$payload = self::widget_controls_payload( $widget );
+				$payload = self::timed_widget_payload( $widget, $widget_key, $stats );
 				if ( empty( $payload['controls'] ) ) {
 					$widgets[ $widget_key ] = array(
 						'controls'      => array(),
@@ -198,17 +271,109 @@ class RWGC_Elementor_Widgets_Config {
 				$widget_config['tabs_controls'] = $payload['tabs_controls'];
 				$widgets[ $widget_key ]         = $widget_config;
 			}
+			self::finish_build_stats( $stats, 'slim-refresh' );
 
 			return array(
 				'widgets'    => $widgets,
 				'categories' => $plugin->elements_manager->get_categories(),
 			);
 		} catch ( \Exception $e ) {
+			if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+				RWGC_Elementor_Config_Debug::checkpoint( 'ajax_exception', array( 'msg' => substr( $e->getMessage(), 0, 120 ) ) );
+			}
 			throw $e;
 		} catch ( \Throwable $e ) {
+			if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+				RWGC_Elementor_Config_Debug::checkpoint( 'ajax_error', array( 'msg' => substr( $e->getMessage(), 0, 120 ) ) );
+			}
 			self::send_debug_header( 'error' );
 			return $empty;
 		}
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private static function empty_build_stats() {
+		return array(
+			'kept'       => 0,
+			'skipped'    => 0,
+			'ours'       => 0,
+			'excluded'   => 0,
+			'slowest'    => '',
+			'slowest_ms' => 0,
+			'ours_ms'    => 0,
+		);
+	}
+
+	/**
+	 * @param object               $widget     Widget instance.
+	 * @param string               $widget_key Widget name.
+	 * @param array<string, mixed> $stats      Running totals (by ref).
+	 * @return array{controls: array<string, mixed>, tabs_controls: array<string, mixed>}
+	 */
+	private static function timed_widget_payload( $widget, $widget_key, array &$stats ) {
+		$class = is_object( $widget ) ? get_class( $widget ) : '';
+		$ours  = class_exists( 'RWGC_Elementor_Config_Debug', false ) && RWGC_Elementor_Config_Debug::is_our_entry( $class );
+		$start = microtime( true );
+		$payload = self::widget_controls_payload( $widget );
+		$elapsed = (int) round( ( microtime( true ) - $start ) * 1000 );
+
+		if ( empty( $payload['controls'] ) ) {
+			++$stats['skipped'];
+		} else {
+			++$stats['kept'];
+		}
+		if ( $ours ) {
+			++$stats['ours'];
+			$stats['ours_ms'] += $elapsed;
+		}
+		if ( $elapsed > (int) $stats['slowest_ms'] ) {
+			$stats['slowest_ms'] = $elapsed;
+			$stats['slowest']    = $widget_key . ':' . $elapsed;
+		}
+
+		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) && ( $ours || $elapsed >= 80 ) ) {
+			RWGC_Elementor_Config_Debug::log(
+				$ours ? 'our_widget' : 'slow_widget',
+				array(
+					'widget'   => (string) $widget_key,
+					'class'    => $class,
+					'ms'       => $elapsed,
+					'controls' => is_array( $payload['controls'] ) ? count( $payload['controls'] ) : 0,
+					'ours'     => $ours ? 1 : 0,
+				)
+			);
+		}
+
+		return $payload;
+	}
+
+	/**
+	 * @param array<string, mixed> $stats Build stats.
+	 * @param string               $note  Header note.
+	 * @return void
+	 */
+	private static function finish_build_stats( array $stats, $note ) {
+		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+			RWGC_Elementor_Config_Debug::set_summary( 'kept', (int) $stats['kept'] );
+			RWGC_Elementor_Config_Debug::set_summary( 'skipped', (int) $stats['skipped'] );
+			RWGC_Elementor_Config_Debug::set_summary( 'ours', (int) $stats['ours'] );
+			RWGC_Elementor_Config_Debug::set_summary( 'ours_ms', (int) $stats['ours_ms'] );
+			RWGC_Elementor_Config_Debug::set_summary( 'excluded', (int) $stats['excluded'] );
+			RWGC_Elementor_Config_Debug::set_summary( 'slowest', (string) $stats['slowest'] );
+			RWGC_Elementor_Config_Debug::checkpoint(
+				'ajax_done',
+				array(
+					'kept'     => (int) $stats['kept'],
+					'skipped'  => (int) $stats['skipped'],
+					'ours'     => (int) $stats['ours'],
+					'ours_ms'  => (int) $stats['ours_ms'],
+					'slowest'  => (string) $stats['slowest'],
+				)
+			);
+		}
+		self::send_debug_header( $note );
 	}
 
 	/**

@@ -102,4 +102,6 @@
 
 **Mitigation shipped (Geo Core 1.8.138):** Unhook UE / EA / Jet / Premium Addons widget+control registrars at priority 0 on heavy `elementor_ajax`. Header `X-RWGC-Widgets-Config: 1.8.138; slim` proves the build is live.
 
+**Debug (1.8.139):** `[RWGC_EL_WIDGETS]` error_log + `X-RWGC-El-Debug` headers + option `rwgc_elementor_widget_load_last` (shutdown flush). Default on via option; disable with `rwgc_elementor_widget_load_debug` = 0.
+
 **Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence.
