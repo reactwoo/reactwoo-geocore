@@ -23,17 +23,31 @@ class RWGC_Elementor_Widgets_Config {
 	/**
 	 * Abort remaining get_stack() calls once the request is this old (LiteSpeed).
 	 */
-	const REQUEST_BUDGET_MS = 7500;
+	const REQUEST_BUDGET_MS = 5500;
+
+	/**
+	 * If WordPress boot already used this long, skip every get_stack().
+	 * Production reactwoo.com spends ~6s before the handler runs.
+	 */
+	const LATE_BOOT_MS = 4000;
 
 	/**
 	 * Max time spent inside the per-widget stack loop.
 	 */
-	const STACK_BUDGET_MS = 1800;
+	const STACK_BUDGET_MS = 400;
+
+	/**
+	 * @var float
+	 */
+	private static $boot_at = 0.0;
 
 	/**
 	 * @return void
 	 */
 	public static function init() {
+		if ( 0.0 === self::$boot_at ) {
+			self::$boot_at = microtime( true );
+		}
 		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) && RWGC_Elementor_Config_Debug::is_elementor_ajax_request() ) {
 			RWGC_Elementor_Config_Debug::boot();
 		}
@@ -167,6 +181,7 @@ class RWGC_Elementor_Widgets_Config {
 			'Premium_Addons',
 			'ACPT_Elementor',
 			'ACPT\\',
+			'RW_WHMCS',
 		);
 		foreach ( $needles as $needle ) {
 			if ( false !== strpos( $class, $needle ) ) {
@@ -223,23 +238,28 @@ class RWGC_Elementor_Widgets_Config {
 			$plugin = \Elementor\Plugin::$instance;
 			$plugin->documents->check_permissions( $data['editor_post_id'] ?? 0 );
 
-			$config  = array();
-			$stats   = self::empty_build_stats();
-			$n       = 0;
-			foreach ( $plugin->widgets_manager->get_widget_types() as $widget_key => $widget ) {
+			$types = $plugin->widgets_manager->get_widget_types();
+			$stats = self::empty_build_stats();
+			if ( self::should_skip_all_stacks() ) {
+				$config = self::empty_config_from_types( $types, $data, $stats );
+				self::finish_build_stats( $stats, 'slim-late' );
+				return $config;
+			}
+
+			$config = array();
+			$n      = 0;
+			foreach ( $types as $widget_key => $widget ) {
 				++$n;
 				if ( isset( $data['exclude'][ $widget_key ] ) ) {
 					++$stats['excluded'];
 					continue;
 				}
+				self::progress_checkpoint( $n, (string) $widget_key, $stats );
 				if ( self::should_cut_stacks( $stats ) ) {
 					$config[ $widget_key ] = self::empty_controls_payload();
 					++$stats['cut'];
 				} else {
 					$config[ $widget_key ] = self::timed_widget_payload( $widget, $widget_key, $stats );
-				}
-				if ( 0 === ( $n % 8 ) ) {
-					self::progress_checkpoint( $n, (string) $widget_key, $stats );
 				}
 			}
 			self::finish_build_stats( $stats, $stats['cut'] > 0 ? 'slim-cut' : 'slim' );
@@ -280,19 +300,27 @@ class RWGC_Elementor_Widgets_Config {
 			$plugin = \Elementor\Plugin::$instance;
 			$plugin->documents->check_permissions( $data['editor_post_id'] ?? 0 );
 
+			$types = $plugin->widgets_manager->get_widget_types();
+			$stats = self::empty_build_stats();
+			if ( self::should_skip_all_stacks() ) {
+				$empty_map = self::empty_config_from_types( $types, $data, $stats );
+				self::finish_build_stats( $stats, 'slim-refresh-late' );
+				return array(
+					'widgets'    => $empty_map,
+					'categories' => $plugin->elements_manager->get_categories(),
+				);
+			}
+
 			$widgets = array();
-			$stats   = self::empty_build_stats();
 			$n       = 0;
-			foreach ( $plugin->widgets_manager->get_widget_types() as $widget_key => $widget ) {
+			foreach ( $types as $widget_key => $widget ) {
 				++$n;
+				self::progress_checkpoint( $n, (string) $widget_key, $stats );
 				if ( self::should_cut_stacks( $stats ) ) {
 					$payload = self::empty_controls_payload();
 					++$stats['cut'];
 				} else {
 					$payload = self::timed_widget_payload( $widget, $widget_key, $stats );
-				}
-				if ( 0 === ( $n % 8 ) ) {
-					self::progress_checkpoint( $n, (string) $widget_key, $stats );
 				}
 				if ( empty( $payload['controls'] ) ) {
 					$widgets[ $widget_key ] = array(
@@ -354,6 +382,66 @@ class RWGC_Elementor_Widgets_Config {
 	}
 
 	/**
+	 * Production boot is already ~6s. Do not start get_stack() at all.
+	 *
+	 * @return bool
+	 */
+	public static function should_skip_all_stacks() {
+		$late = self::LATE_BOOT_MS;
+		if ( function_exists( 'apply_filters' ) ) {
+			$late = (int) apply_filters( 'rwgc_elementor_widgets_config_late_boot_ms', $late );
+		}
+		return self::request_elapsed_ms() >= $late;
+	}
+
+	/**
+	 * @return int
+	 */
+	public static function request_elapsed_ms() {
+		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+			$ms = RWGC_Elementor_Config_Debug::elapsed_ms_public();
+			if ( $ms > 0 ) {
+				return $ms;
+			}
+		}
+		if ( self::$boot_at > 0 ) {
+			return (int) round( ( microtime( true ) - self::$boot_at ) * 1000 );
+		}
+		return 0;
+	}
+
+	/**
+	 * @param array<string, object> $types Widget types.
+	 * @param array<string, mixed>  $data  Request data.
+	 * @param array<string, mixed>  $stats Running totals (by ref).
+	 * @return array<string, array{controls: array<string, mixed>, tabs_controls: array<string, mixed>}>
+	 */
+	private static function empty_config_from_types( $types, array $data, array &$stats ) {
+		$config = array();
+		if ( ! is_array( $types ) ) {
+			return $config;
+		}
+		foreach ( $types as $widget_key => $widget ) {
+			if ( isset( $data['exclude'][ $widget_key ] ) ) {
+				++$stats['excluded'];
+				continue;
+			}
+			$config[ $widget_key ] = self::empty_controls_payload();
+			++$stats['cut'];
+		}
+		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+			RWGC_Elementor_Config_Debug::checkpoint(
+				'late_skip',
+				array(
+					'cut'   => (int) $stats['cut'],
+					'types' => count( $types ),
+				)
+			);
+		}
+		return $config;
+	}
+
+	/**
 	 * Stop calling get_stack() so LiteSpeed receives a finished JSON response.
 	 *
 	 * @param array<string, mixed> $stats Running totals.
@@ -367,11 +455,8 @@ class RWGC_Elementor_Widgets_Config {
 			$stack_budget   = (int) apply_filters( 'rwgc_elementor_widgets_config_stack_budget_ms', $stack_budget );
 		}
 
-		$request_ms = 0;
-		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
-			$request_ms = RWGC_Elementor_Config_Debug::elapsed_ms_public();
-		}
-		$loop_ms = (int) round( ( microtime( true ) - (float) $stats['loop_start'] ) * 1000 );
+		$request_ms = self::request_elapsed_ms();
+		$loop_ms    = (int) round( ( microtime( true ) - (float) $stats['loop_start'] ) * 1000 );
 
 		return ( $request_ms >= $request_budget ) || ( $loop_ms >= $stack_budget );
 	}

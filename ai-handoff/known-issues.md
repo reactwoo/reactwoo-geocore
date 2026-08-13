@@ -112,4 +112,8 @@
 
 **Mitigation shipped (Geo Core 1.8.141):** Time-box stack building (7.5s request / 1.8s loop); skip Atomic, WHMCS, and Pro Woo/Loop/MegaMenu stacks on the bulk path; progress checkpoints; debug only on heavy AJAX.
 
-**Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence; more Geo Visibility option-list slimming.
+**1.8.141 production log (13 Aug 2026):** `ajax_progress` n=8 last=`spacer` kept=8 at 7197ms, then silence — no `ajax_done` / no shutdown. Time-box cannot interrupt a hung `get_stack()` (next core widget is `image-box`). `get_document_config` still finishes (~2.8s).
+
+**Mitigation shipped (Geo Core 1.8.142):** If request age ≥ 4s after widget registration, return empty stacks for every widget (`slim-late`). Unhook `RW_WHMCS_Bridge`. Progress log before each `get_stack` on the fast path.
+
+**Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence; more Geo Visibility option-list slimming; more per-widget get_stack time-boxes (cannot interrupt a hung stack).

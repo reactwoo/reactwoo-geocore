@@ -103,6 +103,7 @@ rwgc_assert( 2 === count( $slim['tiny']['options'] ), 'slim leaves small option 
 rwgc_assert( RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'UniteCreatorElementorIntegrate' ), 'UE integrate is heavy registrar' );
 rwgc_assert( RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'Essential_Addons_Elementor\\Classes\\Bootstrap' ), 'EA registrar is heavy' );
 rwgc_assert( RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'ACPT_Elementor' ), 'ACPT Elementor registrar is heavy' );
+rwgc_assert( RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'RW_WHMCS_Bridge' ), 'WHMCS registrar is heavy' );
 rwgc_assert( ! RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'ElementorPro\\Plugin' ), 'Elementor Pro is not a heavy registrar' );
 
 require_once dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-config-debug.php';
@@ -119,7 +120,9 @@ RWGC_Elementor_Ajax::reset_for_tests();
 rwgc_assert( RWGC_Elementor_Config_Debug::is_elementor_ajax_request(), 'elementor_ajax is traced' );
 rwgc_assert( RWGC_Elementor_Config_Debug::should_trace(), 'widgets-config is traced' );
 $cut_stats = array( 'loop_start' => microtime( true ) - 3 );
-rwgc_assert( RWGC_Elementor_Widgets_Config::should_cut_stacks( $cut_stats ), 'stack budget cuts after 1.8s' );
+rwgc_assert( RWGC_Elementor_Widgets_Config::should_cut_stacks( $cut_stats ), 'stack budget cuts after 400ms' );
+RWGC_Elementor_Config_Debug::set_summary( 'started_at', microtime( true ) - 10 );
+rwgc_assert( RWGC_Elementor_Widgets_Config::should_skip_all_stacks(), 'late boot skips all get_stack' );
 rwgc_assert( RWGC_Elementor_Config_Debug::is_our_entry( 'RW_Elementor_WHM_Products_Widget' ), 'WHMCS widget is our entry' );
 rwgc_assert( RWGC_Elementor_Config_Debug::is_our_entry( 'ReactWoo\\Atomic\\Widgets\\Carousel' ), 'Atomic widget is our entry' );
 rwgc_assert( ! RWGC_Elementor_Config_Debug::is_our_entry( 'Elementor\\Widget_Heading' ), 'core heading is not our entry' );
