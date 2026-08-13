@@ -68,6 +68,11 @@ $_REQUEST['actions'] = '{"f":{"action":"enqueue_google_fonts","data":{}}}';
 RWGC_Elementor_Ajax::reset_for_tests();
 rwgc_assert( ! RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'enqueue_google_fonts → light' );
 
+$_REQUEST['actions'] = '{"h":{"action":"rwgc_get_widget_config","data":{"widget":"heading"}}}';
+RWGC_Elementor_Ajax::reset_for_tests();
+rwgc_assert( ! RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'rwgc_get_widget_config → light' );
+rwgc_assert( RWGC_Elementor_Ajax::is_widget_hydrate_ajax(), 'rwgc_get_widget_config → hydrate' );
+
 require_once dirname( __DIR__ ) . '/includes/platform/class-rwgc-wp-abilities-adapter.php';
 $_REQUEST = array( 'action' => 'elementor_ajax' );
 RWGC_Elementor_Ajax::reset_for_tests();
@@ -119,6 +124,9 @@ $_REQUEST = array( 'action' => 'elementor_ajax', 'actions' => '{"get_widgets_con
 RWGC_Elementor_Ajax::reset_for_tests();
 rwgc_assert( RWGC_Elementor_Config_Debug::is_elementor_ajax_request(), 'elementor_ajax is traced' );
 rwgc_assert( RWGC_Elementor_Config_Debug::should_trace(), 'widgets-config is traced' );
+$_REQUEST = array( 'action' => 'elementor_ajax', 'actions' => '{"h":{"action":"rwgc_get_widget_config"}}' );
+RWGC_Elementor_Ajax::reset_for_tests();
+rwgc_assert( RWGC_Elementor_Config_Debug::should_trace(), 'hydrate is traced' );
 $cut_stats = array( 'loop_start' => microtime( true ) - 3 );
 rwgc_assert( RWGC_Elementor_Widgets_Config::should_cut_stacks( $cut_stats ), 'stack budget cuts after 400ms' );
 RWGC_Elementor_Config_Debug::set_summary( 'started_at', microtime( true ) - 10 );

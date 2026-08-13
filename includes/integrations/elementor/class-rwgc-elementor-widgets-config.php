@@ -55,6 +55,7 @@ class RWGC_Elementor_Widgets_Config {
 			RWGC_Elementor_Config_Debug::boot();
 		}
 		add_action( 'elementor/ajax/register_actions', array( __CLASS__, 'register_actions' ), 20 );
+		add_action( 'elementor/editor/before_enqueue_scripts', array( __CLASS__, 'enqueue_hydrate_script' ) );
 		// Run before add-on catalogues (default priority 10) so they never eval/register.
 		add_action( 'elementor/widgets/register', array( __CLASS__, 'unhook_heavy_addon_registrars' ), 0 );
 		add_action( 'elementor/widgets/widgets_registered', array( __CLASS__, 'unhook_heavy_addon_registrars' ), 0 );
@@ -73,7 +74,11 @@ class RWGC_Elementor_Widgets_Config {
 	 * @return void
 	 */
 	public static function unhook_heavy_addon_registrars() {
-		if ( ! class_exists( 'RWGC_Elementor_Ajax', false ) || ! RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
+		if ( ! class_exists( 'RWGC_Elementor_Ajax', false ) ) {
+			return;
+		}
+		$should_unhook = RWGC_Elementor_Ajax::is_heavy_elementor_ajax() || RWGC_Elementor_Ajax::is_widget_hydrate_ajax();
+		if ( ! $should_unhook ) {
 			return;
 		}
 
@@ -222,6 +227,71 @@ class RWGC_Elementor_Widgets_Config {
 		}
 		$ajax->register_ajax_action( 'get_widgets_config', array( __CLASS__, 'ajax_get_widgets_config' ) );
 		$ajax->register_ajax_action( 'refresh_widgets_config', array( __CLASS__, 'ajax_refresh_widgets_config' ) );
+		$ajax->register_ajax_action( 'rwgc_get_widget_config', array( __CLASS__, 'ajax_get_single_widget_config' ) );
+	}
+
+	/**
+	 * Load one widget stack when the editor inspector opens.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_hydrate_script() {
+		wp_enqueue_script(
+			'rwgc-elementor-widget-hydrate',
+			RWGC_URL . 'assets/js/rwgc-elementor-widget-hydrate.js',
+			array( 'jquery', 'elementor-editor' ),
+			defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '0',
+			true
+		);
+	}
+
+	/**
+	 * Single-widget controls for the inspector. Fresh request — not the bulk 503 path.
+	 *
+	 * @param array<string, mixed> $data Request data.
+	 * @return array<string, mixed>
+	 */
+	public static function ajax_get_single_widget_config( array $data ) {
+		$empty = array();
+		try {
+			if ( ! class_exists( '\Elementor\Plugin', false ) ) {
+				return $empty;
+			}
+			$name = isset( $data['widget'] ) ? sanitize_key( (string) $data['widget'] ) : '';
+			if ( '' === $name ) {
+				return $empty;
+			}
+
+			$plugin = \Elementor\Plugin::$instance;
+			$plugin->documents->check_permissions( $data['editor_post_id'] ?? 0 );
+
+			$wanted = array( 'common', 'common-optimized', $name );
+			$out    = array();
+			foreach ( array_unique( $wanted ) as $widget_key ) {
+				$widget = $plugin->widgets_manager->get_widget_types( $widget_key );
+				if ( ! is_object( $widget ) ) {
+					continue;
+				}
+				$out[ $widget_key ] = self::widget_controls_payload( $widget );
+			}
+
+			if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+				RWGC_Elementor_Config_Debug::checkpoint(
+					'ajax_single_widget',
+					array(
+						'widget' => $name,
+						'keys'   => implode( ',', array_keys( $out ) ),
+					)
+				);
+			}
+			self::send_debug_header( 'single' );
+			return $out;
+		} catch ( \Throwable $e ) {
+			if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+				RWGC_Elementor_Config_Debug::checkpoint( 'ajax_error', array( 'msg' => substr( $e->getMessage(), 0, 120 ) ) );
+			}
+			return $empty;
+		}
 	}
 
 	/**
@@ -620,7 +690,11 @@ class RWGC_Elementor_Widgets_Config {
 		$name  = (string) $widget->get_name();
 		$class = get_class( $widget );
 		if ( self::should_skip_full_stack( $name, $class ) ) {
-			return $empty;
+			$hydrate = class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_widget_hydrate_ajax();
+			$ue      = ( 0 === strpos( $name, 'ucaddon_' ) ) || ( false !== strpos( $class, 'UniteCreator' ) );
+			if ( ! $hydrate || $ue ) {
+				return $empty;
+			}
 		}
 
 		if ( ! method_exists( $widget, 'get_stack' ) ) {
@@ -629,9 +703,10 @@ class RWGC_Elementor_Widgets_Config {
 
 		$stack = $widget->get_stack( false );
 		$controls = ( isset( $stack['controls'] ) && is_array( $stack['controls'] ) ) ? $stack['controls'] : array();
+		$hydrate  = class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_widget_hydrate_ajax();
 
 		return array(
-			'controls'      => self::slim_controls( $controls ),
+			'controls'      => $hydrate ? $controls : self::slim_controls( $controls ),
 			'tabs_controls' => method_exists( $widget, 'get_tabs_controls' ) ? $widget->get_tabs_controls() : array(),
 		);
 	}

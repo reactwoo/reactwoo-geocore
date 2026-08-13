@@ -97,7 +97,8 @@ class RWGC_Elementor_Config_Debug {
 			return false;
 		}
 		if ( class_exists( 'RWGC_Elementor_Ajax', false ) ) {
-			return RWGC_Elementor_Ajax::is_heavy_elementor_ajax();
+			return RWGC_Elementor_Ajax::is_heavy_elementor_ajax()
+				|| RWGC_Elementor_Ajax::is_widget_hydrate_ajax();
 		}
 		return true;
 	}

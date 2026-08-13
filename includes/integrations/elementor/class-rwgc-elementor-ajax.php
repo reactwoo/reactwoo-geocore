@@ -85,7 +85,7 @@ class RWGC_Elementor_Ajax {
 			return false;
 		}
 
-		$known_light = (bool) preg_match( '/enqueue_google_fonts|introduction_viewed|dismissed_editor_notices/i', $raw );
+		$known_light = (bool) preg_match( '/enqueue_google_fonts|introduction_viewed|dismissed_editor_notices|rwgc_get_widget_config/i', $raw );
 		if ( $known_light ) {
 			self::$is_bulk_config = false;
 			return false;
@@ -94,6 +94,18 @@ class RWGC_Elementor_Ajax {
 		// Unknown elementor_ajax action → heavy (Elementor 4.2+ batch names).
 		self::$is_bulk_config = true;
 		return true;
+	}
+
+	/**
+	 * On-demand single-widget control fetch (not the bulk panel payload).
+	 *
+	 * @return bool
+	 */
+	public static function is_widget_hydrate_ajax() {
+		if ( ! self::is_elementor_ajax() ) {
+			return false;
+		}
+		return (bool) preg_match( '/rwgc_get_widget_config/i', self::actions_payload_string() );
 	}
 
 	/**

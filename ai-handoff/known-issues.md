@@ -120,4 +120,8 @@
 
 **Mitigation shipped (Geo Core 1.8.143):** `get_widgets_config` / `refresh_widgets_config` return empty maps and do not call `get_widget_types()`. Header `slim-empty`.
 
+**1.8.143 side effect:** Inspector is empty. Elementor 4.2 has no `editor_get_widget_config` hydrate; document config widgets omit controls until the stack is initialized.
+
+**Mitigation shipped (Geo Core 1.8.144):** On `panel/open_editor/widget`, request `rwgc_get_widget_config` for that widget (+ `common` / `common-optimized`), merge into `widgetsCache`, re-open the panel. Action is light (full Geo controls). UE/ACPT/WHMCS stay unhooked on that request. Bulk path still `slim-empty`.
+
 **Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence; more Geo Visibility option-list slimming; more per-widget get_stack time-boxes (cannot interrupt a hung stack); calling `get_widget_types()` and then trying to skip stacks.
