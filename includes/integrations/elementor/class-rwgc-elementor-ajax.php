@@ -73,15 +73,21 @@ class RWGC_Elementor_Ajax {
 			return true;
 		}
 
-		$has_bulk = (bool) preg_match( '/get_widgets_config|get_document_config/i', $raw );
+		$has_bulk = (bool) preg_match( '/get_widgets_config|get_document_config|refresh_widgets_config/i', $raw );
 		if ( $has_bulk ) {
 			self::$is_bulk_config = true;
 			return true;
 		}
 
-		// editor_get_widget_config alone → full option lists.
-		self::$is_bulk_config = false;
-		return false;
+		$single_only = (bool) preg_match( '/editor_get_widget_config/i', $raw );
+		if ( $single_only ) {
+			self::$is_bulk_config = false;
+			return false;
+		}
+
+		// Unknown elementor_ajax action → heavy (Elementor 4.2+ batch names).
+		self::$is_bulk_config = true;
+		return true;
 	}
 
 	/**

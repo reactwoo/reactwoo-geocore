@@ -51,7 +51,9 @@ class RWGC_Plugin {
 		 * Target registry init translates provider labels, so defer it to `init`
 		 * (WP 6.7 warns when translation functions run before `init`).
 		 */
-		add_action( 'init', array( 'RWGC_Target_Registry', 'init' ), 0 );
+		if ( ! $this->is_heavy_elementor_ajax() ) {
+			add_action( 'init', array( 'RWGC_Target_Registry', 'init' ), 0 );
+		}
 
 		do_action( 'rwgc_loaded' );
 	}
@@ -195,6 +197,16 @@ class RWGC_Plugin {
 	}
 
 	/**
+	 * @return bool
+	 */
+	private function is_heavy_elementor_ajax() {
+		if ( ! class_exists( 'RWGC_Elementor_Ajax', false ) ) {
+			require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-ajax.php';
+		}
+		return RWGC_Elementor_Ajax::is_heavy_elementor_ajax();
+	}
+
+	/**
 	 * Register core services and hooks.
 	 *
 	 * @return void
@@ -212,14 +224,18 @@ class RWGC_Plugin {
 		RWGC_Variant_Rule_Applications::init();
 		RWGC_Legacy_Geo_Rule_CPT::init();
 
-		RWGC_Platform_Capabilities_Bootstrap::init();
-		RWGC_WP_Abilities_Adapter::init();
-		RWGC_Experience_Slots::init();
-		RWGC_Components::init();
-		RWGC_Variants::init();
-		RWGC_Cloud::init();
+		$heavy_editor = $this->is_heavy_elementor_ajax();
 
-		if ( is_admin() ) {
+		if ( ! $heavy_editor ) {
+			RWGC_Platform_Capabilities_Bootstrap::init();
+			RWGC_WP_Abilities_Adapter::init();
+			RWGC_Experience_Slots::init();
+			RWGC_Components::init();
+			RWGC_Variants::init();
+			RWGC_Cloud::init();
+		}
+
+		if ( is_admin() && ! ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_elementor_ajax() ) ) {
 			RWGC_Admin_Visibility_Rules::init();
 			RWGC_Admin_Platform::init();
 			RWGC_Admin_Route_Registry::init();
@@ -240,18 +256,19 @@ class RWGC_Plugin {
 			RWGC_Platform_Capabilities_Admin::init();
 		}
 
-		// Frontend + shared.
-		RWGC_Shortcodes::init();
-		RWGC_Gutenberg::init();
-		RWGC_Targeting_Rule_Builder_Assets::init();
-		RWGC_Visibility_Rule_Tester_Assets::init();
-		RWGC_Elementor::init();
-		RWGC_Integrations_Loader::init();
-		RWGC_Routing::init();
-		RWGC_Page_Version_Routing::init();
-		add_filter( 'rwgc_portable_targeting_editor_context', array( 'RWGC_Page_Version_Routing', 'filter_editor_context' ), 20 );
-		RWGC_REST::init();
-		RWGC_Upsells::init();
+		if ( ! $heavy_editor ) {
+			RWGC_Shortcodes::init();
+			RWGC_Gutenberg::init();
+			RWGC_Targeting_Rule_Builder_Assets::init();
+			RWGC_Visibility_Rule_Tester_Assets::init();
+			RWGC_Elementor::init();
+			RWGC_Integrations_Loader::init();
+			RWGC_Routing::init();
+			RWGC_Page_Version_Routing::init();
+			add_filter( 'rwgc_portable_targeting_editor_context', array( 'RWGC_Page_Version_Routing', 'filter_editor_context' ), 20 );
+			RWGC_REST::init();
+			RWGC_Upsells::init();
+		}
 
 		add_action( 'init', array( __CLASS__, 'register_satellite_updater' ), 2 );
 	}

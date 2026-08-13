@@ -56,6 +56,14 @@ $_REQUEST['actions'] = '{"a":{"action":"get_document_config"},"b":{"action":"edi
 RWGC_Elementor_Ajax::reset_for_tests();
 rwgc_assert( RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'mixed with document config → heavy' );
 
+$_REQUEST['actions'] = '{"refresh_widgets_config":{"action":"refresh_widgets_config","data":{}}}';
+RWGC_Elementor_Ajax::reset_for_tests();
+rwgc_assert( RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'refresh_widgets_config → heavy' );
+
+$_REQUEST['actions'] = '{"x":{"action":"unknown_editor_boot","data":{}}}';
+RWGC_Elementor_Ajax::reset_for_tests();
+rwgc_assert( RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'unknown elementor_ajax → heavy' );
+
 require_once dirname( __DIR__ ) . '/includes/platform/class-rwgc-wp-abilities-adapter.php';
 $_REQUEST = array( 'action' => 'elementor_ajax' );
 RWGC_Elementor_Ajax::reset_for_tests();

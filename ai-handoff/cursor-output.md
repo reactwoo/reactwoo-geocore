@@ -4,23 +4,19 @@
 done
 
 ## Task
-Elements panel still HTTP 503 after 1.8.134. Omit Geo control trees from bulk widgets-config.
+Production `requestWidgetsConfig` still HTTP 503 on admin-ajax.php.
 
 ## Files changed
-- `includes/integrations/elementor/class-rwgc-elementor-geo-controls.php` — skip entire Geo Visibility section on heavy ajax
-- `includes/integrations/elementor/class-rwgc-elementor-elements.php` — same early return
-- `includes/integrations/elementor/class-rwgc-elementor-atomic-geo.php` — skip Atomic geo *controls* on heavy ajax; keep props schema
-- `includes/integrations/elementor/class-rwgc-elementor-experience-slots.php` — skip slot section on heavy ajax
-- Version 1.8.135
+### reactwoo-geocore 1.8.136
+- Detector: `refresh_widgets_config` + unknown `elementor_ajax` → heavy
+- Skip admin, Cloud, capabilities, Elementor control registration on that path
+
+### reactwoo-whmcs-bridge 1.1.5.3
+- Stubs on every `elementor_ajax` (matches the 1.1.5.1 changelog claim)
 
 ## What was not changed
 - PHP memory / timeout (do not retry)
-- WHMCS stubs
-- Single-widget `editor_get_widget_config` still gets full controls
-- Atomic props schema still registered (required so saved geo keys are not dropped)
+- Unlimited Elements widget trees (if 503 remains after both updates, that payload is next)
 
 ## Commands run
 - `php tests/test-rwgc-elementor-ajax.php`
-
-## Remaining errors
-- Chrome `runtime.lastError` / “Receiving end does not exist” is a browser extension, not this 503.

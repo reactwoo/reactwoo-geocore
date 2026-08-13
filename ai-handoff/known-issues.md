@@ -90,4 +90,8 @@
 
 **Mitigation shipped (Geo Core 1.8.135):** Omit those sections entirely on the bulk path. Props schema for Atomic is kept (save-safe). Full UI returns on `editor_get_widget_config`.
 
+**Still 503 after 1.8.135 (production reactwoo.com):** Confirmed `POST admin-ajax.php` from Elementor `requestWidgetsConfig`. Chrome `runtime.lastError` is an extension, not this 503.
+
+**Mitigation shipped (Geo Core 1.8.136 + WHMCS 1.1.5.3):** Default unknown/refresh widget-config batches to heavy; skip Geo Core editor-boot services; WHMCS stubs on every `elementor_ajax`.
+
 **Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence.
