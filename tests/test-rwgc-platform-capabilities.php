@@ -110,6 +110,23 @@ reactwoo_register_goal(
 );
 rwgc_cap_assert( 'goal registered', reactwoo_has_capability( 'goal.purchase' ) );
 
+rwgc_cap_assert(
+	'ability name strips dots',
+	'reactwoo/geo-country' === RWGC_WP_Abilities_Adapter::ability_name( 'geo.country' )
+);
+rwgc_cap_assert(
+	'ability name strips underscores',
+	'reactwoo/geo-country-group' === RWGC_WP_Abilities_Adapter::ability_name( 'geo.country_group' )
+);
+rwgc_cap_assert(
+	'ability name add-to-cart',
+	'reactwoo/goal-add-to-cart' === RWGC_WP_Abilities_Adapter::ability_name( 'goal.add_to_cart' )
+);
+rwgc_cap_assert(
+	'ability name matches WP 6.9 pattern',
+	(bool) preg_match( '/^[a-z0-9-]+\/[a-z0-9-]+$/', RWGC_WP_Abilities_Adapter::ability_name( 'weather.precipitation_probability' ) )
+);
+
 rwgc_cap_assert( 'abilities unsupported here', false === RWGC_WP_Abilities_Adapter::is_supported() );
 
 $report = RWGC_Platform_Capability_Registry::export_for_report();

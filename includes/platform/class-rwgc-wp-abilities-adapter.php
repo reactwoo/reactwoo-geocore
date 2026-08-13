@@ -73,12 +73,17 @@ final class RWGC_WP_Abilities_Adapter {
 			return;
 		}
 
+		$used_names = array();
 		foreach ( RWGC_Platform_Capability_Registry::all() as $id => $row ) {
 			if ( ! is_string( $id ) || '' === $id || ! is_array( $row ) ) {
 				continue;
 			}
 
-			$ability_name = 'reactwoo/' . str_replace( '.', '-', $id );
+			$ability_name = self::ability_name( $id );
+			if ( '' === $ability_name || isset( $used_names[ $ability_name ] ) ) {
+				continue;
+			}
+			$used_names[ $ability_name ] = true;
 			$label        = isset( $row['label'] ) ? (string) $row['label'] : $id;
 			$description  = isset( $row['description'] ) ? (string) $row['description'] : '';
 			if ( '' === $description ) {
@@ -125,6 +130,31 @@ final class RWGC_WP_Abilities_Adapter {
 			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound -- WP core API when present.
 			wp_register_ability( $ability_name, $args );
 		}
+	}
+
+	/**
+	 * Map a dotted capability ID to a WP 6.9+ ability name.
+	 *
+	 * Core allows only `namespace/slug` with lowercase a-z, 0-9, and dashes.
+	 * Underscores in IDs such as `geo.country_group` must become dashes.
+	 *
+	 * @param string $capability_id Capability ID.
+	 * @return string Empty when the ID cannot be mapped safely.
+	 */
+	public static function ability_name( $capability_id ) {
+		$slug = strtolower( (string) $capability_id );
+		$slug = str_replace( array( '.', '_' ), '-', $slug );
+		$slug = preg_replace( '/[^a-z0-9-]+/', '-', $slug );
+		$slug = preg_replace( '/-+/', '-', (string) $slug );
+		$slug = trim( (string) $slug, '-' );
+		if ( '' === $slug ) {
+			return '';
+		}
+		$name = 'reactwoo/' . $slug;
+		if ( ! preg_match( '/^[a-z0-9-]+\/[a-z0-9-]+$/', $name ) ) {
+			return '';
+		}
+		return $name;
 	}
 
 	/**

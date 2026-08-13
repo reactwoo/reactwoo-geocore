@@ -25,4 +25,4 @@ Legacy portable slugs (`country`, `device`, …) normalize via `RWGC_Schema::LEG
 - Extensions hook: `reactwoo_register_capabilities` (on `init` priority 5, after Core seeds).
 - Collision: a different provider cannot silently replace an ID (`reactwoo_capability_collision`).
 - Admin inspection: Geo Core → **Capabilities** (`rwgc-system-capabilities`).
-- Optional WP Abilities bridge: `RWGC_WP_Abilities_Adapter` registers on `wp_abilities_api_categories_init` / `wp_abilities_api_init` when those APIs exist (WP 6.9+).
+- Optional WP Abilities bridge: `RWGC_WP_Abilities_Adapter` registers on `wp_abilities_api_categories_init` / `wp_abilities_api_init` when those APIs exist (WP 6.9+). Ability names are `reactwoo/{slug}` with dots and underscores mapped to dashes (`geo.country_group` → `reactwoo/geo-country-group`).

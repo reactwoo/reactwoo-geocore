@@ -4,7 +4,14 @@
 done
 
 ## Task
-WP14 Events, goals, analytics.
+Fix WP 6.9 ability name notices (`namespace/slug` cannot contain underscores).
+
+## Files changed
+- `includes/platform/class-rwgc-wp-abilities-adapter.php` — `ability_name()` maps `.` and `_` to `-`
+- Version 1.8.133
+
+## Commands run
+- `php tests/test-rwgc-platform-capabilities.php`
 
 ## Files changed
 ### reactwoo-decision-cloud
