@@ -4,18 +4,16 @@
 done
 
 ## Task
-1.8.140 — stop 1.8.139 debug storm; unhook ACPT; treat font enqueue as light.
+1.8.141 — finish get_widgets_config before LiteSpeed 503 (time-box + skip heavy stacks).
 
 ## Files changed
-- `class-rwgc-elementor-config-debug.php` — boot / log / option write only on `elementor_ajax`
-- `class-rwgc-elementor-widgets-config.php` — ACPT registrar unhook; skip widgets_registered log off ajax
-- `class-rwgc-elementor-ajax.php` — `enqueue_google_fonts` (and similar) are light
-- Version 1.8.140
+- `class-rwgc-elementor-widgets-config.php` — request/stack budgets, progress checkpoints, skip Atomic/WHMCS/Pro Woo stacks
+- `class-rwgc-elementor-config-debug.php` — trace only heavy elementor_ajax
+- Version 1.8.141
 
 ## What was not changed
 - PHP memory / timeout
-- Geo Visibility option slimming
-- UE skip-stack policy
+- UE/ACPT unhook policy
 
 ## Commands run
 - `php tests/test-rwgc-elementor-ajax.php`

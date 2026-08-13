@@ -108,4 +108,8 @@
 
 **Mitigation shipped (Geo Core 1.8.140):** Debug boots only on `elementor_ajax`. Unhook `ACPT_Elementor`. Treat `enqueue_google_fonts` as light.
 
+**1.8.140 production log (13 Aug 2026):** `ajax_get_widgets_config_start` at 6033ms; UE+ACPT unhooked; 55 widgets at 6717ms; **no `ajax_done` / no shutdown** — LiteSpeed killed the request during `get_stack()` for kept Elementor/Pro/WHMCS widgets. Concurrent font traces still 2.9s. `get_document_config` finished (3732ms).
+
+**Mitigation shipped (Geo Core 1.8.141):** Time-box stack building (7.5s request / 1.8s loop); skip Atomic, WHMCS, and Pro Woo/Loop/MegaMenu stacks on the bulk path; progress checkpoints; debug only on heavy AJAX.
+
 **Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence; more Geo Visibility option-list slimming.

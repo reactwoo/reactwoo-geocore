@@ -55,7 +55,7 @@ class RWGC_Elementor_Config_Debug {
 	 * @return bool
 	 */
 	public static function enabled() {
-		if ( ! self::is_elementor_ajax_request() ) {
+		if ( ! self::should_trace() ) {
 			return false;
 		}
 		if ( defined( 'RW_ELEMENTOR_CONFIG_DEBUG' ) && RW_ELEMENTOR_CONFIG_DEBUG ) {
@@ -88,13 +88,28 @@ class RWGC_Elementor_Config_Debug {
 	}
 
 	/**
+	 * Trace only heavy editor-config AJAX (not enqueue_google_fonts).
+	 *
+	 * @return bool
+	 */
+	public static function should_trace() {
+		if ( ! self::is_elementor_ajax_request() ) {
+			return false;
+		}
+		if ( class_exists( 'RWGC_Elementor_Ajax', false ) ) {
+			return RWGC_Elementor_Ajax::is_heavy_elementor_ajax();
+		}
+		return true;
+	}
+
+	/**
 	 * @return void
 	 */
 	public static function boot() {
 		if ( self::$shutdown_registered ) {
 			return;
 		}
-		if ( ! self::is_elementor_ajax_request() ) {
+		if ( ! self::should_trace() ) {
 			return;
 		}
 		self::$shutdown_registered = true;
@@ -297,6 +312,13 @@ class RWGC_Elementor_Config_Debug {
 		if ( function_exists( 'update_option' ) ) {
 			update_option( self::OPTION_LAST, $snapshot, false );
 		}
+	}
+
+	/**
+	 * @return int
+	 */
+	public static function elapsed_ms_public() {
+		return self::elapsed_ms();
 	}
 
 	/**

@@ -21,6 +21,16 @@ class RWGC_Elementor_Widgets_Config {
 	const MAX_SELECT_OPTIONS = 24;
 
 	/**
+	 * Abort remaining get_stack() calls once the request is this old (LiteSpeed).
+	 */
+	const REQUEST_BUDGET_MS = 7500;
+
+	/**
+	 * Max time spent inside the per-widget stack loop.
+	 */
+	const STACK_BUDGET_MS = 1800;
+
+	/**
 	 * @return void
 	 */
 	public static function init() {
@@ -215,14 +225,24 @@ class RWGC_Elementor_Widgets_Config {
 
 			$config  = array();
 			$stats   = self::empty_build_stats();
+			$n       = 0;
 			foreach ( $plugin->widgets_manager->get_widget_types() as $widget_key => $widget ) {
+				++$n;
 				if ( isset( $data['exclude'][ $widget_key ] ) ) {
 					++$stats['excluded'];
 					continue;
 				}
-				$config[ $widget_key ] = self::timed_widget_payload( $widget, $widget_key, $stats );
+				if ( self::should_cut_stacks( $stats ) ) {
+					$config[ $widget_key ] = self::empty_controls_payload();
+					++$stats['cut'];
+				} else {
+					$config[ $widget_key ] = self::timed_widget_payload( $widget, $widget_key, $stats );
+				}
+				if ( 0 === ( $n % 8 ) ) {
+					self::progress_checkpoint( $n, (string) $widget_key, $stats );
+				}
 			}
-			self::finish_build_stats( $stats, 'slim' );
+			self::finish_build_stats( $stats, $stats['cut'] > 0 ? 'slim-cut' : 'slim' );
 
 			return $config;
 		} catch ( \Exception $e ) {
@@ -262,8 +282,18 @@ class RWGC_Elementor_Widgets_Config {
 
 			$widgets = array();
 			$stats   = self::empty_build_stats();
+			$n       = 0;
 			foreach ( $plugin->widgets_manager->get_widget_types() as $widget_key => $widget ) {
-				$payload = self::timed_widget_payload( $widget, $widget_key, $stats );
+				++$n;
+				if ( self::should_cut_stacks( $stats ) ) {
+					$payload = self::empty_controls_payload();
+					++$stats['cut'];
+				} else {
+					$payload = self::timed_widget_payload( $widget, $widget_key, $stats );
+				}
+				if ( 0 === ( $n % 8 ) ) {
+					self::progress_checkpoint( $n, (string) $widget_key, $stats );
+				}
 				if ( empty( $payload['controls'] ) ) {
 					$widgets[ $widget_key ] = array(
 						'controls'      => array(),
@@ -276,7 +306,7 @@ class RWGC_Elementor_Widgets_Config {
 				$widget_config['tabs_controls'] = $payload['tabs_controls'];
 				$widgets[ $widget_key ]         = $widget_config;
 			}
-			self::finish_build_stats( $stats, 'slim-refresh' );
+			self::finish_build_stats( $stats, $stats['cut'] > 0 ? 'slim-refresh-cut' : 'slim-refresh' );
 
 			return array(
 				'widgets'    => $widgets,
@@ -308,6 +338,63 @@ class RWGC_Elementor_Widgets_Config {
 			'slowest'    => '',
 			'slowest_ms' => 0,
 			'ours_ms'    => 0,
+			'cut'        => 0,
+			'loop_start' => microtime( true ),
+		);
+	}
+
+	/**
+	 * @return array{controls: array<string, mixed>, tabs_controls: array<string, mixed>}
+	 */
+	private static function empty_controls_payload() {
+		return array(
+			'controls'      => array(),
+			'tabs_controls' => array(),
+		);
+	}
+
+	/**
+	 * Stop calling get_stack() so LiteSpeed receives a finished JSON response.
+	 *
+	 * @param array<string, mixed> $stats Running totals.
+	 * @return bool
+	 */
+	public static function should_cut_stacks( array $stats ) {
+		$request_budget = self::REQUEST_BUDGET_MS;
+		$stack_budget   = self::STACK_BUDGET_MS;
+		if ( function_exists( 'apply_filters' ) ) {
+			$request_budget = (int) apply_filters( 'rwgc_elementor_widgets_config_request_budget_ms', $request_budget );
+			$stack_budget   = (int) apply_filters( 'rwgc_elementor_widgets_config_stack_budget_ms', $stack_budget );
+		}
+
+		$request_ms = 0;
+		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+			$request_ms = RWGC_Elementor_Config_Debug::elapsed_ms_public();
+		}
+		$loop_ms = (int) round( ( microtime( true ) - (float) $stats['loop_start'] ) * 1000 );
+
+		return ( $request_ms >= $request_budget ) || ( $loop_ms >= $stack_budget );
+	}
+
+	/**
+	 * @param int                  $n         Widgets visited.
+	 * @param string               $widget_key Last widget name.
+	 * @param array<string, mixed> $stats     Running totals.
+	 * @return void
+	 */
+	private static function progress_checkpoint( $n, $widget_key, array $stats ) {
+		if ( ! class_exists( 'RWGC_Elementor_Config_Debug', false ) ) {
+			return;
+		}
+		RWGC_Elementor_Config_Debug::checkpoint(
+			'ajax_progress',
+			array(
+				'n'       => (int) $n,
+				'last'    => (string) $widget_key,
+				'kept'    => (int) $stats['kept'],
+				'skipped' => (int) $stats['skipped'],
+				'cut'     => (int) $stats['cut'],
+			)
 		);
 	}
 
@@ -367,6 +454,7 @@ class RWGC_Elementor_Widgets_Config {
 			RWGC_Elementor_Config_Debug::set_summary( 'ours_ms', (int) $stats['ours_ms'] );
 			RWGC_Elementor_Config_Debug::set_summary( 'excluded', (int) $stats['excluded'] );
 			RWGC_Elementor_Config_Debug::set_summary( 'slowest', (string) $stats['slowest'] );
+			RWGC_Elementor_Config_Debug::set_summary( 'cut', (int) $stats['cut'] );
 			RWGC_Elementor_Config_Debug::checkpoint(
 				'ajax_done',
 				array(
@@ -375,6 +463,7 @@ class RWGC_Elementor_Widgets_Config {
 					'ours'     => (int) $stats['ours'],
 					'ours_ms'  => (int) $stats['ours_ms'],
 					'slowest'  => (string) $stats['slowest'],
+					'cut'      => (int) $stats['cut'],
 				)
 			);
 		}
@@ -415,7 +504,9 @@ class RWGC_Elementor_Widgets_Config {
 	}
 
 	/**
-	 * Skip get_stack() for add-on catalogues. Keep Elementor / Pro / ReactWoo / Atomic.
+	 * Skip get_stack() for add-on catalogues and our own bulk-path widgets.
+	 * Keep Elementor core / Pro / Geo / Social / Reviews. Atomic and WHMCS
+	 * stay listed in the panel with empty stacks (Elementor 4.2 has no hydrate).
 	 *
 	 * @param string $widget_name Widget name.
 	 * @param string $widget_class Fully-qualified class.
@@ -428,12 +519,21 @@ class RWGC_Elementor_Widgets_Config {
 		$keep_class_prefixes = array(
 			'Elementor\\',
 			'ElementorPro\\',
-			'ReactWoo\\',
 			'RWGC_',
-			'RW_Elementor_',
 			'RWSC_',
 			'GRP_',
 		);
+		$skip_kept_prefixes = array(
+			'ElementorPro\\Modules\\Woocommerce\\',
+			'ElementorPro\\Modules\\LoopBuilder\\',
+			'ElementorPro\\Modules\\MegaMenu\\',
+		);
+		foreach ( $skip_kept_prefixes as $prefix ) {
+			if ( 0 === strpos( $widget_class, $prefix ) ) {
+				return true;
+			}
+		}
+
 		foreach ( $keep_class_prefixes as $prefix ) {
 			if ( 0 === strpos( $widget_class, $prefix ) ) {
 				$skip = false;

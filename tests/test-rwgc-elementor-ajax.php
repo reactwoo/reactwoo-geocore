@@ -80,7 +80,9 @@ rwgc_assert( ! RWGC_WP_Abilities_Adapter::should_skip_registration(), 'do not sk
 require_once dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-widgets-config.php';
 rwgc_assert( ! RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'heading', 'Elementor\\Widget_Heading' ), 'keep Elementor core heading' );
 rwgc_assert( ! RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'form', 'ElementorPro\\Modules\\Forms\\Widgets\\Form' ), 'keep Elementor Pro form' );
-rwgc_assert( ! RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'rwa-carousel', 'ReactWoo\\Atomic\\Widgets\\Carousel' ), 'keep ReactWoo Atomic' );
+rwgc_assert( RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'rwa-carousel', 'ReactWoo\\Atomic\\Widgets\\Carousel' ), 'skip Atomic stack on bulk path' );
+rwgc_assert( RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'whmcs_products', 'RW_Elementor_WHM_Products_Widget' ), 'skip WHMCS stack on bulk path' );
+rwgc_assert( RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'woocommerce-products', 'ElementorPro\\Modules\\Woocommerce\\Widgets\\Products' ), 'skip Pro Woo stack on bulk path' );
 rwgc_assert( RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'ucaddon_slider', 'UniteCreatorElementorWidget' ), 'skip Unlimited Elements' );
 rwgc_assert( RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'eael-info-box', 'Essential_Addons_Elementor\\Classes\\Helper' ), 'skip Essential Addons' );
 
@@ -108,9 +110,16 @@ $_REQUEST = array( 'action' => 'heartbeat' );
 RWGC_Elementor_Ajax::reset_for_tests();
 rwgc_assert( ! RWGC_Elementor_Config_Debug::is_elementor_ajax_request(), 'heartbeat is not elementor_ajax' );
 rwgc_assert( ! RWGC_Elementor_Config_Debug::enabled(), 'debug disabled off elementor_ajax' );
+$_REQUEST = array( 'action' => 'elementor_ajax', 'actions' => '{"f":{"action":"enqueue_google_fonts"}}' );
+RWGC_Elementor_Ajax::reset_for_tests();
+rwgc_assert( RWGC_Elementor_Config_Debug::is_elementor_ajax_request(), 'fonts are elementor_ajax' );
+rwgc_assert( ! RWGC_Elementor_Config_Debug::should_trace(), 'fonts are not traced' );
 $_REQUEST = array( 'action' => 'elementor_ajax', 'actions' => '{"get_widgets_config":{"action":"get_widgets_config"}}' );
 RWGC_Elementor_Ajax::reset_for_tests();
 rwgc_assert( RWGC_Elementor_Config_Debug::is_elementor_ajax_request(), 'elementor_ajax is traced' );
+rwgc_assert( RWGC_Elementor_Config_Debug::should_trace(), 'widgets-config is traced' );
+$cut_stats = array( 'loop_start' => microtime( true ) - 3 );
+rwgc_assert( RWGC_Elementor_Widgets_Config::should_cut_stacks( $cut_stats ), 'stack budget cuts after 1.8s' );
 rwgc_assert( RWGC_Elementor_Config_Debug::is_our_entry( 'RW_Elementor_WHM_Products_Widget' ), 'WHMCS widget is our entry' );
 rwgc_assert( RWGC_Elementor_Config_Debug::is_our_entry( 'ReactWoo\\Atomic\\Widgets\\Carousel' ), 'Atomic widget is our entry' );
 rwgc_assert( ! RWGC_Elementor_Config_Debug::is_our_entry( 'Elementor\\Widget_Heading' ), 'core heading is not our entry' );
