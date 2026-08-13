@@ -132,4 +132,8 @@
 
 **Mitigation shipped (Geo Core 1.8.146):** On widgets-config-only batches, verify the Elementor nonce and `wp_die` the empty Elementor ajax envelope immediately (`slim-early` / `ajax_early_exit`). Do not wait for `wp_ajax_elementor_ajax`.
 
+**1.8.146 production (13 Aug 2026):** Panel loads (`ajax_early_exit` in 5ms). Dropping/selecting a widget throws `Cannot read properties of undefined (reading 'content')` in `setDefaultTab`. Document config widgets have no `tabs_controls`; hydrate never ran (no `rwgc_get_widget_config` in the log). Chrome `runtime.lastError` is an extension.
+
+**Mitigation shipped (Geo Core 1.8.147):** Seed `tabs_controls.content` on `getElementData` / `panel/editor/open`, then hydrate immediately (not gated on a missed `panel/state-ready`).
+
 **Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence; more Geo Visibility option-list slimming; more per-widget get_stack time-boxes (cannot interrupt a hung stack); calling `get_widget_types()` and then trying to skip stacks.

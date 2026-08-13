@@ -4,17 +4,15 @@
 done
 
 ## Task
-1.8.146 — early-finish get_widgets_config before the rest of WordPress boots.
+1.8.147 — stop setDefaultTab `.content` crash so hydrate can run.
 
 ## Files changed
-- `class-rwgc-elementor-ajax.php` — `early_widgets_config_responses()`
-- `class-rwgc-elementor-widgets-config.php` — nonce-checked JSON exit (`slim-early`)
-- Version 1.8.146
+- `assets/js/rwgc-elementor-widget-hydrate.js` — seed tabs_controls, wrap getElementData / $e.run, hydrate immediately
+- Version 1.8.147
 
 ## What was not changed
-- `get_document_config` still runs normally
-- Hydrate still waits for panel/state-ready
+- slim-early widgets-config
 - PHP memory / timeout
 
 ## Commands run
-- `php tests/test-rwgc-elementor-ajax.php`
+- (JS-only; existing PHP tests unchanged)

@@ -1,8 +1,10 @@
 /**
- * Load one widget's control stack after the Elements panel is ready.
+ * Load one widget's control stack when the inspector opens.
  *
- * Must not join the boot `get_widgets_config` batch — that puts get_widget_types()
- * back on the LiteSpeed 503 path. Wait for panel/state-ready, then send immediately.
+ * Bulk get_widgets_config returns empty maps (LiteSpeed). Document config
+ * widgets often have no tabs_controls, and Elementor 4.2 setDefaultTab then
+ * crashes on `.content` before panel/open_editor hooks run. Seed tabs, then
+ * fetch that widget on its own request (immediately, never batched).
  */
 (function ($) {
 	'use strict';
@@ -10,8 +12,50 @@
 	var pending = {};
 	var failed = {};
 	var reopening = false;
-	var panelReady = false;
-	var queued = null;
+
+	function defaultTabs() {
+		return {
+			content: {},
+			style: {},
+			advanced: {},
+			layout: {}
+		};
+	}
+
+	function ensureEntry(type) {
+		if (!type || !window.elementor || !elementor.widgetsCache) {
+			return;
+		}
+		if (!elementor.widgetsCache[type]) {
+			elementor.widgetsCache[type] = {
+				widget_type: type,
+				controls: {},
+				tabs_controls: defaultTabs()
+			};
+			return;
+		}
+		var entry = elementor.widgetsCache[type];
+		if (!entry.controls || typeof entry.controls !== 'object') {
+			entry.controls = {};
+		}
+		if (!entry.tabs_controls || typeof entry.tabs_controls !== 'object') {
+			entry.tabs_controls = defaultTabs();
+		}
+		if (!entry.tabs_controls.content) {
+			entry.tabs_controls.content = {};
+		}
+	}
+
+	function ensureModel(model) {
+		if (!model || typeof model.get !== 'function') {
+			return '';
+		}
+		var type = model.get('widgetType');
+		if (type) {
+			ensureEntry(type);
+		}
+		return type || '';
+	}
 
 	function cacheEntry(type) {
 		if (!window.elementor || !elementor.widgetsCache) {
@@ -45,14 +89,15 @@
 			return;
 		}
 		Object.keys(data).forEach(function (name) {
+			ensureEntry(name);
 			if (elementor.widgetsCache[name]) {
 				elementor.widgetsCache[name].commonMerged = false;
-				if (!elementor.widgetsCache[name].controls) {
-					elementor.widgetsCache[name].controls = {};
-				}
 			}
 		});
 		elementor.addWidgetsCache(data);
+		Object.keys(data).forEach(function (name) {
+			ensureEntry(name);
+		});
 	}
 
 	function reopen(model, view) {
@@ -113,73 +158,60 @@
 		);
 	}
 
-	function flushQueue() {
-		if (!queued) {
-			return;
-		}
-		var item = queued;
-		queued = null;
-		if (!hasUsableControls(item.type)) {
-			hydrate(item.type, item.model, item.view);
-		}
-	}
-
-	function onPanelReady() {
-		if (panelReady) {
-			return;
-		}
-		panelReady = true;
-		flushQueue();
-	}
-
 	function onOpen(panel, model, view) {
 		if (reopening || !model || typeof model.get !== 'function') {
 			return;
 		}
-		var type = model.get('widgetType');
+		var type = ensureModel(model);
 		if (!type || hasUsableControls(type)) {
-			return;
-		}
-		if (!panelReady) {
-			queued = { type: type, model: model, view: view };
 			return;
 		}
 		hydrate(type, model, view);
 	}
 
-	function attachStateReady() {
-		if (typeof $e === 'undefined') {
-			return false;
+	function wrapGetElementData() {
+		if (!elementor.getElementData || elementor.getElementData.__rwgcWrapped) {
+			return;
 		}
-		if ($e.hooks && typeof $e.hooks.registerAfter === 'function') {
-			try {
-				$e.hooks.registerAfter('panel/state-ready', onPanelReady);
-				return true;
-			} catch (e) {
-				/* fall through */
-			}
-		}
-		if (typeof $e.internal === 'function' && !$e.internal.__rwgcWrapped) {
-			var orig = $e.internal.bind($e);
-			$e.internal = function (command) {
-				var ret = orig.apply($e, arguments);
-				if (command === 'panel/state-ready') {
-					onPanelReady();
+		var orig = elementor.getElementData.bind(elementor);
+		elementor.getElementData = function (model) {
+			ensureModel(model);
+			var data = orig(model);
+			if (data && (!data.tabs_controls || typeof data.tabs_controls !== 'object' || !data.tabs_controls.content)) {
+				data.tabs_controls = data.tabs_controls && typeof data.tabs_controls === 'object' ? data.tabs_controls : defaultTabs();
+				if (!data.tabs_controls.content) {
+					data.tabs_controls.content = {};
 				}
-				return ret;
-			};
-			$e.internal.__rwgcWrapped = true;
-			return true;
+			}
+			return data;
+		};
+		elementor.getElementData.__rwgcWrapped = true;
+	}
+
+	function wrapRun() {
+		if (typeof $e === 'undefined' || typeof $e.run !== 'function' || $e.run.__rwgcWrapped) {
+			return;
 		}
-		return false;
+		var orig = $e.run.bind($e);
+		$e.run = function (command, args) {
+			if (command === 'panel/editor/open' && args && args.model) {
+				ensureModel(args.model);
+			}
+			return orig.apply($e, arguments);
+		};
+		$e.run.__rwgcWrapped = true;
 	}
 
 	function bind() {
 		if (!window.elementor || !elementor.hooks || typeof elementor.hooks.addAction !== 'function') {
 			return false;
 		}
+		if (!elementor.widgetsCache) {
+			elementor.widgetsCache = {};
+		}
+		wrapGetElementData();
+		wrapRun();
 		elementor.hooks.addAction('panel/open_editor/widget', onOpen);
-		attachStateReady();
 		return true;
 	}
 
