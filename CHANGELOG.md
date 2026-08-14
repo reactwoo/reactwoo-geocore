@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.156] - 2026-08-14
+
+### Added
+- **Cloud WP20:** Advisory recommendation contract and Cloud cache. Approve/dismiss never write the live manifest.
+
 ## [1.8.155] - 2026-08-14
 
 ### Changed

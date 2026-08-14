@@ -27,6 +27,8 @@ final class RWGC_Cloud_Admin {
 		add_action( 'admin_post_rwgc_cloud_reconnect_sync', array( __CLASS__, 'handle_sync' ) );
 		add_action( 'admin_post_rwgc_cloud_import', array( __CLASS__, 'handle_import' ) );
 		add_action( 'admin_post_rwgc_cloud_switch_mode', array( __CLASS__, 'handle_switch_mode' ) );
+		add_action( 'admin_post_rwgc_cloud_rec_approve', array( __CLASS__, 'handle_rec_approve' ) );
+		add_action( 'admin_post_rwgc_cloud_rec_dismiss', array( __CLASS__, 'handle_rec_dismiss' ) );
 	}
 
 	/**
@@ -135,6 +137,7 @@ final class RWGC_Cloud_Admin {
 					<?php submit_button( __( 'Disconnect', 'reactwoo-geocore' ), 'delete', 'submit', false ); ?>
 				</form>
 				<?php self::render_migration(); ?>
+				<?php self::render_recommendations(); ?>
 			<?php endif; ?>
 		</div>
 		<?php
@@ -331,6 +334,71 @@ final class RWGC_Cloud_Admin {
 	}
 
 	/**
+	 * @return void
+	 */
+	public static function handle_rec_approve() {
+		self::guard( 'rwgc_cloud_rec_approve' );
+		$id     = isset( $_POST['rwgc_rec_id'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['rwgc_rec_id'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$result = RWGC_Cloud_Recommendations::approve( $id );
+		self::redirect( $result['ok'] ? 'rec_approved' : 'rec_failed' );
+	}
+
+	/**
+	 * @return void
+	 */
+	public static function handle_rec_dismiss() {
+		self::guard( 'rwgc_cloud_rec_dismiss' );
+		$id     = isset( $_POST['rwgc_rec_id'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['rwgc_rec_id'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$result = RWGC_Cloud_Recommendations::dismiss( $id );
+		self::redirect( $result['ok'] ? 'rec_dismissed' : 'rec_failed' );
+	}
+
+	/**
+	 * @return void
+	 */
+	private static function render_recommendations() {
+		$items = RWGC_Cloud_Recommendations::current();
+		echo '<h2>' . esc_html__( 'AI recommendations', 'reactwoo-geocore' ) . '</h2>';
+		echo '<p class="description">' . esc_html__( 'Advisory only. Approving asks Cloud to save a draft. It never changes the live visitor experience or the local compiled manifest.', 'reactwoo-geocore' ) . '</p>';
+		if ( empty( $items ) ) {
+			echo '<p>' . esc_html__( 'No recommendations cached. Sync now after Cloud has generated them.', 'reactwoo-geocore' ) . '</p>';
+			return;
+		}
+		echo '<table class="widefat striped"><thead><tr>';
+		echo '<th>' . esc_html__( 'Observation', 'reactwoo-geocore' ) . '</th>';
+		echo '<th>' . esc_html__( 'Suggested action', 'reactwoo-geocore' ) . '</th>';
+		echo '<th>' . esc_html__( 'Status', 'reactwoo-geocore' ) . '</th>';
+		echo '<th>' . esc_html__( 'Actions', 'reactwoo-geocore' ) . '</th>';
+		echo '</tr></thead><tbody>';
+		foreach ( $items as $rec ) {
+			$id     = isset( $rec['id'] ) ? (string) $rec['id'] : '';
+			$status = isset( $rec['status'] ) ? (string) $rec['status'] : '';
+			echo '<tr>';
+			echo '<td>' . esc_html( isset( $rec['observation'] ) ? (string) $rec['observation'] : '' ) . '</td>';
+			echo '<td>' . esc_html( isset( $rec['suggested_action'] ) ? (string) $rec['suggested_action'] : '' ) . '</td>';
+			echo '<td><code>' . esc_html( $status ) . '</code></td><td>';
+			if ( 'proposed' === $status && '' !== $id ) {
+				echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="display:inline-block;margin-right:6px;">';
+				echo '<input type="hidden" name="action" value="rwgc_cloud_rec_approve" />';
+				echo '<input type="hidden" name="rwgc_rec_id" value="' . esc_attr( $id ) . '" />';
+				wp_nonce_field( 'rwgc_cloud_rec_approve' );
+				submit_button( __( 'Approve draft', 'reactwoo-geocore' ), 'secondary', 'submit', false );
+				echo '</form>';
+				echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="display:inline-block;">';
+				echo '<input type="hidden" name="action" value="rwgc_cloud_rec_dismiss" />';
+				echo '<input type="hidden" name="rwgc_rec_id" value="' . esc_attr( $id ) . '" />';
+				wp_nonce_field( 'rwgc_cloud_rec_dismiss' );
+				submit_button( __( 'Dismiss', 'reactwoo-geocore' ), 'delete', 'submit', false );
+				echo '</form>';
+			} else {
+				echo '&mdash;';
+			}
+			echo '</td></tr>';
+		}
+		echo '</tbody></table>';
+	}
+
+	/**
 	 * @param string $nonce_action Action.
 	 * @return void
 	 */
@@ -374,6 +442,9 @@ final class RWGC_Cloud_Admin {
 			'switched_local' => __( 'This site is now local-managed.', 'reactwoo-geocore' ),
 			'switch_failed'  => __( 'Could not change management mode.', 'reactwoo-geocore' ),
 			'import_required'=> __( 'Import to ReactWoo Cloud before switching to Cloud-managed.', 'reactwoo-geocore' ),
+			'rec_approved'   => __( 'Recommendation approved as a Cloud draft. The live site was not changed.', 'reactwoo-geocore' ),
+			'rec_dismissed'  => __( 'Recommendation dismissed.', 'reactwoo-geocore' ),
+			'rec_failed'     => __( 'Could not update the recommendation.', 'reactwoo-geocore' ),
 		);
 		return isset( $map[ $key ] ) ? $map[ $key ] : $key;
 	}
@@ -383,7 +454,7 @@ final class RWGC_Cloud_Admin {
 	 * @return string
 	 */
 	private static function notice_class( $key ) {
-		$errors = array( 'pair_failed', 'import_failed', 'switch_failed', 'import_required' );
+		$errors = array( 'pair_failed', 'import_failed', 'switch_failed', 'import_required', 'rec_failed' );
 		return in_array( $key, $errors, true ) ? 'notice-error' : 'notice-info';
 	}
 }

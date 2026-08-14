@@ -240,10 +240,13 @@ final class RWGC_Cloud_Sync {
 			return array( 'skipped' => true );
 		}
 		return array(
-			'manifest'     => self::sync_manifest(),
-			'heartbeat'    => self::heartbeat(),
-			'capabilities' => self::report_capabilities(),
-			'events'       => RWGC_Cloud_Event_Queue::flush(),
+			'manifest'        => self::sync_manifest(),
+			'heartbeat'       => self::heartbeat(),
+			'capabilities'    => self::report_capabilities(),
+			'events'          => RWGC_Cloud_Event_Queue::flush(),
+			'recommendations' => class_exists( 'RWGC_Cloud_Recommendations', false )
+				? RWGC_Cloud_Recommendations::refresh()
+				: array( 'ok' => false, 'error' => 'unavailable', 'items' => array() ),
 		);
 	}
 

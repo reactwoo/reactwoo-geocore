@@ -126,3 +126,14 @@ if ( ! function_exists( 'reactwoo_cloud_get_manifest' ) ) {
 		return RWGC_Cloud_Manifest_Store::current();
 	}
 }
+
+if ( ! function_exists( 'reactwoo_cloud_recommendations' ) ) {
+	/**
+	 * Cached advisory recommendations. Never HTTP. Never live.
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	function reactwoo_cloud_recommendations() {
+		return RWGC_Cloud_Recommendations::current();
+	}
+}

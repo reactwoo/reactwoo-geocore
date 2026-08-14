@@ -46,6 +46,7 @@ final class RWGC_Contracts {
 		require_once $dir . 'class-rwgc-contract-goal.php';
 		require_once $dir . 'class-rwgc-contract-event.php';
 		require_once $dir . 'class-rwgc-contract-entitlement.php';
+		require_once $dir . 'class-rwgc-contract-recommendation.php';
 		require_once $dir . 'class-rwgc-contract-manifest.php';
 	}
 

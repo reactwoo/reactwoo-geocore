@@ -4,32 +4,32 @@
 done
 
 ## Task
-WP19 — Performance pass. Profile Decision Runtime; zero Cloud HTTP on visitor render; lazy context; candidate-only evaluation.
+WP20 — AI recommendations (advisory only; no autonomous live-site changes).
 
 ## Files changed
 
-### Geo Core (`reactwoo-geocore` 1.8.155)
-- Candidate experiences first; evaluate only referenced audiences; per-request audience match cache
-- Condition AND/OR short-circuit
-- Lazy `RWGC_Contract_Context` resolvers + `RWGC_Decision_Context_Factory` / `RWGC_Context_Value_Cache`
-- Manifest parse memo per revision
-- Cloud HTTP forbidden after `template_redirect` (not merely `!is_admin()`, so pairing tests/admin still work)
-- Docs: `docs/performance/decision-runtime.md`
-- Tests: `composer test:decision-perf`
+### Decision Cloud (`0.10.0`)
+- `recommendations` store + generate/approve/dismiss
+- PII stripped from datasets
+- Approve creates **draft** experience/variant and does **not** compile
+- Manifest compiler excludes non-live experiences
+- Portal Recommendations nav
+- Tests: `tests/recommendations.test.js`
 
-### Decision Cloud
-- Not changed
+### Geo Core (`1.8.156`)
+- `RWGC_Contract_Recommendation`
+- `RWGC_Cloud_Recommendations` cache + admin approve/dismiss
+- Sync refresh on maintenance
+- Tests: `composer test:recommendations`
 
 ## What was not changed
-- Decision Cloud version / tags
-- WP20 AI
+- Visitor render path (still no Cloud HTTP)
+- Autonomous optimisation (explicitly out of scope)
 - Gate D / Gate E still need a live site
 
 ## Commands run
-- `php tests/test-rwgc-decision-perf.php`
-- `php tests/test-rwgc-decision-runtime.php`
-- `php tests/test-rwgc-cloud-connector.php`
-- `php tests/test-rwgc-decision-parity.php`
+- Decision Cloud `npm test`
+- Geo Core recommendations, contracts, cloud-connector, decision-runtime
 
 ## Remaining
-- WP20 AI recommendations
+- Gate D / Gate E live-site validation

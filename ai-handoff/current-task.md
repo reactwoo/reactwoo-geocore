@@ -1,6 +1,5 @@
 # Current task
 
-WP19 — Performance pass (complete). Geo Core `1.8.155`. Decision Cloud unchanged (`0.9.0`).
+WP20 — AI recommendations (complete). Geo Core `1.8.156`. Decision Cloud `0.10.0`.
 
-Next: WP20 AI recommendations (advisory only; no autonomous live-site changes).
-Gate D / Gate E still need a live site.
+Next: Gate D / Gate E still need a live site. Work packages WP0–WP20 are implemented.
