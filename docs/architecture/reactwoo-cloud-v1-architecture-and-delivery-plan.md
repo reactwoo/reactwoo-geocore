@@ -257,11 +257,9 @@ Minimise by default. No names/email/full IP retention/customer profiles for basi
 
 ## 23–25. Billing, entitlements, managed mode
 
-- Payment processors own subscription billing. **Stripe** (WP15) is the default rail; **Paystack** (WP15b) is the Africa rail (NG, GH, ZA, KE, and other Paystack-supported markets). ReactWoo owns product entitlements (`cloud.personalisation`, `cloud.commerce`, …, `sites.max`).
-- One organisation, one processor at a time in v1. Internal plans stay `starter` | `growth` | `scale` on both rails.
-- Core: `EntitlementProviderInterface` → StandaloneLicenseProvider | CloudEntitlementProvider. Feature code asks `$entitlements->allows('…')` only — never Stripe or Paystack IDs.
+- Payment processors stay on **ReactWoo.com WooCommerce**. Decision Cloud stores entitlement snapshots (`cloud.personalisation`, …, `sites.max`) from signed store webhooks. Feature code asks `$entitlements->allows('…')` only — never WooCommerce or gateway IDs.
 - Cloud-managed sites: WP shows “Managed by ReactWoo Cloud”; primary editing in Cloud to avoid dual source of truth.
-- Detail: [billing-providers.md](./billing-providers.md).
+- Detail: [billing-providers.md](./billing-providers.md), [commerce-and-onboarding.md](./commerce-and-onboarding.md).
 
 ---
 
@@ -301,7 +299,7 @@ Do **not** give Cursor the whole platform at once. One work package at a time.
 
 ## MVP boundary
 
-**V1 must:** connect sites, detect capabilities, audiences, slots, experiences, content/component/native variants, Elementor, Gutenberg, scheduling, goals, experiments, basic analytics, Cloud subscription (Stripe and/or Paystack), brand profile.
+**V1 must:** connect sites, detect capabilities, audiences, slots, experiences, content/component/native variants, Elementor, Gutenberg, scheduling, goals, experiments, basic analytics, Cloud subscription via ReactWoo.com, brand profile.
 
 **Not V1:** headless hosting, AI websites, autonomous optimisation, heatmaps, session replay, CRM/CDP, email automation, edge execution, mobile SDK, Shopify, full-page builder, ReactWoo hosting, real-time dashboards.
 
@@ -316,6 +314,7 @@ Stop adding major features into plugin-specific rule architectures. Ask: Context
 ## References
 
 - Work packages: [work-packages.md](./work-packages.md)
+- Gate D local loop: [gate-d.md](./gate-d.md)
 - Billing processors: [billing-providers.md](./billing-providers.md)
 - Platform Cursor rule: `.cursor/rules/reactwoo-platform.mdc` (all product repos)
 - Legacy Geo Core phases: [`../geo-core-cursor-master-plan.md`](../geo-core-cursor-master-plan.md)

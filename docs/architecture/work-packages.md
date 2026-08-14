@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
 
-**Current active package:** Sprint 6 complete (billing resilience, Decision Cloud `0.15.0`). Gate D / Gate E live-site validation remains.
+**Current active package:** Gate D (live Local site: author → publish → sync → variant; Cloud off still works). Sprint 6 billing resilience remains in Decision Cloud `0.15.0`.
 
 ---
 

@@ -10,7 +10,7 @@ Scope: Geo Core Cloud Connector + Decision Cloud control plane (WP10–WP17). Vi
 | WordPress administrator | Trusted for that site |
 | Paired WordPress site (site secret) | Trusted for that site only |
 | Portal operator (portal token) | Trusted for this Cloud instance |
-| Billing provider (Stripe / Paystack) | Trusted after signature verify |
+| Billing provider (ReactWoo.com WooCommerce) | Trusted after `X-WC-Webhook-Signature` verify |
 | Network attacker | Untrusted |
 
 ## Assets
@@ -46,7 +46,7 @@ Scope: Geo Core Cloud Connector + Decision Cloud control plane (WP10–WP17). Vi
 
 - Site routes: Bearer + SHA-256 + timing-safe compare
 - Pairing tokens: 15-minute TTL, consume-on-use
-- Stripe / Paystack webhooks: HMAC + missing-secret reject + Stripe timestamp replay window
+- WooCommerce webhooks: HMAC-SHA256 + missing-secret reject + delivery-id idempotency
 - Manifest fetch: site auth; visitor render uses local cache only
 - WP Cloud admin: `manage_options` + `check_admin_referer`
 - Component HTML: `esc_html` / `esc_url` / `esc_attr`
@@ -59,5 +59,5 @@ Scope: Geo Core Cloud Connector + Decision Cloud control plane (WP10–WP17). Vi
 3. `API_PUBLIC_BASE=https://…/api/v1`
 4. `CORS_ORIGIN` explicit if the portal is ever cross-origin
 5. `ALLOW_DEV_PAIRING` unset
-6. Stripe and Paystack webhook secrets set
+6. `WOOCOMMERCE_WEBHOOK_SECRET` and `REACTWOO_HANDOFF_SECRET` set; `REACTWOO_STORE_ORIGIN` is the ReactWoo.com origin
 7. Geo Core API base is HTTPS and not a private host
