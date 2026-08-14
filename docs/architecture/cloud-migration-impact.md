@@ -99,7 +99,7 @@ Matches plan gates; refined by audit:
 | 7 | **WP8–9 Components + Variants** | Gate C local proof |
 | 8 | **WP10 Connector** | Only after local runtime can consume a Manifest |
 | 9 | **WP11–13 Decision Cloud + portal** | New control plane; keep react-cloud Google vault separate |
-| 10 | **WP14–16** | Events/billing/migration |
+| 10 | **WP14–15b** | Events, Stripe, Paystack, then WP16 migration |
 | 11 | **WP17–19** | Health/security/perf |
 | 12 | **WP20** | AI advisory last (Optimise AI stays advisory locally until then) |
 

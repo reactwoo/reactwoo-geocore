@@ -71,6 +71,40 @@ if ( ! function_exists( 'reactwoo_cloud_flush_events' ) ) {
 	}
 }
 
+if ( ! function_exists( 'reactwoo_cloud_migration_preview' ) ) {
+	/**
+	 * Local import preview. Never contacts Cloud.
+	 *
+	 * @return array<string, mixed>
+	 */
+	function reactwoo_cloud_migration_preview() {
+		return RWGC_Cloud_Migration::preview();
+	}
+}
+
+if ( ! function_exists( 'reactwoo_cloud_import' ) ) {
+	/**
+	 * Backup locally and POST supported resources to Cloud. Does not switch mode.
+	 *
+	 * @return array{ok: bool, error: string, preview: array<string, mixed>}
+	 */
+	function reactwoo_cloud_import() {
+		return RWGC_Cloud_Migration::import();
+	}
+}
+
+if ( ! function_exists( 'reactwoo_cloud_switch_management_mode' ) ) {
+	/**
+	 * Explicit management-mode switch after import.
+	 *
+	 * @param string $mode local|cloud.
+	 * @return array{ok: bool, error: string, management_mode: string}
+	 */
+	function reactwoo_cloud_switch_management_mode( $mode ) {
+		return RWGC_Cloud_Migration::switch_mode( $mode );
+	}
+}
+
 if ( ! function_exists( 'reactwoo_cloud_get_manifest' ) ) {
 	/**
 	 * Local cached manifest (never fetches Cloud).

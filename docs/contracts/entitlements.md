@@ -11,7 +11,7 @@
 
 `source`: `standalone` | `cloud`.
 
-Feature code must ask the provider — never Stripe product/price IDs or license JWT fields:
+Feature code must ask the provider — never Stripe price IDs, Paystack plan codes, or license JWT fields:
 
 ```php
 RWGC_Entitlements::allows( 'cloud.commerce' );
@@ -39,3 +39,5 @@ RWGC_Entitlements::limit( 'sites.max' );
 - Composite uses Cloud when connected **and** a snapshot exists; otherwise standalone.
 
 Payment lapse: Cloud keeps configuration and applies a grace window; after grace, keys are `allowed: false` without deleting WordPress content.
+
+Billing processors (Stripe, Paystack) are Decision Cloud adapters only. See [billing-providers.md](../architecture/billing-providers.md).

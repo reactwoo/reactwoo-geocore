@@ -6,6 +6,7 @@ Canonical home for the **ReactWoo Cloud v1** product and technical plan, suite a
 |----------|------|
 | [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md) | **Official product & technical plan** — vision, architecture, data model, MVP, gates |
 | [work-packages.md](./work-packages.md) | Cursor-ready implementation work packages (WP0–WP20) |
+| [billing-providers.md](./billing-providers.md) | Stripe + Paystack billing adapters (WP15 / WP15b) |
 | [current-state.md](./current-state.md) | WP0 audit of the existing suite (**complete**) |
 | [cloud-migration-impact.md](./cloud-migration-impact.md) | WP0 migration risks and recommended order (**complete**) |
 | [../contracts/](../contracts/) | WP1 shared platform contracts (`reactwoo_schema_version = 1`) |
@@ -29,7 +30,7 @@ Never introduce a ReactWoo Cloud request into the visitor page-rendering critica
 2. **Convert suite:** WP4  
 3. **Rendering:** WP5 → WP9 (local product without Cloud)  
 4. **Cloud:** WP10 → WP13  
-5. **SaaS value:** WP14 → WP16  
+5. **SaaS value:** WP14 → WP15 → WP15b → WP16  
 6. **Hardening:** WP17 → WP19  
 7. **AI (deliberately last):** WP20  
 

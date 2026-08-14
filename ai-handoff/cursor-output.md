@@ -4,36 +4,36 @@
 done
 
 ## Task
-WP15 — Stripe + Cloud entitlements. Releases for Elementor editor-load fixes shipped first.
+WP16 — Existing customer migration (explicit import, never flip on connect).
 
 ## Files changed
 
-### Releases
-- Geo Core `v1.8.150`, WHMCS Bridge `v1.1.5.4`, Atomic `free-v0.7.1` + `pro-v0.7.1` pushed to GitHub.
+### Geo Core (`reactwoo-geocore` 1.8.152)
+- `RWGC_Cloud_Migration_Translator` — portable `show_if` rules → Audiences (`country` → `geo.country`); `hide_if`, experiments, commerce reported unsupported
+- `RWGC_Cloud_Migration` — detect / local preview / backup / import HTTP / explicit `management_mode` switch
+- Cloud admin: counts, preview tables, Import, Switch to Cloud-managed; pairing stays local
+- Helpers: `reactwoo_cloud_migration_preview()`, `reactwoo_cloud_import()`, `reactwoo_cloud_switch_management_mode()`
+- Tests: `composer test:cloud-migration` (+ pairing assertion in connector tests)
 
-### Decision Cloud (`reactwoo-decision-cloud` 0.5.0)
-- `EntitlementService` maps plans → `cloud.*` keys (no Stripe IDs on the public snapshot)
-- Signed, idempotent, replay-safe Stripe webhooks
-- Hosted Checkout + Customer Portal
-- Grace on `invoice.payment_failed`; canceled plans lock keys without deleting org/site/audience rows
-- Heartbeat returns entitlements for WP cache
-- Portal Billing page
-
-### Geo Core
-- `RWGC_Entitlements` facade → Standalone | Cloud providers
-- Heartbeat caches entitlements; disconnect clears the cache
-- `tests/test-rwgc-entitlements.php`
+### Decision Cloud (`reactwoo-decision-cloud` 0.7.0)
+- `POST /api/v1/sites/:site/migration/import` (`dry_run` does not persist; does not set `management_mode`)
+- `POST /api/v1/sites/:site/management-mode` `{ mode: cloud|local }`
+- `JsonRepository.updateSite`
+- Portal Sites table shows management mode
+- Tests: `tests/migration.test.js` (42 total `npm test`)
 
 ## What was not changed
 - Visitor render path still has no Cloud HTTP
-- Satellite license classes still exist; new feature code should use the facade
-- WP16 migration not started
-- Gate D / Gate E still need a live site
+- Pairing still sets `management_mode = local`
+- Disconnect still keeps WP content, manifests, and now also `rwgc_cloud_migration_backup`
+- Experiments and commerce outcomes are not auto-imported
+- WP17 health reporting not started
 
 ## Commands run
-- Decision Cloud `npm test`
-- Geo Core `php tests/test-rwgc-entitlements.php`
+- Geo Core `php tests/test-rwgc-cloud-migration.php` — pass
+- Geo Core `php tests/test-rwgc-cloud-connector.php` — pass
+- Decision Cloud `npm test` — 42 passed
 
 ## Remaining
-- Configure live Stripe keys on the Decision Cloud host
-- Gate D end-to-end publish → WP
+- Gate D / Gate E still need a live site
+- WP17 Failure handling + health

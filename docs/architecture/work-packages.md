@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
 
-**Current active package:** WP16 (Existing customer migration) — WP0–WP15 complete.
+**Current active package:** WP17 (failure handling + health) — WP0–WP16 complete.
 
 ---
 
@@ -368,7 +368,7 @@ Document API contracts.
 ```text
 Build ReactWoo Cloud v1 backend.
 Low-operations SaaS control plane: stateless API, PostgreSQL, queue abstraction,
-object storage only where needed, Stripe billing.
+object storage only where needed, Stripe + Paystack billing adapters.
 No Redis unless measured need. No microservices, K8s, real-time streaming, or per-page-view decision API.
 
 Domain: Organisation, User, OrganisationMembership, Site, SiteConnection, Capability,
@@ -450,16 +450,49 @@ Control vs variant metrics with correct attribution.
 ## WORK PACKAGE 15 — Stripe + Cloud entitlements
 
 ```text
-Stripe owns customer, payment method, subscription, invoice, billing lifecycle.
+Payment processors own customer, payment method, subscription, invoice, billing lifecycle.
 ReactWoo owns organisation, plan interpretation, feature entitlement, site limits.
 
-EntitlementService — no feature code inspects Stripe product/price IDs directly.
+Stripe is the first billing adapter (most markets). Paystack is the Africa adapter (WP15b).
+EntitlementService — no feature code inspects Stripe or Paystack product/price/plan IDs.
 Map to internal entitlements: cloud.personalisation, cloud.commerce, cloud.optimise,
 cloud.components, cloud.insights, sites.max, team_members.max, history.days
 
 Verified webhooks: authenticated, idempotent, replay-safe.
 Grace/fallback on payment lapse — do not immediately delete configuration.
-Prefer Stripe hosted billing portal over custom card UI.
+Prefer hosted checkout / billing portal over custom card UI.
+See docs/architecture/billing-providers.md.
+```
+
+---
+
+## WORK PACKAGE 15b — Paystack (Africa subscriptions)
+
+```text
+Add Paystack as a billing adapter beside Stripe. Do not fork EntitlementService.
+
+Paystack owns NGN/GHS/ZAR/KES (and other Paystack-supported) collections,
+cards, bank, USSD, and mobile money where Paystack offers them.
+ReactWoo still maps starter|growth|scale → the same cloud.* entitlements.
+
+Requirements:
+1. PaymentProvider interface: StripeAdapter | PaystackAdapter.
+2. Env catalogue: PAYSTACK_SECRET_KEY, PAYSTACK_WEBHOOK_SECRET,
+   PAYSTACK_PLAN_STARTER|GROWTH|SCALE (plan codes, not amounts in feature code).
+3. POST /api/v1/billing/webhooks/paystack — x-paystack-signature HMAC-SHA512,
+   idempotent, replay-safe; map charge.success / subscription.* / invoice.payment_failed
+   onto applyPlan, markPastDue, markCanceled.
+4. Checkout: Paystack hosted page or Popup. No custom card UI.
+5. Org record stores provider=paystack. v1: one processor per organisation.
+6. Portal Billing: offer Paystack for Africa-based customers (billing country in
+   Paystack-supported markets). Suggest Paystack there; Stripe remains available.
+7. Same grace rules as Stripe. Never delete Cloud or WP configuration on lapse.
+8. Heartbeat entitlement snapshot unchanged (no processor IDs).
+9. Tests: signature, duplicate event, grace, cancel retains audiences/sites,
+   EntitlementService public snapshot has no Paystack IDs.
+
+Do not add Flutterwave or other processors in this package.
+Do not call Paystack from WordPress or from react-cloud.
 ```
 
 ---
@@ -547,6 +580,8 @@ No autonomous optimisation in this phase.
 - [x] WP14 events/goals/analytics (2026-08-13) — WP async queue + Cloud `POST /events/batch` validation, daily aggregates, Insights (no fabricated uplift); Decision Cloud `0.4.0`  
 
 - [x] WP15 Stripe + entitlements (2026-08-14) — Decision Cloud `0.5.0` billing webhooks + `EntitlementService`; Geo Core `RWGC_Entitlements` facade (`composer test:entitlements`)  
+- [x] WP15b Paystack Africa billing (2026-08-14) — Decision Cloud `0.6.0` Paystack adapter + webhooks; same entitlements (`docs/architecture/billing-providers.md`)  
+- [x] WP16 Existing customer migration (2026-08-14) — Geo Core `1.8.152` detect/preview/import/switch; Decision Cloud `0.7.0` `POST /migration/import` + `POST /management-mode`; pairing never flips mode (`composer test:cloud-migration`)  
 - [ ] WP10–13 Cloud → **Gate D** (end-to-end site still needed)  
 - [ ] WP14–16 analytics/billing/migration → **Gate E** (metrics pipeline in place; live attribution still needed)  
 - [ ] WP17–19 hardening  

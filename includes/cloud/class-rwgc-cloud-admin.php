@@ -25,6 +25,8 @@ final class RWGC_Cloud_Admin {
 		add_action( 'admin_post_rwgc_cloud_disconnect', array( __CLASS__, 'handle_disconnect' ) );
 		add_action( 'admin_post_rwgc_cloud_sync', array( __CLASS__, 'handle_sync' ) );
 		add_action( 'admin_post_rwgc_cloud_reconnect_sync', array( __CLASS__, 'handle_sync' ) );
+		add_action( 'admin_post_rwgc_cloud_import', array( __CLASS__, 'handle_import' ) );
+		add_action( 'admin_post_rwgc_cloud_switch_mode', array( __CLASS__, 'handle_switch_mode' ) );
 	}
 
 	/**
@@ -62,7 +64,12 @@ final class RWGC_Cloud_Admin {
 				<?php esc_html_e( 'Connect this site to ReactWoo Cloud for authored experiences. Cloud is never contacted during visitor page rendering.', 'reactwoo-geocore' ); ?>
 			</p>
 			<?php if ( $notice ) : ?>
-				<div class="notice notice-info is-dismissible"><p><?php echo esc_html( self::notice_message( $notice ) ); ?></p></div>
+				<div class="notice <?php echo esc_attr( self::notice_class( $notice ) ); ?> is-dismissible"><p><?php echo esc_html( self::notice_message( $notice ) ); ?></p></div>
+			<?php endif; ?>
+			<?php if ( RWGC_Cloud_Connection::is_connected() && 'cloud' === (string) $conn['management_mode'] ) : ?>
+				<div class="notice notice-warning">
+					<p><?php esc_html_e( 'This site is Cloud-managed. Experiences are authored in ReactWoo Cloud. Disconnecting keeps WordPress content and the local migration backup.', 'reactwoo-geocore' ); ?></p>
+				</div>
 			<?php endif; ?>
 
 			<table class="form-table" role="presentation">
@@ -89,6 +96,10 @@ final class RWGC_Cloud_Admin {
 				<tr>
 					<th><?php esc_html_e( 'Last error', 'reactwoo-geocore' ); ?></th>
 					<td><?php echo esc_html( (string) $conn['last_error'] ); ?></td>
+				</tr>
+				<tr>
+					<th><?php esc_html_e( 'Management mode', 'reactwoo-geocore' ); ?></th>
+					<td><code><?php echo esc_html( (string) $conn['management_mode'] ); ?></code></td>
 				</tr>
 				<tr>
 					<th><?php esc_html_e( 'API base', 'reactwoo-geocore' ); ?></th>
@@ -122,9 +133,88 @@ final class RWGC_Cloud_Admin {
 					<?php wp_nonce_field( 'rwgc_cloud_disconnect' ); ?>
 					<?php submit_button( __( 'Disconnect', 'reactwoo-geocore' ), 'delete', 'submit', false ); ?>
 				</form>
+				<?php self::render_migration(); ?>
 			<?php endif; ?>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Import preview and explicit switch. Pairing never imports.
+	 *
+	 * @return void
+	 */
+	private static function render_migration() {
+		$preview = RWGC_Cloud_Migration::preview();
+		$mode    = (string) $preview['management_mode'];
+		$imported = ! empty( $preview['imported'] );
+		$detected = isset( $preview['detected'] ) && is_array( $preview['detected'] ) ? $preview['detected'] : array();
+		?>
+		<hr />
+		<h2><?php esc_html_e( 'Import existing configuration', 'reactwoo-geocore' ); ?></h2>
+		<p class="description">
+			<?php esc_html_e( 'Connecting Cloud does not change your local rules. Preview first, then import, then switch to Cloud-managed.', 'reactwoo-geocore' ); ?>
+		</p>
+		<ul>
+			<li><?php echo esc_html( sprintf( /* translators: %d count */ __( 'Visibility rules: %d', 'reactwoo-geocore' ), (int) ( $detected['visibility_rules'] ?? 0 ) ) ); ?></li>
+			<li><?php echo esc_html( sprintf( /* translators: %d count */ __( 'Experience slots: %d', 'reactwoo-geocore' ), (int) ( $detected['slots'] ?? 0 ) ) ); ?></li>
+			<li><?php echo esc_html( sprintf( /* translators: %d count */ __( 'Variants: %d', 'reactwoo-geocore' ), (int) ( $detected['variants'] ?? 0 ) ) ); ?></li>
+			<li><?php echo esc_html( sprintf( /* translators: %d count */ __( 'Experiments: %d', 'reactwoo-geocore' ), (int) ( $detected['experiments'] ?? 0 ) ) ); ?></li>
+			<li><?php echo esc_html( sprintf( /* translators: %d count */ __( 'Commerce rules: %d', 'reactwoo-geocore' ), (int) ( $detected['commerce_rules'] ?? 0 ) ) ); ?></li>
+		</ul>
+		<?php self::render_migration_table( __( 'Can import', 'reactwoo-geocore' ), isset( $preview['supported'] ) && is_array( $preview['supported'] ) ? $preview['supported'] : array() ); ?>
+		<?php self::render_migration_table( __( 'Needs review (not imported)', 'reactwoo-geocore' ), isset( $preview['unsupported'] ) && is_array( $preview['unsupported'] ) ? $preview['unsupported'] : array() ); ?>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;margin-right:8px;">
+			<input type="hidden" name="action" value="rwgc_cloud_import" />
+			<?php wp_nonce_field( 'rwgc_cloud_import' ); ?>
+			<?php submit_button( __( 'Import to ReactWoo Cloud', 'reactwoo-geocore' ), 'primary', 'submit', false ); ?>
+		</form>
+		<?php if ( $imported && 'cloud' !== $mode ) : ?>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;">
+				<input type="hidden" name="action" value="rwgc_cloud_switch_mode" />
+				<input type="hidden" name="rwgc_management_mode" value="cloud" />
+				<?php wp_nonce_field( 'rwgc_cloud_switch_mode' ); ?>
+				<?php submit_button( __( 'Switch to Cloud-managed', 'reactwoo-geocore' ), 'secondary', 'submit', false ); ?>
+			</form>
+		<?php elseif ( 'cloud' === $mode ) : ?>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;">
+				<input type="hidden" name="action" value="rwgc_cloud_switch_mode" />
+				<input type="hidden" name="rwgc_management_mode" value="local" />
+				<?php wp_nonce_field( 'rwgc_cloud_switch_mode' ); ?>
+				<?php submit_button( __( 'Switch to local-managed', 'reactwoo-geocore' ), 'secondary', 'submit', false ); ?>
+			</form>
+		<?php else : ?>
+			<p class="description"><?php esc_html_e( 'Import must succeed before you can switch management mode.', 'reactwoo-geocore' ); ?></p>
+		<?php endif; ?>
+		<?php
+	}
+
+	/**
+	 * @param string                           $title Title.
+	 * @param array<int, array<string, mixed>> $rows Rows.
+	 * @return void
+	 */
+	private static function render_migration_table( $title, array $rows ) {
+		echo '<h3>' . esc_html( $title ) . '</h3>';
+		if ( empty( $rows ) ) {
+			echo '<p class="description">' . esc_html__( 'None.', 'reactwoo-geocore' ) . '</p>';
+			return;
+		}
+		echo '<table class="widefat striped"><thead><tr>';
+		echo '<th>' . esc_html__( 'Kind', 'reactwoo-geocore' ) . '</th>';
+		echo '<th>' . esc_html__( 'ID', 'reactwoo-geocore' ) . '</th>';
+		echo '<th>' . esc_html__( 'Name', 'reactwoo-geocore' ) . '</th>';
+		echo '<th>' . esc_html__( 'Reason', 'reactwoo-geocore' ) . '</th>';
+		echo '</tr></thead><tbody>';
+		foreach ( $rows as $row ) {
+			echo '<tr>';
+			echo '<td>' . esc_html( (string) ( $row['kind'] ?? '' ) ) . '</td>';
+			echo '<td><code>' . esc_html( (string) ( $row['id'] ?? '' ) ) . '</code></td>';
+			echo '<td>' . esc_html( (string) ( $row['name'] ?? '' ) ) . '</td>';
+			echo '<td>' . esc_html( (string) ( $row['reason'] ?? '' ) ) . '</td>';
+			echo '</tr>';
+		}
+		echo '</tbody></table>';
 	}
 
 	/**
@@ -162,6 +252,28 @@ final class RWGC_Cloud_Admin {
 	}
 
 	/**
+	 * @return void
+	 */
+	public static function handle_import() {
+		self::guard( 'rwgc_cloud_import' );
+		$result = RWGC_Cloud_Migration::import();
+		self::redirect( $result['ok'] ? 'imported' : 'import_failed' );
+	}
+
+	/**
+	 * @return void
+	 */
+	public static function handle_switch_mode() {
+		self::guard( 'rwgc_cloud_switch_mode' );
+		$mode   = isset( $_POST['rwgc_management_mode'] ) ? sanitize_key( wp_unslash( (string) $_POST['rwgc_management_mode'] ) ) : 'local'; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$result = RWGC_Cloud_Migration::switch_mode( $mode );
+		if ( ! $result['ok'] ) {
+			self::redirect( 'import_required' === $result['error'] ? 'import_required' : 'switch_failed' );
+		}
+		self::redirect( 'cloud' === $result['management_mode'] ? 'switched_cloud' : 'switched_local' );
+	}
+
+	/**
 	 * @param string $nonce_action Action.
 	 * @return void
 	 */
@@ -195,11 +307,26 @@ final class RWGC_Cloud_Admin {
 	 */
 	private static function notice_message( $key ) {
 		$map = array(
-			'paired'       => __( 'Site paired with ReactWoo Cloud.', 'reactwoo-geocore' ),
-			'pair_failed'  => __( 'Pairing failed. Check the token and try again.', 'reactwoo-geocore' ),
-			'disconnected' => __( 'Disconnected. Cached manifests were kept; site content was not removed.', 'reactwoo-geocore' ),
-			'synced'       => __( 'Cloud sync finished.', 'reactwoo-geocore' ),
+			'paired'         => __( 'Site paired with ReactWoo Cloud. Management mode is still local until you import and switch.', 'reactwoo-geocore' ),
+			'pair_failed'    => __( 'Pairing failed. Check the token and try again.', 'reactwoo-geocore' ),
+			'disconnected'   => __( 'Disconnected. Cached manifests, WordPress content, and the migration backup were kept.', 'reactwoo-geocore' ),
+			'synced'         => __( 'Cloud sync finished.', 'reactwoo-geocore' ),
+			'imported'       => __( 'Local configuration was imported to ReactWoo Cloud. Review it, then switch to Cloud-managed.', 'reactwoo-geocore' ),
+			'import_failed'  => __( 'Import failed. Local configuration was not changed.', 'reactwoo-geocore' ),
+			'switched_cloud' => __( 'This site is now Cloud-managed.', 'reactwoo-geocore' ),
+			'switched_local' => __( 'This site is now local-managed.', 'reactwoo-geocore' ),
+			'switch_failed'  => __( 'Could not change management mode.', 'reactwoo-geocore' ),
+			'import_required'=> __( 'Import to ReactWoo Cloud before switching to Cloud-managed.', 'reactwoo-geocore' ),
 		);
 		return isset( $map[ $key ] ) ? $map[ $key ] : $key;
+	}
+
+	/**
+	 * @param string $key Notice key.
+	 * @return string
+	 */
+	private static function notice_class( $key ) {
+		$errors = array( 'pair_failed', 'import_failed', 'switch_failed', 'import_required' );
+		return in_array( $key, $errors, true ) ? 'notice-error' : 'notice-info';
 	}
 }

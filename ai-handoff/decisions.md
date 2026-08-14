@@ -5,7 +5,7 @@
 | Date | Decision | Rationale |
 |------|----------|-----------|
 | 2026-06-26 | Popup target resolution uses multi-view modal in Geo Core JS + `reactwoo-geocore/v1/targets/*` REST | Keeps Elementor popup create/search server-side; avoids listing all popups as top-level resolver buttons |
-| 2026-06-26 | `ai-handoff/current-task.md` archived when task ships; `cursor-output.md` updated each pass | Planner reads output files, not full chat |
+| 2026-08-14 | Cloud billing: Stripe (default) + Paystack (Africa); one processor per org; same `cloud.*` entitlements | Local cards/bank/USSD/mobile money without a second entitlement model |
 
 ## ReactWoo defaults
 

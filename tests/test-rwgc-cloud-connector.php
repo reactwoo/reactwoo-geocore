@@ -28,7 +28,7 @@ if ( ! function_exists( 'update_option' ) ) {
 	 * @param mixed  $value Value.
 	 * @return bool
 	 */
-	function update_option( $key, $value ) {
+	function update_option( $key, $value, $autoload = null ) {
 		$GLOBALS['rwgc_test_options'][ $key ] = $value;
 		return true;
 	}
@@ -279,6 +279,7 @@ add_filter( 'rwgc_cloud_api_base', static function () {
 $pair = reactwoo_cloud_pair( 'token-123' );
 rwgc_cloud_assert( 'pair ok', $pair['ok'] && 'site_abc' === $pair['site_id'] );
 rwgc_cloud_assert( 'connected', reactwoo_cloud_is_connected() );
+rwgc_cloud_assert( 'pair leaves management_mode local', 'local' === RWGC_Cloud_Connection::get()['management_mode'] );
 $creds = RWGC_Cloud_Credentials::get();
 rwgc_cloud_assert( 'secret stored encrypted', $creds && 'secret_xyz' === $creds['site_secret'] );
 $opt = get_option( RWGC_Cloud_Credentials::OPTION );
