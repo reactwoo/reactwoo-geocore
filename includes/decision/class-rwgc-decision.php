@@ -27,6 +27,8 @@ final class RWGC_Decision {
 		self::$loaded = true;
 		$dir          = dirname( __FILE__ ) . '/';
 		require_once $dir . 'class-rwgc-decision-result.php';
+		require_once $dir . 'class-rwgc-context-value-cache.php';
+		require_once $dir . 'class-rwgc-decision-context-factory.php';
 		require_once $dir . 'class-rwgc-decision-condition-evaluator.php';
 		require_once $dir . 'class-rwgc-decision-experiment-assigner.php';
 		require_once $dir . 'class-rwgc-decision-runtime.php';

@@ -19,6 +19,15 @@ final class RWGC_Contract_Context extends RWGC_Contract {
 	/** @var array<string, mixed> */
 	private $values;
 
+	/** @var array<string, callable> */
+	private $resolvers = array();
+
+	/** @var array<string, mixed> Request-local resolved lazy values. */
+	private $resolved = array();
+
+	/** @var int */
+	private $resolve_count = 0;
+
 	/**
 	 * @param array<string, mixed> $values Values.
 	 * @param array<string, mixed> $extras Extras.
@@ -62,10 +71,49 @@ final class RWGC_Contract_Context extends RWGC_Contract {
 	 */
 	public function get( $capability_id, $default = null ) {
 		$id = RWGC_Schema::normalize_capability_id( $capability_id );
-		if ( '' === $id || ! array_key_exists( $id, $this->values ) ) {
+		if ( '' === $id ) {
 			return $default;
 		}
-		return $this->values[ $id ];
+		if ( array_key_exists( $id, $this->values ) ) {
+			return $this->values[ $id ];
+		}
+		if ( array_key_exists( $id, $this->resolved ) ) {
+			return $this->resolved[ $id ];
+		}
+		if ( isset( $this->resolvers[ $id ] ) ) {
+			++$this->resolve_count;
+			$this->resolved[ $id ] = call_user_func( $this->resolvers[ $id ] );
+			return $this->resolved[ $id ];
+		}
+		return $default;
+	}
+
+	/**
+	 * Attach lazy capability resolvers (evaluated once per context, on first get).
+	 *
+	 * @param array<string, callable> $resolvers Map of capability ID → resolver.
+	 * @return self
+	 */
+	public function with_resolvers( array $resolvers ) {
+		$clone            = clone $this;
+		$clone->resolvers = array();
+		foreach ( $resolvers as $key => $cb ) {
+			if ( ! is_callable( $cb ) ) {
+				continue;
+			}
+			$id = RWGC_Schema::normalize_capability_id( $key );
+			if ( '' !== $id ) {
+				$clone->resolvers[ $id ] = $cb;
+			}
+		}
+		return $clone;
+	}
+
+	/**
+	 * @return int Lazy resolver invocations this request.
+	 */
+	public function resolve_count() {
+		return $this->resolve_count;
 	}
 
 	/**

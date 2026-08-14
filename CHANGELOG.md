@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.155] - 2026-08-14
+
+### Changed
+- **Cloud WP19:** Candidate-only audience evaluation, lazy context providers, manifest parse memo, condition short-circuit, Cloud HTTP forbidden after `template_redirect`. See `docs/performance/decision-runtime.md`.
+
 ## [1.8.38] - 2026-06-09
 
 ### Added

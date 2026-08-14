@@ -22,38 +22,29 @@ final class RWGC_Decision_Condition_Evaluator {
 	 */
 	public static function matches_group( RWGC_Contract_Condition_Group $group, RWGC_Contract_Context $context, array &$trace = array() ) {
 		try {
-			$results = array();
-			foreach ( $group->items() as $item ) {
-				if ( $item instanceof RWGC_Contract_Condition_Group ) {
-					$results[] = self::matches_group( $item, $context, $trace );
-				} elseif ( $item instanceof RWGC_Contract_Condition ) {
-					$results[] = self::matches_condition( $item, $context, $trace );
-				} else {
-					$results[] = false;
-					$trace[]   = 'unknown_item_type';
-				}
-			}
-
-			if ( empty( $results ) ) {
-				// Empty group: treat as match-all (safe default for incomplete trees).
+			$items = $group->items();
+			if ( empty( $items ) ) {
 				return true;
 			}
 
-			if ( RWGC_Contract_Condition_Group::MATCH_ANY === $group->match() ) {
-				foreach ( $results as $r ) {
-					if ( $r ) {
-						return true;
-					}
+			$is_any = ( RWGC_Contract_Condition_Group::MATCH_ANY === $group->match() );
+			foreach ( $items as $item ) {
+				if ( $item instanceof RWGC_Contract_Condition_Group ) {
+					$ok = self::matches_group( $item, $context, $trace );
+				} elseif ( $item instanceof RWGC_Contract_Condition ) {
+					$ok = self::matches_condition( $item, $context, $trace );
+				} else {
+					$ok      = false;
+					$trace[] = 'unknown_item_type';
 				}
-				return false;
-			}
-
-			foreach ( $results as $r ) {
-				if ( ! $r ) {
+				if ( $is_any && $ok ) {
+					return true;
+				}
+				if ( ! $is_any && ! $ok ) {
 					return false;
 				}
 			}
-			return true;
+			return ! $is_any;
 		} catch ( \Throwable $e ) { // phpcs:ignore WordPress.CodeAnalysis.ExceptionDocumented
 			$trace[] = 'group_exception:' . $e->getMessage();
 			return false;
@@ -120,6 +111,26 @@ final class RWGC_Decision_Condition_Evaluator {
 			}
 		}
 		return $n;
+	}
+
+	/**
+	 * Capability IDs referenced by a condition tree (for lazy context).
+	 *
+	 * @param RWGC_Contract_Condition_Group $group Group.
+	 * @return list<string>
+	 */
+	public static function capability_ids( RWGC_Contract_Condition_Group $group ) {
+		$ids = array();
+		foreach ( $group->items() as $item ) {
+			if ( $item instanceof RWGC_Contract_Condition_Group ) {
+				foreach ( self::capability_ids( $item ) as $id ) {
+					$ids[] = $id;
+				}
+			} elseif ( $item instanceof RWGC_Contract_Condition ) {
+				$ids[] = $item->capability();
+			}
+		}
+		return array_values( array_unique( $ids ) );
 	}
 
 	/**

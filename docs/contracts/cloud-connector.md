@@ -2,6 +2,8 @@
 
 WordPress-side ReactWoo Cloud connectivity. **Never** called from the visitor page-render path.
 
+After `template_redirect`, `RWGC_Cloud_Http` returns `cloud_http_forbidden_on_render` and does not increment `attempt_count`. Pairing, sync, heartbeat, and event flush remain admin / cron / WP-CLI. Override with filter `rwgc_cloud_http_forbidden`.
+
 ## Responsibilities
 
 - Secure pairing (one-time token → revocable `site_id` + `site_secret`)

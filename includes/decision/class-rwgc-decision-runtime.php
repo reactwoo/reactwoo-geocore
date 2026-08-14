@@ -17,6 +17,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class RWGC_Decision_Runtime {
 
 	/**
+	 * Per-request audience match cache (manifest object + context object + audience id).
+	 *
+	 * @var array<string, bool>
+	 */
+	private static $audience_match_cache = array();
+
+	/**
+	 * @return void
+	 */
+	public static function reset_request_cache() {
+		self::$audience_match_cache = array();
+	}
+
+	/**
 	 * Evaluate decisions for a visitor context.
 	 *
 	 * @param RWGC_Contract_Manifest $manifest Manifest.
@@ -30,11 +44,14 @@ final class RWGC_Decision_Runtime {
 		$visitor  = isset( $options['visitor_id'] ) ? (string) $options['visitor_id'] : '';
 		$now      = isset( $options['now'] ) ? (int) $options['now'] : time();
 		$slot_filter = isset( $options['slot_id'] ) ? (string) $options['slot_id'] : '';
+		$http_before = class_exists( 'RWGC_Cloud_Http', false ) ? RWGC_Cloud_Http::attempt_count() : 0;
 
 		$reasons = array();
 		$debug   = array(
-			'remote_calls' => 0,
-			'steps'        => array(),
+			'remote_calls'         => 0,
+			'audiences_total'      => 0,
+			'audiences_evaluated'  => 0,
+			'steps'                => array(),
 		);
 
 		/**
@@ -50,16 +67,57 @@ final class RWGC_Decision_Runtime {
 		foreach ( $manifest->audiences() as $audience ) {
 			$audience_map[ $audience->id() ] = $audience;
 		}
+		$debug['audiences_total'] = count( $audience_map );
 
 		$experiment_map = array();
 		foreach ( $manifest->experiments() as $exp ) {
 			$experiment_map[ $exp->id() ] = $exp;
 		}
 
+		$by_slot             = array();
+		$needed_audience_ids = array();
+		foreach ( $manifest->experiences() as $exp ) {
+			if ( '' !== $slot_filter && $exp->slot_id() !== $slot_filter ) {
+				continue;
+			}
+
+			$status = $exp->status();
+			if ( ! in_array( $status, array( 'active', 'scheduled' ), true ) ) {
+				$reasons[] = 'skipped_status:' . $exp->id() . ':' . $status;
+				continue;
+			}
+
+			if ( ! self::schedule_allows( $exp->schedule(), $now ) ) {
+				$reasons[] = 'skipped_schedule:' . $exp->id();
+				continue;
+			}
+
+			$aud = $exp->audience_id();
+			if ( '' === $aud ) {
+				$reasons[] = 'skipped_audience:' . $exp->id();
+				continue;
+			}
+
+			$needed_audience_ids[ $aud ] = true;
+			$slot                        = $exp->slot_id();
+			if ( '' === $slot ) {
+				$slot = '_default';
+			}
+			$by_slot[ $slot ][] = $exp;
+		}
+
 		$matched_audiences = array();
-		foreach ( $audience_map as $id => $audience ) {
+		foreach ( array_keys( $needed_audience_ids ) as $id ) {
+			if ( ! isset( $audience_map[ $id ] ) ) {
+				continue;
+			}
+			$cache_key = spl_object_id( $audience_map[ $id ] ) . ':' . spl_object_id( $context );
+			$cached    = isset( self::$audience_match_cache[ $cache_key ] );
+			if ( ! $cached ) {
+				++$debug['audiences_evaluated'];
+			}
 			$trace = array();
-			$ok    = RWGC_Decision_Condition_Evaluator::matches_group( $audience->conditions(), $context, $trace );
+			$ok    = self::audience_matches( $audience_map[ $id ], $context, $trace, $debug_on );
 			if ( $debug_on ) {
 				$debug['steps'][] = array(
 					'audience' => $id,
@@ -86,51 +144,30 @@ final class RWGC_Decision_Runtime {
 
 		$matched_lookup = array_fill_keys( $matched_audiences, true );
 
-		// Group candidate experiences by slot.
-		$by_slot = array();
-		foreach ( $manifest->experiences() as $exp ) {
-			if ( '' !== $slot_filter && $exp->slot_id() !== $slot_filter ) {
-				continue;
+		$ranked = array();
+		foreach ( $by_slot as $slot => $experiences ) {
+			foreach ( $experiences as $exp ) {
+				$aud = $exp->audience_id();
+				if ( ! isset( $matched_lookup[ $aud ] ) ) {
+					$reasons[] = 'skipped_audience:' . $exp->id();
+					continue;
+				}
+				$specificity = 0;
+				if ( isset( $audience_map[ $aud ] ) ) {
+					$specificity = RWGC_Decision_Condition_Evaluator::specificity( $audience_map[ $aud ]->conditions() );
+				}
+				$ranked[ $slot ][] = array(
+					'experience'  => $exp,
+					'specificity' => $specificity,
+				);
 			}
-
-			$status = $exp->status();
-			if ( ! in_array( $status, array( 'active', 'scheduled' ), true ) ) {
-				$reasons[] = 'skipped_status:' . $exp->id() . ':' . $status;
-				continue;
-			}
-
-			if ( ! self::schedule_allows( $exp->schedule(), $now ) ) {
-				$reasons[] = 'skipped_schedule:' . $exp->id();
-				continue;
-			}
-
-			$aud = $exp->audience_id();
-			if ( '' === $aud || ! isset( $matched_lookup[ $aud ] ) ) {
-				$reasons[] = 'skipped_audience:' . $exp->id();
-				continue;
-			}
-
-			$slot = $exp->slot_id();
-			if ( '' === $slot ) {
-				$slot = '_default';
-			}
-
-			$specificity = 0;
-			if ( isset( $audience_map[ $aud ] ) ) {
-				$specificity = RWGC_Decision_Condition_Evaluator::specificity( $audience_map[ $aud ]->conditions() );
-			}
-
-			$by_slot[ $slot ][] = array(
-				'experience'  => $exp,
-				'specificity' => $specificity,
-			);
 		}
 
 		$selected_experiences = array();
 		$selected_variants    = array();
 		$actions              = array();
 
-		foreach ( $by_slot as $slot => $candidates ) {
+		foreach ( $ranked as $slot => $candidates ) {
 			usort(
 				$candidates,
 				static function ( $a, $b ) {
@@ -176,8 +213,7 @@ final class RWGC_Decision_Runtime {
 			);
 			$selected_experiences[]     = $row;
 			$selected_variants[ $slot ] = $variant_id;
-			// Action envelope for later WP9 wiring — no side effects here.
-			$actions[] = array(
+			$actions[]                  = array(
 				'type'       => 'variant.apply',
 				'slot_id'    => $slot,
 				'variant_id' => $variant_id,
@@ -185,7 +221,18 @@ final class RWGC_Decision_Runtime {
 		}
 
 		$elapsed = ( microtime( true ) - $started ) * 1000;
-		$debug['elapsed_ms'] = $elapsed;
+		$http_after = class_exists( 'RWGC_Cloud_Http', false ) ? RWGC_Cloud_Http::attempt_count() : $http_before;
+		$debug['remote_calls'] = max( 0, $http_after - $http_before );
+		$debug['elapsed_ms']   = $elapsed;
+		if ( method_exists( $context, 'resolve_count' ) ) {
+			$debug['context_resolves'] = $context->resolve_count();
+		}
+
+		$compact = array(
+			'elapsed_ms'          => $elapsed,
+			'remote_calls'        => $debug['remote_calls'],
+			'audiences_evaluated' => $debug['audiences_evaluated'],
+		);
 
 		$result = new RWGC_Decision_Result(
 			array_values( $matched_audiences ),
@@ -193,7 +240,7 @@ final class RWGC_Decision_Runtime {
 			$selected_variants,
 			$actions,
 			$reasons,
-			$debug_on ? $debug : array( 'elapsed_ms' => $elapsed, 'remote_calls' => 0 ),
+			$debug_on ? $debug : $compact,
 			$elapsed
 		);
 
@@ -219,6 +266,23 @@ final class RWGC_Decision_Runtime {
 		do_action( 'reactwoo_decision_after_evaluate', $result, $manifest, $context );
 
 		return $result;
+	}
+
+	/**
+	 * @param RWGC_Contract_Audience $audience Audience.
+	 * @param RWGC_Contract_Context  $context Context.
+	 * @param array<string, mixed>   $trace Trace.
+	 * @param bool                   $debug_on Debug.
+	 * @return bool
+	 */
+	private static function audience_matches( RWGC_Contract_Audience $audience, RWGC_Contract_Context $context, array &$trace, $debug_on ) {
+		$key = spl_object_id( $audience ) . ':' . spl_object_id( $context );
+		if ( ! $debug_on && isset( self::$audience_match_cache[ $key ] ) ) {
+			return self::$audience_match_cache[ $key ];
+		}
+		$ok = RWGC_Decision_Condition_Evaluator::matches_group( $audience->conditions(), $context, $trace );
+		self::$audience_match_cache[ $key ] = $ok;
+		return $ok;
 	}
 
 	/**

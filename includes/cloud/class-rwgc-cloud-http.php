@@ -14,6 +14,78 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class RWGC_Cloud_Http {
 
+	/** @var int */
+	private static $attempts = 0;
+
+	/** @var bool True after template_redirect on the public front end. */
+	private static $visitor_render = false;
+
+	/**
+	 * @return int Cloud HTTP attempts this PHP request.
+	 */
+	public static function attempt_count() {
+		return self::$attempts;
+	}
+
+	/**
+	 * @return void
+	 */
+	public static function reset_attempt_count() {
+		self::$attempts = 0;
+	}
+
+	/**
+	 * Hook visitor-render guard. Admin, cron, REST, and WP-CLI never set this.
+	 *
+	 * @return void
+	 */
+	public static function register_hooks() {
+		if ( function_exists( 'add_action' ) ) {
+			add_action( 'template_redirect', array( __CLASS__, 'begin_visitor_render' ), 0 );
+		}
+	}
+
+	/**
+	 * Mark the rest of this request as a visitor page render.
+	 *
+	 * @return void
+	 */
+	public static function begin_visitor_render() {
+		self::$visitor_render = true;
+	}
+
+	/**
+	 * @return void
+	 */
+	public static function end_visitor_render() {
+		self::$visitor_render = false;
+	}
+
+	/**
+	 * Visitor page render must never call Cloud. Pairing/sync stay allowed
+	 * until template_redirect (admin, cron, REST, WP-CLI).
+	 *
+	 * @return bool
+	 */
+	public static function is_forbidden_on_current_request() {
+		$forbidden = self::$visitor_render;
+		if ( $forbidden && function_exists( 'is_admin' ) && is_admin() ) {
+			$forbidden = false;
+		}
+		if ( $forbidden && function_exists( 'wp_doing_cron' ) && wp_doing_cron() ) {
+			$forbidden = false;
+		}
+		if ( $forbidden && defined( 'WP_CLI' ) && WP_CLI ) {
+			$forbidden = false;
+		}
+		/**
+		 * Block Cloud HTTP (visitor render path).
+		 *
+		 * @param bool $forbidden Forbidden.
+		 */
+		return (bool) apply_filters( 'rwgc_cloud_http_forbidden', $forbidden );
+	}
+
 	/**
 	 * @param string               $method Method.
 	 * @param string               $path Path under API base (e.g. /sites/pair).
@@ -23,6 +95,10 @@ final class RWGC_Cloud_Http {
 	 * @return array{ok: bool, status: int, body: array<string, mixed>|null, raw: string, error: string}
 	 */
 	public static function request( $method, $path, array $body = array(), array $headers = array(), array $args = array() ) {
+		if ( self::is_forbidden_on_current_request() ) {
+			return self::fail( 0, 'cloud_http_forbidden_on_render' );
+		}
+		++self::$attempts;
 		$base = isset( $args['api_base'] ) ? (string) $args['api_base'] : RWGC_Cloud_Config::api_base();
 		if ( ! RWGC_Cloud_Config::is_secure_base( $base ) ) {
 			return self::fail( 0, 'insecure_api_base' );

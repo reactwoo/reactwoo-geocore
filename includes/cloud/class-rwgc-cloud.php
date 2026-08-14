@@ -48,6 +48,7 @@ final class RWGC_Cloud {
 	 */
 	public static function init() {
 		self::load();
+		RWGC_Cloud_Http::register_hooks();
 		RWGC_Cloud_Scheduler::init();
 		RWGC_Cloud_Telemetry::init();
 		if ( is_admin() ) {

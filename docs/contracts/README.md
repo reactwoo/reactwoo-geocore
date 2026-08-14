@@ -13,6 +13,7 @@ PHP value objects under `includes/contracts/`. Schema version: **`reactwoo_schem
 | [entitlements.md](./entitlements.md) | Entitlement (WP15); billing processors: [billing-providers.md](../architecture/billing-providers.md) |
 | [capabilities.md](./capabilities.md) (WP2) | Platform Capability Registry |
 | [decision-runtime.md](./decision-runtime.md) | Local Decision Runtime (not on render path) |
+| [../performance/decision-runtime.md](../performance/decision-runtime.md) | Decision Runtime performance (WP19) |
 | [experience-slots.md](./experience-slots.md) | Experience Slot API (WP5) |
 | [elementor-experience-slots.md](./elementor-experience-slots.md) | Elementor adapter (WP6) |
 | [gutenberg-experience-slots.md](./gutenberg-experience-slots.md) | Gutenberg block (WP7) |
