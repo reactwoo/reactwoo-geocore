@@ -105,6 +105,17 @@ if ( ! function_exists( 'reactwoo_cloud_switch_management_mode' ) ) {
 	}
 }
 
+if ( ! function_exists( 'reactwoo_cloud_health' ) ) {
+	/**
+	 * Structured site health. Local only — never HTTP.
+	 *
+	 * @return array<string, mixed>
+	 */
+	function reactwoo_cloud_health() {
+		return RWGC_Cloud_Health::snapshot();
+	}
+}
+
 if ( ! function_exists( 'reactwoo_cloud_get_manifest' ) ) {
 	/**
 	 * Local cached manifest (never fetches Cloud).

@@ -71,6 +71,7 @@ final class RWGC_Cloud_Admin {
 					<p><?php esc_html_e( 'This site is Cloud-managed. Experiences are authored in ReactWoo Cloud. Disconnecting keeps WordPress content and the local migration backup.', 'reactwoo-geocore' ); ?></p>
 				</div>
 			<?php endif; ?>
+			<?php self::render_health(); ?>
 
 			<table class="form-table" role="presentation">
 				<tr>
@@ -135,6 +136,62 @@ final class RWGC_Cloud_Admin {
 				</form>
 				<?php self::render_migration(); ?>
 			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * @return void
+	 */
+	private static function render_health() {
+		$health = RWGC_Cloud_Health::snapshot();
+		$status = (string) $health['status'];
+		$class  = 'notice-info';
+		if ( RWGC_Cloud_Health::STATUS_HEALTHY === $status ) {
+			$class = 'notice-success';
+		} elseif ( RWGC_Cloud_Health::STATUS_WARNING === $status ) {
+			$class = 'notice-warning';
+		} elseif ( RWGC_Cloud_Health::STATUS_CONFIGURATION_ERROR === $status || RWGC_Cloud_Health::STATUS_DISCONNECTED === $status ) {
+			$class = 'notice-error';
+		}
+		$env = isset( $health['environment'] ) && is_array( $health['environment'] ) ? $health['environment'] : array();
+		?>
+		<div class="notice <?php echo esc_attr( $class ); ?>">
+			<p>
+				<strong><?php esc_html_e( 'Site health', 'reactwoo-geocore' ); ?>:</strong>
+				<?php echo esc_html( (string) $health['status_label'] ); ?>
+			</p>
+			<?php if ( ! empty( $health['issues'] ) ) : ?>
+				<ul>
+					<?php foreach ( $health['issues'] as $issue ) : ?>
+						<li>
+							<?php echo esc_html( (string) ( $issue['message'] ?? '' ) ); ?>
+							<?php if ( ! empty( $issue['remediation'] ) ) : ?>
+								<br /><em><?php echo esc_html( (string) $issue['remediation'] ); ?></em>
+							<?php endif; ?>
+						</li>
+					<?php endforeach; ?>
+				</ul>
+			<?php endif; ?>
+			<p class="description">
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: 1: WP version, 2: PHP version, 3: Geo Core version */
+						__( 'WordPress %1$s · PHP %2$s · Geo Core %3$s', 'reactwoo-geocore' ),
+						(string) ( $env['wordpress'] ?? '' ),
+						(string) ( $env['php'] ?? '' ),
+						(string) ( $env['geocore'] ?? '' )
+					)
+				);
+				if ( ! empty( $env['woocommerce'] ) ) {
+					echo ' · ' . esc_html( sprintf( /* translators: %s version */ __( 'WooCommerce %s', 'reactwoo-geocore' ), (string) $env['woocommerce'] ) );
+				}
+				if ( ! empty( $env['elementor'] ) ) {
+					echo ' · ' . esc_html( sprintf( /* translators: %s version */ __( 'Elementor %s', 'reactwoo-geocore' ), (string) $env['elementor'] ) );
+				}
+				?>
+			</p>
 		</div>
 		<?php
 	}

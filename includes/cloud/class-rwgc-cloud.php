@@ -36,6 +36,7 @@ final class RWGC_Cloud {
 		require_once $dir . 'class-rwgc-cloud-scheduler.php';
 		require_once $dir . 'class-rwgc-cloud-event-queue.php';
 		require_once $dir . 'class-rwgc-cloud-telemetry.php';
+		require_once $dir . 'class-rwgc-cloud-health.php';
 		require_once $dir . 'class-rwgc-cloud-migration-translator.php';
 		require_once $dir . 'class-rwgc-cloud-migration.php';
 		require_once $dir . 'class-rwgc-cloud-admin.php';

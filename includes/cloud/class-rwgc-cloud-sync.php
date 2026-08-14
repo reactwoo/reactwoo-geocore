@@ -143,6 +143,7 @@ final class RWGC_Cloud_Sync {
 			'core_version' => defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '',
 			'revision'     => (int) RWGC_Cloud_Connection::get()['manifest_revision'],
 			'brand_hints'  => self::brand_hints(),
+			'health'       => class_exists( 'RWGC_Cloud_Health', false ) ? RWGC_Cloud_Health::snapshot() : null,
 		);
 
 		$response = RWGC_Cloud_Http::request(

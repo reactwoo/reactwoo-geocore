@@ -1,6 +1,6 @@
 # Current task
 
-WP16 — Existing customer migration (complete). Geo Core `1.8.152`. Decision Cloud `0.7.0`.
+WP17 — Failure handling + health (complete). Geo Core `1.8.153`. Decision Cloud `0.8.0`.
 
-Next: WP17 Failure handling + health.
-Then: WP18 Security pass.
+Next: WP18 Security pass.
+Then: WP19 Performance pass.

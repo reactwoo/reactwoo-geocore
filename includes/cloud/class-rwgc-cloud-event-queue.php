@@ -178,6 +178,21 @@ final class RWGC_Cloud_Event_Queue {
 	}
 
 	/**
+	 * Queue counters for health (no HTTP).
+	 *
+	 * @return array{pending: int, dropped: int, last_flush_at: string, last_error: string}
+	 */
+	public static function health_snapshot() {
+		$state = self::state();
+		return array(
+			'pending'       => count( $state['items'] ) + count( self::$buffer ),
+			'dropped'       => (int) $state['dropped'],
+			'last_flush_at' => (string) $state['last_flush_at'],
+			'last_error'    => (string) $state['last_error'],
+		);
+	}
+
+	/**
 	 * Test helper — clear buffer + option.
 	 *
 	 * @return void

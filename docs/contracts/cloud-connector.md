@@ -22,7 +22,7 @@ Base: `https://cloud.reactwoo.com/api/v1` (filter: `rwgc_cloud_api_base`)
 | `POST` | `/sites/pair` | pairing token in body | Exchange one-time token for site credentials |
 | `POST` | `/sites/confirm` | `Bearer site_secret` | Confirm pairing |
 | `GET` | `/sites/{site}/manifest` | Bearer + optional `If-None-Match` / `X-ReactWoo-Manifest-Revision` | Fetch compiled manifest (`304` if unchanged) |
-| `POST` | `/sites/{site}/heartbeat` | Bearer | Liveness + local revision |
+| `POST` | `/sites/{site}/heartbeat` | Bearer | Liveness + local health snapshot (admin/cron) |
 | `POST` | `/sites/{site}/capabilities` | Bearer | Capability + plugin inventory |
 | `POST` | `/sites/{site}/migration/import` | Bearer | Import translated resources (`dry_run` does not persist; never sets `management_mode`) |
 | `POST` | `/sites/{site}/management-mode` | Bearer | Explicit `{ "mode": "cloud" or "local" }` after import |
@@ -70,6 +70,7 @@ reactwoo_cloud_flush_events(); // admin/cron only
 reactwoo_cloud_migration_preview(); // local only — never HTTP
 reactwoo_cloud_import(); // admin only — backup + POST; does not switch mode
 reactwoo_cloud_switch_management_mode( $mode ); // admin only — explicit after import
+reactwoo_cloud_health(); // local only — structured Healthy/Warning/Disconnected/Configuration Error
 ```
 
 ## Admin
