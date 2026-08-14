@@ -83,6 +83,7 @@ No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (se
 * **Elementor:** Geo Core no longer touches how other plugins load in the editor. The widgets-config override, the registrar unhooking, the early AJAX exit and the custom single-widget inspector hydration are all removed, so Elementor registers every add-on's widgets and dynamic tags natively again.
 * **Elementor:** Geo Visibility controls stay on Elementor's supported hooks for documents, sections, columns, containers, widgets, popups and Atomic elements, with the same saved setting keys.
 * **Performance:** Geo Core's own control registration now resolves each option catalogue once per request. Country lists, saved visibility rules and master pages are memoized and bounded, master pages use a single meta query instead of scanning every page, and the visitor preview resolves at most once.
+* **Platform:** WordPress Abilities register on `wp_abilities_api_categories_init` / `wp_abilities_api_init` in every request. They no longer opt out of Elementor editor requests — that opt-out dated from an earlier version that registered on `init`.
 * **Diagnostics:** Elementor timing is now opt-in via `RWGC_ELEMENTOR_PROFILE`, `rwgc_elementor_profile` or the option of the same name, and measures only ReactWoo callbacks — duration, memory delta, query delta, peak memory and outgoing HTTP attempts.
 
 = 1.8.149 =

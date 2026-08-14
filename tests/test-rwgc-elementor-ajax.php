@@ -162,15 +162,16 @@ rwgc_assert( isset( $chips[0]['value'] ) && '' === $chips[0]['value'], 'library 
 rwgc_assert( RWGC_Elementor_Options::MAX_LIBRARY_RULES > 0, 'library rows are bounded' );
 rwgc_assert( RWGC_Elementor_Options::MAX_MASTER_PAGES > 0, 'master pages are bounded' );
 
-/* 5. Geo Core defers only its own admin bootstrap during editor AJAX. */
+/* 5. WP Abilities register on their own hooks, not around Elementor. */
 
 require_once dirname( __DIR__ ) . '/includes/platform/class-rwgc-wp-abilities-adapter.php';
-$_REQUEST = array( 'action' => 'elementor_ajax' );
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( RWGC_WP_Abilities_Adapter::should_skip_registration(), 'skip abilities on elementor_ajax' );
-
-$_REQUEST = array( 'action' => 'heartbeat' );
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( ! RWGC_WP_Abilities_Adapter::should_skip_registration(), 'do not skip abilities on other ajax' );
+rwgc_assert(
+	! method_exists( 'RWGC_WP_Abilities_Adapter', 'should_skip_registration' ),
+	'abilities no longer opt out of Elementor requests'
+);
+rwgc_assert(
+	! RWGC_WP_Abilities_Adapter::is_supported(),
+	'abilities stay inert without the WordPress Abilities API'
+);
 
 exit( $fails > 0 ? 1 : 0 );

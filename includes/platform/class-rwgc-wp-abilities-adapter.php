@@ -45,9 +45,6 @@ final class RWGC_WP_Abilities_Adapter {
 		if ( ! function_exists( 'wp_register_ability_category' ) ) {
 			return;
 		}
-		if ( self::should_skip_registration() ) {
-			return;
-		}
 		if ( ! apply_filters( 'reactwoo_bridge_wp_abilities', true ) ) {
 			return;
 		}
@@ -67,9 +64,6 @@ final class RWGC_WP_Abilities_Adapter {
 	 */
 	public static function register_abilities() {
 		if ( ! function_exists( 'wp_register_ability' ) ) {
-			return;
-		}
-		if ( self::should_skip_registration() ) {
 			return;
 		}
 		if ( ! apply_filters( 'reactwoo_bridge_wp_abilities', true ) ) {
@@ -136,25 +130,6 @@ final class RWGC_WP_Abilities_Adapter {
 			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound -- WP core API when present.
 			wp_register_ability( $ability_name, $args );
 		}
-	}
-
-	/**
-	 * Abilities are unused while Elementor builds widget stacks.
-	 * Registering them on that AJAX path can print `_doing_it_wrong`
-	 * HTML into JSON (Elements panel spinner) when WP_DEBUG is on.
-	 *
-	 * @return bool
-	 */
-	public static function should_skip_registration() {
-		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_elementor_ajax() ) {
-			return true;
-		}
-		if ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) {
-			return false;
-		}
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- read-only context detect.
-		$action = isset( $_REQUEST['action'] ) ? sanitize_key( wp_unslash( (string) $_REQUEST['action'] ) ) : '';
-		return ( 'elementor_ajax' === $action );
 	}
 
 	/**

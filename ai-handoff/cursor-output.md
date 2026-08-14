@@ -16,6 +16,7 @@ widget registration. Optimise only work owned by Geo Core.
 - `includes/class-rwgc-plugin.php` — services no longer gated on a heavy/constrained editor request; only admin-screen bootstrap still defers during `elementor_ajax`
 - `includes/class-rwgc-elementor.php`, `.../class-rwgc-elementor-elements.php`, `.../class-rwgc-elementor-geo-controls.php`, `.../class-rwgc-elementor-atomic-geo.php`, `.../class-rwgc-elementor-experience-slots.php` — heavy-AJAX gates removed; option lookups delegate to `RWGC_Elementor_Options`
 - `includes/targeting/class-rwgc-rule-registry.php` — debug logger swapped for the opt-in profiler
+- `includes/platform/class-rwgc-wp-abilities-adapter.php` — `should_skip_registration()` removed; abilities register on their own WP hooks in every request
 - `tests/test-rwgc-elementor-ajax.php` — rewritten for the new surface
 
 ## What was not changed
