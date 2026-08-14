@@ -72,11 +72,8 @@ class RWGC_Elementor_Elements {
 			RWGC_VERSION,
 			true
 		);
-		$countries = array();
-		if ( class_exists( 'RWGC_Countries', false ) ) {
-			$list = RWGC_Countries::get_options();
-			$countries = is_array( $list ) ? $list : array();
-		}
+		// Same memoized catalogue the controls use, so the editor resolves it once.
+		$countries = self::get_country_options();
 
 		wp_localize_script(
 			'rwgc-elementor-library-bridge',
@@ -287,6 +284,9 @@ class RWGC_Elementor_Elements {
 	 * @return array<string, string>
 	 */
 	public static function get_country_options() {
+		if ( class_exists( 'RWGC_Elementor_Options', false ) ) {
+			return RWGC_Elementor_Options::countries();
+		}
 		if ( class_exists( 'RWGC_Countries', false ) ) {
 			$list = RWGC_Countries::get_options();
 			if ( is_array( $list ) && ! empty( $list ) ) {
