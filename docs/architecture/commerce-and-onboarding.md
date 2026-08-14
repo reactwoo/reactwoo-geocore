@@ -1,6 +1,6 @@
 # Decision Cloud — Commerce, upgrade and onboarding
 
-Status: Sprint 4 implemented in Decision Cloud `0.14.0` (guided WordPress pairing, Figma 26–31). Sprint 5 remains in `0.13.0`. Sprint 3 activation remains in `0.12.0`. Sprint 2 remains in `reactwoo-api-manager` (`includes/cloud-commerce/`). Sprint 1 commerce boundary remains in Cloud `0.11.0`.  
+Status: Sprint 6 implemented in Decision Cloud `0.15.0` (billing reconciliation and last-known entitlement resilience). Sprint 4 remains in `0.14.0`, Sprint 5 in `0.13.0`, Sprint 3 in `0.12.0`, Sprint 2 in `reactwoo-api-manager` (`includes/cloud-commerce/`), and Sprint 1 in Cloud `0.11.0`.  
 Architecture: separate SaaS control plane; shared ReactWoo.com commerce.  
 Figma: [Reactwoo — Cloud Dashboard](https://www.figma.com/design/BZFmgpDMSm0OMtnC19lNQ4/Reactwoo?node-id=275-2). Activation / upgrade / site-connection screens: [node 310:1796](https://www.figma.com/design/BZFmgpDMSm0OMtnC19lNQ4/Reactwoo?node-id=310-1796).
 
@@ -21,7 +21,7 @@ This is neither a second billing system inside Decision Cloud nor a reskinned Wo
 | 3 Identity and activation | Decision Cloud | **Done** (`0.12.0`) |
 | 5 Standalone upgrade | Decision Cloud | **Done** (`0.13.0`) |
 | 4 Guided site connection | Decision Cloud | **Done** (`0.14.0`) |
-| 6 Billing resilience | Decision Cloud | Later |
+| 6 Billing resilience | Decision Cloud | **Done** (`0.15.0`) |
 
 Store companion: [`reactwoo-api-manager/docs/cloud-commerce-bridge.md`](../../../reactwoo-api-manager/docs/cloud-commerce-bridge.md).
 
@@ -60,4 +60,12 @@ Commerce contract: [billing-providers.md](./billing-providers.md).
 - Pairing never flips `management_mode`; Observe only leaves `local`; Cloud managed is an explicit portal `POST .../management-mode`
 - Portal screens match Figma 26–31 copy; capability import is a local selection only (no WordPress deletes)
 - Public pairing JSON has no `site_secret`, licence keys, Stripe, or Paystack
-- Next: Sprint 6 billing resilience
+
+## Sprint 6 acceptance
+
+- Portal-authenticated reconciliation calls only the allowlisted ReactWoo.com reconcile endpoint with the shared `RWCC_RECONCILE_TOKEN`
+- Store outages keep the last valid entitlement snapshot; paid capabilities are not revoked because reconciliation failed
+- A store `404` reports `subscription_not_found` and does not cancel the local subscription
+- `GET /organisations/:orgId/billing` remains local-only; reconciliation is an explicit portal `POST`
+- Portal states distinguish active, payment grace, paused, and last-known entitlement conditions with payment-method handoff
+- Public billing and reconcile JSON contains no Stripe, Paystack, customer, subscription, or site-secret identifiers

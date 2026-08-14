@@ -4,32 +4,28 @@
 done
 
 ## Task
-WP20 — AI recommendations (advisory only; no autonomous live-site changes).
+Decision Cloud Sprint 6 — billing resilience.
 
 ## Files changed
 
-### Decision Cloud (`0.10.0`)
-- `recommendations` store + generate/approve/dismiss
-- PII stripped from datasets
-- Approve creates **draft** experience/variant and does **not** compile
-- Manifest compiler excludes non-live experiences
-- Portal Recommendations nav
-- Tests: `tests/recommendations.test.js`
+### Decision Cloud (`0.15.0`)
+- Added explicit ReactWoo.com reconciliation configuration and allowlisted HTTP client
+- Added portal-authenticated manual reconcile endpoint with last-known snapshot fallback
+- Added active, grace, paused, and last-known billing portal states
+- Added Sprint 6 billing resilience coverage and health/version updates
 
-### Geo Core (`1.8.156`)
-- `RWGC_Contract_Recommendation`
-- `RWGC_Cloud_Recommendations` cache + admin approve/dismiss
-- Sync refresh on maintenance
-- Tests: `composer test:recommendations`
+### Geo Core docs
+- Marked Sprint 6 complete in commerce/onboarding and work-package tracking
+- Documented outage, `404`, local-only GET, public JSON, and portal acceptance
 
 ## What was not changed
-- Visitor render path (still no Cloud HTTP)
-- Autonomous optimisation (explicitly out of scope)
-- Gate D / Gate E still need a live site
+- ReactWoo.com store plugin
+- Site management mode
+- Heartbeat or visitor paths
+- Payment-gateway integrations
 
 ## Commands run
-- Decision Cloud `npm test`
-- Geo Core recommendations, contracts, cloud-connector, decision-runtime
+- Decision Cloud `npm test` — 85 passed, 0 failed
 
 ## Remaining
-- Gate D / Gate E live-site validation
+- Gate D / Gate E live-site validation remains

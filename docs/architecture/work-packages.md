@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
 
-**Current active package:** Sprint 4 complete (guided site pairing, Decision Cloud `0.14.0`). Next: Sprint 6 billing resilience.
+**Current active package:** Sprint 6 complete (billing resilience, Decision Cloud `0.15.0`). Gate D / Gate E live-site validation remains.
 
 ---
 
@@ -591,6 +591,6 @@ No autonomous optimisation in this phase.
 - [x] Sprint 3 Cloud activation and workspace provisioning (`0.12.0`)
 - [x] Sprint 5 Standalone upgrade (`0.13.0`)
 - [x] Sprint 4 Guided site connection (`0.14.0`)
-- [ ] Sprint 6 Billing resilience
+- [x] Sprint 6 Billing resilience (`0.15.0`)
 - [ ] WP10–13 Cloud → **Gate D** (end-to-end site still needed)  
 - [ ] WP14–16 analytics/billing/migration → **Gate E** (metrics pipeline in place; live attribution still needed)  
