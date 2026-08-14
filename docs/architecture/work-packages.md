@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
 
-**Current active package:** Sprint 3 complete (Cloud activation + workspace provisioning, Decision Cloud `0.12.0`). Next: Sprint 5 upgrade eligibility (Figma 23–25), then Sprint 4 site pairing (Figma 26–31).
+**Current active package:** Sprint 5 complete (upgrade eligibility + ReactWoo.com handoff, Decision Cloud `0.13.0`). Next: Sprint 4 site pairing (Figma 26–31).
 
 ---
 
