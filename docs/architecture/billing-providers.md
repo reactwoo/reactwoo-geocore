@@ -1,86 +1,73 @@
-# Cloud billing providers
+# Cloud commerce
 
-Canonical for Decision Cloud billing. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
+Canonical for Decision Cloud billing. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md). Onboarding sequence: [commerce-and-onboarding.md](./commerce-and-onboarding.md).
 
-**Implemented:** Decision Cloud `0.6.0` (WP15b). Stripe remains the default rail; Paystack is the Africa adapter.
+**Implemented (Sprint 1):** Decision Cloud `0.11.0`. WooCommerce on ReactWoo.com is the only commercial source of truth. Decision Cloud has no Stripe, Paystack or PayGate adapters.
 
-## Providers (v1)
+**Implemented (Sprint 3):** First purchase provisions a workspace from `rw_cloud_provisioning_id`. `/activate` exchanges a hashed, single-use claim.
 
-| Provider | Role | Checkout | Customer self-serve |
-|----------|------|----------|---------------------|
-| **Stripe** (WP15) | Default for most markets | Hosted Checkout | Stripe Customer Portal |
-| **Paystack** (WP15b) | Africa-based subscriptions and customers | Paystack hosted / Popup | Paystack customer portal or manage-via-link; no custom card UI |
+## Ownership
 
-Do not add a third processor in v1. Do not collect card numbers in ReactWoo.
+| Concern | System of record |
+|---------|------------------|
+| Products, prices, coupons, tax, invoices, refunds | ReactWoo.com WooCommerce |
+| Subscription and renewal state | WooCommerce Subscriptions |
+| Checkout and payment methods | ReactWoo.com (hosted checkout / My Account) |
+| Organisations, entitlements, sites | Decision Cloud |
 
-## Same product, two rails
+Decision Cloud stores a **snapshot**: internal plan, status, renewal, grace, `cloud.*` keys. It never stores gateway names, payment tokens or WooCommerce consumer credentials.
 
-Internal plans stay `starter` | `growth` | `scale`. Entitlement keys stay:
+## Internal plans
 
-`cloud.personalisation`, `cloud.commerce`, `cloud.optimise`, `cloud.components`, `cloud.insights`, `sites.max`, `team_members.max`, `history.days`
+`starter` | `growth` | `scale` map from WooCommerce product/variation IDs:
 
-Each processor maps **its** catalogue onto those plans:
+| Internal plan | Env |
+|---------------|-----|
+| starter | `WOOCOMMERCE_PRODUCT_STARTER` |
+| growth | `WOOCOMMERCE_PRODUCT_GROWTH` |
+| scale | `WOOCOMMERCE_PRODUCT_SCALE` |
 
-| Internal plan | Stripe | Paystack |
-|---------------|--------|----------|
-| starter | `STRIPE_PRICE_STARTER` | `PAYSTACK_PLAN_STARTER` |
-| growth | `STRIPE_PRICE_GROWTH` | `PAYSTACK_PLAN_GROWTH` |
-| scale | `STRIPE_PRICE_SCALE` | `PAYSTACK_PLAN_SCALE` |
+Entitlement keys stay `cloud.personalisation`, `cloud.commerce`, `cloud.optimise`, `cloud.components`, `cloud.insights`, `cloud.recommendations`, `sites.max`, `team_members.max`, `history.days`.
 
-Local currency on the Paystack plans (NGN, GHS, ZAR, KES, …) is a catalogue concern. Entitlements do not change with currency.
-
-## Organisation billing record
+## Subscription row (generic)
 
 ```json
 {
-  "provider": "stripe",
+  "provider": "woocommerce",
   "status": "active",
   "plan": "growth",
-  "grace_until": null,
-  "customer_id": "(processor, never returned to feature APIs)",
-  "subscription_id": "(processor)",
-  "processor_plan_id": "(price or plan code)"
+  "customer_id": "(WooCommerce customer, never returned on public APIs)",
+  "subscription_id": "(WooCommerce subscription)",
+  "processor_plan_id": "(product or variation ID)",
+  "current_period_end": "2026-09-14T12:00:00",
+  "cancel_at_period_end": false,
+  "grace_until": null
 }
 ```
 
-`provider`: `stripe` | `paystack`.
+## Checkout and account
 
-**v1 constraint:** one organisation uses **one** processor at a time. First successful subscribe locks the provider. Switching Stripe ↔ Paystack is a support/migration path, not self-serve.
-
-## Checkout routing
-
-Portal Billing offers both processors when both are configured.
-
-**Suggest Paystack** when the organisation billing country is in a Paystack-supported African market (examples: NG, GH, ZA, KE, CI). **Suggest Stripe** otherwise. The customer may still choose the other processor (international cards, USD invoicing, existing Stripe customer).
-
-Do not geo-detect from the WordPress visitor. Billing country is an org setting / checkout field, not a page-render concern.
+Portal **Subscribe** and **Manage billing** create signed ReactWoo.com handoff URLs (`REACTWOO_STORE_ORIGIN` + HMAC `REACTWOO_HANDOFF_SECRET`). Redirects are restricted to that origin. Payment-gateway hosts are rejected.
 
 ## Webhooks
 
-| Processor | Path | Auth |
-|-----------|------|------|
-| Stripe | `POST /api/v1/billing/webhooks/stripe` (WP15 also accepted `/billing/webhooks`) | `Stripe-Signature` HMAC |
-| Paystack | `POST /api/v1/billing/webhooks/paystack` | `x-paystack-signature` HMAC-SHA512 of raw body |
+| Path | Auth |
+|------|------|
+| `POST /api/v1/billing/webhooks/woocommerce` | `X-WC-Webhook-Signature` HMAC-SHA256 (base64), idempotent on `X-WC-Webhook-Delivery-ID` |
 
-Both adapters call the same `EntitlementService.applyPlan` / `markPastDue` / `markCanceled`.
-
-Idempotent on processor event id. Replay-safe (reject stale timestamps where the processor supplies them). Grace on payment failure. Never delete org, sites, audiences, or experiences on lapse.
-
-Map at least:
-
-| Lifecycle | Stripe | Paystack |
-|-----------|--------|----------|
-| Subscribe / paid | `checkout.session.completed`, `invoice.paid` | `charge.success`, `subscription.create` |
-| Past due | `invoice.payment_failed`, `customer.subscription.updated` past_due | `invoice.payment_failed`, failed recurring charge |
-| Cancel | `customer.subscription.deleted` | `subscription.disable`, `subscription.not_renew` |
+Status map: `active` / `pending-cancel` → active; `on-hold` / `pending` / `failed` → past_due (grace); `cancelled` / `expired` / deleted topic → canceled; `order.refunded` → past_due unless already canceled. Configuration is never deleted on lapse. Payloads may include `rwcc.timestamp` + `rwcc.replay_window_sec`; stale timestamps are ignored.
 
 ## WordPress
 
-Unchanged: Core caches the **entitlement snapshot** from heartbeat. `RWGC_Entitlements::allows()` does not know which processor billed the org. No processor HTTP on the visitor render path.
+Unchanged: Core caches the entitlement snapshot from heartbeat. `RWGC_Entitlements::allows()` does not know how the org was billed. No commerce HTTP on the visitor render path.
 
-## Out of scope (v1)
+## Sprint 2 store companion
 
-- Split billing (Stripe + Paystack on one org)
+Implemented in `reactwoo-api-manager/includes/cloud-commerce/`. Details: that plugin’s `docs/cloud-commerce-bridge.md`.
+
+## Out of scope in Decision Cloud
+
+- Direct payment-gateway adapters
 - Custom card forms
-- Flutterwave or other African processors
-- Processor calls from WordPress plugins (`react-cloud` remains the Google vault, not billing)
+- WooCommerce REST credentials in the browser
+- Sprint 2 store companion (activation claims, checkout meta) — **done** in `reactwoo-api-manager`

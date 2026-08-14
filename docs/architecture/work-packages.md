@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
 
-**Current active package:** none — WP0–WP20 complete. Gate D / Gate E still need a live site.
+**Current active package:** Sprint 3 complete (Cloud activation + workspace provisioning, Decision Cloud `0.12.0`). Next: Sprint 5 upgrade eligibility (Figma 23–25), then Sprint 4 site pairing (Figma 26–31).
 
 ---
 
@@ -586,5 +586,8 @@ No autonomous optimisation in this phase.
 - [x] WP18 Security pass (2026-08-14) — Geo Core `1.8.154` HMAC credentials + SSRF host block; Decision Cloud `0.9.0` portal token, pairing rate limit, checkout URL allowlist (`docs/security/threat-model.md`, `composer test:cloud-security`)
 - [x] WP19 Performance pass (2026-08-14) — Geo Core `1.8.155` candidate-only audiences, lazy context, manifest memo, Cloud HTTP blocked after `template_redirect` (`docs/performance/decision-runtime.md`, `composer test:decision-perf`)
 - [x] WP20 AI recommendations (2026-08-14) — Decision Cloud `0.10.0` advisory generate/approve/dismiss; Geo Core `1.8.156` recommendation contract + admin cache (`docs/contracts/recommendations.md`, `composer test:recommendations`). Approve saves drafts only — never compiles a live manifest.
+- [x] Sprint 1 WooCommerce commerce (2026-08-14) — Decision Cloud `0.11.0` removes Stripe/Paystack adapters; store handoffs + `POST /billing/webhooks/woocommerce` (`docs/architecture/commerce-and-onboarding.md`)
+- [x] Sprint 2 Store companion bridge (ReactWoo.com) — checkout meta, activation claims, subscription webhooks
+- [x] Sprint 3 Cloud activation and workspace provisioning (`0.12.0`)
 - [ ] WP10–13 Cloud → **Gate D** (end-to-end site still needed)  
 - [ ] WP14–16 analytics/billing/migration → **Gate E** (metrics pipeline in place; live attribution still needed)  
