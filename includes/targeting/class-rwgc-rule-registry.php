@@ -173,15 +173,6 @@ class RWGC_Rule_Registry {
 	 */
 	private static function get_rwgc_library_rows() {
 		if ( null !== self::$rwgc_library_rows_cache ) {
-			if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) && RWGC_Elementor_Config_Debug::enabled() ) {
-				RWGC_Elementor_Config_Debug::log(
-					'RWGC_Rule_Registry::get_rwgc_library_rows',
-					array(
-						'cache' => 'hit',
-						'rows'  => count( self::$rwgc_library_rows_cache ),
-					)
-				);
-			}
 			return self::$rwgc_library_rows_cache;
 		}
 
@@ -224,11 +215,10 @@ class RWGC_Rule_Registry {
 			return $rows;
 		};
 
-		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) && RWGC_Elementor_Config_Debug::enabled() ) {
-			self::$rwgc_library_rows_cache = RWGC_Elementor_Config_Debug::time(
+		if ( class_exists( 'RWGC_Elementor_Profiler', false ) ) {
+			self::$rwgc_library_rows_cache = RWGC_Elementor_Profiler::measure(
 				'RWGC_Rule_Registry::get_rwgc_library_rows',
-				$build,
-				array( 'cache' => 'miss' )
+				$build
 			);
 			return self::$rwgc_library_rows_cache;
 		}

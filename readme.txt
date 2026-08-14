@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.8.149
+Stable tag: 1.8.150
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,12 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.150 =
+* **Elementor:** Geo Core no longer touches how other plugins load in the editor. The widgets-config override, the registrar unhooking, the early AJAX exit and the custom single-widget inspector hydration are all removed, so Elementor registers every add-on's widgets and dynamic tags natively again.
+* **Elementor:** Geo Visibility controls stay on Elementor's supported hooks for documents, sections, columns, containers, widgets, popups and Atomic elements, with the same saved setting keys.
+* **Performance:** Geo Core's own control registration now resolves each option catalogue once per request. Country lists, saved visibility rules and master pages are memoized and bounded, master pages use a single meta query instead of scanning every page, and the visitor preview resolves at most once.
+* **Diagnostics:** Elementor timing is now opt-in via `RWGC_ELEMENTOR_PROFILE`, `rwgc_elementor_profile` or the option of the same name, and measures only ReactWoo callbacks — duration, memory delta, query delta, peak memory and outgoing HTTP attempts.
 
 = 1.8.149 =
 * **Elementor:** Single-widget hydrate no longer unhooks add-on registrars, so Unlimited Elements and other catalogue widgets can register and return a real control stack. Tab labels are plain strings (Elementor's own format), replacing the `[object Object]` inspector tabs. Hydrate is also triggered from `panel/editor/open`, so it runs however the widget is selected.

@@ -1,16 +1,23 @@
 <?php
 /**
- * Smoke: RWGC_Elementor_Ajax bulk vs single-widget detection.
+ * Smoke: Elementor editor context detection, opt-in profiling, bounded options.
+ *
+ * Geo Core no longer classifies Elementor AJAX actions, replaces Elementor
+ * actions, or unhooks another plugin's registrars. These tests pin that
+ * contract so the workaround cannot come back unnoticed.
  *
  * @package ReactWoo_Geo_Core
  */
 
 define( 'ABSPATH', __DIR__ );
 
-require_once dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-ajax.php';
-
 $fails = 0;
 
+/**
+ * @param bool   $cond Assertion.
+ * @param string $msg  Description.
+ * @return void
+ */
 function rwgc_assert( $cond, $msg ) {
 	global $fails;
 	if ( ! $cond ) {
@@ -36,70 +43,126 @@ if ( ! function_exists( 'wp_json_encode' ) ) {
 		return json_encode( $data );
 	}
 }
+if ( ! function_exists( '__' ) ) {
+	function __( $text, $domain = null ) {
+		unset( $domain );
+		return $text;
+	}
+}
+if ( ! function_exists( 'apply_filters' ) ) {
+	function apply_filters( $hook, $value ) {
+		unset( $hook );
+		return $value;
+	}
+}
+
+require_once dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-ajax.php';
+require_once dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-profiler.php';
+require_once dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-options.php';
 
 define( 'DOING_AJAX', true );
+
+/* 1. Context detection is read-only and has no heavy/light classification. */
 
 $_REQUEST = array( 'action' => 'elementor_ajax' );
 RWGC_Elementor_Ajax::reset_for_tests();
 rwgc_assert( RWGC_Elementor_Ajax::is_elementor_ajax(), 'detects elementor_ajax' );
-rwgc_assert( RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'opaque actions → heavy' );
 
-$_REQUEST['actions'] = '{"get_widgets_config":{"action":"get_widgets_config","data":{}}}';
+$_REQUEST = array( 'action' => 'elementor_ajax', 'actions' => '{"a":{"action":"get_widgets_config"}}' );
 RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'get_widgets_config → heavy' );
+rwgc_assert( RWGC_Elementor_Ajax::is_elementor_ajax(), 'get_widgets_config is still just elementor_ajax' );
 
-$_REQUEST['actions'] = '{"editor_get_widget_config":{"action":"editor_get_widget_config","data":{}}}';
+$_REQUEST = array( 'action' => 'heartbeat' );
 RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( ! RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'editor_get_widget_config alone → light' );
+rwgc_assert( ! RWGC_Elementor_Ajax::is_elementor_ajax(), 'heartbeat is not elementor_ajax' );
 
-$_REQUEST['actions'] = '{"a":{"action":"get_document_config"},"b":{"action":"editor_get_widget_config"}}';
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'mixed with document config → heavy' );
+/* 2. The workaround API is gone and must not return. */
 
-$_REQUEST['actions'] = '{"refresh_widgets_config":{"action":"refresh_widgets_config","data":{}}}';
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'refresh_widgets_config → heavy' );
+foreach ( array(
+	'is_heavy_elementor_ajax',
+	'is_bulk_widgets_config',
+	'is_widget_hydrate_ajax',
+	'is_constrained_elementor_ajax',
+	'early_widgets_config_responses',
+	'hydrate_widget_name',
+) as $gone ) {
+	rwgc_assert(
+		! method_exists( 'RWGC_Elementor_Ajax', $gone ),
+		"RWGC_Elementor_Ajax::{$gone}() stays removed"
+	);
+}
 
-$_REQUEST['actions'] = '{"x":{"action":"unknown_editor_boot","data":{}}}';
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'unknown elementor_ajax → heavy' );
+rwgc_assert( ! class_exists( 'RWGC_Elementor_Widgets_Config' ), 'widgets-config override stays removed' );
+rwgc_assert( ! class_exists( 'RWGC_Elementor_Config_Debug' ), 'always-on config debug stays removed' );
+rwgc_assert(
+	! file_exists( dirname( __DIR__ ) . '/assets/js/rwgc-elementor-widget-hydrate.js' ),
+	'inspector hydration script stays removed'
+);
+rwgc_assert(
+	! file_exists( dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-widgets-config.php' ),
+	'widgets-config file stays removed'
+);
 
-$_REQUEST['actions'] = '{"f":{"action":"enqueue_google_fonts","data":{}}}';
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( ! RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'enqueue_google_fonts → light' );
+/* 3. Profiling is opt-in and transparent. */
 
-$_REQUEST['actions'] = '{"h":{"action":"rwgc_get_widget_config","data":{"widget":"heading"}}}';
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( ! RWGC_Elementor_Ajax::is_heavy_elementor_ajax(), 'rwgc_get_widget_config → light' );
-rwgc_assert( RWGC_Elementor_Ajax::is_widget_hydrate_ajax(), 'rwgc_get_widget_config → hydrate' );
-rwgc_assert( RWGC_Elementor_Ajax::is_constrained_elementor_ajax(), 'rwgc_get_widget_config → constrained boot' );
+RWGC_Elementor_Profiler::reset_for_tests();
+rwgc_assert( ! RWGC_Elementor_Profiler::enabled(), 'profiler is off by default' );
 
-$_REQUEST['actions'] = '{"f":{"action":"enqueue_google_fonts","data":{}}}';
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( ! RWGC_Elementor_Ajax::is_constrained_elementor_ajax(), 'fonts are not constrained' );
+$ran = 0;
+$out = RWGC_Elementor_Profiler::measure(
+	'test',
+	static function () use ( &$ran ) {
+		++$ran;
+		return 'value';
+	}
+);
+rwgc_assert( 'value' === $out && 1 === $ran, 'profiler passes the result through when off' );
+rwgc_assert( array() === RWGC_Elementor_Profiler::rows(), 'profiler records nothing when off' );
 
-$_REQUEST['actions'] = '{"get_widgets_config":{"action":"get_widgets_config","data":{}}}';
-RWGC_Elementor_Ajax::reset_for_tests();
-$early = RWGC_Elementor_Ajax::early_widgets_config_responses();
-rwgc_assert( is_array( $early ) && isset( $early['get_widgets_config'] ), 'widgets-config can early-finish' );
-rwgc_assert( array() === $early['get_widgets_config']['data'], 'early widgets-config data is empty' );
+define( 'RWGC_ELEMENTOR_PROFILE', true );
+RWGC_Elementor_Profiler::reset_for_tests();
+rwgc_assert( RWGC_Elementor_Profiler::enabled(), 'constant enables the profiler' );
+RWGC_Elementor_Profiler::measure( 'RWGC_Test::work', static fn() => array( 1, 2, 3 ) );
+$rows = RWGC_Elementor_Profiler::rows();
+rwgc_assert( 1 === count( $rows ), 'profiler records one row per measured callback' );
+rwgc_assert( 'RWGC_Test::work' === $rows[0]['cb'], 'row is labelled with the ReactWoo callback' );
+foreach ( array( 'ms', 'mem_delta', 'peak', 'q_delta', 'http' ) as $metric ) {
+	rwgc_assert( array_key_exists( $metric, $rows[0] ), "row reports {$metric}" );
+}
+rwgc_assert( 3 === $rows[0]['rows'], 'row reports array size' );
 
-$_REQUEST['actions'] = '{"a":{"action":"get_widgets_config"},"f":{"action":"enqueue_google_fonts"}}';
-RWGC_Elementor_Ajax::reset_for_tests();
-$early_fonts = RWGC_Elementor_Ajax::early_widgets_config_responses();
-rwgc_assert( is_array( $early_fonts ) && 2 === count( $early_fonts ), 'widgets-config + fonts can early-finish' );
+/* 4. Option providers are memoized and bounded, and never hit the network. */
 
-$_REQUEST['actions'] = '{"a":{"action":"get_widgets_config"},"b":{"action":"get_document_config"}}';
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( null === RWGC_Elementor_Ajax::early_widgets_config_responses(), 'do not early-finish document config' );
+RWGC_Elementor_Options::reset_for_tests();
+$built = 0;
+$first = RWGC_Elementor_Options::visitor_preview(
+	static function () use ( &$built ) {
+		++$built;
+		return '<div>preview</div>';
+	}
+);
+$second = RWGC_Elementor_Options::visitor_preview(
+	static function () use ( &$built ) {
+		++$built;
+		return '<div>preview</div>';
+	}
+);
+rwgc_assert( 1 === $built, 'visitor preview resolves at most once per request' );
+rwgc_assert( $first === $second, 'memoized visitor preview is stable' );
 
-$_REQUEST['actions'] = '{"h":{"action":"rwgc_get_widget_config"}}';
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( null === RWGC_Elementor_Ajax::early_widgets_config_responses(), 'do not early-finish hydrate' );
+RWGC_Elementor_Options::reset_for_tests();
+rwgc_assert( array() === RWGC_Elementor_Options::countries(), 'countries degrade to empty without RWGC_Countries' );
+rwgc_assert( array() === RWGC_Elementor_Options::country_chips(), 'country chips degrade to empty' );
 
-$_REQUEST['actions'] = '{"h":{"action":"rwgc_get_widget_config","data":{"widget":"ucaddon_ue_listing_tabs"}}}';
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( 'ucaddon_ue_listing_tabs' === RWGC_Elementor_Ajax::hydrate_widget_name(), 'hydrate widget name from payload' );
+$select = RWGC_Elementor_Options::visibility_library_select();
+rwgc_assert( isset( $select[''] ), 'library select always offers the empty choice' );
+$chips = RWGC_Elementor_Options::visibility_library_chips();
+rwgc_assert( isset( $chips[0]['value'] ) && '' === $chips[0]['value'], 'library chips keep the empty choice first' );
+
+rwgc_assert( RWGC_Elementor_Options::MAX_LIBRARY_RULES > 0, 'library rows are bounded' );
+rwgc_assert( RWGC_Elementor_Options::MAX_MASTER_PAGES > 0, 'master pages are bounded' );
+
+/* 5. Geo Core defers only its own admin bootstrap during editor AJAX. */
 
 require_once dirname( __DIR__ ) . '/includes/platform/class-rwgc-wp-abilities-adapter.php';
 $_REQUEST = array( 'action' => 'elementor_ajax' );
@@ -109,68 +172,5 @@ rwgc_assert( RWGC_WP_Abilities_Adapter::should_skip_registration(), 'skip abilit
 $_REQUEST = array( 'action' => 'heartbeat' );
 RWGC_Elementor_Ajax::reset_for_tests();
 rwgc_assert( ! RWGC_WP_Abilities_Adapter::should_skip_registration(), 'do not skip abilities on other ajax' );
-
-require_once dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-widgets-config.php';
-$_REQUEST = array( 'action' => 'elementor_ajax', 'actions' => '{"h":{"action":"rwgc_get_widget_config","data":{"widget":"ucaddon_ue_listing_tabs"}}}' );
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( 'ucaddon_ue_listing_tabs' === RWGC_Elementor_Ajax::hydrate_widget_name(), 'hydrate reports UE widget name' );
-$_REQUEST['actions'] = '{"h":{"action":"rwgc_get_widget_config","data":{"widget":"heading"}}}';
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( 'heading' === RWGC_Elementor_Ajax::hydrate_widget_name(), 'hydrate reports core widget name' );
-rwgc_assert( ! RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'heading', 'Elementor\\Widget_Heading' ), 'keep Elementor core heading' );
-rwgc_assert( ! RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'form', 'ElementorPro\\Modules\\Forms\\Widgets\\Form' ), 'keep Elementor Pro form' );
-rwgc_assert( RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'rwa-carousel', 'ReactWoo\\Atomic\\Widgets\\Carousel' ), 'skip Atomic stack on bulk path' );
-rwgc_assert( RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'whmcs_products', 'RW_Elementor_WHM_Products_Widget' ), 'skip WHMCS stack on bulk path' );
-rwgc_assert( RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'woocommerce-products', 'ElementorPro\\Modules\\Woocommerce\\Widgets\\Products' ), 'skip Pro Woo stack on bulk path' );
-rwgc_assert( RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'ucaddon_slider', 'UniteCreatorElementorWidget' ), 'skip Unlimited Elements' );
-rwgc_assert( RWGC_Elementor_Widgets_Config::should_skip_full_stack( 'eael-info-box', 'Essential_Addons_Elementor\\Classes\\Helper' ), 'skip Essential Addons' );
-
-$slim = RWGC_Elementor_Widgets_Config::slim_controls(
-	array(
-		'country' => array(
-			'type'    => 'select',
-			'options' => array_fill_keys( range( 1, 80 ), 'x' ),
-		),
-		'tiny'    => array(
-			'type'    => 'select',
-			'options' => array( 'a' => 'A', 'b' => 'B' ),
-		),
-	)
-);
-rwgc_assert( RWGC_Elementor_Widgets_Config::MAX_SELECT_OPTIONS === count( $slim['country']['options'] ), 'slim caps large option maps' );
-rwgc_assert( 2 === count( $slim['tiny']['options'] ), 'slim leaves small option maps' );
-rwgc_assert( RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'UniteCreatorElementorIntegrate' ), 'UE integrate is heavy registrar' );
-rwgc_assert( RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'Essential_Addons_Elementor\\Classes\\Bootstrap' ), 'EA registrar is heavy' );
-rwgc_assert( RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'ACPT_Elementor' ), 'ACPT Elementor registrar is heavy' );
-rwgc_assert( RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'RW_WHMCS_Bridge' ), 'WHMCS registrar is heavy' );
-rwgc_assert( ! RWGC_Elementor_Widgets_Config::is_heavy_addon_registrar( 'ElementorPro\\Plugin' ), 'Elementor Pro is not a heavy registrar' );
-
-require_once dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-config-debug.php';
-$_REQUEST = array( 'action' => 'heartbeat' );
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( ! RWGC_Elementor_Config_Debug::is_elementor_ajax_request(), 'heartbeat is not elementor_ajax' );
-rwgc_assert( ! RWGC_Elementor_Config_Debug::enabled(), 'debug disabled off elementor_ajax' );
-$_REQUEST = array( 'action' => 'elementor_ajax', 'actions' => '{"f":{"action":"enqueue_google_fonts"}}' );
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( RWGC_Elementor_Config_Debug::is_elementor_ajax_request(), 'fonts are elementor_ajax' );
-rwgc_assert( ! RWGC_Elementor_Config_Debug::should_trace(), 'fonts are not traced' );
-$_REQUEST = array( 'action' => 'elementor_ajax', 'actions' => '{"get_widgets_config":{"action":"get_widgets_config"}}' );
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( RWGC_Elementor_Config_Debug::is_elementor_ajax_request(), 'elementor_ajax is traced' );
-rwgc_assert( RWGC_Elementor_Config_Debug::should_trace(), 'widgets-config is traced' );
-$_REQUEST = array( 'action' => 'elementor_ajax', 'actions' => '{"h":{"action":"rwgc_get_widget_config"}}' );
-RWGC_Elementor_Ajax::reset_for_tests();
-rwgc_assert( RWGC_Elementor_Config_Debug::should_trace(), 'hydrate is traced' );
-$cut_stats = array( 'loop_start' => microtime( true ) - 3 );
-rwgc_assert( RWGC_Elementor_Widgets_Config::should_cut_stacks( $cut_stats ), 'stack budget cuts after 400ms' );
-RWGC_Elementor_Config_Debug::set_summary( 'started_at', microtime( true ) - 10 );
-rwgc_assert( RWGC_Elementor_Widgets_Config::should_skip_all_stacks(), 'late boot skips all get_stack' );
-rwgc_assert( RWGC_Elementor_Widgets_Config::should_avoid_widget_manager(), 'avoid get_widget_types on bulk path' );
-rwgc_assert( RWGC_Elementor_Config_Debug::is_our_entry( 'RW_Elementor_WHM_Products_Widget' ), 'WHMCS widget is our entry' );
-rwgc_assert( RWGC_Elementor_Config_Debug::is_our_entry( 'ReactWoo\\Atomic\\Widgets\\Carousel' ), 'Atomic widget is our entry' );
-rwgc_assert( ! RWGC_Elementor_Config_Debug::is_our_entry( 'Elementor\\Widget_Heading' ), 'core heading is not our entry' );
-RWGC_Elementor_Config_Debug::set_summary( 'kept', 3 );
-RWGC_Elementor_Config_Debug::checkpoint( 'test_cp', array( 'ok' => 1 ) );
-rwgc_assert( true, 'debug checkpoint does not fatal' );
 
 exit( $fails > 0 ? 1 : 0 );

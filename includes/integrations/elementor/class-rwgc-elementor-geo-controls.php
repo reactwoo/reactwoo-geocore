@@ -26,10 +26,6 @@ class RWGC_Elementor_Geo_Controls {
 		if ( ! is_object( $element ) || ! method_exists( $element, 'get_controls' ) ) {
 			return;
 		}
-		// Bulk get_widgets_config: skip the whole section (not just empty options).
-		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
-			return;
-		}
 
 		$args = wp_parse_args(
 			$args,
@@ -66,10 +62,6 @@ class RWGC_Elementor_Geo_Controls {
 	 * @return void
 	 */
 	public static function add_visitor_preview( $element ) {
-		// Skip MaxMind/preview work while Elementor builds the full widgets-config payload.
-		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
-			return;
-		}
 		$preview = self::build_visitor_preview_markup();
 		if ( '' === $preview ) {
 			return;
@@ -129,19 +121,6 @@ class RWGC_Elementor_Geo_Controls {
 		);
 
 		if ( 'native' === $countries_ui && class_exists( 'RWGC_Elementor_Elements', false ) ) {
-			if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
-				$element->add_control(
-					'egp_countries',
-					array(
-						'type'      => \Elementor\Controls_Manager::HIDDEN,
-						'default'   => '',
-						'condition' => array(
-							'egp_enable_geo_targeting' => 'yes',
-						),
-					)
-				);
-				return;
-			}
 			$element->add_control(
 				'egp_countries_html',
 				array(
@@ -248,9 +227,8 @@ class RWGC_Elementor_Geo_Controls {
 		);
 
 		$library_options = array( '' => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ) );
-		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
-			// Options hydrated once via rwgc-elementor-library-bridge.js (avoids N× library in JSON).
-			$library_options = array( '' => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ) );
+		if ( class_exists( 'RWGC_Elementor_Options', false ) ) {
+			$library_options = RWGC_Elementor_Options::visibility_library_select();
 		} elseif ( class_exists( 'RWGC_Elementor_Elements', false ) ) {
 			$library_options = RWGC_Elementor_Elements::get_visibility_library_select_options();
 		}
@@ -366,9 +344,8 @@ class RWGC_Elementor_Geo_Controls {
 	 * @return array<string, string>
 	 */
 	public static function get_country_options() {
-		// Bulk get_widgets_config: omit ~250 ISO rows per widget (LiteSpeed 503). Hydrate via JS once.
-		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
-			return array();
+		if ( class_exists( 'RWGC_Elementor_Options', false ) ) {
+			return RWGC_Elementor_Options::countries();
 		}
 		if ( class_exists( 'RWGC_Countries', false ) ) {
 			$list = RWGC_Countries::get_options();

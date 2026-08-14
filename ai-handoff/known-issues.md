@@ -144,4 +144,19 @@
 
 **Mitigation shipped (Geo Core 1.8.149):** Tab stubs are strings on both sides, and `getElementData` normalizes any object-shaped tab back to its title. Hydrate also fires from the `panel/editor/open` command wrapper. Hydrate no longer unhooks **any** add-on registrar — an unregistered widget has no stack, which is why UE returned `common,common-optimized` only. `ajax_single_widget` now logs per-key control counts (`widget:count` / `widget:missing`). Risk: UE preload/eval on that one request may 503 — watch for hydrate boot without `ajax_single_widget`.
 
-**Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging invocation counts; blaming Flow without Elementor evidence; more Geo Visibility option-list slimming; more per-widget get_stack time-boxes (cannot interrupt a hung stack); calling `get_widget_types()` and then trying to skip stacks.
+**Approach abandoned (Geo Core 1.8.150 + WHMCS 1.1.5.4):** Every mitigation above was a
+workaround on top of another plugin's registration, and each one moved the failure rather
+than removing it — the panel loaded but the inspector was empty, then tabs were
+`[object Object]`, then Unlimited Elements returned no stack. All of it is now deleted:
+the widgets-config override, the registrar unhooking, the `plugins_loaded` early finish,
+the `rwgc_get_widget_config` hydration and its JS, and the WHMCS stub widgets. Elementor
+registers every add-on natively again. What remains is bounded, memoized, request-scoped
+work inside ReactWoo's own callbacks, plus opt-in profiling to measure it.
+
+**Do not retry:** Raising PHP memory/timeout as the primary “fix”; patching without staging
+invocation counts; blaming Flow without Elementor evidence; more Geo Visibility option-list
+slimming; more per-widget get_stack time-boxes (cannot interrupt a hung stack); calling
+`get_widget_types()` and then trying to skip stacks; **replacing Elementor AJAX actions;
+removing another plugin's registered callbacks; finishing an Elementor request early;
+synthesising `tabs_controls` or hydrating the inspector ourselves; registering stub widgets
+in place of real ones.**

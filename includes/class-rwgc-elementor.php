@@ -60,8 +60,9 @@ class RWGC_Elementor {
 			)
 		);
 
-		$heavy           = class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax();
-		$visitor_preview = $heavy ? '' : self::build_visitor_preview_markup();
+		$visitor_preview = class_exists( 'RWGC_Elementor_Options', false )
+			? RWGC_Elementor_Options::visitor_preview( array( __CLASS__, 'build_visitor_preview_markup' ) )
+			: self::build_visitor_preview_markup();
 		if ( $visitor_preview !== '' ) {
 			$element->add_control(
 				'rwgc_geo_visitor_preview',
@@ -321,7 +322,7 @@ class RWGC_Elementor {
 	 *
 	 * @return string Empty if Geo Core is not available or not ready.
 	 */
-	private static function build_visitor_preview_markup() {
+	public static function build_visitor_preview_markup() {
 		if ( ! function_exists( 'rwgc_is_ready' ) || ! rwgc_is_ready() || ! function_exists( 'rwgc_get_visitor_data' ) ) {
 			return '';
 		}
@@ -468,11 +469,11 @@ class RWGC_Elementor {
 	 * @return array
 	 */
 	private static function get_country_options() {
+		if ( class_exists( 'RWGC_Elementor_Options', false ) ) {
+			return RWGC_Elementor_Options::countries();
+		}
 		if ( class_exists( 'RWGC_Elementor_Geo_Controls', false ) ) {
 			return RWGC_Elementor_Geo_Controls::get_country_options();
-		}
-		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
-			return array();
 		}
 		return class_exists( 'RWGC_Countries', false ) ? RWGC_Countries::get_options() : array();
 	}
@@ -483,12 +484,13 @@ class RWGC_Elementor {
 	 * @return array
 	 */
 	private static function get_master_page_options() {
+		if ( class_exists( 'RWGC_Elementor_Options', false ) ) {
+			return RWGC_Elementor_Options::master_pages();
+		}
+
 		$options = array(
 			'' => __( '-- Select master page --', 'reactwoo-geocore' ),
 		);
-		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
-			return $options;
-		}
 
 		$pages = get_pages(
 			array(

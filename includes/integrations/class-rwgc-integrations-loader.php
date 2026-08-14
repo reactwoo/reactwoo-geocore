@@ -18,8 +18,9 @@ class RWGC_Integrations_Loader {
 	 * @return void
 	 */
 	public static function init() {
-		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-config-debug.php';
+		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-profiler.php';
 		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-ajax.php';
+		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-options.php';
 		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-geo-controls.php';
 		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-elements.php';
 		require_once RWGC_PATH . 'includes/integrations/elementor/class-rwgc-elementor-atomic-geo.php';

@@ -107,66 +107,23 @@ class RWGC_Elementor_Elements {
 	 * @return array<int, array{id:int,title:string,json:string}>
 	 */
 	public static function get_visibility_library_rows() {
-		$context = self::get_editor_document_context();
-		$cache_key = isset( $context['post_id'] ) ? (string) absint( $context['post_id'] ) : '0';
+		if ( class_exists( 'RWGC_Elementor_Options', false ) ) {
+			return RWGC_Elementor_Options::visibility_library_rows();
+		}
 
+		$cache_key = '0';
 		if ( isset( self::$visibility_library_rows_cache[ $cache_key ] ) ) {
-			if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) && RWGC_Elementor_Config_Debug::enabled() ) {
-				RWGC_Elementor_Config_Debug::log(
-					'RWGC_Elementor_Elements::get_visibility_library_rows',
-					array(
-						'cache' => 'hit',
-						'rows'  => count( self::$visibility_library_rows_cache[ $cache_key ] ),
-					)
-				);
-			}
 			return self::$visibility_library_rows_cache[ $cache_key ];
 		}
 
-		$build = static function () use ( $context ) {
-			$rows = array();
-			if ( class_exists( 'RWGC_Rule_Registry', false ) ) {
-				$rows = RWGC_Rule_Registry::get_library_picker_rows();
-			} elseif ( class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
-				$rows = RWGC_Visibility_Rule_Repository::get_library_picker_rows();
-			}
-
-			if ( ! class_exists( 'RWGC_Rule_Context_Compatibility', false ) ) {
-				return $rows;
-			}
-
-			$enriched = array();
-			foreach ( $rows as $row ) {
-				if ( ! is_array( $row ) ) {
-					continue;
-				}
-				$json = isset( $row['json'] ) ? (string) $row['json'] : '';
-				$set  = '' !== trim( $json ) ? json_decode( $json, true ) : null;
-				$compat = RWGC_Rule_Context_Compatibility::evaluate( is_array( $set ) ? $set : null, $context );
-				$reason = ! empty( $compat['reasons'] ) && is_array( $compat['reasons'] )
-					? implode( ' ', $compat['reasons'] )
-					: '';
-				$row['scope_summary'] = (string) ( $compat['scope_summary'] ?? '' );
-				$row['compatibility'] = array(
-					'status'  => (string) ( $compat['status'] ?? 'compatible' ),
-					'reason'  => $reason,
-					'reasons' => isset( $compat['reasons'] ) && is_array( $compat['reasons'] ) ? $compat['reasons'] : array(),
-				);
-				$enriched[] = $row;
-			}
-			return $enriched;
-		};
-
-		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) && RWGC_Elementor_Config_Debug::enabled() ) {
-			self::$visibility_library_rows_cache[ $cache_key ] = RWGC_Elementor_Config_Debug::time(
-				'RWGC_Elementor_Elements::get_visibility_library_rows',
-				$build,
-				array( 'cache' => 'miss' )
-			);
-			return self::$visibility_library_rows_cache[ $cache_key ];
+		$rows = array();
+		if ( class_exists( 'RWGC_Rule_Registry', false ) ) {
+			$rows = RWGC_Rule_Registry::get_library_picker_rows();
+		} elseif ( class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
+			$rows = RWGC_Visibility_Rule_Repository::get_library_picker_rows();
 		}
 
-		self::$visibility_library_rows_cache[ $cache_key ] = $build();
+		self::$visibility_library_rows_cache[ $cache_key ] = is_array( $rows ) ? $rows : array();
 		return self::$visibility_library_rows_cache[ $cache_key ];
 	}
 
@@ -203,6 +160,9 @@ class RWGC_Elementor_Elements {
 	 * @return array<string, string>
 	 */
 	public static function get_visibility_library_select_options() {
+		if ( class_exists( 'RWGC_Elementor_Options', false ) ) {
+			return RWGC_Elementor_Options::visibility_library_select();
+		}
 		if ( null !== self::$visibility_library_select_options_cache ) {
 			return self::$visibility_library_select_options_cache;
 		}
@@ -257,9 +217,6 @@ class RWGC_Elementor_Elements {
 	 */
 	public static function add_geo_targeting_controls( $element, $args = null ) {
 		unset( $args );
-		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
-			return;
-		}
 
 		$stack_name = '';
 		if ( is_object( $element ) && method_exists( $element, 'get_name' ) ) {
@@ -300,8 +257,8 @@ class RWGC_Elementor_Elements {
 			}
 		};
 
-		if ( class_exists( 'RWGC_Elementor_Config_Debug', false ) && RWGC_Elementor_Config_Debug::enabled() ) {
-			RWGC_Elementor_Config_Debug::time(
+		if ( class_exists( 'RWGC_Elementor_Profiler', false ) ) {
+			RWGC_Elementor_Profiler::measure(
 				'RWGC_Elementor_Elements::add_geo_targeting_controls',
 				$run,
 				array( 'stack' => $stack_name )

@@ -128,10 +128,6 @@ class RWGC_Elementor_Atomic_Geo {
 	public static function filter_controls( $controls, $element = null ) {
 		unset( $element );
 
-		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
-			return is_array( $controls ) ? $controls : array();
-		}
-
 		if ( ! self::atomic_api_available() ) {
 			return is_array( $controls ) ? $controls : array();
 		}
@@ -299,9 +295,8 @@ class RWGC_Elementor_Atomic_Geo {
 	 * @return array<int, array{value: string, label: string}>
 	 */
 	private static function get_country_chip_options() {
-		// Bulk widgets-config: empty chips (full list is huge × Atomic types). Single-widget config keeps full list.
-		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
-			return array();
+		if ( class_exists( 'RWGC_Elementor_Options', false ) ) {
+			return RWGC_Elementor_Options::country_chips();
 		}
 
 		static $rows = null;
@@ -310,17 +305,11 @@ class RWGC_Elementor_Atomic_Geo {
 		}
 
 		$options = array();
-		if ( class_exists( 'RWGC_Elementor_Geo_Controls', false ) ) {
-			// Bypass heavy-ajax empty return — we already gated above.
-			if ( class_exists( 'RWGC_Countries', false ) ) {
-				$list = RWGC_Countries::get_options();
-				$options = is_array( $list ) ? $list : array();
-			}
+		if ( class_exists( 'RWGC_Countries', false ) ) {
+			$list    = RWGC_Countries::get_options();
+			$options = is_array( $list ) ? $list : array();
 		} elseif ( class_exists( 'RWGC_Elementor_Elements', false ) ) {
 			$options = RWGC_Elementor_Elements::get_country_options();
-		} elseif ( class_exists( 'RWGC_Countries', false ) ) {
-			$list = RWGC_Countries::get_options();
-			$options = is_array( $list ) ? $list : array();
 		}
 
 		$rows = array();
@@ -340,18 +329,13 @@ class RWGC_Elementor_Atomic_Geo {
 	 * @return array<int, array{value: string, label: string}>
 	 */
 	private static function get_library_select_options_for_atomic() {
+		if ( class_exists( 'RWGC_Elementor_Options', false ) ) {
+			return RWGC_Elementor_Options::visibility_library_chips();
+		}
+
 		$options = array(
 			'' => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ),
 		);
-
-		if ( class_exists( 'RWGC_Elementor_Ajax', false ) && RWGC_Elementor_Ajax::is_heavy_elementor_ajax() ) {
-			return array(
-				array(
-					'value' => '',
-					'label' => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ),
-				),
-			);
-		}
 
 		if ( class_exists( 'RWGC_Elementor_Elements', false ) ) {
 			$options = RWGC_Elementor_Elements::get_visibility_library_select_options();
