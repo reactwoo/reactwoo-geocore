@@ -163,6 +163,10 @@ final class RWGC_Cloud_Sync {
 			);
 		}
 
+		if ( isset( $response['body']['entitlements'] ) && is_array( $response['body']['entitlements'] ) && class_exists( 'RWGC_Cloud_Entitlement_Store', false ) ) {
+			RWGC_Cloud_Entitlement_Store::put( $response['body']['entitlements'] );
+		}
+
 		RWGC_Cloud_Connection::update(
 			array(
 				'last_heartbeat_at' => gmdate( 'c' ),

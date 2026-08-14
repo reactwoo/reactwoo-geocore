@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.8.150
+Stable tag: 1.8.151
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.151 =
+* **Cloud WP15:** `RWGC_Entitlements` facade (`allows()` / `limit()`) maps standalone licenses or cached Cloud entitlements. Feature code must not inspect Stripe IDs. Heartbeat stores the Cloud snapshot; disconnect clears it. Visitor rendering still never calls Cloud.
 
 = 1.8.150 =
 * **Elementor:** Geo Core no longer touches how other plugins load in the editor. The widgets-config override, the registrar unhooking, the early AJAX exit and the custom single-widget inspector hydration are all removed, so Elementor registers every add-on's widgets and dynamic tags natively again.

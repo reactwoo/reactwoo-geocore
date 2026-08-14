@@ -83,6 +83,16 @@ final class RWGC_Contract_Entitlement extends RWGC_Contract {
 		return $this->allowed;
 	}
 
+	/** @return mixed */
+	public function limit() {
+		return $this->limit;
+	}
+
+	/** @return string */
+	public function source() {
+		return $this->source;
+	}
+
 	/**
 	 * @return array<string, mixed>
 	 */

@@ -78,6 +78,8 @@ class RWGC_Plugin {
 
 		require_once RWGC_PATH . 'includes/contracts/class-rwgc-contracts.php';
 		RWGC_Contracts::load();
+		require_once RWGC_PATH . 'includes/entitlements/class-rwgc-entitlements.php';
+		RWGC_Entitlements::load();
 		require_once RWGC_PATH . 'includes/platform/class-rwgc-platform-capability-registry.php';
 		require_once RWGC_PATH . 'includes/platform/functions-reactwoo-capabilities.php';
 		require_once RWGC_PATH . 'includes/platform/class-rwgc-platform-capabilities-bootstrap.php';

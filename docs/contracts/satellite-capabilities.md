@@ -14,7 +14,7 @@ Satellites register capabilities on `reactwoo_register_capabilities` without rep
 - `geo_commerce`
 - `geo_optimise`
 
-Feature gates still use existing license classes until the EntitlementProvider lands (WP15).
+Feature gates should call `RWGC_Entitlements::allows()` (WP15). Satellite plugins may still use existing license classes until they are migrated onto this facade.
 
 ## Gate A
 

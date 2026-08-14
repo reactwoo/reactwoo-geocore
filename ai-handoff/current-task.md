@@ -1,5 +1,5 @@
 # Current task
 
-WP14 — Events, goals, analytics (complete).
+WP15 — Stripe + Cloud entitlements (complete).
 
-Next: WP15 Stripe + Cloud entitlements.
+Next: WP16 Existing customer migration.

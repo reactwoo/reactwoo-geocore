@@ -75,6 +75,9 @@ final class RWGC_Cloud_Connection {
 	 */
 	public static function disconnect() {
 		RWGC_Cloud_Credentials::clear();
+		if ( class_exists( 'RWGC_Cloud_Entitlement_Store', false ) ) {
+			RWGC_Cloud_Entitlement_Store::clear();
+		}
 		self::update(
 			array(
 				'state'           => self::STATE_DISCONNECTED,

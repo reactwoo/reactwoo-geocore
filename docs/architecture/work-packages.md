@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
 
-**Current active package:** WP15 (Stripe + Cloud entitlements) — WP0–WP14 complete.
+**Current active package:** WP16 (Existing customer migration) — WP0–WP15 complete.
 
 ---
 
@@ -546,7 +546,7 @@ No autonomous optimisation in this phase.
 - [x] WP13 brand/component editor (2026-08-13) — Brand Profile tokens + constrained Component Editor (same WP8 schema/preview); Decision Cloud `0.3.0` + Geo Core presentation attrs  
 - [x] WP14 events/goals/analytics (2026-08-13) — WP async queue + Cloud `POST /events/batch` validation, daily aggregates, Insights (no fabricated uplift); Decision Cloud `0.4.0`  
 
-- [ ] WP15 Stripe + entitlements  
+- [x] WP15 Stripe + entitlements (2026-08-14) — Decision Cloud `0.5.0` billing webhooks + `EntitlementService`; Geo Core `RWGC_Entitlements` facade (`composer test:entitlements`)  
 - [ ] WP10–13 Cloud → **Gate D** (end-to-end site still needed)  
 - [ ] WP14–16 analytics/billing/migration → **Gate E** (metrics pipeline in place; live attribution still needed)  
 - [ ] WP17–19 hardening  
