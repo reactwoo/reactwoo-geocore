@@ -20,6 +20,7 @@ PHP value objects under `includes/contracts/`. Schema version: **`reactwoo_schem
 | [variant-engine.md](./variant-engine.md) | Variant Engine (WP9) |
 | [cloud-connector.md](./cloud-connector.md) | Cloud Connector WP (WP10) |
 | [site-health.md](./site-health.md) | Site health statuses (WP17) |
+| [../security/threat-model.md](../security/threat-model.md) | Security pass (WP18) |
 | [decision-cloud-api.md](./decision-cloud-api.md) | Decision Cloud backend (WP11) |
 | [satellite-capabilities.md](./satellite-capabilities.md) | Pro / Commerce / Optimise adapters |
 

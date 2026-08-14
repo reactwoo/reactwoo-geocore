@@ -1,6 +1,7 @@
 # Current task
 
-WP17 — Failure handling + health (complete). Geo Core `1.8.153`. Decision Cloud `0.8.0`.
+WP18 — Security pass (complete). Geo Core `1.8.154`. Decision Cloud `0.9.0`.
 
-Next: WP18 Security pass.
-Then: WP19 Performance pass.
+Next: WP19 Performance pass.
+Then: WP20 AI recommendations.
+Gate D / Gate E still need a live site.

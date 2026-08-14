@@ -33,6 +33,7 @@
     "test:cloud-connector": "php tests/test-rwgc-cloud-connector.php",
     "test:cloud-migration": "php tests/test-rwgc-cloud-migration.php",
     "test:cloud-health": "php tests/test-rwgc-cloud-health.php",
+    "test:cloud-security": "php tests/test-rwgc-cloud-security.php",
     "test:entitlements": "php tests/test-rwgc-entitlements.php",
     "test:all": [
       "@test",
@@ -51,6 +52,7 @@
       "@test:cloud-connector",
       "@test:cloud-migration",
       "@test:cloud-health",
+      "@test:cloud-security",
       "@test:entitlements"
     ]
   },

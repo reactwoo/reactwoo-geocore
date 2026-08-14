@@ -232,6 +232,18 @@ final class RWGC_Php_Html_Component_Renderer implements RWGC_Component_Renderer_
 	 */
 	private static function url( array $props, $key, $default ) {
 		$v = isset( $props[ $key ] ) ? trim( (string) $props[ $key ] ) : $default;
+		if ( '' === $v ) {
+			return $default;
+		}
+		if ( preg_match( '/^(javascript|data|vbscript):/i', $v ) ) {
+			return $default;
+		}
+		if ( 0 === strpos( $v, '//' ) ) {
+			return $default;
+		}
+		if ( ! preg_match( '/^(https?:\/\/|mailto:|#|\/[^\/]|\/$)/i', $v ) ) {
+			return $default;
+		}
 		return $v;
 	}
 }

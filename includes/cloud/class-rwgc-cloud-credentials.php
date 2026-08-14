@@ -81,15 +81,19 @@ final class RWGC_Cloud_Credentials {
 	 */
 	private static function encrypt( $plain ) {
 		$key = self::key();
-		if ( function_exists( 'openssl_encrypt' ) ) {
-			$iv = function_exists( 'random_bytes' ) ? random_bytes( 16 ) : substr( hash( 'sha256', uniqid( '', true ), true ), 0, 16 );
-			$enc = openssl_encrypt( (string) $plain, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv );
-			if ( false === $enc ) {
-				return '';
-			}
-			return base64_encode( $iv . $enc ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+		if ( ! function_exists( 'openssl_encrypt' ) ) {
+			return '';
 		}
-		return base64_encode( (string) $plain ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+		$iv = function_exists( 'random_bytes' ) ? random_bytes( 16 ) : openssl_random_pseudo_bytes( 16 );
+		if ( false === $iv || 16 !== strlen( $iv ) ) {
+			return '';
+		}
+		$enc = openssl_encrypt( (string) $plain, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv );
+		if ( false === $enc ) {
+			return '';
+		}
+		$mac = hash_hmac( 'sha256', $iv . $enc, $key, true );
+		return 'v2.' . base64_encode( $iv . $enc . $mac ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
 	}
 
 	/**
@@ -97,18 +101,36 @@ final class RWGC_Cloud_Credentials {
 	 * @return string
 	 */
 	private static function decrypt( $cipher ) {
-		$raw = base64_decode( (string) $cipher, true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+		$cipher = (string) $cipher;
+		$key    = self::key();
+		if ( 0 === strpos( $cipher, 'v2.' ) ) {
+			$raw = base64_decode( substr( $cipher, 3 ), true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+			if ( false === $raw || strlen( $raw ) < 48 ) {
+				return '';
+			}
+			$mac   = substr( $raw, -32 );
+			$ivenc = substr( $raw, 0, -32 );
+			$calc  = hash_hmac( 'sha256', $ivenc, $key, true );
+			if ( ! hash_equals( $mac, $calc ) ) {
+				return '';
+			}
+			$iv  = substr( $ivenc, 0, 16 );
+			$enc = substr( $ivenc, 16 );
+			$plain = openssl_decrypt( $enc, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv );
+			return is_string( $plain ) ? $plain : '';
+		}
+
+		$raw = base64_decode( $cipher, true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
 		if ( false === $raw || '' === $raw ) {
 			return '';
 		}
-		$key = self::key();
 		if ( function_exists( 'openssl_decrypt' ) && strlen( $raw ) > 16 ) {
 			$iv  = substr( $raw, 0, 16 );
 			$enc = substr( $raw, 16 );
 			$plain = openssl_decrypt( $enc, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv );
 			return is_string( $plain ) ? $plain : '';
 		}
-		return is_string( $raw ) ? $raw : '';
+		return '';
 	}
 
 	/**

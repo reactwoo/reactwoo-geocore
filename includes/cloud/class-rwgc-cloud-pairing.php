@@ -63,7 +63,8 @@ final class RWGC_Cloud_Pairing {
 
 		$site_id     = isset( $response['body']['site_id'] ) ? (string) $response['body']['site_id'] : '';
 		$site_secret = isset( $response['body']['site_secret'] ) ? (string) $response['body']['site_secret'] : '';
-		$api_base    = isset( $response['body']['api_base'] ) ? (string) $response['body']['api_base'] : RWGC_Cloud_Config::api_base();
+		// Never trust Cloud-returned api_base (Host-header / SSRF). Use the locally configured base.
+		$api_base    = RWGC_Cloud_Config::api_base();
 
 		if ( '' === $site_id || '' === $site_secret ) {
 			RWGC_Cloud_Connection::update(

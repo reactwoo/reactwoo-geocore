@@ -125,6 +125,24 @@ $xss = reactwoo_render_component(
 );
 rwgc_comp_assert( 'notice escapes HTML', false === strpos( $xss, '<script>alert' ) );
 
+$js_url = reactwoo_render_component(
+	'cta',
+	array(
+		'label' => 'Go',
+		'url'   => 'javascript:alert(1)',
+	)
+);
+rwgc_comp_assert( 'cta blocks javascript: urls', false === strpos( $js_url, 'javascript:' ) );
+
+$proto = reactwoo_render_component(
+	'cta',
+	array(
+		'label' => 'Go',
+		'url'   => '//evil.example/phish',
+	)
+);
+rwgc_comp_assert( 'cta blocks protocol-relative urls', false === strpos( $proto, 'evil.example' ) );
+
 if ( $failed > 0 ) {
 	fwrite( STDERR, "\n$failed assertion(s) failed\n" );
 	exit( 1 );

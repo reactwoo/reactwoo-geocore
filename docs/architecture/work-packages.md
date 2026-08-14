@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
 
-**Current active package:** WP18 (security pass) — WP0–WP17 complete.
+**Current active package:** WP19 (performance pass) — WP0–WP18 complete.
 
 ---
 
@@ -583,7 +583,8 @@ No autonomous optimisation in this phase.
 - [x] WP15b Paystack Africa billing (2026-08-14) — Decision Cloud `0.6.0` Paystack adapter + webhooks; same entitlements (`docs/architecture/billing-providers.md`)  
 - [x] WP16 Existing customer migration (2026-08-14) — Geo Core `1.8.152` detect/preview/import/switch; Decision Cloud `0.7.0` `POST /migration/import` + `POST /management-mode`; pairing never flips mode (`composer test:cloud-migration`)  
 - [x] WP17 Failure handling + health (2026-08-14) — Geo Core `1.8.153` `RWGC_Cloud_Health`; Decision Cloud `0.8.0` `GET /sites/:id/health`; statuses Healthy / Warning / Disconnected / Configuration Error (`composer test:cloud-health`)  
+- [x] WP18 Security pass (2026-08-14) — Geo Core `1.8.154` HMAC credentials + SSRF host block; Decision Cloud `0.9.0` portal token, pairing rate limit, checkout URL allowlist (`docs/security/threat-model.md`, `composer test:cloud-security`)
 - [ ] WP10–13 Cloud → **Gate D** (end-to-end site still needed)  
 - [ ] WP14–16 analytics/billing/migration → **Gate E** (metrics pipeline in place; live attribution still needed)  
-- [ ] WP18–19 hardening  
+- [ ] WP19 hardening (performance)
 - [ ] WP20 AI  
