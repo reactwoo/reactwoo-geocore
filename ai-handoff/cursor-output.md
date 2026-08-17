@@ -4,28 +4,24 @@
 done
 
 ## Task
-Decision Cloud Sprint 6 — billing resilience.
+Ship Decision Cloud pairing in Geo Core (no production mu-plugin).
 
 ## Files changed
-
-### Decision Cloud (`0.15.0`)
-- Added explicit ReactWoo.com reconciliation configuration and allowlisted HTTP client
-- Added portal-authenticated manual reconcile endpoint with last-known snapshot fallback
-- Added active, grace, paused, and last-known billing portal states
-- Added Sprint 6 billing resilience coverage and health/version updates
-
-### Geo Core docs
-- Marked Sprint 6 complete in commerce/onboarding and work-package tracking
-- Documented outage, `404`, local-only GET, public JSON, and portal acceptance
+- `includes/cloud/class-rwgc-cloud-config.php` — default API base `https://decision.reactwoo.com/api/v1`; migrate stored `cloud.reactwoo.com/api/v1`
+- `includes/cloud/class-rwgc-cloud-health.php` — health copy uses Decision Cloud URL
+- `includes/cloud/class-rwgc-cloud-admin.php` — skip duplicate submenu when shell route exists
+- `includes/class-rwgc-admin-route-registry.php` / `class-rwgc-admin.php` / `class-rwgc-admin-integrations-nav.php` — Cloud under Integrations → System services
+- Version 1.8.157 headers, changelog, readme, cloud-connector / Gate D docs, tests
 
 ## What was not changed
-- ReactWoo.com store plugin
-- Site management mode
-- Heartbeat or visitor paths
-- Payment-gateway integrations
+- Local mu-plugin for `127.0.0.1:3040` (still valid on Local only)
+- Decision Cloud service
+- `REACTWOO_CLOUD_BRIDGE_ENABLED` on reactwoo.com
+- vendor / packager scripts
 
 ## Commands run
-- Decision Cloud `npm test` — 85 passed, 0 failed
+- `composer test:cloud-security`
+- `composer test:cloud-health`
 
 ## Remaining
-- Gate D / Gate E live-site validation remains
+- Update staging.aplenty.co.uk to Geo Core 1.8.157, then pair from Integrations → ReactWoo Cloud.

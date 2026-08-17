@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.157] - 2026-08-17
+
+### Changed
+- Cloud Connector default API base is `https://decision.reactwoo.com/api/v1`. Sites that stored the old Google-vault URL (`cloud.reactwoo.com/api/v1`) are migrated automatically. `cloud.reactwoo.com` remains the Google / Reviews vault.
+
+### Added
+- ReactWoo Cloud pairing screen is listed under Integrations → System services.
+
 ## [1.8.156] - 2026-08-14
 
 ### Added

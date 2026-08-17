@@ -95,7 +95,20 @@ function rwgc_sec_assert( $label, $ok ) {
 	echo "FAIL $label\n";
 }
 
-rwgc_sec_assert( 'https public host allowed', RWGC_Cloud_Config::is_secure_base( 'https://cloud.reactwoo.com/api/v1' ) );
+rwgc_sec_assert( 'https public host allowed', RWGC_Cloud_Config::is_secure_base( 'https://decision.reactwoo.com/api/v1' ) );
+rwgc_sec_assert( 'legacy vault host still https-safe', RWGC_Cloud_Config::is_secure_base( 'https://cloud.reactwoo.com/api/v1' ) );
+rwgc_sec_assert( 'default api base is decision cloud', 'https://decision.reactwoo.com/api/v1' === RWGC_Cloud_Config::DEFAULT_API_BASE );
+rwgc_sec_assert( 'empty option uses decision cloud', 'https://decision.reactwoo.com/api/v1' === RWGC_Cloud_Config::api_base() );
+rwgc_sec_assert( 'legacy vault path detected', RWGC_Cloud_Config::is_legacy_vault_decision_base( 'https://cloud.reactwoo.com/api/v1/' ) );
+rwgc_sec_assert( 'geo-api vault path is not a decision base', ! RWGC_Cloud_Config::is_legacy_vault_decision_base( 'https://cloud.reactwoo.com/geo-api/v1' ) );
+
+update_option( 'rwgc_cloud_api_base', 'https://cloud.reactwoo.com/api/v1/' );
+rwgc_sec_assert( 'legacy vault option migrates to decision cloud', 'https://decision.reactwoo.com/api/v1' === RWGC_Cloud_Config::api_base() );
+rwgc_sec_assert( 'legacy vault option deleted', ! array_key_exists( 'rwgc_cloud_api_base', $GLOBALS['rwgc_test_options'] ) );
+
+update_option( 'rwgc_cloud_api_base', 'https://staging-decision.example/api/v1' );
+rwgc_sec_assert( 'custom stored base kept', 'https://staging-decision.example/api/v1' === RWGC_Cloud_Config::api_base() );
+delete_option( 'rwgc_cloud_api_base' );
 rwgc_sec_assert( 'http blocked without filter', ! RWGC_Cloud_Config::is_secure_base( 'http://127.0.0.1:3040/api/v1' ) );
 rwgc_sec_assert( 'metadata host blocked', ! RWGC_Cloud_Config::is_secure_base( 'https://169.254.169.254/' ) );
 rwgc_sec_assert( 'private ipv4 blocked', ! RWGC_Cloud_Config::is_secure_base( 'https://10.0.0.8/api' ) );

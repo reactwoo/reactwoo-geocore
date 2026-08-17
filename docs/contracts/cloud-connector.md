@@ -17,7 +17,7 @@ After `template_redirect`, `RWGC_Cloud_Http` returns `cloud_http_forbidden_on_re
 
 ## API contract (Cloud v1)
 
-Base: `https://cloud.reactwoo.com/api/v1` (filter: `rwgc_cloud_api_base`)
+Base: `https://decision.reactwoo.com/api/v1` (filter: `rwgc_cloud_api_base`)
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
@@ -50,7 +50,7 @@ Base: `https://cloud.reactwoo.com/api/v1` (filter: `rwgc_cloud_api_base`)
 {
   "site_id": "site_…",
   "site_secret": "…",
-  "api_base": "https://cloud.reactwoo.com/api/v1"
+  "api_base": "https://decision.reactwoo.com/api/v1"
 }
 ```
 
@@ -81,7 +81,9 @@ reactwoo_cloud_recommendations(); // local cache only — advisory, never live
 
 ## Admin
 
-Geo Core → **Cloud** — pair, sync now, disconnect, import preview, Import to ReactWoo Cloud, Switch to Cloud-managed.
+**Integrations → ReactWoo Cloud** (`admin.php?page=rwgc-cloud`) — pair, sync now, disconnect, import preview, Import to ReactWoo Cloud, Switch to Cloud-managed.
+
+Production WordPress uses `https://decision.reactwoo.com/api/v1` from Geo Core. Stored `cloud.reactwoo.com/api/v1` options are migrated. Do not add a must-use plugin for Decision Cloud on live sites. The Local mu-plugin is only for pointing Local WordPress at `http://127.0.0.1:3040/api/v1`.
 
 Pairing always leaves `management_mode = local`. Disconnect keeps WordPress content, cached manifests, and `rwgc_cloud_migration_backup`.
 

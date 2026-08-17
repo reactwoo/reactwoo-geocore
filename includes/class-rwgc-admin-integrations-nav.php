@@ -126,6 +126,7 @@ class RWGC_Admin_Integrations_Nav {
 			'rwgcp-meta'             => 'advertising',
 			'rwgcp-geocore-pro'      => 'system_services',
 			'rwgc-integrations-maxmind'     => 'system_services',
+			'rwgc-cloud'                    => 'system_services',
 			'rwgc-integrations-gutenberg'   => 'content_builders',
 			'rwgc-integrations-woocommerce' => 'ecommerce',
 			'geo-elementor'          => 'content_builders',

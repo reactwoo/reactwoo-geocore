@@ -15,7 +15,9 @@ This is a live-site gate, not a new product sprint. Automated coverage already e
 |-------|------|
 | Decision Cloud (Node) | `wp-content/plugins/reactwoo-decision-cloud` (not a WordPress plugin) |
 | Geo Core | `wp-content/plugins/reactwoo-geocore` |
-| Local API pointer | `wp-content/mu-plugins/reactwoo-local-decision-cloud.php` |
+| Local API pointer | `wp-content/mu-plugins/reactwoo-local-decision-cloud.php` (Local WordPress → `127.0.0.1:3040` only) |
+
+Live / staging sites use Geo Core’s default `https://decision.reactwoo.com/api/v1`. Do not add a must-use plugin to retarget Decision Cloud on those hosts.
 
 ## Run
 

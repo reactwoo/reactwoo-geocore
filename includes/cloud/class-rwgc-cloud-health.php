@@ -305,7 +305,7 @@ final class RWGC_Cloud_Health {
 			'insecure_api_base'       => array(
 				'configuration_error',
 				'The Cloud API address is not HTTPS.',
-				'Use https://cloud.reactwoo.com/api/v1, or allow insecure HTTP only on local development.',
+				'Use https://decision.reactwoo.com/api/v1, or allow insecure HTTP only on local development.',
 			),
 			'sync_failed'             => array(
 				'warning',

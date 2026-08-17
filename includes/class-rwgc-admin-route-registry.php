@@ -430,6 +430,14 @@ class RWGC_Admin_Route_Registry {
 				'order'                => 5,
 			),
 			array(
+				'menu_slug'            => 'rwgc-cloud',
+				'section'              => 'integrations',
+				'integration_category' => 'system_services',
+				'route'                => 'cloud',
+				'label'                => __( 'ReactWoo Cloud', 'reactwoo-geocore' ),
+				'order'                => 8,
+			),
+			array(
 				'menu_slug' => 'rwgc-settings-hub',
 				'section'   => 'settings',
 				'route'     => 'settings-home',

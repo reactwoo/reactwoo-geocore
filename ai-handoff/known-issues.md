@@ -160,3 +160,15 @@ slimming; more per-widget get_stack time-boxes (cannot interrupt a hung stack); 
 removing another plugin's registered callbacks; finishing an Elementor request early;
 synthesising `tabs_controls` or hydrating the inspector ourselves; registering stub widgets
 in place of real ones.**
+
+---
+
+### Cloud pairing posts to Google vault (`cloud.reactwoo.com/api/v1`)
+
+**Symptoms:** Geo Core Cloud Connector “Pairing failed”; site health Disconnected; pairing token from `decision.reactwoo.com` never connects.
+
+**Tried:** Must-use plugin filter on `rwgc_cloud_api_base` for staging.
+
+**Likely causes:** Geo Core ≤1.8.156 defaulted the Decision Cloud API base to the Google/Reviews vault. Stored option `rwgc_cloud_api_base` can pin that URL after update. Cloud screen was not in the Geo admin shell.
+
+**Do not retry:** Extra mu-plugins on staging/production to retarget Decision Cloud. Fix belongs in Geo Core (1.8.157+).

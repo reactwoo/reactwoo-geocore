@@ -385,6 +385,19 @@ class RWGC_Admin {
 				'callback'             => array( __CLASS__, 'render_integrations_maxmind' ),
 			)
 		);
+		if ( class_exists( 'RWGC_Cloud_Admin', false ) ) {
+			self::register_app_route(
+				array(
+					'section'              => 'integrations',
+					'integration_category' => 'system_services',
+					'route'                => 'cloud',
+					'menu_slug'            => RWGC_Cloud_Admin::PAGE,
+					'label'                => __( 'ReactWoo Cloud', 'reactwoo-geocore' ),
+					'order'                => 8,
+					'callback'             => array( 'RWGC_Cloud_Admin', 'render' ),
+				)
+			);
+		}
 
 		self::register_app_route(
 			array(

@@ -35,6 +35,13 @@ final class RWGC_Cloud_Admin {
 	 * @return void
 	 */
 	public static function register_menu() {
+		if ( class_exists( 'RWGC_Admin_Route_Registry', false ) ) {
+			$routes = RWGC_Admin_Route_Registry::get_routes();
+			if ( isset( $routes[ self::PAGE ] ) ) {
+				return;
+			}
+		}
+
 		$parent = class_exists( 'RWGC_Admin_Platform', false ) ? RWGC_Admin_Platform::menu_parent() : 'rwgc-dashboard';
 		$cap    = class_exists( 'RWGC_Admin', false ) ? RWGC_Admin::required_capability() : 'manage_options';
 

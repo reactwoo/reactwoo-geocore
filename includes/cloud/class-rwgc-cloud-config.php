@@ -14,21 +14,46 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class RWGC_Cloud_Config {
 
-	const DEFAULT_API_BASE = 'https://cloud.reactwoo.com/api/v1';
+	const DEFAULT_API_BASE = 'https://decision.reactwoo.com/api/v1';
+
+	/**
+	 * Pre-1.8.157 default. That host is the Google / Reviews vault, not Decision Cloud.
+	 */
+	const LEGACY_VAULT_DECISION_BASE = 'https://cloud.reactwoo.com/api/v1';
 
 	/**
 	 * @return string
 	 */
 	public static function api_base() {
 		$stored = get_option( 'rwgc_cloud_api_base', '' );
-		$base   = is_string( $stored ) && '' !== $stored ? $stored : self::DEFAULT_API_BASE;
+		if ( is_string( $stored ) && '' !== $stored && self::is_legacy_vault_decision_base( $stored ) ) {
+			delete_option( 'rwgc_cloud_api_base' );
+			$stored = '';
+		}
+		$base = is_string( $stored ) && '' !== $stored ? $stored : self::DEFAULT_API_BASE;
 		/**
-		 * Filter Cloud API base (tests / staging).
+		 * Filter Cloud API base (tests / local Decision Cloud).
 		 *
 		 * @param string $base Base URL.
 		 */
 		$base = apply_filters( 'rwgc_cloud_api_base', $base );
 		return untrailingslashit( (string) $base );
+	}
+
+	/**
+	 * Whether a stored base is the old Google-vault /api/v1 URL (not Decision Cloud).
+	 *
+	 * @param string $base Base URL.
+	 * @return bool
+	 */
+	public static function is_legacy_vault_decision_base( $base ) {
+		$parts = function_exists( 'wp_parse_url' ) ? wp_parse_url( (string) $base ) : parse_url( (string) $base );
+		if ( ! is_array( $parts ) ) {
+			return false;
+		}
+		$host = isset( $parts['host'] ) ? strtolower( rtrim( (string) $parts['host'], '.' ) ) : '';
+		$path = isset( $parts['path'] ) ? untrailingslashit( strtolower( (string) $parts['path'] ) ) : '';
+		return 'cloud.reactwoo.com' === $host && '/api/v1' === $path;
 	}
 
 	/**
