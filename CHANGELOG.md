@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.159] - 2026-08-20
+
+### Changed
+- PLAN.md remaining store phases: handover wired into My Account downloads, licence provision reuse, operator catalogue SQL. Production Cloud commerce stays off.
+
 ## [1.8.158] - 2026-08-20
 
 ### Changed

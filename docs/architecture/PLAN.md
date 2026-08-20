@@ -570,8 +570,8 @@ Sprints 1–6 in [commerce-and-onboarding.md](./commerce-and-onboarding.md) buil
 | 9. Geo Core entitlement resolution | **Done.** |
 | 10. My Account and Decision Cloud UX | **Partial.** My Account shows included-in-Cloud, downgrade selection, and product-page copy for Decision Cloud. Portal billing lists included SKUs and hands cancel/downgrade to ReactWoo.com. Figma §16 wireframes exist; visual polish vs Cloud Dashboard is still required. |
 | 11. Figma flows | **Partial.** Page **09 Decision Cloud commerce** ([327:2](https://www.figma.com/design/BZFmgpDMSm0OMtnC19lNQ4/Reactwoo?node-id=327-2)) holds the 18 PLAN.md §16 copy frames. Not a finished visual design. |
-| 12. End-to-end tests and CI | **Partial.** Unit/smoke tests cover coverage, credit, handover, licence reuse, overlap quote, currency mismatch, scheduled subs. Staging WooCommerce E2E is still required. |
-| 13. Staging migrations | **Partial.** Read-only Local/staging check: `reactwoo-api-manager/scripts/validate_cloud_catalogue.php`. No production writes. Staging Woo E2E still required. |
+| 12. End-to-end tests and CI | **Partial.** Unit/smoke tests cover coverage, credit, handover, licence reuse, overlap quote, currency mismatch, scheduled subs, superseded ZIP hiding, Cloud on-hold downloads. Store e2e fixture includes the §17 handover/overlap matrix. Staging WooCommerce E2E is still required. |
+| 13. Staging migrations | **Partial.** Read-only Local/staging check: `reactwoo-api-manager/scripts/validate_cloud_catalogue.php`. Operator production SQL: `scripts/bind_production_cloud_catalogue.sql` (meta/prices only; does not enable the Cloud flag). License package SQL: `react-license/migrations/add_reactwoo_decision_cloud_package.sql`. No production Cloud flag. Staging Woo E2E still required. |
 | 14. Production feature flags | **Not started.** Do not enable `REACTWOO_CLOUD_BRIDGE_ENABLED` on production. |
 
 Do not skip to step 14. Do not treat `REACTWOO_CLOUD_BRIDGE_ENABLED` as permission to sell the unfinished bundle model.
@@ -588,7 +588,7 @@ These must be decided during implementation steps 3, 5, 6, and 8. They are **not
 4. **Scheduled individual start** — WooCommerce Subscriptions `start_date` / pending subscription vs a delayed order created by Action Scheduler at Cloud end. **Store implementation:** confirmed rows are materialized as pending Woo subscriptions (`RWCC_Scheduled_Subscription`, `charge_now=false`, injectable creator). Action Scheduler is not used. Immediate refunds and native switch/status remain separate §20 items.
 5. **Immediate downgrade refunds** — whether unused Cloud time is refunded, credited to new individuals, or forfeited; requires finance sign-off.
 6. **Multi-currency** — how credit is converted when an individual subscription currency differs from the Cloud product currency.
-7. **Licence reuse vs mint** — exact licence-server rules for when a historical key may be reactivated. **Conservative default shipped:** Cloud key is never an individual key (`RWCC_Licence_Reuse` / `licenseReuse.js`). After Cloud ends, reuse a historical key for the same domain+slug only if that plugin was selected; otherwise mint later or none. Full licence-server wiring remains.
+7. **Licence reuse vs mint** — exact licence-server rules for when a historical key may be reactivated. **Conservative default shipped:** Cloud key is never an individual key (`RWCC_Licence_Reuse` / `licenseReuse.js`). After Cloud ends, reuse a historical key for the same domain+slug only if that plugin was selected; otherwise mint later or none. License provision implements reuse/skip-while-covered; access-token/activate reject `as_individual` rewrite of a live Cloud key. Remaining: operator must add the `reactwoo-decision-cloud` package row and optional `licenses.plan_code` column.
 8. **Live product ID catalogue** — inspected 2026-08-19 (parent 3166, variations 3172–3177). Operators must still bind settings/env, set `_rw_cloud_*` meta, prices, Virtual, and stock. Do not treat the parent ID as a plan.
 9. **Starter vs Commerce/Optimise** — confirmed here that starter does **not** cover Commerce or Optimise; confirm store catalogue copy matches.
 10. **Atomic Pro / Reviews / LinkedIn** — remain outside Cloud unless a later mapping revision includes them.
@@ -599,10 +599,10 @@ These must be decided during implementation steps 3, 5, 6, and 8. They are **not
 
 | Area | Remaining |
 |------|-----------|
-| Store companion | Production settings/meta/price binding. Entitlement handover + licence-reuse policy, overlap credit ledger (no auto-refund), Local catalogue validator, checkout credit display/block, pending-sub materialization, and admin state-6 correction are in API Manager. |
+| Store companion | Production settings/meta/price binding (operator SQL exists; flag stays off). Entitlement handover is wired into My Account downloads. Licence-reuse policy, overlap credit ledger (no auto-refund), Local catalogue validator, checkout credit display/block, pending-sub materialization, and admin state-6 correction are in API Manager. |
 | Decision Cloud | Portal billing lists included SKUs and store downgrade handoff (`rw_action=downgrade`). Upgrade JSON credits the store (`credit_owner: store`). Charging stays on the store. |
 | Geo Core | Done for grant OR; no further stop-ship change |
-| Licence / updates | **Partial.** `react-license` Cloud package grants covered plugin slugs (`product_slugs` / `cloud_plan` JWT claims). Conservative reuse/deny policy is tested. `reactwoo-api` update JWT accepts those included slugs. Production package rows still need `reactwoo-decision-cloud` + plan_code. |
+| Licence / updates | **Partial.** `react-license` Cloud package grants covered plugin slugs (`product_slugs` / `cloud_plan` JWT claims). Provision reuses historical individual keys after Cloud ends and stores `plan_code` when the column exists. Conservative reuse/deny policy is tested. `reactwoo-api` update JWT accepts those included slugs. Operators still need to run `add_reactwoo_decision_cloud_package.sql` on the license DB. |
 | Figma | §16 wireframe page created; finished visual design still required |
 
 ---

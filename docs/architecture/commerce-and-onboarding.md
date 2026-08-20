@@ -80,7 +80,7 @@ Commerce contract: [billing-providers.md](./billing-providers.md).
 
 ## Sprint 7 acceptance (in progress)
 
-See [PLAN.md](./PLAN.md). Implemented so far: coverage maps, remaining-term credit calculation **and checkout display/block**, post-activation supersession, overlap detection **and admin correction with a non-refund credit quote**, Geo Core grant OR, product-bound handoff signatures, Local catalogue bind + read-only validator (parent 3166 / 3172–3177), **downgrade selection** on My Account (confirm + pending Woo subscriptions at Cloud end, including none), entitlement handover (no gap), conservative licence reuse, Decision Cloud product copy, licence Cloud zip grants, portal included-SKU billing view.
+See [PLAN.md](./PLAN.md). Implemented so far: coverage maps, remaining-term credit calculation **and checkout display/block**, post-activation supersession, overlap detection **and admin correction with a non-refund credit quote**, Geo Core grant OR, product-bound handoff signatures, Local catalogue bind + read-only validator (parent 3166 / 3172–3177), **downgrade selection** on My Account (confirm + pending Woo subscriptions at Cloud end, including none), entitlement handover **wired into My Account downloads**, conservative licence reuse **on provision/token**, Decision Cloud product copy, licence Cloud zip grants, portal included-SKU billing view.
 
 Still required before production:
 
