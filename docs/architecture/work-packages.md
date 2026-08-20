@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md). Commercial model: [PLAN.md](./PLAN.md).
 
-**Current active package:** Gate D (live Local site: author → publish → sync → variant; Cloud off still works). Production Decision Cloud is `https://decision.reactwoo.com` (`0.17.9`). `cloud.reactwoo.com` remains the Google / Reviews vault.
+**Current active package:** PLAN.md remaining stop-ships (staging Woo E2E, Figma §16 polish, operator SQL, §20 Woo decisions). Next architecture gate: **Gate E** (WP14 events). Production Decision Cloud is `https://decision.reactwoo.com` (`0.17.9`). `cloud.reactwoo.com` remains the Google / Reviews vault. **Do not** enable `REACTWOO_CLOUD_BRIDGE_ENABLED` on production.
 
 ---
 
@@ -429,7 +429,7 @@ Cloud Audience + Experience + Variant → Publish → WP sync → qualify → va
 - Evaluation uses `RWGC_Cloud_Manifest_Store::current()` only. Never `RWGC_Cloud_Http` on the visitor path.
 - Portal condition aliases: `type`/`op` compile to `capability`/`operator`. Core also accepts those aliases.
 - Experience `slot_id` must be a WordPress slot ID (`rw_[slug]_[5 chars]`). Paste the Gutenberg/Elementor slot ID into the Cloud wizard, or copy the Cloud-generated `rw_*` ID into the block.
-- Do not mark this gate done from unit tests alone.
+- **Passed 2026-08-20** on Local: `http://reactwoo.local/gate-d-loop/` rendered `GATE-D-LIVE-UK` with Cloud up and again after Cloud was stopped. See [gate-d.md](./gate-d.md).
 
 ---
 
@@ -601,5 +601,5 @@ No autonomous optimisation in this phase.
 - [x] Sprint 4 Guided site connection (`0.14.0`)
 - [x] Sprint 6 Billing resilience (`0.15.0`)
 - [x] Sprint 7 Bundle commerce (PLAN.md) — coverage maps, grant OR, credit calculation, post-activation supersession, overlap detection, product-bound handoff. **Not shippable** until PLAN.md stop-ship conditions pass (credit display, downgrade UX, staging E2E, production flags).
-- [ ] WP10–13 Cloud → **Gate D** (end-to-end site still needed)  
+- [x] WP10–13 Cloud → **Gate D** (2026-08-20) — live Local page `http://reactwoo.local/gate-d-loop/` showed the Cloud variant with Decision Cloud up and after it was stopped (`gate-d.md`)
 - [ ] WP14–16 analytics/billing/migration → **Gate E** (metrics pipeline in place; live attribution still needed)  

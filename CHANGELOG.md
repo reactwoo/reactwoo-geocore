@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.161] - 2026-08-20
+
+### Changed
+- Gate D live Local loop passed (`docs/architecture/gate-d.md`). Production Cloud commerce stays off.
+
 ## [1.8.160] - 2026-08-20
 
 ### Added

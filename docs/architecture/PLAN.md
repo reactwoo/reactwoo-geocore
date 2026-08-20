@@ -2,7 +2,7 @@
 
 **Status:** Canonical commercial plan. Implementation in progress (PLAN.md §19). Do not enable Cloud commerce in production until the stop-ship conditions in this document are met.  
 **Authority:** This document supersedes any previous wording that Decision Cloud and covered individual-plugin subscriptions should normally run as separately billed subscriptions.  
-**Last updated:** 2026-08-19  
+**Last updated:** 2026-08-20  
 **Parent architecture:** [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md)  
 **Store/onboarding sequence:** [commerce-and-onboarding.md](./commerce-and-onboarding.md)  
 **Billing ownership:** [billing-providers.md](./billing-providers.md)  
@@ -601,7 +601,7 @@ These must be decided during implementation steps 3, 5, 6, and 8. They are **not
 |------|-----------|
 | Store companion | Production settings/meta/price binding (operator SQL exists; flag stays off). Entitlement handover is wired into My Account downloads. Licence-reuse policy, overlap credit ledger (no auto-refund), Local catalogue validator, checkout credit display/block, pending-sub materialization, and admin state-6 correction are in API Manager. |
 | Decision Cloud | Portal billing lists included SKUs and store downgrade handoff (`rw_action=downgrade`). Upgrade JSON credits the store (`credit_owner: store`). Charging stays on the store. |
-| Geo Core | Done for grant OR. Gate D request-time evaluation is in 1.8.160 (cached manifest → slot variant). Not a commerce stop-ship. Live Local page load still required before marking Gate D complete. |
+| Geo Core | Done for grant OR. Gate D live Local loop passed 2026-08-20 (`gate-d.md`; Geo Core 1.8.160 request-time eval). Not a commerce stop-ship. |
 | Licence / updates | **Partial.** `react-license` Cloud package grants covered plugin slugs (`product_slugs` / `cloud_plan` JWT claims). Provision reuses historical individual keys after Cloud ends and stores `plan_code` when the column exists. Conservative reuse/deny policy is tested. `reactwoo-api` update JWT accepts those included slugs. Operators still need to run `add_reactwoo_decision_cloud_package.sql` on the license DB. |
 | Figma | §16 wireframe page created; finished visual design still required |
 

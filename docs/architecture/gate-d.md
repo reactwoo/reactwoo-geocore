@@ -35,6 +35,24 @@ Live / staging sites use Geo Core’s default `https://decision.reactwoo.com/api
 - `GET /billing` must not call the store. Reconcile is an explicit portal POST.
 - Do not mark this gate done from unit tests alone. A live Local page load is required.
 
+## Passed — 2026-08-20 (Local)
+
+Live loop on `http://reactwoo.local/gate-d-loop/` with Geo Core **1.8.160** and Decision Cloud **0.17.9** (`127.0.0.1:3040`).
+
+| Step | Result |
+|------|--------|
+| Pair | `management_mode = local`, `connected = true` |
+| Author | Audience `geo.country` `in` `GB` + slot `rw_gated_hero_abc12` + content variant `GATE-D-LIVE-UK` |
+| Sync | Manifest revision 5, 1 experience |
+| Visitor (Cloud up) | `.page-content` rendered `<p>GATE-D-LIVE-UK</p>` (HTTP 200) |
+| Cloud stopped | `127.0.0.1:3040` connection refused |
+| Visitor (Cloud off) | Same URL still rendered `<p>GATE-D-LIVE-UK</p>` |
+| Visitor-path HTTP | Request-time eval `http_attempts = 0` |
+
+Rank Math meta description still quotes stored inner-block default `NATIVE-DEFAULT`. That is SEO excerpt of the saved Gutenberg default, not the rendered slot.
+
+This does **not** enable production `REACTWOO_CLOUD_BRIDGE_ENABLED`.
+
 ## Request-time contract (Geo Core 1.8.160+)
 
 WordPress slots read `reactwoo_current_decision_result`. `RWGC_Request_Decision` evaluates the **cached** manifest with `RWGC_Decision_Runtime` and visitor context (`geo.country` from `rwgc_get_visitor_country()`).

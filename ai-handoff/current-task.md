@@ -1,25 +1,22 @@
 # Current task
 
-**Gate D — Cloud authoring loop (local)**
+**PLAN.md remaining stop-ships** (Gate D is complete).
 
-Wire cached Cloud manifests into visitor Experience Slots. Do not enable production Cloud commerce (`REACTWOO_CLOUD_BRIDGE_ENABLED`).
+Do not enable production Cloud commerce (`REACTWOO_CLOUD_BRIDGE_ENABLED`). Do not skip PLAN.md §19 step 14.
 
-## Goal
+## Done
 
-Author in Decision Cloud → Publish → WordPress sync → qualifying visitor sees the variant. Cloud off → last cached manifest still applies. No Cloud HTTP on the visitor render path.
+- Gate D live Local loop (2026-08-20): author → sync → visitor sees `GATE-D-LIVE-UK` → Cloud off → same URL still shows variant. See `docs/architecture/gate-d.md`.
 
-## Done in code (1.8.160)
+## Remaining (PLAN.md)
 
-- `RWGC_Request_Decision` provides `reactwoo_current_decision_result`
-- Portal `type`/`op` aliases
-- Request-only slot/variant overlay
-
-## Still required
-
-A live Local page load. Do not mark Gate D complete from unit tests alone.
+1. Staging WooCommerce E2E
+2. Figma §16 visual polish (Decision Cloud commerce)
+3. Operator: license `add_reactwoo_decision_cloud_package.sql`; store `bind_production_cloud_catalogue.sql` (meta/prices only; not Local)
+4. §20 Woo status / credit mechanic (product/finance decisions)
 
 ## Do not
 
 - Skip to PLAN.md §19 step 14
-- Call Cloud HTTP after `template_redirect`
+- Run `bind_production_cloud_catalogue.sql` against Local
 - Unhook Elementor add-ons
