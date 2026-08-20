@@ -1,39 +1,35 @@
 # ReactWoo Cloud — Official Product & Technical Plan (v1)
 
-**Status:** Canonical reference for Cursor and product engineering.  
-**Last formalised:** 2026-08-11  
+**Status:** Canonical technical reference for Cursor and product engineering.  
+**Last formalised:** 2026-08-11; commercial model corrected 2026-08-19.  
+**Commercial / subscription model:** [PLAN.md](./PLAN.md) (supersedes separately billed Cloud + covered plugin subscriptions).  
 **Work packages:** [work-packages.md](./work-packages.md)
 
 ---
 
 ## 1. Product vision
 
-### Standalone ReactWoo
+### Level 1 — Individual plugins
 
-Individually sellable, run locally in WordPress, annual licence model:
+Customers may start with one or more separately billed plugin subscriptions. Each grant is only that product’s premium capabilities, downloads, and updates. Individual customers do **not** receive Decision Cloud access.
 
 | Product | Role |
 |---------|------|
-| ReactWoo Core (Geo Core) | Free foundation |
+| ReactWoo Core (Geo Core) | Free foundation (never billed) |
 | Geo Core Pro | Advanced targeting / personalisation |
 | Geo Commerce | Commerce targeting and merchandising |
 | Geo Optimise | Experimentation and conversion optimisation |
-| Atomic / ReactWoo Components | Component capability |
+| Atomic / ReactWoo Components | Component capability (not in current Cloud coverage unless [PLAN.md](./PLAN.md) mapping says so) |
 
-### ReactWoo Cloud
+### Level 2 — Decision Cloud bundle
 
-One SaaS subscription provides Pro capabilities plus:
+Decision Cloud is the **upgrade bundle** above the individual products. An active Cloud subscription grants console access, included plugin capabilities, downloads/updates for included SKUs, site connection, Cloud authoring, and plan-specific analytics/teams.
 
-- central management
-- shared audiences, experiences, goals
-- experimentation and reporting
-- component variants
-- cross-plugin decisions
-- multi-site
-- AI recommendations later
-- future integrations per plan
+When a customer upgrades, Cloud **replaces billing** for every individual plugin **covered by that plan**. Customers must not keep paying for those included plugins while also paying for Cloud. If they later leave Cloud, they choose which individual plugins to resume; unselected premium capabilities end with the paid Cloud period.
 
-Cloud is **not** merely bundling plugins. It introduces the loop standalone plugins cannot provide alone:
+Coverage, credit, supersession, downgrade, and stop-ship rules: [PLAN.md](./PLAN.md).
+
+Cloud still introduces the loop individual plugins cannot provide alone:
 
 > **Audience → Context → Decision → Experience → Goal → Insight**
 
@@ -258,8 +254,10 @@ Minimise by default. No names/email/full IP retention/customer profiles for basi
 ## 23–25. Billing, entitlements, managed mode
 
 - Payment processors stay on **ReactWoo.com WooCommerce**. Decision Cloud stores entitlement snapshots (`cloud.personalisation`, …, `sites.max`) from signed store webhooks. Feature code asks `$entitlements->allows('…')` only — never WooCommerce or gateway IDs.
-- Cloud-managed sites: WP shows “Managed by ReactWoo Cloud”; primary editing in Cloud to avoid dual source of truth.
-- Detail: [billing-providers.md](./billing-providers.md), [commerce-and-onboarding.md](./commerce-and-onboarding.md).
+- **Commercial model:** Cloud is a replacing bundle for covered plugin SKUs, not a second ongoing bill. Source-tracked grants may overlap during upgrade/grace/rollback; billing must not double-charge. See [PLAN.md](./PLAN.md).
+- Connection, resource origin, and `management_mode` are **not** the commercial state. Buying Cloud must not delete local WordPress configuration or silently flip a site to Cloud-managed.
+- Cloud-managed sites: WP shows “Managed by ReactWoo Cloud”; primary editing in Cloud to avoid dual source of truth — only after an **explicit** management-mode switch.
+- Detail: [PLAN.md](./PLAN.md), [billing-providers.md](./billing-providers.md), [commerce-and-onboarding.md](./commerce-and-onboarding.md).
 
 ---
 
@@ -313,6 +311,7 @@ Stop adding major features into plugin-specific rule architectures. Ask: Context
 
 ## References
 
+- Commercial / subscription model: [PLAN.md](./PLAN.md)
 - Work packages: [work-packages.md](./work-packages.md)
 - Gate D local loop: [gate-d.md](./gate-d.md)
 - Billing processors: [billing-providers.md](./billing-providers.md)

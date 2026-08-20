@@ -113,7 +113,7 @@ Matches plan gates; refined by audit:
 |------|------|--------|------------|
 | Critical | Visitor-path Cloud dependency introduced by mistake | Site outage / latency | Platform rule + Gate D offline test; code review checklist |
 | Critical | Breaking portable rule storage | Customer content disappears | Alias layer; never rewrite stored JSON without migration version |
-| High | Entitlement dual-stack bugs (standalone + Cloud) | Features unlock/lock incorrectly | Single `EntitlementProviderInterface` |
+| High | Entitlement dual-stack bugs (standalone + Cloud) | Features unlock/lock incorrectly **or** covered plugins stay double-billed | Single grant-based `EntitlementProviderInterface`; commercial supersession per [PLAN.md](./PLAN.md) |
 | High | Credential confusion (license / Google / site pairing) | Security + support load | Separate stores, labels, docs |
 | High | Experiment re-assignment on Runtime cutover | Contaminated A/B results | Preserve cookie key or migrate map once |
 | Medium | Elementor clone sharing slot IDs | Wrong experience on duplicated widgets | WP5/6 regeneration rules |

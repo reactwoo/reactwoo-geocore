@@ -88,4 +88,27 @@ final class RWGC_Cloud_Entitlement_Store {
 		}
 		return null !== self::get();
 	}
+
+	/**
+	 * Cloud bundle is the current commercial source (active or past_due-in-grace).
+	 *
+	 * @return bool
+	 */
+	public static function is_commercially_active() {
+		if ( ! self::is_active() ) {
+			return false;
+		}
+		$snapshot = self::get();
+		if ( ! is_array( $snapshot ) ) {
+			return false;
+		}
+		$status = isset( $snapshot['status'] ) ? strtolower( (string) $snapshot['status'] ) : '';
+		if ( in_array( $status, array( 'active', 'pending-cancel' ), true ) ) {
+			return true;
+		}
+		if ( $status === 'past_due' && ! empty( $snapshot['grace'] ) ) {
+			return true;
+		}
+		return false;
+	}
 }

@@ -1,6 +1,9 @@
 <?php
 /**
- * Composite: Cloud cache when connected, otherwise standalone licenses.
+ * Composite: any currently valid grant wins (PLAN.md).
+ *
+ * Cloud is the commercial source when commercially active. Connection must not
+ * destroy a still-valid individual/standalone grant.
  *
  * @package ReactWoo_Geo_Core
  */
@@ -13,6 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Single facade target for feature code.
  */
 final class RWGC_Composite_Entitlement_Provider implements RWGC_Entitlement_Provider_Interface {
+
+	/** @var string[] Cloud-only limit keys. */
+	private static $cloud_limit_keys = array( 'sites.max', 'team_members.max', 'history.days' );
 
 	/** @var RWGC_Standalone_License_Provider */
 	private $standalone;
@@ -28,17 +34,24 @@ final class RWGC_Composite_Entitlement_Provider implements RWGC_Entitlement_Prov
 	 * {@inheritdoc}
 	 */
 	public function allows( $key ) {
-		if ( $this->cloud->is_active() ) {
-			return $this->cloud->allows( $key );
+		if ( $this->standalone->allows( $key ) ) {
+			return true;
 		}
-		return $this->standalone->allows( $key );
+		if ( $this->cloud_grant_valid() && $this->cloud->allows( $key ) ) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
 	 * {@inheritdoc}
 	 */
 	public function limit( $key ) {
-		if ( $this->cloud->is_active() ) {
+		$key = (string) $key;
+		if ( in_array( $key, self::$cloud_limit_keys, true ) && $this->cloud_grant_valid() ) {
+			return $this->cloud->limit( $key );
+		}
+		if ( $this->cloud_grant_valid() && $this->cloud->allows( $key ) && ! $this->standalone->allows( $key ) ) {
 			return $this->cloud->limit( $key );
 		}
 		return $this->standalone->limit( $key );
@@ -48,16 +61,31 @@ final class RWGC_Composite_Entitlement_Provider implements RWGC_Entitlement_Prov
 	 * {@inheritdoc}
 	 */
 	public function source() {
-		return $this->cloud->is_active() ? 'cloud' : 'standalone';
+		return $this->cloud_grant_valid() ? 'cloud' : 'standalone';
 	}
 
 	/**
 	 * {@inheritdoc}
 	 */
 	public function all() {
+		$out = $this->standalone->all();
 		if ( $this->cloud->is_active() ) {
-			return $this->cloud->all();
+			foreach ( $this->cloud->all() as $grant ) {
+				$out[] = $grant;
+			}
 		}
-		return $this->standalone->all();
+		return $out;
+	}
+
+	/**
+	 * Cloud bundle grant is currently valid (active or grace). Canceled snapshots do not count.
+	 *
+	 * @return bool
+	 */
+	private function cloud_grant_valid() {
+		if ( ! $this->cloud->is_active() ) {
+			return false;
+		}
+		return RWGC_Cloud_Entitlement_Store::is_commercially_active();
 	}
 }

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.158] - 2026-08-20
+
+### Changed
+- Cloud entitlement is grant-OR: a commercially valid Decision Cloud snapshot or a standalone licence can entitle covered capabilities. Connecting Cloud no longer replaces standalone access by itself.
+- Canonical commercial model documented in `docs/architecture/PLAN.md`.
+
 ## [1.8.157] - 2026-08-17
 
 ### Changed

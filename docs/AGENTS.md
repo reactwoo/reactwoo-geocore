@@ -11,6 +11,7 @@
 | Doc | Role |
 |-----|------|
 | `docs/architecture/` | **ReactWoo Cloud v1 + shared platform** — canonical product/tech plan, work packages, suite audit |
+| `docs/architecture/PLAN.md` | **Canonical commercial & subscription model** — Cloud replaces covered individual billing |
 | `docs/architecture/reactwoo-cloud-v1-architecture-and-delivery-plan.md` | Official Cloud/platform architecture (one decision model; Core executes locally) |
 | `docs/architecture/work-packages.md` | Cursor-ready WP0–WP20; implement one package at a time |
 | `docs/contracts/` | WP1 platform value objects / JSON schema (`reactwoo_schema_version = 1`) |

@@ -44,7 +44,7 @@ final class RWGC_Contract_Entitlement extends RWGC_Contract {
 	 * @throws RWGC_Contract_Exception On invalid input.
 	 */
 	public static function from_array( array $data ) {
-		list( $core, $extras ) = RWGC_Schema::partition( $data, array( 'key', 'id', 'allowed', 'limit', 'value', 'source' ) );
+		list( $core, $extras ) = RWGC_Schema::partition( $data, array( 'key', 'id', 'allowed', 'limit', 'value', 'source', 'valid_from', 'valid_until' ) );
 		$key = self::optional_string( $core, 'key' );
 		if ( '' === $key ) {
 			$key = self::optional_string( $core, 'id' );
@@ -68,6 +68,15 @@ final class RWGC_Contract_Entitlement extends RWGC_Contract {
 		$source = strtolower( self::optional_string( $core, 'source', 'standalone' ) );
 		if ( ! in_array( $source, array( 'standalone', 'cloud' ), true ) ) {
 			$source = 'standalone';
+		}
+
+		$valid_from  = self::optional_string( $core, 'valid_from' );
+		$valid_until = self::optional_string( $core, 'valid_until' );
+		if ( $valid_from !== '' ) {
+			$extras['valid_from'] = $valid_from;
+		}
+		if ( $valid_until !== '' ) {
+			$extras['valid_until'] = $valid_until;
 		}
 
 		return new self( $key, $allowed, $limit, $source, $extras );

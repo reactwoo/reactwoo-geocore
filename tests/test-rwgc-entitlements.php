@@ -165,6 +165,34 @@ RWGC_Entitlements::set_provider( null );
 rwgc_ent_assert( 'connected uses cloud cache', RWGC_Entitlements::allows( 'cloud.commerce' ) );
 rwgc_ent_assert( 'cloud source', 'cloud' === RWGC_Entitlements::source() );
 rwgc_ent_assert( 'unknown cloud key denied', ! RWGC_Entitlements::allows( 'not.a.key' ) );
+rwgc_ent_assert( 'connected still keeps standalone personalisation grant', RWGC_Entitlements::allows( 'cloud.personalisation' ) );
+
+RWGC_Cloud_Entitlement_Store::put(
+	array(
+		'plan'   => 'starter',
+		'status' => 'active',
+		'items'  => array(
+			array(
+				'key'     => 'cloud.personalisation',
+				'allowed' => true,
+				'limit'   => null,
+			),
+			array(
+				'key'     => 'cloud.commerce',
+				'allowed' => false,
+				'limit'   => null,
+			),
+			array(
+				'key'     => 'sites.max',
+				'allowed' => true,
+				'limit'   => 1,
+			),
+		),
+	)
+);
+RWGC_Entitlements::set_provider( null );
+rwgc_ent_assert( 'starter cloud does not revoke standalone commerce', RWGC_Entitlements::allows( 'cloud.commerce' ) );
+rwgc_ent_assert( 'starter cloud sites.max comes from cloud', 1 === RWGC_Entitlements::limit( 'sites.max' ) );
 
 RWGC_Cloud_Entitlement_Store::put(
 	array(
@@ -180,7 +208,39 @@ RWGC_Cloud_Entitlement_Store::put(
 	)
 );
 RWGC_Entitlements::set_provider( null );
-rwgc_ent_assert( 'lapsed cloud locks feature', ! RWGC_Entitlements::allows( 'cloud.commerce' ) );
+rwgc_ent_assert( 'lapsed cloud does not revoke standalone commerce', RWGC_Entitlements::allows( 'cloud.commerce' ) );
+rwgc_ent_assert( 'lapsed cloud source is standalone', 'standalone' === RWGC_Entitlements::source() );
+
+$GLOBALS['rwgc_test_filters']['rwgc_standalone_entitlements'] = array();
+add_filter(
+	'rwgc_standalone_entitlements',
+	static function ( $rows ) {
+		$rows['cloud.commerce']['allowed'] = false;
+		return $rows;
+	}
+);
+RWGC_Cloud_Connection::$connected = true;
+RWGC_Cloud_Entitlement_Store::put(
+	array(
+		'plan'   => 'growth',
+		'status' => 'active',
+		'items'  => array(
+			array(
+				'key'     => 'cloud.commerce',
+				'allowed' => true,
+				'limit'   => null,
+			),
+			array(
+				'key'     => 'sites.max',
+				'allowed' => true,
+				'limit'   => 5,
+			),
+		),
+	)
+);
+RWGC_Entitlements::set_provider( null );
+rwgc_ent_assert( 'growth cloud grants commerce without standalone', RWGC_Entitlements::allows( 'cloud.commerce' ) );
+rwgc_ent_assert( 'growth cloud sites.max comes from cloud', 5 === RWGC_Entitlements::limit( 'sites.max' ) );
 
 RWGC_Cloud_Connection::$connected = false;
 RWGC_Cloud_Entitlement_Store::clear();

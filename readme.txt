@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.8.157
+Stable tag: 1.8.158
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.158 =
+* Cloud entitlement is now grant-OR: a commercially valid Decision Cloud snapshot or a standalone licence can entitle covered capabilities. Connecting Cloud no longer replaces standalone access by itself.
 
 = 1.8.157 =
 * Cloud Connector default API base is now `https://decision.reactwoo.com/api/v1`. Stored `cloud.reactwoo.com/api/v1` options are migrated. Pairing is under Integrations → ReactWoo Cloud. `cloud.reactwoo.com` remains the Google / Reviews vault (`/geo-api`, `/grp-api`).

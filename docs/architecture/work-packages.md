@@ -1,6 +1,6 @@
 # ReactWoo Cloud v1 — Implementation work packages
 
-Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md).
+Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md). Commercial model: [PLAN.md](./PLAN.md).
 
 **Current active package:** Gate D (live Local site: author → publish → sync → variant; Cloud off still works). Production Decision Cloud is `https://decision.reactwoo.com` (`0.15.1`). `cloud.reactwoo.com` remains the Google / Reviews vault.
 
@@ -592,5 +592,6 @@ No autonomous optimisation in this phase.
 - [x] Sprint 5 Standalone upgrade (`0.13.0`)
 - [x] Sprint 4 Guided site connection (`0.14.0`)
 - [x] Sprint 6 Billing resilience (`0.15.0`)
+- [x] Sprint 7 Bundle commerce (PLAN.md) — coverage maps, grant OR, credit calculation, post-activation supersession, overlap detection, product-bound handoff. **Not shippable** until PLAN.md stop-ship conditions pass (credit display, downgrade UX, staging E2E, production flags).
 - [ ] WP10–13 Cloud → **Gate D** (end-to-end site still needed)  
 - [ ] WP14–16 analytics/billing/migration → **Gate E** (metrics pipeline in place; live attribution still needed)  
