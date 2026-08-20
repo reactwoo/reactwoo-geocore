@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.162] - 2026-08-20
+
+### Changed
+- PLAN.md Local stop-ships closed (Woo E2E, Figma §16 visual screens, §20 shipped defaults). Production Cloud commerce stays off.
+
 ## [1.8.161] - 2026-08-20
 
 ### Changed

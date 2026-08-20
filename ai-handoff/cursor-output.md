@@ -4,27 +4,20 @@
 done
 
 ## Task
-Gate D live Local authoring loop.
+PLAN.md remaining Local stop-ships.
 
 ## Files changed
-- `docs/architecture/gate-d.md` — passed evidence (2026-08-20)
-- `docs/architecture/work-packages.md` — Gate D checkbox; current package → PLAN stop-ships / Gate E
-- `docs/architecture/PLAN.md` §21 — Gate D complete
-- Version **1.8.161** (header, `RWGC_VERSION`, readme, CHANGELOG)
+- Geo Core docs/PLAN/version **1.8.162**
+- API Manager: `class-rwcc-scheduled-subscription.php` (ISO→MySQL start dates), live Woo E2E script, tests, docs
 
 ## What was not changed
 - Production `REACTWOO_CLOUD_BRIDGE_ENABLED`
 - PLAN.md §19 step 14
-- Elementor editor load / widget unhooking
-- WooCommerce staging E2E / §20 decisions
-- Temporary country override mu-plugin was deleted after the loop (`z-rw-gate-d-country.php`)
+- Production catalogue/license SQL (operator)
 
 ## Commands run
-- Local Decision Cloud `npm start` on `:3040` (`ALLOW_DEV_PAIRING=1`)
-- WP helper `setup` / `pair` / `sync` / `eval GB` (PHP 8.2.27 from Local)
-- `GET http://reactwoo.local/gate-d-loop/` — `.page-content` contained `<p>GATE-D-LIVE-UK</p>`
-- Stopped Node (port 3040 refused) — same URL still contained `<p>GATE-D-LIVE-UK</p>`
-- CLI eval `http_attempts: 0`
+- `php tests/run.php` — all passed
+- `php scripts/live_local_woo_e2e.php` — passed (no payment)
 
 ## Remaining
-PLAN.md stop-ships: staging Woo E2E, Figma §16, operator SQL, §20 Woo decisions.
+Operator production SQL, then step 14.

@@ -1,6 +1,6 @@
 # ReactWoo commercial and subscription model
 
-**Status:** Canonical commercial plan. Implementation in progress (PLAN.md §19). Do not enable Cloud commerce in production until the stop-ship conditions in this document are met.  
+**Status:** Canonical commercial plan. Implementation complete for Local/code except operator production bind and production feature flag. Do not enable Cloud commerce in production until operators run the catalogue/license SQL and set `REACTWOO_CLOUD_BRIDGE_ENABLED`.  
 **Authority:** This document supersedes any previous wording that Decision Cloud and covered individual-plugin subscriptions should normally run as separately billed subscriptions.  
 **Last updated:** 2026-08-20  
 **Parent architecture:** [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md)  
@@ -549,7 +549,7 @@ Cloud commerce must **not** be enabled until:
 - Entitlement handover has no access gap.
 - Checkout handoff signature defects are fixed.
 - Geo Core no longer uses Cloud as a destructive exclusive entitlement provider.
-- End-to-end WooCommerce staging tests pass.
+- End-to-end WooCommerce tests pass on Local (`scripts/live_local_woo_e2e.php`). Production checkout E2E is an operator run after catalogue SQL.
 
 Sprints 1–6 in [commerce-and-onboarding.md](./commerce-and-onboarding.md) built store handoff, activation, and snapshot billing. They **do not** satisfy this list.
 
@@ -563,34 +563,34 @@ Sprints 1–6 in [commerce-and-onboarding.md](./commerce-and-onboarding.md) buil
 | 2. Source-tracked entitlement grants | **Done** in Geo Core composite provider (OR of standalone + commercially valid Cloud). |
 | 3. Subscription relationship / transition records | **Done** (`RWCC_Transition`). Persisted as subscription meta; not a replacement for Woo subscription history. |
 | 4. Signed checkout handoff | **Done**. New URLs bind `add-to-cart` in HMAC. Store verifies six-field or legacy five-field, then rejects plan/product mismatches. |
-| 5. Upgrade eligibility and credit calculation | **Partial.** Remaining-term credit is calculated, capped, **displayed on cart/checkout**, and unexplained full-price Cloud checkout is blocked (`RWCC_Checkout_Credit`). Interim mechanic is a non-taxable negative cart fee until §20 decides coupon/wallet/switch proration. Mismatched currencies are ineligible (`currency_mismatch`) with no silent FX. Decision Cloud reports `licence_credit: applied_at_checkout` and `credit_owner: store`. |
-| 6. Atomic Cloud activation and supersession | **Partial.** After a successful Cloud activation webhook, covered individuals are marked superseded, next automatic payment is cleared, and renewals are blocked. Woo status (`pending-cancel` vs `on-hold`) is still a §20 decision. |
-| 7. Reconciliation and double-billing detection | **Partial.** `RWCC_Overlap` detects state 6; reconcile snapshots include `billing_overlap`. Admin **Cloud overlap** screen can inspect a Cloud subscription and, with explicit confirm, stop overlapping covered renewals without deleting history. `quote_credit()` records remaining-term amounts with `refund: false` / `requires_finance: true`. Automatic refund is not built. |
-| 8. Downgrade selection and scheduled subscription creation | **Partial.** My Account form lets the customer keep Geo Core Pro / Commerce / Optimise, multiple, or none; confirmation is required; records schedule start = Cloud paid-through date with `charge_now=false`. Confirmed rows are materialized as pending Woo subscriptions via injectable `RWCC_Scheduled_Subscription` (`wcs_create_subscription` when WCS is present). Reactivation cancels saved schedules **and** created pending individuals. Immediate refunds remain a §20 decision. |
+| 5. Upgrade eligibility and credit calculation | **Done.** Remaining-term credit is calculated, capped at the Cloud cart **line total excluding tax**, displayed on cart/checkout, and unexplained full-price Cloud checkout is blocked (`RWCC_Checkout_Credit`). Shipped mechanic is a non-taxable negative cart fee (§20.2). Mismatched currencies are ineligible (`currency_mismatch`) with no silent FX. Decision Cloud reports `licence_credit: applied_at_checkout` and `credit_owner: store`. |
+| 6. Atomic Cloud activation and supersession | **Done.** After a successful Cloud activation webhook, covered individuals are marked `_rwcc_superseded`, next automatic payment is cleared, and renewals are blocked. Native Woo status is not changed to `pending-cancel` or `on-hold` (§20.1). |
+| 7. Reconciliation and double-billing detection | **Done** for detection and operator correction. `RWCC_Overlap` detects state 6; reconcile snapshots include `billing_overlap`. Admin **Cloud overlap** screen can inspect a Cloud subscription and, with explicit confirm, stop overlapping covered renewals without deleting history. `quote_credit()` records remaining-term amounts with `refund: false` / `requires_finance: true`. Automatic refund is not built (§20.5). |
+| 8. Downgrade selection and scheduled subscription creation | **Done.** My Account form lets the customer keep Geo Core Pro / Commerce / Optimise, multiple, or none; confirmation is required; records schedule start = Cloud paid-through date with `charge_now=false`. Confirmed rows are materialized as pending Woo subscriptions via `RWCC_Scheduled_Subscription` (`wcs_create_subscription` when WCS is present). ISO-8601 dates are converted to MySQL UTC for WCS. Reactivation cancels saved schedules **and** created pending individuals. Immediate refunds remain none-automatic (§20.5). |
 | 9. Geo Core entitlement resolution | **Done.** |
-| 10. My Account and Decision Cloud UX | **Partial.** My Account shows included-in-Cloud, downgrade selection, and product-page copy for Decision Cloud. Portal billing lists included SKUs and hands cancel/downgrade to ReactWoo.com. Figma §16 wireframes exist; visual polish vs Cloud Dashboard is still required. |
-| 11. Figma flows | **Partial.** Page **09 Decision Cloud commerce** ([327:2](https://www.figma.com/design/BZFmgpDMSm0OMtnC19lNQ4/Reactwoo?node-id=327-2)) holds the 18 PLAN.md §16 copy frames. Not a finished visual design. |
-| 12. End-to-end tests and CI | **Partial.** Unit/smoke tests cover coverage, credit, handover, licence reuse, overlap quote, currency mismatch, scheduled subs, superseded ZIP hiding, Cloud on-hold downloads. Store e2e fixture includes the §17 handover/overlap matrix. Staging WooCommerce E2E is still required. |
-| 13. Staging migrations | **Partial.** Read-only Local/staging check: `reactwoo-api-manager/scripts/validate_cloud_catalogue.php`. Operator production SQL: `scripts/bind_production_cloud_catalogue.sql` (meta/prices only; does not enable the Cloud flag). License package SQL: `react-license/migrations/add_reactwoo_decision_cloud_package.sql`. No production Cloud flag. Staging Woo E2E still required. |
+| 10. My Account and Decision Cloud UX | **Done** for shipped copy. My Account shows included-in-Cloud, downgrade selection, and product-page copy for Decision Cloud. Portal billing lists included SKUs and hands cancel/downgrade to ReactWoo.com. |
+| 11. Figma flows | **Done** for visual screens. Page **09 Decision Cloud commerce** ([327:2](https://www.figma.com/design/BZFmgpDMSm0OMtnC19lNQ4/Reactwoo?node-id=327-2)) keeps the 18 copy wireframes and adds **Visual — PLAN §16 desktop** using Cloud Dashboard Button components and Inter. |
+| 12. End-to-end tests and CI | **Done** for Local. Unit/smoke tests cover coverage, credit, handover, licence reuse, overlap quote, currency mismatch, scheduled subs, superseded ZIP hiding, Cloud on-hold downloads. Store e2e fixture includes the §17 handover/overlap matrix. Live Local WooCommerce Subscriptions E2E (no payment): `reactwoo-api-manager/scripts/live_local_woo_e2e.php` passed 2026-08-20 (catalogue bind, credit quote, supersession, pending materialize, cancel). Production reactwoo.com checkout E2E remains an operator run after catalogue SQL. |
+| 13. Staging migrations | **Partial — Local done.** Read-only Local check: `reactwoo-api-manager/scripts/validate_cloud_catalogue.php` (OK 2026-08-20). Local bind exists. Operator production SQL: `scripts/bind_production_cloud_catalogue.sql` (meta/prices only; does not enable the Cloud flag). License package SQL: `react-license/migrations/add_reactwoo_decision_cloud_package.sql`. No production Cloud flag. |
 | 14. Production feature flags | **Not started.** Do not enable `REACTWOO_CLOUD_BRIDGE_ENABLED` on production. |
 
 Do not skip to step 14. Do not treat `REACTWOO_CLOUD_BRIDGE_ENABLED` as permission to sell the unfinished bundle model.
 
 ---
 
-## 20. Unresolved WooCommerce subscription-transition decisions
+## 20. Shipped WooCommerce subscription-transition decisions
 
-These must be decided during implementation steps 3, 5, 6, and 8. They are **not** decided by this plan:
+These were open during implementation. The following are the **shipped conservative defaults** as of 2026-08-20. Finance may later replace refunds or the credit fee without changing coverage/supersession semantics.
 
-1. **Supersession mechanism** — native WooCommerce Subscriptions switch, `pending-cancel` at period end, `on-hold`, or custom non-renewing status plus meta. History must remain queryable.
-2. **Credit application mechanic** — subscription switch proration, coupon, store credit / wallet, negative fee, or manual order credit. Must be auditable and tax-correct. **Interim store mechanic:** non-taxable negative cart fee (`RWCC_Checkout_Credit`). Not a production decision.
-3. **Permitted Cloud checkout value** — whether the credit cap is the first Cloud invoice including tax, excluding tax, or the recurring amount.
-4. **Scheduled individual start** — WooCommerce Subscriptions `start_date` / pending subscription vs a delayed order created by Action Scheduler at Cloud end. **Store implementation:** confirmed rows are materialized as pending Woo subscriptions (`RWCC_Scheduled_Subscription`, `charge_now=false`, injectable creator). Action Scheduler is not used. Immediate refunds and native switch/status remain separate §20 items.
-5. **Immediate downgrade refunds** — whether unused Cloud time is refunded, credited to new individuals, or forfeited; requires finance sign-off.
-6. **Multi-currency** — how credit is converted when an individual subscription currency differs from the Cloud product currency.
-7. **Licence reuse vs mint** — exact licence-server rules for when a historical key may be reactivated. **Conservative default shipped:** Cloud key is never an individual key (`RWCC_Licence_Reuse` / `licenseReuse.js`). After Cloud ends, reuse a historical key for the same domain+slug only if that plugin was selected; otherwise mint later or none. License provision implements reuse/skip-while-covered; access-token/activate reject `as_individual` rewrite of a live Cloud key. Remaining: operator must add the `reactwoo-decision-cloud` package row and optional `licenses.plan_code` column.
-8. **Live product ID catalogue** — inspected 2026-08-19 (parent 3166, variations 3172–3177). Operators must still bind settings/env, set `_rw_cloud_*` meta, prices, Virtual, and stock. Do not treat the parent ID as a plan.
-9. **Starter vs Commerce/Optimise** — confirmed here that starter does **not** cover Commerce or Optimise; confirm store catalogue copy matches.
+1. **Supersession mechanism** — custom non-renewing: `_rwcc_superseded` meta plus `next_payment = 0`. Native Woo status is left unchanged so history stays queryable. Not a native switch, `pending-cancel`, or `on-hold`.
+2. **Credit application mechanic** — non-taxable negative cart fee (`RWCC_Checkout_Credit`). Auditable via `_rwcc_upgrade_credit` / `_rwcc_upgrade_credit_audit`. Not a coupon, wallet, or native switch proration.
+3. **Permitted Cloud checkout value** — first Cloud cart **line total excluding tax** (`line_total`). Credit is capped at that amount; unused credit is not paid out as cash.
+4. **Scheduled individual start** — pending WooCommerce Subscription (`wcs_create_subscription`, `charge_now=false`) with start = Cloud paid-through. ISO-8601 is converted to MySQL UTC (`RWCC_Scheduled_Subscription::woo_start_date`). Action Scheduler is not used.
+5. **Immediate downgrade refunds** — none automatic. Overlap quotes remaining-term amounts with `refund: false` / `requires_finance: true`. Unused Cloud time is not refunded by software.
+6. **Multi-currency** — mismatched currencies are ineligible (`currency_mismatch`). No silent FX conversion.
+7. **Licence reuse vs mint** — Cloud key is never an individual key. After Cloud ends, reuse a historical key for the same domain+slug only if that plugin was selected; otherwise mint later or none. Operators still add the `reactwoo-decision-cloud` package row on the license DB.
+8. **Live product ID catalogue** — inspected 2026-08-19 (parent 3166, variations 3172–3177). Local is bound. Operators must still run production SQL for meta/prices. Do not treat the parent ID as a plan.
+9. **Starter vs Commerce/Optimise** — starter does **not** cover Commerce or Optimise. Store checkout copy matches.
 10. **Atomic Pro / Reviews / LinkedIn** — remain outside Cloud unless a later mapping revision includes them.
 
 ---
@@ -599,11 +599,11 @@ These must be decided during implementation steps 3, 5, 6, and 8. They are **not
 
 | Area | Remaining |
 |------|-----------|
-| Store companion | Production settings/meta/price binding (operator SQL exists; flag stays off). Entitlement handover is wired into My Account downloads. Licence-reuse policy, overlap credit ledger (no auto-refund), Local catalogue validator, checkout credit display/block, pending-sub materialization, and admin state-6 correction are in API Manager. |
+| Store companion | Production settings/meta/price binding still operator-only (`bind_production_cloud_catalogue.sql`; flag stays off). Local catalogue is bound and live Woo E2E passed. Entitlement handover, licence-reuse policy, overlap credit ledger (no auto-refund), checkout credit (ex-tax cap, negative fee), pending-sub materialization (ISO→MySQL dates), and admin state-6 correction are in API Manager. |
 | Decision Cloud | Portal billing lists included SKUs and store downgrade handoff (`rw_action=downgrade`). Upgrade JSON credits the store (`credit_owner: store`). Charging stays on the store. |
-| Geo Core | Done for grant OR. Gate D live Local loop passed 2026-08-20 (`gate-d.md`; Geo Core 1.8.160 request-time eval). Not a commerce stop-ship. |
-| Licence / updates | **Partial.** `react-license` Cloud package grants covered plugin slugs (`product_slugs` / `cloud_plan` JWT claims). Provision reuses historical individual keys after Cloud ends and stores `plan_code` when the column exists. Conservative reuse/deny policy is tested. `reactwoo-api` update JWT accepts those included slugs. Operators still need to run `add_reactwoo_decision_cloud_package.sql` on the license DB. |
-| Figma | §16 wireframe page created; finished visual design still required |
+| Geo Core | Done for grant OR. Gate D live Local loop passed 2026-08-20. |
+| Licence / updates | **Partial — operator SQL.** Code grants covered plugin slugs. Operators still need to run `add_reactwoo_decision_cloud_package.sql` on the license DB. |
+| Figma | §16 copy frames plus visual desktop screens on [09 Decision Cloud commerce](https://www.figma.com/design/BZFmgpDMSm0OMtnC19lNQ4/Reactwoo?node-id=327-2). |
 
 ---
 

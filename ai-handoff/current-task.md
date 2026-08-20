@@ -1,19 +1,22 @@
 # Current task
 
-**PLAN.md remaining stop-ships** (Gate D is complete).
+**Operator production bind** — PLAN.md code/Local stop-ships are closed.
 
 Do not enable production Cloud commerce (`REACTWOO_CLOUD_BRIDGE_ENABLED`). Do not skip PLAN.md §19 step 14.
 
-## Done
+## Done (2026-08-20)
 
-- Gate D live Local loop (2026-08-20): author → sync → visitor sees `GATE-D-LIVE-UK` → Cloud off → same URL still shows variant. See `docs/architecture/gate-d.md`.
+- Gate D live Local loop
+- Live Local WooCommerce Subscriptions E2E (`scripts/live_local_woo_e2e.php`)
+- WCS ISO-8601 start_date conversion (`RWCC_Scheduled_Subscription::woo_start_date`)
+- PLAN.md §20 shipped conservative defaults
+- Figma §16 visual desktop screens (Cloud Dashboard Button + Inter)
 
-## Remaining (PLAN.md)
+## Remaining (operators)
 
-1. Staging WooCommerce E2E
-2. Figma §16 visual polish (Decision Cloud commerce)
-3. Operator: license `add_reactwoo_decision_cloud_package.sql`; store `bind_production_cloud_catalogue.sql` (meta/prices only; not Local)
-4. §20 Woo status / credit mechanic (product/finance decisions)
+1. `react-license/migrations/add_reactwoo_decision_cloud_package.sql` on the license DB
+2. Store `bind_production_cloud_catalogue.sql` (meta/prices only; not Local)
+3. Then — and only then — PLAN.md §19 step 14
 
 ## Do not
 

@@ -78,19 +78,16 @@ Commerce contract: [billing-providers.md](./billing-providers.md).
 - Portal states distinguish active, payment grace, paused, and last-known entitlement conditions with payment-method handoff
 - Public billing and reconcile JSON contains no Stripe, Paystack, customer, subscription, or site-secret identifiers
 
-## Sprint 7 acceptance (in progress)
+## Sprint 7 acceptance
+
+See [PLAN.md](./PLAN.md). Local/code acceptance is met. Production enablement still requires operator SQL and the Cloud flag.
 
 See [PLAN.md](./PLAN.md). Implemented so far: coverage maps, remaining-term credit calculation **and checkout display/block**, post-activation supersession, overlap detection **and admin correction with a non-refund credit quote**, Geo Core grant OR, product-bound handoff signatures, Local catalogue bind + read-only validator (parent 3166 / 3172–3177), **downgrade selection** on My Account (confirm + pending Woo subscriptions at Cloud end, including none), entitlement handover **wired into My Account downloads**, conservative licence reuse **on provision/token**, Decision Cloud product copy, licence Cloud zip grants, portal included-SKU billing view.
 
 Still required before production:
 
-- Covered individual subscriptions detected before Cloud checkout
-- Remaining-term credit calculated, displayed, and capped
-- Cloud activation atomically supersedes covered subscriptions
-- Activation failure leaves individuals unchanged
-- Downgrade selection schedules individuals at Cloud end (or none)
-- No double billing; Geo Core grant OR without destructive exclusive Cloud provider
-- Checkout handoff signatures valid
-- Staging E2E WooCommerce tests pass
+- Operator production catalogue SQL (`bind_production_cloud_catalogue.sql`)
+- Operator license package SQL (`add_reactwoo_decision_cloud_package.sql`)
+- Production `REACTWOO_CLOUD_BRIDGE_ENABLED` — do not set until those SQL jobs run
 
-Woo status/credit mechanic choice (§20), **production** settings/meta/price binding, finished Figma visual design, and staging E2E are not done. Do not enable production Cloud commerce.
+Woo status/credit mechanic is shipped in PLAN.md §20 (meta supersession, ex-tax credit cap, no automatic refunds). Local Woo E2E and Figma §16 visual screens are done. Do not enable production Cloud commerce.
