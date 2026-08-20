@@ -1,27 +1,31 @@
 # Cursor output
 
 ## Status
-done
+needs-review
 
 ## Task
-Ship Decision Cloud pairing in Geo Core (no production mu-plugin).
+Gate D request-time Decision Runtime (cached manifest → Experience Slot variant). Live Local page load still required.
 
 ## Files changed
-- `includes/cloud/class-rwgc-cloud-config.php` — default API base `https://decision.reactwoo.com/api/v1`; migrate stored `cloud.reactwoo.com/api/v1`
-- `includes/cloud/class-rwgc-cloud-health.php` — health copy uses Decision Cloud URL
-- `includes/cloud/class-rwgc-cloud-admin.php` — skip duplicate submenu when shell route exists
-- `includes/class-rwgc-admin-route-registry.php` / `class-rwgc-admin.php` / `class-rwgc-admin-integrations-nav.php` — Cloud under Integrations → System services
-- Version 1.8.157 headers, changelog, readme, cloud-connector / Gate D docs, tests
+- `includes/decision/class-rwgc-request-decision.php` — provider for `reactwoo_current_decision_result`
+- `includes/decision/class-rwgc-decision.php` — load request decision
+- `includes/cloud/class-rwgc-cloud.php` — init request decision
+- `includes/contracts/class-rwgc-contract-condition.php` — `op`/`type` aliases
+- `includes/slots/class-rwgc-experience-slot-registry.php` — `put_runtime()`
+- `tests/test-rwgc-request-decision.php` — cache evaluate, `op`/`in`, no Cloud HTTP
+- Version **1.8.160** (header, `RWGC_VERSION`, readme, CHANGELOG)
+- `docs/architecture/gate-d.md`, `work-packages.md`, `PLAN.md` §21 note
 
 ## What was not changed
-- Local mu-plugin for `127.0.0.1:3040` (still valid on Local only)
-- Decision Cloud service
-- `REACTWOO_CLOUD_BRIDGE_ENABLED` on reactwoo.com
-- vendor / packager scripts
+- Production `REACTWOO_CLOUD_BRIDGE_ENABLED`
+- PLAN.md §19 step 14
+- Elementor editor load / widget unhooking
+- WooCommerce staging E2E / §20 decisions
 
 ## Commands run
-- `composer test:cloud-security`
-- `composer test:cloud-health`
+- `php tests/test-rwgc-request-decision.php`
+- `php tests/test-rwgc-contracts.php`
+- `composer test:request-decision` (via php)
 
 ## Remaining
-- Update staging.aplenty.co.uk to Geo Core 1.8.157, then pair from Integrations → ReactWoo Cloud.
+Live Local: `npm start` Decision Cloud → pair → author GB audience + `rw_*` slot_id → publish → sync → load frontend → stop Node → reload still shows variant.

@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md). Commercial model: [PLAN.md](./PLAN.md).
 
-**Current active package:** Gate D (live Local site: author → publish → sync → variant; Cloud off still works). Production Decision Cloud is `https://decision.reactwoo.com` (`0.15.1`). `cloud.reactwoo.com` remains the Google / Reviews vault.
+**Current active package:** Gate D (live Local site: author → publish → sync → variant; Cloud off still works). Production Decision Cloud is `https://decision.reactwoo.com` (`0.17.9`). `cloud.reactwoo.com` remains the Google / Reviews vault.
 
 ---
 
@@ -422,6 +422,14 @@ Preview must use the same component schema as production.
 ### Gate D
 
 Cloud Audience + Experience + Variant → Publish → WP sync → qualify → variant shows; Cloud off → still works.
+
+**Request-time contract (Geo Core 1.8.160+):**
+
+- `RWGC_Request_Decision` is the provider for `reactwoo_current_decision_result`.
+- Evaluation uses `RWGC_Cloud_Manifest_Store::current()` only. Never `RWGC_Cloud_Http` on the visitor path.
+- Portal condition aliases: `type`/`op` compile to `capability`/`operator`. Core also accepts those aliases.
+- Experience `slot_id` must be a WordPress slot ID (`rw_[slug]_[5 chars]`). Paste the Gutenberg/Elementor slot ID into the Cloud wizard, or copy the Cloud-generated `rw_*` ID into the block.
+- Do not mark this gate done from unit tests alone.
 
 ---
 

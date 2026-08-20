@@ -24,12 +24,36 @@ final class RWGC_Experience_Slot_Registry {
 	private static $cache = null;
 
 	/**
+	 * Request-only overlays (manifest evaluation). Not persisted.
+	 *
+	 * @var array<string, array<string, mixed>>
+	 */
+	private static $runtime = array();
+
+	/**
 	 * Reset cache (tests).
 	 *
 	 * @return void
 	 */
 	public static function reset_cache() {
-		self::$cache = null;
+		self::$cache   = null;
+		self::$runtime = array();
+	}
+
+	/**
+	 * Inject a slot for this PHP request only.
+	 *
+	 * @param array<string, mixed> $data Slot data.
+	 * @return RWGC_Contract_Experience_Slot|null
+	 */
+	public static function put_runtime( array $data ) {
+		try {
+			$slot = RWGC_Contract_Experience_Slot::from_array( $data );
+		} catch ( RWGC_Contract_Exception $e ) {
+			return null;
+		}
+		self::$runtime[ $slot->id() ] = $slot->to_array();
+		return $slot;
 	}
 
 	/**
@@ -70,7 +94,14 @@ final class RWGC_Experience_Slot_Registry {
 	 * @return RWGC_Contract_Experience_Slot|null
 	 */
 	public static function get( $id ) {
-		$id  = (string) $id;
+		$id = (string) $id;
+		if ( isset( self::$runtime[ $id ] ) && is_array( self::$runtime[ $id ] ) ) {
+			try {
+				return RWGC_Contract_Experience_Slot::from_array( self::$runtime[ $id ] );
+			} catch ( RWGC_Contract_Exception $e ) {
+				return null;
+			}
+		}
 		$raw = self::all_raw();
 		if ( ! isset( $raw[ $id ] ) || ! is_array( $raw[ $id ] ) ) {
 			return null;

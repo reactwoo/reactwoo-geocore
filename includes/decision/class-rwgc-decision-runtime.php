@@ -2,7 +2,8 @@
 /**
  * ReactWoo Decision Runtime v1 — local, deterministic, no Cloud calls.
  *
- * Additive: not wired into Elementor/Gutenberg render paths yet (WP5–9).
+ * Wired into Elementor/Gutenberg via {@see RWGC_Request_Decision} and
+ * {@see apply_filters( 'reactwoo_current_decision_result' )}. Never calls Cloud.
  *
  * @package ReactWoo_Geo_Core
  */

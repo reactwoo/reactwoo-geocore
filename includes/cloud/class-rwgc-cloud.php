@@ -52,6 +52,9 @@ final class RWGC_Cloud {
 		RWGC_Cloud_Http::register_hooks();
 		RWGC_Cloud_Scheduler::init();
 		RWGC_Cloud_Telemetry::init();
+		if ( class_exists( 'RWGC_Request_Decision', false ) ) {
+			RWGC_Request_Decision::init();
+		}
 		if ( is_admin() ) {
 			RWGC_Cloud_Admin::init();
 		}

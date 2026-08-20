@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Gate B foundation: default website content always wins on failure / default variant.
  *
- * Not wired to Elementor/Gutenberg yet (WP6–7). Callers pass default HTML.
+ * Gutenberg/Elementor pass default HTML and the request Decision Runtime result.
  */
 final class RWGC_Experience_Slot_Renderer {
 

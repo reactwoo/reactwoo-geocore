@@ -34,3 +34,12 @@ Live / staging sites use Geo Core’s default `https://decision.reactwoo.com/api
 - Pairing must leave `management_mode = local` until an explicit Cloud managed choice.
 - `GET /billing` must not call the store. Reconcile is an explicit portal POST.
 - Do not mark this gate done from unit tests alone. A live Local page load is required.
+
+## Request-time contract (Geo Core 1.8.160+)
+
+WordPress slots read `reactwoo_current_decision_result`. `RWGC_Request_Decision` evaluates the **cached** manifest with `RWGC_Decision_Runtime` and visitor context (`geo.country` from `rwgc_get_visitor_country()`).
+
+- Missing cache → `null` → default website content.
+- Cloud HTTP is forbidden after `template_redirect` and is not used by this provider at all.
+- Portal-authored conditions may use `type`/`op`; Core accepts those as `capability`/`operator`. Decision Cloud 0.17.9+ also normalises them at compile time.
+- Slot IDs must match `rw_[a-z0-9]+(?:_[a-z0-9]+)*_[a-z0-9]{5}`. Copy the Gutenberg/Elementor slot ID into the Cloud experience (or the Cloud-generated `rw_*` ID into the block).

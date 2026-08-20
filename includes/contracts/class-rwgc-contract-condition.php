@@ -40,7 +40,7 @@ final class RWGC_Contract_Condition extends RWGC_Contract {
 	 * @throws RWGC_Contract_Exception On invalid input.
 	 */
 	public static function from_array( array $data ) {
-		list( $core, $extras ) = RWGC_Schema::partition( $data, array( 'capability', 'operator', 'value', 'type' ) );
+		list( $core, $extras ) = RWGC_Schema::partition( $data, array( 'capability', 'operator', 'op', 'value', 'type' ) );
 
 		$raw_cap = isset( $core['capability'] ) ? $core['capability'] : ( isset( $core['type'] ) ? $core['type'] : '' );
 		$capability = RWGC_Schema::normalize_capability_id( $raw_cap );
@@ -48,7 +48,10 @@ final class RWGC_Contract_Condition extends RWGC_Contract {
 			throw new RWGC_Contract_Exception( 'Condition capability is required and must be a valid capability ID.' );
 		}
 
-		$operator = strtolower( self::optional_string( $core, 'operator', 'equals' ) );
+		$operator = strtolower( self::optional_string( $core, 'operator', '' ) );
+		if ( '' === $operator ) {
+			$operator = strtolower( self::optional_string( $core, 'op', 'equals' ) );
+		}
 		if ( '' === $operator || ! preg_match( '/^[a-z][a-z0-9_]*$/', $operator ) ) {
 			throw new RWGC_Contract_Exception( 'Condition operator is invalid.' );
 		}

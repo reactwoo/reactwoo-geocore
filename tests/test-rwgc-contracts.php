@@ -76,6 +76,16 @@ rwgc_assert( 'manifest revision', 142 === $manifest->revision() );
 rwgc_assert( 'manifest future extras', ! empty( $manifest->extras()['future_flag']['enabled'] ) );
 rwgc_assert( 'audience alias capability', 'geo.country' === $manifest->audiences()[0]->conditions()->items()[0]->capability() );
 
+$portal = RWGC_Contract_Condition::from_array(
+	array(
+		'type'  => 'geo.country',
+		'op'    => 'in',
+		'value' => array( 'GB' ),
+	)
+);
+rwgc_assert( 'portal type aliases capability', 'geo.country' === $portal->capability() );
+rwgc_assert( 'portal op aliases operator', 'in' === $portal->operator() );
+
 $round = RWGC_Contract_Manifest::from_json( $manifest->to_json() );
 rwgc_assert( 'json round-trip revision', 142 === $round->revision() );
 rwgc_assert( 'json round-trip extras', ! empty( $round->extras()['future_flag']['enabled'] ) );

@@ -35,6 +35,7 @@
     "test:cloud-migration": "php tests/test-rwgc-cloud-migration.php",
     "test:cloud-health": "php tests/test-rwgc-cloud-health.php",
     "test:cloud-security": "php tests/test-rwgc-cloud-security.php",
+    "test:request-decision": "php tests/test-rwgc-request-decision.php",
     "test:entitlements": "php tests/test-rwgc-entitlements.php",
     "test:recommendations": "php tests/test-rwgc-recommendations.php",
     "test:all": [
@@ -56,6 +57,7 @@
       "@test:cloud-migration",
       "@test:cloud-health",
       "@test:cloud-security",
+      "@test:request-decision",
       "@test:entitlements",
       "@test:recommendations"
     ]

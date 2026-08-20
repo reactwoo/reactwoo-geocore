@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.160] - 2026-08-20
+
+### Added
+- **Gate D:** `RWGC_Request_Decision` supplies `reactwoo_current_decision_result` from the cached Cloud manifest (local evaluate, no Cloud HTTP). Experience Slot runtime overlay hydrates variants/slots for the request.
+
+### Changed
+- Condition contract accepts portal aliases `op` and `type` (`op` → `operator`, `type` → `capability`).
+
 ## [1.8.159] - 2026-08-20
 
 ### Changed

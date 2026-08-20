@@ -33,5 +33,6 @@ final class RWGC_Decision {
 		require_once $dir . 'class-rwgc-decision-experiment-assigner.php';
 		require_once $dir . 'class-rwgc-decision-runtime.php';
 		require_once $dir . 'class-rwgc-decision-parity.php';
+		require_once $dir . 'class-rwgc-request-decision.php';
 	}
 }

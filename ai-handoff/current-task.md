@@ -1,20 +1,25 @@
 # Current task
 
-**Gate D** — live authoring loop. See `docs/architecture/gate-d.md`.
+**Gate D — Cloud authoring loop (local)**
 
-Production Decision Cloud: `https://decision.reactwoo.com`.
-Geo Core **1.8.157** defaults the Cloud Connector to that host and lists pairing under **Integrations → ReactWoo Cloud**.
+Wire cached Cloud manifests into visitor Experience Slots. Do not enable production Cloud commerce (`REACTWOO_CLOUD_BRIDGE_ENABLED`).
 
-Local WordPress still uses `wp-content/mu-plugins/reactwoo-local-decision-cloud.php` → `http://127.0.0.1:3040/api/v1`. Do not add an mu-plugin on staging/production for Decision Cloud.
+## Goal
 
-## Do now (staging.aplenty.co.uk)
+Author in Decision Cloud → Publish → WordPress sync → qualifying visitor sees the variant. Cloud off → last cached manifest still applies. No Cloud HTTP on the visitor render path.
 
-1. Update Geo Core to 1.8.157.
-2. Confirm API base is `https://decision.reactwoo.com/api/v1`.
-3. Portal: generate a pairing code (10 minutes).
-4. WordPress: **Integrations → ReactWoo Cloud** → paste token → Connect. Leave `management_mode = local`.
-5. Author Audience + Experience + Variant, publish-check, publish.
-6. Sync manifest. Load a qualifying frontend URL.
-7. Confirm cached manifest still applies with Cloud unreachable. No Cloud HTTP on render.
+## Done in code (1.8.160)
 
-Do not enable `REACTWOO_CLOUD_BRIDGE_ENABLED` on reactwoo.com until Gate D is signed off and Cloud SKUs are mapped.
+- `RWGC_Request_Decision` provides `reactwoo_current_decision_result`
+- Portal `type`/`op` aliases
+- Request-only slot/variant overlay
+
+## Still required
+
+A live Local page load. Do not mark Gate D complete from unit tests alone.
+
+## Do not
+
+- Skip to PLAN.md §19 step 14
+- Call Cloud HTTP after `template_redirect`
+- Unhook Elementor add-ons

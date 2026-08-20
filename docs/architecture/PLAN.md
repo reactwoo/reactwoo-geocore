@@ -601,7 +601,7 @@ These must be decided during implementation steps 3, 5, 6, and 8. They are **not
 |------|-----------|
 | Store companion | Production settings/meta/price binding (operator SQL exists; flag stays off). Entitlement handover is wired into My Account downloads. Licence-reuse policy, overlap credit ledger (no auto-refund), Local catalogue validator, checkout credit display/block, pending-sub materialization, and admin state-6 correction are in API Manager. |
 | Decision Cloud | Portal billing lists included SKUs and store downgrade handoff (`rw_action=downgrade`). Upgrade JSON credits the store (`credit_owner: store`). Charging stays on the store. |
-| Geo Core | Done for grant OR; no further stop-ship change |
+| Geo Core | Done for grant OR. Gate D request-time evaluation is in 1.8.160 (cached manifest → slot variant). Not a commerce stop-ship. Live Local page load still required before marking Gate D complete. |
 | Licence / updates | **Partial.** `react-license` Cloud package grants covered plugin slugs (`product_slugs` / `cloud_plan` JWT claims). Provision reuses historical individual keys after Cloud ends and stores `plan_code` when the column exists. Conservative reuse/deny policy is tested. `reactwoo-api` update JWT accepts those included slugs. Operators still need to run `add_reactwoo_decision_cloud_package.sql` on the license DB. |
 | Figma | §16 wireframe page created; finished visual design still required |
 
