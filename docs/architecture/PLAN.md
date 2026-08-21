@@ -1,8 +1,8 @@
 # ReactWoo commercial and subscription model
 
-**Status:** Canonical commercial plan. Implementation complete for Local/code except operator production bind and production feature flag. Do not enable Cloud commerce in production until operators run the catalogue/license SQL and set `REACTWOO_CLOUD_BRIDGE_ENABLED`.  
+**Status:** Canonical commercial plan. Local/code complete. Operator catalogue SQL, license package SQL, and production `REACTWOO_CLOUD_BRIDGE_ENABLED` are done (verified 2026-08-21). Remaining: paste/merge `rwcc_settings` product IDs if still empty, production checkout E2E, identity Sign in, then Gate E.  
 **Authority:** This document supersedes any previous wording that Decision Cloud and covered individual-plugin subscriptions should normally run as separately billed subscriptions.  
-**Last updated:** 2026-08-20  
+**Last updated:** 2026-08-21  
 **Parent architecture:** [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md)  
 **Store/onboarding sequence:** [commerce-and-onboarding.md](./commerce-and-onboarding.md)  
 **Billing ownership:** [billing-providers.md](./billing-providers.md)  
@@ -94,7 +94,7 @@ Public Store API `GET /wp-json/wc/store/v1/products/3166` (`https://reactwoo.com
 | Scale monthly | **3176** | SKU `RW-DC-SCALE-M` |
 | Scale annual | **3177** | |
 
-Store API listed prices as £0 and the product was not purchasable at inspection. **Never** identify a plan from price, title, SKU text, or variation description.
+Store API listed prices as £0 and the product was not purchasable at first inspection (2026-08-19). Re-checked 2026-08-21 after operator SQL: parent **3166** is purchasable; variations **3172–3177** sell at PLAN marketing GBP (£39 / £390 / £99 / £990 / £249 / £2,490). **Never** identify a plan from price, title, SKU text, or variation description.
 
 **Recommended public prices** (marketing / plan-display only; WooCommerce charges the live amount):
 
@@ -116,7 +116,7 @@ Settings fallback: `product_starter=3172,3173` (monthly then annual). Multiple v
 
 **Downloads:** Mark the product/variations Virtual. Do **not** attach Geo Core Pro / Geo Commerce / Geo Optimise ZIPs to every variation. My Account lists entitled packages dynamically via API Manager store-download, e.g. `Geo Core Pro — Included with Decision Cloud`. No new installer plugin for the initial implementation. Downloadable may be enabled if Woo requires it, without static satellite files.
 
-**Still required on the live product (manual Woo config):** real prices and stock; `_rw_cloud_*` meta on each variation; bind settings/env; Virtual; no satellite ZIP attachments; plan copy (who it is for, limits, included/excluded plugins, annual saving, upgrade/cancel, Cloud does not auto-place content — connect a site and choose an Experience Slot).
+**Live product (2026-08-21):** prices and `_rw_cloud_*` meta are bound; PLAN product copy (`rwcc-cloud-product-copy`) is on the public product page (Cloud bridge loaded). Bind `rwcc_settings` product IDs if still empty (`product_starter=3172,3173` etc.; individuals Geo Core Pro **2294**, Geo Commerce **2893**, Geo Optimise **2891**). Merge-only helper: `reactwoo-api-manager/scripts/merge_production_cloud_settings.php`. Do not attach satellite ZIPs to variations.
 
 ### 3.1 Cloud plan matrix
 
@@ -549,7 +549,7 @@ Cloud commerce must **not** be enabled until:
 - Entitlement handover has no access gap.
 - Checkout handoff signature defects are fixed.
 - Geo Core no longer uses Cloud as a destructive exclusive entitlement provider.
-- End-to-end WooCommerce tests pass on Local (`scripts/live_local_woo_e2e.php`). Production checkout E2E is an operator run after catalogue SQL.
+- End-to-end WooCommerce tests pass on Local (`scripts/live_local_woo_e2e.php`). Production checkout E2E is an operator paid-path run now that catalogue SQL and the production flag are on.
 
 Sprints 1–6 in [commerce-and-onboarding.md](./commerce-and-onboarding.md) built store handoff, activation, and snapshot billing. They **do not** satisfy this list.
 
@@ -559,7 +559,7 @@ Sprints 1–6 in [commerce-and-onboarding.md](./commerce-and-onboarding.md) buil
 
 | Step | Status |
 |------|--------|
-| 1. Covered SKU and capability mappings | **Done** in Decision Cloud `plans.js` and store `RWCC_Coverage`. Inspected production variation IDs are recorded in §3.0. Runtime binding remains settings/env (`product_starter=3172,3173` etc.) — **not** PHP/JS defaults. Production still unbound until operators paste those IDs and set variation meta. |
+| 1. Covered SKU and capability mappings | **Done** in Decision Cloud `plans.js` and store `RWCC_Coverage`. Inspected production variation IDs are recorded in §3.0. Runtime binding remains settings/env (`product_starter=3172,3173` etc.) — **not** PHP/JS defaults. Variation meta/prices are on production (2026-08-21). Paste or merge `rwcc_settings` if those keys are still empty. |
 | 2. Source-tracked entitlement grants | **Done** in Geo Core composite provider (OR of standalone + commercially valid Cloud). |
 | 3. Subscription relationship / transition records | **Done** (`RWCC_Transition`). Persisted as subscription meta; not a replacement for Woo subscription history. |
 | 4. Signed checkout handoff | **Done**. New URLs bind `add-to-cart` in HMAC. Store verifies six-field or legacy five-field, then rejects plan/product mismatches. |
@@ -570,11 +570,11 @@ Sprints 1–6 in [commerce-and-onboarding.md](./commerce-and-onboarding.md) buil
 | 9. Geo Core entitlement resolution | **Done.** |
 | 10. My Account and Decision Cloud UX | **Done** for shipped copy. My Account shows included-in-Cloud, downgrade selection, and product-page copy for Decision Cloud. Portal billing lists included SKUs and hands cancel/downgrade to ReactWoo.com. |
 | 11. Figma flows | **Done** for visual screens. Page **09 Decision Cloud commerce** ([327:2](https://www.figma.com/design/BZFmgpDMSm0OMtnC19lNQ4/Reactwoo?node-id=327-2)) keeps the 18 copy wireframes and adds **Visual — PLAN §16 desktop** using Cloud Dashboard Button components and Inter. |
-| 12. End-to-end tests and CI | **Done** for Local. Unit/smoke tests cover coverage, credit, handover, licence reuse, overlap quote, currency mismatch, scheduled subs, superseded ZIP hiding, Cloud on-hold downloads. Store e2e fixture includes the §17 handover/overlap matrix. Live Local WooCommerce Subscriptions E2E (no payment): `reactwoo-api-manager/scripts/live_local_woo_e2e.php` passed 2026-08-20 (catalogue bind, credit quote, supersession, pending materialize, cancel). Production reactwoo.com checkout E2E remains an operator run after catalogue SQL. |
-| 13. Staging migrations | **Partial — Local done.** Read-only Local check: `reactwoo-api-manager/scripts/validate_cloud_catalogue.php` (OK 2026-08-20). Local bind exists. Operator production SQL: `scripts/bind_production_cloud_catalogue.sql` (meta/prices only; does not enable the Cloud flag). License package SQL: `react-license/migrations/add_reactwoo_decision_cloud_package.sql`. No production Cloud flag. |
-| 14. Production feature flags | **Not started.** Do not enable `REACTWOO_CLOUD_BRIDGE_ENABLED` on production. |
+| 12. End-to-end tests and CI | **Done** for Local. Unit/smoke tests cover coverage, credit, handover, licence reuse, overlap quote, currency mismatch, scheduled subs, superseded ZIP hiding, Cloud on-hold downloads. Store e2e fixture includes the §17 handover/overlap matrix. Live Local WooCommerce Subscriptions E2E (no payment): `reactwoo-api-manager/scripts/live_local_woo_e2e.php` passed 2026-08-20 (catalogue bind, credit quote, supersession, pending materialize, cancel). Production reactwoo.com checkout E2E is the remaining paid-path operator run. |
+| 13. Staging migrations | **Done.** Local validate OK 2026-08-20. Operator production SQL run 2026-08-21: store `bind_production_cloud_catalogue.sql` (parent 3166, variations 3172–3177 purchasable at PLAN prices) and license `add_reactwoo_decision_cloud_package.sql` (`packages.slug` `reactwoo-decision-cloud`, id **2271**, `is_active=1`). |
+| 14. Production feature flags | **Done** 2026-08-21. `REACTWOO_CLOUD_BRIDGE_ENABLED` is on: public product page renders `rwcc-cloud-product-copy`. Decision Cloud `https://decision.reactwoo.com/health` is `0.17.9`. Sign-in URL remains `https://reactwoo.com/my-account/?rwcc_open_cloud=1`. |
 
-Do not skip to step 14. Do not treat `REACTWOO_CLOUD_BRIDGE_ENABLED` as permission to sell the unfinished bundle model.
+Do not treat the production flag as a substitute for filled `rwcc_settings` product IDs or a paid checkout E2E.
 
 ---
 
@@ -588,8 +588,8 @@ These were open during implementation. The following are the **shipped conservat
 4. **Scheduled individual start** — pending WooCommerce Subscription (`wcs_create_subscription`, `charge_now=false`) with start = Cloud paid-through. ISO-8601 is converted to MySQL UTC (`RWCC_Scheduled_Subscription::woo_start_date`). Action Scheduler is not used.
 5. **Immediate downgrade refunds** — none automatic. Overlap quotes remaining-term amounts with `refund: false` / `requires_finance: true`. Unused Cloud time is not refunded by software.
 6. **Multi-currency** — mismatched currencies are ineligible (`currency_mismatch`). No silent FX conversion.
-7. **Licence reuse vs mint** — Cloud key is never an individual key. After Cloud ends, reuse a historical key for the same domain+slug only if that plugin was selected; otherwise mint later or none. Operators still add the `reactwoo-decision-cloud` package row on the license DB.
-8. **Live product ID catalogue** — inspected 2026-08-19 (parent 3166, variations 3172–3177). Local is bound. Operators must still run production SQL for meta/prices. Do not treat the parent ID as a plan.
+7. **Licence reuse vs mint** — Cloud key is never an individual key. After Cloud ends, reuse a historical key for the same domain+slug only if that plugin was selected; otherwise mint later or none. License DB has package slug `reactwoo-decision-cloud` (id **2271**, verified 2026-08-21 via `GET /api/packages`).
+8. **Live product ID catalogue** — inspected 2026-08-19 (parent 3166, variations 3172–3177). Production meta/prices bound 2026-08-21; product is purchasable at PLAN GBP. Do not treat the parent ID as a plan.
 9. **Starter vs Commerce/Optimise** — starter does **not** cover Commerce or Optimise. Store checkout copy matches.
 10. **Atomic Pro / Reviews / LinkedIn** — remain outside Cloud unless a later mapping revision includes them.
 
@@ -599,10 +599,10 @@ These were open during implementation. The following are the **shipped conservat
 
 | Area | Remaining |
 |------|-----------|
-| Store companion | Production settings/meta/price binding still operator-only (`bind_production_cloud_catalogue.sql`; flag stays off). Local catalogue is bound and live Woo E2E passed. Entitlement handover, licence-reuse policy, overlap credit ledger (no auto-refund), checkout credit (ex-tax cap, negative fee), pending-sub materialization (ISO→MySQL dates), and admin state-6 correction are in API Manager. |
-| Decision Cloud | Portal billing lists included SKUs and store downgrade handoff (`rw_action=downgrade`). Upgrade JSON credits the store (`credit_owner: store`). Charging stays on the store. |
-| Geo Core | Done for grant OR. Gate D live Local loop passed 2026-08-20. |
-| Licence / updates | **Partial — operator SQL.** Code grants covered plugin slugs. Operators still need to run `add_reactwoo_decision_cloud_package.sql` on the license DB. |
+| Store companion | Production flag on; catalogue meta/prices live. If `rwcc_settings` product IDs are still empty, paste them in wp-admin or run `merge_production_cloud_settings.php` (empty keys only; secrets untouched). Paid production checkout E2E remains an operator run. ISO start-date conversion for pending individuals is in local API Manager `2.1.13` (`132e7fe`) — deploy that to ReactWoo.com if production is still on `2.1.12`. |
+| Decision Cloud | Portal billing lists included SKUs and store downgrade handoff (`rw_action=downgrade`). Upgrade JSON credits the store (`credit_owner: store`). Charging stays on the store. Production `0.17.9`. Identity Sign in (private window) still unverified. |
+| Geo Core | Done for grant OR. Gate D live Local loop passed 2026-08-20. Next architecture gate: **Gate E**. |
+| Licence / updates | **Done** for the package row. `reactwoo-decision-cloud` is active on license.reactwoo.com (id 2271). Code grants covered plugin slugs and passes `plan_code`. |
 | Figma | §16 copy frames plus visual desktop screens on [09 Decision Cloud commerce](https://www.figma.com/design/BZFmgpDMSm0OMtnC19lNQ4/Reactwoo?node-id=327-2). |
 
 ---

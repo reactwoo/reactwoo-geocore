@@ -1,25 +1,23 @@
 # Current task
 
-**Operator production bind** — PLAN.md code/Local stop-ships are closed.
+**Production Cloud commerce is enabled** (operator SQL + `REACTWOO_CLOUD_BRIDGE_ENABLED`, 2026-08-21).
 
-Do not enable production Cloud commerce (`REACTWOO_CLOUD_BRIDGE_ENABLED`). Do not skip PLAN.md §19 step 14.
+## Verified on production
 
-## Done (2026-08-20)
+- Store: parent **3166** purchasable; variations **3172–3177** at PLAN GBP; `rwcc-cloud-product-copy` on the product page
+- License: package slug `reactwoo-decision-cloud` id **2271**, `is_active=1`
+- Decision Cloud: `GET /health` → `0.17.9`; `store_login_url` includes `rwcc_open_cloud=1`
 
-- Gate D live Local loop
-- Live Local WooCommerce Subscriptions E2E (`scripts/live_local_woo_e2e.php`)
-- WCS ISO-8601 start_date conversion (`RWCC_Scheduled_Subscription::woo_start_date`)
-- PLAN.md §20 shipped conservative defaults
-- Figma §16 visual desktop screens (Cloud Dashboard Button + Inter)
+## Remaining
 
-## Remaining (operators)
-
-1. `react-license/migrations/add_reactwoo_decision_cloud_package.sql` on the license DB
-2. Store `bind_production_cloud_catalogue.sql` (meta/prices only; not Local)
-3. Then — and only then — PLAN.md §19 step 14
+1. If `rwcc_settings` product IDs are still empty, paste them in wp-admin **or** `wp eval-file scripts/merge_production_cloud_settings.php` (empty keys only; never overwrites secrets). Individuals: 2294 / 2893 / 2891.
+2. Deploy API Manager **2.1.13** (ISO start-date conversion `132e7fe`) to ReactWoo.com if production is still on 2.1.12 — needed for pending-individual materialize.
+3. Private-window Sign in at `https://decision.reactwoo.com` (identity cutover).
+4. Paid production checkout E2E (operator).
+5. Gate E live attribution.
 
 ## Do not
 
-- Skip to PLAN.md §19 step 14
-- Run `bind_production_cloud_catalogue.sql` against Local
+- Re-run `bind_production_cloud_catalogue.sql` against Local
+- Restore HTTP `POST /api/v1/deploy`
 - Unhook Elementor add-ons

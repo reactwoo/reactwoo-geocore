@@ -2,7 +2,7 @@
 
 Run **one package at a time**. Parent plan: [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md). Commercial model: [PLAN.md](./PLAN.md).
 
-**Current active package:** Operator production bind (catalogue SQL + license package SQL). Then PLAN.md §19 step 14 only after those jobs. Production Decision Cloud is `https://decision.reactwoo.com` (`0.17.9`). **Do not** enable `REACTWOO_CLOUD_BRIDGE_ENABLED` on production. Next architecture gate: **Gate E**.
+**Current active package:** Production Cloud commerce is enabled. Next: merge/paste `rwcc_settings` product IDs if empty, production checkout E2E, identity Sign in, then **Gate E**. Production Decision Cloud is `https://decision.reactwoo.com` (`0.17.9`).
 
 ---
 
@@ -600,6 +600,6 @@ No autonomous optimisation in this phase.
 - [x] Sprint 5 Standalone upgrade (`0.13.0`)
 - [x] Sprint 4 Guided site connection (`0.14.0`)
 - [x] Sprint 6 Billing resilience (`0.15.0`)
-- [x] Sprint 7 Bundle commerce (PLAN.md) — coverage maps, grant OR, credit, supersession, overlap, handoff, Local Woo E2E, Figma §16 visual screens, §20 shipped defaults. **Production flag stays off** until operator SQL.
+- [x] Sprint 7 Bundle commerce (PLAN.md) — coverage maps, grant OR, credit, supersession, overlap, handoff, Local Woo E2E, Figma §16 visual screens, §20 shipped defaults. Production SQL + `REACTWOO_CLOUD_BRIDGE_ENABLED` verified 2026-08-21. Remaining: settings product IDs if empty, paid checkout E2E, identity Sign in.
 - [x] WP10–13 Cloud → **Gate D** (2026-08-20) — live Local page `http://reactwoo.local/gate-d-loop/` showed the Cloud variant with Decision Cloud up and after it was stopped (`gate-d.md`)
 - [ ] WP14–16 analytics/billing/migration → **Gate E** (metrics pipeline in place; live attribution still needed)  

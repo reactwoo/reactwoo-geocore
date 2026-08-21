@@ -1,7 +1,7 @@
 # Decision Cloud — Commerce, upgrade and onboarding
 
-Status: Sprint 6 implemented in Decision Cloud `0.15.0` (billing reconciliation and last-known entitlement resilience). Sprint 4 remains in `0.14.0`, Sprint 5 in `0.13.0`, Sprint 3 in `0.12.0`, Sprint 2 in `reactwoo-api-manager` (`includes/cloud-commerce/`), and Sprint 1 in Cloud `0.11.0`. **Production identity cutover** is tracked in Decision Cloud `docs/identity-production-cutover.md` (Cloud `0.17.3` live as of 2026-08-19).  
-**Canonical commercial model:** [PLAN.md](./PLAN.md) (2026-08-19). Sprints 1–6 are store/Cloud plumbing. They do **not** implement bundle supersession, upgrade credit display, or downgrade selection. Do not enable production Cloud commerce until PLAN.md stop-ship conditions pass.  
+Status: Sprint 6 implemented in Decision Cloud `0.15.0` (billing reconciliation and last-known entitlement resilience). Sprint 4 remains in `0.14.0`, Sprint 5 in `0.13.0`, Sprint 3 in `0.12.0`, Sprint 2 in `reactwoo-api-manager` (`includes/cloud-commerce/`), and Sprint 1 in Cloud `0.11.0`. **Production identity cutover** is tracked in Decision Cloud `docs/identity-production-cutover.md` (Cloud `0.17.9` live as of 2026-08-21).  
+**Canonical commercial model:** [PLAN.md](./PLAN.md). Sprints 1–6 are store/Cloud plumbing. Bundle commerce Local/code is complete; production SQL and the Cloud flag were enabled 2026-08-21.  
 Architecture: separate SaaS control plane; shared ReactWoo.com commerce.  
 Figma: [Reactwoo — Cloud Dashboard](https://www.figma.com/design/BZFmgpDMSm0OMtnC19lNQ4/Reactwoo?node-id=275-2). Activation / upgrade / site-connection screens: [node 310:1796](https://www.figma.com/design/BZFmgpDMSm0OMtnC19lNQ4/Reactwoo?node-id=310-1796). Required upgrade/downgrade frames: page **09 Decision Cloud commerce** in the same file ([PLAN.md §16](./PLAN.md)).
 
@@ -28,8 +28,8 @@ Coverage matrix, credit, states, tests, and stop-ship: [PLAN.md](./PLAN.md).
 | 5 Standalone upgrade | Decision Cloud | **Done** (`0.13.0`) |
 | 4 Guided site connection | Decision Cloud | **Done** (`0.14.0`) |
 | 6 Billing resilience | Decision Cloud | **Done** (`0.15.0`) |
-| 7 Bundle commerce | Store + Geo Core + Decision Cloud | **In progress** — coverage maps, grant OR, supersession after activation, comma-separated variation mapping for the inspected single variable product (parent 3166). Stop-ship until PLAN.md remaining items pass. |
-| Production identity cutover | Store + Decision Cloud | **In progress** (2026-08-19) — Cloud `0.17.3` live; owner `--apply` and Sign in unverified. See Decision Cloud `docs/identity-production-cutover.md` |
+| 7 Bundle commerce | Store + Geo Core + Decision Cloud | **Done** for Local/code and production enablement (2026-08-21). Remaining: `rwcc_settings` IDs if empty, paid checkout E2E, identity Sign in. |
+| Production identity cutover | Store + Decision Cloud | **In progress** — Cloud `0.17.9` live; private-window Sign in unverified. See Decision Cloud `docs/identity-production-cutover.md` |
 
 Store companion: [`reactwoo-api-manager/docs/cloud-commerce-bridge.md`](../../../reactwoo-api-manager/docs/cloud-commerce-bridge.md).
 
@@ -80,14 +80,14 @@ Commerce contract: [billing-providers.md](./billing-providers.md).
 
 ## Sprint 7 acceptance
 
-See [PLAN.md](./PLAN.md). Local/code acceptance is met. Production enablement still requires operator SQL and the Cloud flag.
+See [PLAN.md](./PLAN.md). Local/code acceptance is met. Production catalogue SQL, license package SQL, and `REACTWOO_CLOUD_BRIDGE_ENABLED` were verified 2026-08-21.
 
-See [PLAN.md](./PLAN.md). Implemented so far: coverage maps, remaining-term credit calculation **and checkout display/block**, post-activation supersession, overlap detection **and admin correction with a non-refund credit quote**, Geo Core grant OR, product-bound handoff signatures, Local catalogue bind + read-only validator (parent 3166 / 3172–3177), **downgrade selection** on My Account (confirm + pending Woo subscriptions at Cloud end, including none), entitlement handover **wired into My Account downloads**, conservative licence reuse **on provision/token**, Decision Cloud product copy, licence Cloud zip grants, portal included-SKU billing view.
+See [PLAN.md](./PLAN.md). Implemented: coverage maps, remaining-term credit calculation **and checkout display/block**, post-activation supersession, overlap detection **and admin correction with a non-refund credit quote**, Geo Core grant OR, product-bound handoff signatures, Local catalogue bind + read-only validator (parent 3166 / 3172–3177), **downgrade selection** on My Account (confirm + pending Woo subscriptions at Cloud end, including none), entitlement handover **wired into My Account downloads**, conservative licence reuse **on provision/token**, Decision Cloud product copy, licence Cloud zip grants, portal included-SKU billing view.
 
-Still required before production:
+Still required after production enablement:
 
-- Operator production catalogue SQL (`bind_production_cloud_catalogue.sql`)
-- Operator license package SQL (`add_reactwoo_decision_cloud_package.sql`)
-- Production `REACTWOO_CLOUD_BRIDGE_ENABLED` — do not set until those SQL jobs run
+- Merge/paste `rwcc_settings` product IDs if empty (`merge_production_cloud_settings.php`)
+- Paid production checkout E2E
+- Identity Sign in (private window)
 
-Woo status/credit mechanic is shipped in PLAN.md §20 (meta supersession, ex-tax credit cap, no automatic refunds). Local Woo E2E and Figma §16 visual screens are done. Do not enable production Cloud commerce.
+Woo status/credit mechanic is shipped in PLAN.md §20 (meta supersession, ex-tax credit cap, no automatic refunds). Local Woo E2E and Figma §16 visual screens are done.

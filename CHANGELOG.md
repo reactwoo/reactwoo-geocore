@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.163] - 2026-08-21
+
+### Changed
+- PLAN.md production Cloud commerce is on: catalogue SQL, license package `reactwoo-decision-cloud`, and `REACTWOO_CLOUD_BRIDGE_ENABLED` verified. Remaining operator work is settings product IDs if empty, identity Sign in, paid checkout E2E, and Gate E.
+
 ## [1.8.162] - 2026-08-20
 
 ### Changed
