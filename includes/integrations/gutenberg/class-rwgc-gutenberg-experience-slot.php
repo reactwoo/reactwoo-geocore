@@ -109,10 +109,13 @@ final class RWGC_Gutenberg_Experience_Slot {
 
 		$serialized = serialize_blocks( $blocks );
 		self::$updating = true;
+		// wp_update_post() expects slashed data; serialize_blocks() is unslashed
+		// JSON. Without wp_slash(), wp_insert_post()'s wp_unslash() strips \" from
+		// sibling block attributes (e.g. image alt) on the first Slot ID write.
 		wp_update_post(
 			array(
 				'ID'           => (int) $post_id,
-				'post_content' => $serialized,
+				'post_content' => wp_slash( $serialized ),
 			)
 		);
 		self::$updating = false;
