@@ -163,6 +163,125 @@ $missing = RWGC_Gutenberg_Experience_Slot::filter_render_block(
 );
 rwgc_gb_assert( 'missing slot keeps markup', '<p>SAFE</p>' === $missing );
 
+if ( ! class_exists( 'WP_Post', false ) ) {
+	/**
+	 * Minimal WP_Post stand-in for sync_on_save.
+	 */
+	class WP_Post {
+		/** @var int */
+		public $ID = 0;
+		/** @var string */
+		public $post_status = 'publish';
+		/** @var string */
+		public $post_content = '';
+	}
+}
+if ( ! function_exists( 'wp_is_post_revision' ) ) {
+	/**
+	 * @return false
+	 */
+	function wp_is_post_revision() {
+		return false;
+	}
+}
+if ( ! function_exists( 'wp_is_post_autosave' ) ) {
+	/**
+	 * @return false
+	 */
+	function wp_is_post_autosave() {
+		return false;
+	}
+}
+if ( ! function_exists( 'has_blocks' ) ) {
+	/**
+	 * @param string $content Content.
+	 * @return bool
+	 */
+	function has_blocks( $content ) {
+		return is_string( $content ) && false !== strpos( $content, '<!-- wp:' );
+	}
+}
+if ( ! function_exists( 'parse_blocks' ) ) {
+	/**
+	 * @param string $content Content.
+	 * @return array<int, array<string, mixed>>
+	 */
+	function parse_blocks( $content ) {
+		unset( $content );
+		return array(
+			array(
+				'blockName'   => 'reactwoo/experience-slot',
+				'attrs'       => array(
+					'slotId'         => '',
+					'slotName'       => 'Hero',
+					'instanceId'     => 'g_slashfix1',
+					'managementMode' => 'local',
+				),
+				'innerBlocks' => array(),
+			),
+		);
+	}
+}
+if ( ! function_exists( 'serialize_blocks' ) ) {
+	/**
+	 * @param array<int, array<string, mixed>> $blocks Blocks.
+	 * @return string
+	 */
+	function serialize_blocks( $blocks ) {
+		$slot_id = '';
+		if ( isset( $blocks[0]['attrs']['slotId'] ) ) {
+			$slot_id = (string) $blocks[0]['attrs']['slotId'];
+		}
+		// Fixture: core/image alt with a quote — JSON uses \".
+		return '<!-- wp:image {"alt":"Say \\"hi\\""} --><!-- wp:reactwoo/experience-slot {"slotId":"' . $slot_id . '"} /-->';
+	}
+}
+if ( ! function_exists( 'wp_slash' ) ) {
+	/**
+	 * @param mixed $value Value.
+	 * @return mixed
+	 */
+	function wp_slash( $value ) {
+		if ( is_array( $value ) ) {
+			return array_map( 'wp_slash', $value );
+		}
+		if ( is_string( $value ) ) {
+			return addslashes( $value );
+		}
+		return $value;
+	}
+}
+if ( ! function_exists( 'wp_update_post' ) ) {
+	/**
+	 * @param array<string, mixed> $data Data.
+	 * @return int
+	 */
+	function wp_update_post( $data ) {
+		$GLOBALS['rwgc_last_update'] = $data;
+		return isset( $data['ID'] ) ? (int) $data['ID'] : 0;
+	}
+}
+
+$GLOBALS['rwgc_last_update'] = null;
+RWGC_Experience_Slot_Registry::reset_cache();
+$slash_post                 = new WP_Post();
+$slash_post->ID             = 42;
+$slash_post->post_status    = 'publish';
+$slash_post->post_content   = '<!-- wp:reactwoo/experience-slot /-->';
+RWGC_Gutenberg_Experience_Slot::sync_on_save( 42, $slash_post );
+rwgc_gb_assert( 'first save rewrites post_content', is_array( $GLOBALS['rwgc_last_update'] ) && isset( $GLOBALS['rwgc_last_update']['post_content'] ) );
+
+$written   = (string) $GLOBALS['rwgc_last_update']['post_content'];
+$unslashed = stripslashes( $written );
+rwgc_gb_assert(
+	'quoted block JSON survives wp_insert_post unslash',
+	false !== strpos( $unslashed, 'Say \\"hi\\"' )
+);
+rwgc_gb_assert(
+	'post_content is slashed before wp_update_post',
+	$written !== $unslashed && false !== strpos( $written, addslashes( 'Say \\"hi\\"' ) )
+);
+
 if ( $failed > 0 ) {
 	fwrite( STDERR, "\n$failed assertion(s) failed\n" );
 	exit( 1 );
