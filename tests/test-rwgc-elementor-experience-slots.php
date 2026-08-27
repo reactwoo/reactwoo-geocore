@@ -7,7 +7,8 @@
 
 define( 'ABSPATH', dirname( __DIR__ ) . '/' );
 
-$GLOBALS['rwgc_test_options'] = array();
+$GLOBALS['rwgc_test_options']       = array();
+$GLOBALS['rwgc_test_option_writes'] = 0;
 
 if ( ! function_exists( 'get_option' ) ) {
 	/**
@@ -26,6 +27,7 @@ if ( ! function_exists( 'update_option' ) ) {
 	 * @return bool
 	 */
 	function update_option( $key, $value ) {
+		$GLOBALS['rwgc_test_option_writes']   = isset( $GLOBALS['rwgc_test_option_writes'] ) ? (int) $GLOBALS['rwgc_test_option_writes'] + 1 : 1;
 		$GLOBALS['rwgc_test_options'][ $key ] = $value;
 		return true;
 	}
@@ -162,6 +164,43 @@ $clone = RWGC_Elementor_Experience_Slots::sync_settings(
 );
 rwgc_el_slot_assert( 'clone regenerates id', $clone['regenerated'] && $clone['slot_id'] !== $first['slot_id'] );
 rwgc_el_slot_assert( 'clone binding updated', 'elementor:el_bbb' === $clone['settings'][ RWGC_Elementor_Experience_Slots::SETTING_BINDING ] );
+
+$writes_before = (int) $GLOBALS['rwgc_test_option_writes'];
+$option_before = get_option( RWGC_Experience_Slot_Registry::OPTION, array() );
+
+$front_ok = RWGC_Elementor_Experience_Slots::frontend_slot_id(
+	array(
+		RWGC_Elementor_Experience_Slots::SETTING_ENABLE => 'yes',
+		RWGC_Elementor_Experience_Slots::SETTING_ID     => $first['slot_id'],
+		RWGC_Elementor_Experience_Slots::SETTING_NAME   => 'Homepage Hero',
+	)
+);
+rwgc_el_slot_assert( 'frontend reads stored id', $front_ok === $first['slot_id'] );
+
+$front_empty = RWGC_Elementor_Experience_Slots::frontend_slot_id(
+	array(
+		RWGC_Elementor_Experience_Slots::SETTING_ENABLE => 'yes',
+		RWGC_Elementor_Experience_Slots::SETTING_ID     => '',
+		RWGC_Elementor_Experience_Slots::SETTING_NAME   => 'Imported Hero',
+	)
+);
+rwgc_el_slot_assert( 'frontend empty id stays empty', '' === $front_empty );
+
+$front_clone = RWGC_Elementor_Experience_Slots::frontend_slot_id(
+	array(
+		RWGC_Elementor_Experience_Slots::SETTING_ENABLE  => 'yes',
+		RWGC_Elementor_Experience_Slots::SETTING_ID      => $first['slot_id'],
+		RWGC_Elementor_Experience_Slots::SETTING_BINDING => 'elementor:el_aaa',
+		RWGC_Elementor_Experience_Slots::SETTING_NAME    => 'Homepage Hero',
+	)
+);
+rwgc_el_slot_assert( 'frontend clone keeps published id', $front_clone === $first['slot_id'] );
+
+rwgc_el_slot_assert(
+	'frontend path does not write registry',
+	$writes_before === (int) $GLOBALS['rwgc_test_option_writes']
+		&& $option_before === get_option( RWGC_Experience_Slot_Registry::OPTION, array() )
+);
 
 if ( $failed > 0 ) {
 	fwrite( STDERR, "\n$failed assertion(s) failed\n" );
