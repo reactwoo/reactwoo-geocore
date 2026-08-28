@@ -68,6 +68,43 @@ if ( ! function_exists( 'sanitize_key' ) ) {
 		return strtolower( preg_replace( '/[^a-z0-9_\-]/', '', (string) $key ) );
 	}
 }
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	/**
+	 * @param string $str String.
+	 * @return string
+	 */
+	function sanitize_text_field( $str ) {
+		return trim( (string) $str );
+	}
+}
+if ( ! function_exists( 'rwgc_normalize_visibility_mode' ) ) {
+	/**
+	 * @param mixed $mode Mode.
+	 * @return string
+	 */
+	function rwgc_normalize_visibility_mode( $mode ) {
+		$raw = sanitize_key( (string) $mode );
+		return in_array( $raw, array( 'hide_if', 'hide', 'restrict', 'suppress' ), true ) ? 'hide_if' : 'show_if';
+	}
+}
+if ( ! function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
+	/**
+	 * @param mixed $mode Mode.
+	 * @param bool  $matched Matched.
+	 * @return bool
+	 */
+	function rwgc_visibility_mode_allows_render( $mode, $matched ) {
+		return 'hide_if' === rwgc_normalize_visibility_mode( $mode ) ? ! $matched : (bool) $matched;
+	}
+}
+if ( ! function_exists( 'rwgc_get_visitor_country' ) ) {
+	/**
+	 * @return string
+	 */
+	function rwgc_get_visitor_country() {
+		return isset( $GLOBALS['rwgc_test_visitor_country'] ) ? (string) $GLOBALS['rwgc_test_visitor_country'] : '';
+	}
+}
 if ( ! function_exists( 'did_action' ) ) {
 	/**
 	 * @param string $hook Hook.
@@ -96,6 +133,7 @@ require_once dirname( __DIR__ ) . '/includes/decision/class-rwgc-decision.php';
 RWGC_Decision::load();
 require_once dirname( __DIR__ ) . '/includes/slots/class-rwgc-experience-slots.php';
 RWGC_Experience_Slots::load();
+require_once dirname( __DIR__ ) . '/includes/targeting/class-rwgc-targeting-surface-evaluator.php';
 require_once dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-experience-slots.php';
 
 $failed = 0;
@@ -162,6 +200,32 @@ $clone = RWGC_Elementor_Experience_Slots::sync_settings(
 );
 rwgc_el_slot_assert( 'clone regenerates id', $clone['regenerated'] && $clone['slot_id'] !== $first['slot_id'] );
 rwgc_el_slot_assert( 'clone binding updated', 'elementor:el_bbb' === $clone['settings'][ RWGC_Elementor_Experience_Slots::SETTING_BINDING ] );
+
+$geo_us_only = array(
+	RWGC_Elementor_Experience_Slots::SETTING_ENABLE => 'yes',
+	'egp_geo_enabled'                               => 'yes',
+	'egp_countries'                                 => 'US',
+	'rwgc_geo_mode'                                 => 'show_if',
+);
+
+$GLOBALS['rwgc_test_visitor_country'] = 'GB';
+rwgc_el_slot_assert(
+	'geo-hidden visitor skips slot capture',
+	false === RWGC_Elementor_Experience_Slots::geo_allows_slot_render( $geo_us_only )
+);
+
+$GLOBALS['rwgc_test_visitor_country'] = 'US';
+rwgc_el_slot_assert(
+	'matching visitor still captures slot',
+	true === RWGC_Elementor_Experience_Slots::geo_allows_slot_render( $geo_us_only )
+);
+
+rwgc_el_slot_assert(
+	'slot without geo targeting still captures',
+	true === RWGC_Elementor_Experience_Slots::geo_allows_slot_render(
+		array( RWGC_Elementor_Experience_Slots::SETTING_ENABLE => 'yes' )
+	)
+);
 
 if ( $failed > 0 ) {
 	fwrite( STDERR, "\n$failed assertion(s) failed\n" );
