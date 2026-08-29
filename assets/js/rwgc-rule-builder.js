@@ -613,6 +613,29 @@
 		return wrap;
 	}
 
+	function setRowValueSelected(row, value, selected) {
+		var val = String(value);
+		var next = [];
+		if (Array.isArray(row.values)) {
+			row.values.forEach(function (x) {
+				var current = String(x);
+				if (next.indexOf(current) === -1) {
+					next.push(current);
+				}
+			});
+		}
+		row.values = next;
+		var exists = row.values.indexOf(val) !== -1;
+		if (selected && !exists) {
+			row.values.push(val);
+		}
+		if (!selected && exists) {
+			row.values = row.values.filter(function (x) {
+				return x !== val;
+			});
+		}
+	}
+
 	function humanizeRow(row, c) {
 		if (row.unknown) {
 			return t('unsupportedCard');
@@ -2006,13 +2029,7 @@
 					cb.value = co.code;
 					cb.checked = row.values.indexOf(co.code) !== -1;
 					cb.addEventListener('change', function () {
-						var acc = [];
-						list.querySelectorAll('input[type=checkbox]').forEach(function (x) {
-							if (x.checked) {
-								acc.push(x.value);
-							}
-						});
-						row.values = acc;
+						setRowValueSelected(row, co.code, cb.checked);
 						writeTextareaFromState();
 						render();
 					});
@@ -2060,13 +2077,7 @@
 					cb.value = id;
 					cb.checked = row.values.indexOf(id) !== -1;
 					cb.addEventListener('change', function () {
-						var acc = [];
-						listEl.querySelectorAll('input[type=checkbox]').forEach(function (x) {
-							if (x.checked) {
-								acc.push(x.value);
-							}
-						});
-						row.values = acc;
+						setRowValueSelected(row, id, cb.checked);
 						writeTextareaFromState();
 						render();
 					});
