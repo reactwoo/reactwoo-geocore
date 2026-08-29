@@ -61,10 +61,22 @@ class RWGC_Suite_Admin {
 	}
 
 	/**
+	 * Whether the current user can access suite admin screens.
+	 *
+	 * @return bool
+	 */
+	private static function can_manage_suite() {
+		if ( class_exists( 'RWGC_Admin', false ) ) {
+			return RWGC_Admin::can_manage();
+		}
+		return current_user_can( 'manage_options' );
+	}
+
+	/**
 	 * @return void
 	 */
 	public static function render_suite_home() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! self::can_manage_suite() ) {
 			return;
 		}
 		$state     = RWGC_Onboarding::get_state();
@@ -79,7 +91,7 @@ class RWGC_Suite_Admin {
 	 * @return void
 	 */
 	public static function render_getting_started() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! self::can_manage_suite() ) {
 			return;
 		}
 		$state         = RWGC_Onboarding::get_state();
@@ -96,7 +108,7 @@ class RWGC_Suite_Admin {
 	 * @return void
 	 */
 	public static function render_suite_variants() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! self::can_manage_suite() ) {
 			return;
 		}
 		include RWGC_PATH . 'admin/views/targeting-variants-page.php';
@@ -125,7 +137,7 @@ class RWGC_Suite_Admin {
 	 * @return void
 	 */
 	public static function handle_save_wizard() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! self::can_manage_suite() ) {
 			wp_die( esc_html__( 'Forbidden.', 'reactwoo-geocore' ) );
 		}
 		check_admin_referer( 'rwgc_save_wizard' );
@@ -217,7 +229,7 @@ class RWGC_Suite_Admin {
 	 * @return void
 	 */
 	public static function handle_dismiss_welcome() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! self::can_manage_suite() ) {
 			wp_die( esc_html__( 'Forbidden.', 'reactwoo-geocore' ) );
 		}
 		check_admin_referer( 'rwgc_dismiss_welcome' );
