@@ -96,6 +96,10 @@ class RWGC_Elementor_Popups {
 			return;
 		}
 
+		if ( ! self::should_force_variant_popup_fallback() ) {
+			return;
+		}
+
 		if ( ! class_exists( '\ElementorPro\Modules\Popup\Module', false ) ) {
 			return;
 		}
@@ -124,6 +128,10 @@ class RWGC_Elementor_Popups {
 	 */
 	public static function enqueue_allowed_popup_assets() {
 		if ( function_exists( 'rwgc_is_builder_edit_request' ) && rwgc_is_builder_edit_request() ) {
+			return;
+		}
+
+		if ( ! self::should_force_variant_popup_fallback() ) {
 			return;
 		}
 
@@ -216,6 +224,10 @@ class RWGC_Elementor_Popups {
 	 */
 	public static function force_print_missing_allowed_popups() {
 		if ( function_exists( 'rwgc_is_builder_edit_request' ) && rwgc_is_builder_edit_request() ) {
+			return;
+		}
+
+		if ( ! self::should_force_variant_popup_fallback() ) {
 			return;
 		}
 
@@ -464,6 +476,19 @@ class RWGC_Elementor_Popups {
 		}
 
 		return $allowed;
+	}
+
+	/**
+	 * Whether RWGC may manually queue/print geo-allowed popup documents.
+	 *
+	 * Outside Page Version URLs Elementor's own condition manager must remain the
+	 * authority for which popups belong on the current request.
+	 *
+	 * @return bool
+	 */
+	private static function should_force_variant_popup_fallback() {
+		return class_exists( 'RWGC_Page_Version_Routing', false )
+			&& RWGC_Page_Version_Routing::is_page_version_request();
 	}
 
 	/**
