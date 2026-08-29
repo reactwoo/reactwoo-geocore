@@ -76,6 +76,9 @@ $page_title            = $is_new ? __( 'Add visibility rule', 'reactwoo-geocore'
 			</div>
 		<?php endif; ?>
 	<?php endif; ?>
+	<?php if ( isset( $_GET['rwgc_error'] ) && 'invalid_rules' === $_GET['rwgc_error'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+		<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'The visibility rules JSON could not be saved because it no longer contains any valid rules.', 'reactwoo-geocore' ); ?></p></div>
+	<?php endif; ?>
 
 	<form id="rwgc-visibility-rule-form" method="post" action="<?php echo esc_url( $form_url ); ?>" <?php echo '' !== $target_label ? 'data-rwgc-target-label="' . esc_attr( $target_label ) . '"' : ''; ?>>
 		<?php wp_nonce_field( 'rwgc_save_visibility_rule' ); ?>

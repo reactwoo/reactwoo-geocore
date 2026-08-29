@@ -101,6 +101,9 @@ class RWGC_Visibility_Rule_Repository {
 		}
 
 		$portable = RWGC_Visibility_Rule_CPT::sanitize_portable_meta( $portable_json );
+		if ( '' !== trim( (string) $portable_json ) && '' === $portable ) {
+			return 0;
+		}
 
 		$post_id = absint( $post_id );
 		$data    = array(

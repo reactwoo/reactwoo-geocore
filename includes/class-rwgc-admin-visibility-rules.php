@@ -72,6 +72,15 @@ class RWGC_Admin_Visibility_Rules {
 		$return  = isset( $_POST['rwgc_return'] ) ? esc_url_raw( wp_unslash( (string) $_POST['rwgc_return'] ) ) : '';
 		// phpcs:enable
 
+		if ( '' !== trim( (string) $json ) && '' === RWGC_Visibility_Rule_CPT::sanitize_portable_meta( $json ) ) {
+			$redirect = 'admin.php?page=rwgc-visibility-rules&rwgc_error=invalid_rules';
+			if ( $post_id > 0 ) {
+				$redirect .= '&rwgc_edit=' . $post_id;
+			}
+			wp_safe_redirect( admin_url( $redirect ) );
+			exit;
+		}
+
 		$new_id = RWGC_Visibility_Rule_Repository::save( $title, $status, $json, $post_id );
 		if ( $new_id <= 0 ) {
 			wp_safe_redirect( admin_url( 'admin.php?page=rwgc-visibility-rules&rwgc_error=save' ) );

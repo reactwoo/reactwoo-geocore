@@ -89,6 +89,8 @@ $rwgc_render_rule_chips = static function ( array $chips ) {
 	<?php endif; ?>
 	<?php if ( isset( $_GET['rwgc_error'] ) && 'notfound' === $_GET['rwgc_error'] ) : ?>
 		<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'Rule not found.', 'reactwoo-geocore' ); ?></p></div>
+	<?php elseif ( isset( $_GET['rwgc_error'] ) && 'invalid_rules' === $_GET['rwgc_error'] ) : ?>
+		<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'The visibility rules JSON could not be saved because it no longer contains any valid rules.', 'reactwoo-geocore' ); ?></p></div>
 	<?php elseif ( ! empty( $_GET['rwgc_error'] ) ) : ?>
 		<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'Something went wrong.', 'reactwoo-geocore' ); ?></p></div>
 	<?php endif; ?>
