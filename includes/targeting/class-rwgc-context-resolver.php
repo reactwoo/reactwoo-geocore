@@ -247,6 +247,7 @@ class RWGC_Context_Resolver {
 
 		if ( null !== $matched ) {
 			$merged['matched_profile'] = $matched;
+			$merged                    = self::attach_profile_id_alias( $merged );
 		}
 
 		/**
@@ -257,6 +258,29 @@ class RWGC_Context_Resolver {
 		 * @param array<string, mixed>     $merged Context values.
 		 */
 		do_action( 'rwgc_matched_experience_profile', $matched, $candidates, $merged );
+
+		return $merged;
+	}
+
+	/**
+	 * Keep the first-class profile_id target in sync with the matched profile.
+	 *
+	 * @param array<string, mixed> $merged Values.
+	 * @return array<string, mixed>
+	 */
+	private static function attach_profile_id_alias( array $merged ) {
+		$profile = isset( $merged['matched_profile'] ) ? $merged['matched_profile'] : null;
+		$id      = '';
+
+		if ( is_array( $profile ) && ! empty( $profile['profile_id'] ) ) {
+			$id = sanitize_key( (string) $profile['profile_id'] );
+		} elseif ( is_string( $profile ) ) {
+			$id = sanitize_key( $profile );
+		}
+
+		if ( '' !== $id ) {
+			$merged['profile_id'] = $id;
+		}
 
 		return $merged;
 	}

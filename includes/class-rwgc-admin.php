@@ -158,6 +158,30 @@ class RWGC_Admin {
 					'callback'       => array( 'RWGC_Suite_Admin', 'render_workflow_variant' ),
 				)
 			);
+			add_submenu_page(
+				null,
+				__( 'Getting Started', 'reactwoo-geocore' ),
+				__( 'Getting Started', 'reactwoo-geocore' ),
+				'manage_options',
+				'rwgc-getting-started',
+				array( 'RWGC_Suite_Admin', 'render_getting_started' )
+			);
+			add_submenu_page(
+				null,
+				__( 'Geo Suite Home', 'reactwoo-geocore' ),
+				__( 'Geo Suite Home', 'reactwoo-geocore' ),
+				'manage_options',
+				'rwgc-suite-home',
+				array( 'RWGC_Suite_Admin', 'render_suite_home' )
+			);
+			add_submenu_page(
+				null,
+				__( 'Create country page version', 'reactwoo-geocore' ),
+				__( 'Create page version', 'reactwoo-geocore' ),
+				'edit_pages',
+				'rwgc-workflow-variant',
+				array( 'RWGC_Suite_Admin', 'render_workflow_variant' )
+			);
 		}
 
 		self::register_app_route(
