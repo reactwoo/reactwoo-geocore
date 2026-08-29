@@ -7,6 +7,7 @@
     "pluginSlug": "reactwoo-geocore"
   },
   "scripts": {
+    "test:rule-builder": "node tests/js/rwgc-rule-builder-selection.test.js",
     "package:zip": "python scripts/package_zip.py"
   }
 }
