@@ -116,7 +116,7 @@ class RWGC_Rule_Registry {
 		}
 		$post_id = absint( $rule_id );
 		if ( $post_id > 0 && class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
-			$from_post = RWGC_Visibility_Rule_Repository::get_rule_set( $post_id );
+			$from_post = RWGC_Visibility_Rule_Repository::get_rule_set( $post_id, false );
 			if ( is_array( $from_post ) ) {
 				return $from_post;
 			}
@@ -146,7 +146,7 @@ class RWGC_Rule_Registry {
 			}
 			$post_id = absint( $library_id );
 			if ( $post_id > 0 && class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
-				$from_post = RWGC_Visibility_Rule_Repository::get_rule_set( $post_id );
+				$from_post = RWGC_Visibility_Rule_Repository::get_rule_set( $post_id, false );
 				if ( is_array( $from_post ) ) {
 					return $from_post;
 				}

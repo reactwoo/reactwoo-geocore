@@ -57,11 +57,12 @@ class RWGC_Visibility_Rule_Repository {
 	}
 
 	/**
-	 * @param int $post_id Post ID.
+	 * @param int  $post_id         Post ID.
+	 * @param bool $prefer_registry Whether to resolve through the unified registry first.
 	 * @return array<string, mixed>|null Sanitized portable rule set.
 	 */
-	public static function get_rule_set( $post_id ) {
-		if ( class_exists( 'RWGC_Rule_Registry', false ) ) {
+	public static function get_rule_set( $post_id, $prefer_registry = true ) {
+		if ( $prefer_registry && class_exists( 'RWGC_Rule_Registry', false ) ) {
 			$from_registry = RWGC_Rule_Registry::get_rule_set_by_id( $post_id );
 			if ( is_array( $from_registry ) ) {
 				return $from_registry;
