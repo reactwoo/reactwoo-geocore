@@ -110,15 +110,24 @@ final class RWGC_Cloud_Pairing {
 			);
 		}
 
-		RWGC_Cloud_Connection::update(
-			array(
-				'state'           => RWGC_Cloud_Connection::STATE_CONNECTED,
-				'site_id'         => $site_id,
-				'paired_at'       => gmdate( 'c' ),
-				'last_error'      => '',
-				'management_mode' => 'local',
-			)
+		$previous_site = (string) RWGC_Cloud_Connection::get()['site_id'];
+		$discarded     = class_exists( 'RWGC_Cloud_Manifest_Store', false )
+			&& RWGC_Cloud_Manifest_Store::discard_if_foreign_site( $site_id );
+
+		$connection = array(
+			'state'           => RWGC_Cloud_Connection::STATE_CONNECTED,
+			'site_id'         => $site_id,
+			'paired_at'       => gmdate( 'c' ),
+			'last_error'      => '',
+			'management_mode' => 'local',
 		);
+		// Leftover revision + If-None-Match would 304 against the new site
+		// and keep serving the previous workspace's experiences.
+		if ( $discarded || ( '' !== $previous_site && $previous_site !== $site_id ) ) {
+			$connection['manifest_revision'] = 0;
+		}
+
+		RWGC_Cloud_Connection::update( $connection );
 
 		return array(
 			'ok'      => true,

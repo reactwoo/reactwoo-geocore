@@ -188,8 +188,8 @@ add_filter(
 				'ok'     => true,
 				'status' => 200,
 				'body'   => array(
-					'site_id'     => 'site_abc',
-					'site_secret' => 'secret_xyz',
+					'site_id'     => ! empty( $mock['pair_site_id'] ) ? (string) $mock['pair_site_id'] : 'site_abc',
+					'site_secret' => ! empty( $mock['pair_secret'] ) ? (string) $mock['pair_secret'] : 'secret_xyz',
 					'api_base'    => 'https://cloud.test/api/v1',
 				),
 				'raw'    => '',
@@ -326,9 +326,43 @@ RWGC_Cloud_Connection::disconnect();
 rwgc_cloud_assert( 'disconnected', ! reactwoo_cloud_is_connected() );
 rwgc_cloud_assert( 'manifest survives disconnect', null !== reactwoo_cloud_get_manifest() );
 
-// Reconnect path: pair again.
+// Reconnect path: pair again to the same Cloud site — keep last cache (Gate D).
 $pair2 = reactwoo_cloud_pair( 'token-456' );
 rwgc_cloud_assert( 'reconnect pair ok', $pair2['ok'] );
+rwgc_cloud_assert( 'same-site reconnect keeps last manifest', null !== reactwoo_cloud_get_manifest() );
+rwgc_cloud_assert( 'same-site reconnect keeps revision', 3 === (int) RWGC_Cloud_Connection::get()['manifest_revision'] );
+
+// Pair to a different Cloud site: leftover revision + 304 must not keep site_abc experiences.
+$GLOBALS['rwgc_cloud_mock']['pair_site_id'] = 'site_other';
+$GLOBALS['rwgc_cloud_mock']['pair_secret']  = 'secret_other';
+$pair_other = reactwoo_cloud_pair( 'token-other' );
+rwgc_cloud_assert( 're-pair to other site ok', $pair_other['ok'] && 'site_other' === $pair_other['site_id'] );
+rwgc_cloud_assert( 'foreign manifest discarded on re-pair', null === reactwoo_cloud_get_manifest() );
+rwgc_cloud_assert( 'foreign leftover revision reset', 0 === (int) RWGC_Cloud_Connection::get()['manifest_revision'] );
+
+// Sync must not 304-accept a foreign cache if credentials change without pair().
+$reinstall = RWGC_Cloud_Manifest_Store::install(
+	array(
+		'schema'      => '1.0',
+		'revision'    => 5,
+		'site'        => 'site_abc',
+		'audiences'   => array(),
+		'experiences' => array(),
+		'variants'    => array(),
+		'experiments' => array(),
+		'goals'       => array(),
+		'slots'       => array(),
+	),
+	'site_abc'
+);
+rwgc_cloud_assert( 'foreign cache reinstalled for sync guard', ! empty( $reinstall['ok'] ) );
+RWGC_Cloud_Connection::update( array( 'manifest_revision' => 5 ) );
+$GLOBALS['rwgc_cloud_mock']['manifest_304'] = true;
+$stale_304 = reactwoo_cloud_sync_manifest();
+unset( $GLOBALS['rwgc_cloud_mock']['manifest_304'] );
+rwgc_cloud_assert( '304 against foreign cache does not keep it', null === reactwoo_cloud_get_manifest() );
+rwgc_cloud_assert( '304 against foreign cache resets revision', 0 === (int) RWGC_Cloud_Connection::get()['manifest_revision'] );
+rwgc_cloud_assert( 'foreign 304 is not treated as a successful same-site hold', 'not_modified' !== $stale_304['status'] || 0 === $stale_304['revision'] );
 
 if ( $failed > 0 ) {
 	fwrite( STDERR, "\n$failed assertion(s) failed\n" );

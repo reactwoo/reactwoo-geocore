@@ -39,9 +39,15 @@ final class RWGC_Cloud_Sync {
 			);
 		}
 
-		$conn     = RWGC_Cloud_Connection::get();
-		$revision = (int) $conn['manifest_revision'];
-		$headers  = array();
+		$conn = RWGC_Cloud_Connection::get();
+		if ( class_exists( 'RWGC_Cloud_Manifest_Store', false )
+			&& RWGC_Cloud_Manifest_Store::discard_if_foreign_site( $creds['site_id'] ) ) {
+			$revision = 0;
+			RWGC_Cloud_Connection::update( array( 'manifest_revision' => 0 ) );
+		} else {
+			$revision = (int) $conn['manifest_revision'];
+		}
+		$headers = array();
 		if ( $revision > 0 ) {
 			$headers['If-None-Match'] = '"' . $revision . '"';
 			$headers['X-ReactWoo-Manifest-Revision'] = (string) $revision;
