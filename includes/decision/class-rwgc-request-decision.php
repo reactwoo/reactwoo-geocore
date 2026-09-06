@@ -108,6 +108,16 @@ final class RWGC_Request_Decision {
 				return null;
 			}
 
+			// Connected to a different Cloud site than the cached manifest:
+			// do not apply the previous workspace's experiences. Disconnect
+			// (no credentials) still uses the last cache — Gate D.
+			if ( class_exists( 'RWGC_Cloud_Credentials', false ) ) {
+				$creds = RWGC_Cloud_Credentials::get();
+				if ( is_array( $creds ) && $manifest->site() !== (string) $creds['site_id'] ) {
+					return null;
+				}
+			}
+
 			self::hydrate_runtime( $manifest );
 
 			$eager = array();

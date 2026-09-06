@@ -76,6 +76,16 @@ if ( ! function_exists( 'is_admin' ) ) {
 		return false;
 	}
 }
+if ( ! function_exists( 'wp_salt' ) ) {
+	function wp_salt( $scheme = 'auth' ) {
+		return 'test-salt-' . $scheme;
+	}
+}
+if ( ! function_exists( 'untrailingslashit' ) ) {
+	function untrailingslashit( $s ) {
+		return rtrim( (string) $s, '/\\' );
+	}
+}
 if ( ! function_exists( 'rwgc_get_visitor_country' ) ) {
 	function rwgc_get_visitor_country() {
 		return (string) $GLOBALS['rwgc_test_country'];
@@ -96,6 +106,8 @@ require_once dirname( __DIR__ ) . '/includes/variants/class-rwgc-variants.php';
 RWGC_Variants::load();
 RWGC_Variants::init();
 require_once dirname( __DIR__ ) . '/includes/cloud/class-rwgc-cloud-http.php';
+require_once dirname( __DIR__ ) . '/includes/cloud/class-rwgc-cloud-config.php';
+require_once dirname( __DIR__ ) . '/includes/cloud/class-rwgc-cloud-credentials.php';
 require_once dirname( __DIR__ ) . '/includes/cloud/class-rwgc-cloud-manifest-store.php';
 RWGC_Request_Decision::init();
 
@@ -219,6 +231,20 @@ rwgc_rd_assert(
 );
 $miss_html = reactwoo_render_experience_slot( $slot_id, '<p>NATIVE</p>', $miss );
 rwgc_rd_assert( 'non-match keeps native content', false !== strpos( $miss_html, 'NATIVE' ) );
+
+$GLOBALS['rwgc_test_country'] = 'GB';
+RWGC_Cloud_Credentials::store( 'site_other', 'secret_other', 'https://decision.example/api/v1' );
+RWGC_Request_Decision::reset();
+$foreign = apply_filters( 'reactwoo_current_decision_result', null );
+rwgc_rd_assert( 'connected to another site does not apply foreign manifest', null === $foreign );
+
+RWGC_Cloud_Credentials::clear();
+RWGC_Request_Decision::reset();
+$offline = apply_filters( 'reactwoo_current_decision_result', null );
+rwgc_rd_assert(
+	'disconnect still applies last cache (Gate D)',
+	$offline instanceof RWGC_Decision_Result && 'var_uk' === $offline->variant_for_slot( $slot_id )
+);
 
 RWGC_Cloud_Manifest_Store::clear();
 RWGC_Request_Decision::reset();

@@ -150,4 +150,29 @@ final class RWGC_Cloud_Manifest_Store {
 		delete_option( self::OPTION_PREVIOUS );
 		self::reset_request_cache();
 	}
+
+	/**
+	 * Drop a cached manifest that belongs to a different Cloud site.
+	 *
+	 * Same-site reconnect and Cloud-off (no new site) keep the last cache.
+	 *
+	 * @param string $expected_site_id Newly paired or credential site ID.
+	 * @return bool True when a foreign cache was discarded.
+	 */
+	public static function discard_if_foreign_site( $expected_site_id ) {
+		$expected_site_id = (string) $expected_site_id;
+		if ( '' === $expected_site_id ) {
+			return false;
+		}
+		$raw = self::current_raw();
+		if ( ! is_array( $raw ) ) {
+			return false;
+		}
+		$cached_site = isset( $raw['site'] ) ? (string) $raw['site'] : '';
+		if ( '' === $cached_site || $cached_site === $expected_site_id ) {
+			return false;
+		}
+		self::clear();
+		return true;
+	}
 }
