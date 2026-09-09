@@ -120,6 +120,10 @@ final class RWGC_Cloud_Pairing {
 			)
 		);
 
+		if ( class_exists( 'RWGC_Cloud_Event_Queue', false ) ) {
+			RWGC_Cloud_Event_Queue::discard_unless_site( $site_id );
+		}
+
 		return array(
 			'ok'      => true,
 			'error'   => '',
