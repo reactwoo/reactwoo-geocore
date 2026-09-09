@@ -57,20 +57,59 @@ final class RWGC_Cloud_Event_Queue {
 	/**
 	 * Merge the request buffer into the durable option. Safe on shutdown.
 	 *
+	 * Drops durable items stamped for a different Cloud site_id so a re-pair
+	 * cannot mix or upload another workspace's events.
+	 *
 	 * @return int Number of items now queued.
 	 */
 	public static function persist_buffer() {
-		if ( ! self::$buffer ) {
-			return self::size();
+		$before  = self::state();
+		$state   = self::drop_foreign_items( $before );
+		$current = self::current_site_id();
+		$dirty   = $state !== $before;
+
+		if ( self::$buffer ) {
+			foreach ( self::$buffer as $item ) {
+				$state['items'][] = $item;
+			}
+			self::$buffer = array();
+			$state        = self::enforce_limit( $state );
+			$dirty        = true;
 		}
-		$state = self::state();
-		foreach ( self::$buffer as $item ) {
-			$state['items'][] = $item;
+
+		if ( '' !== $current && $current !== (string) $state['site_id'] ) {
+			$state['site_id'] = $current;
+			$dirty            = true;
 		}
-		self::$buffer = array();
-		$state        = self::enforce_limit( $state );
-		self::save( $state );
+
+		if ( $dirty ) {
+			self::save( $state );
+		}
+
 		return count( $state['items'] );
+	}
+
+	/**
+	 * Drop queued events that do not belong to $site_id.
+	 *
+	 * Same-site reconnect keeps a queue already stamped with that site.
+	 * Unstamped leftover is dropped when pairing to a known site (unknown origin).
+	 *
+	 * @param string $site_id Site ID that may own the queue.
+	 * @return void
+	 */
+	public static function discard_unless_site( $site_id ) {
+		$site_id = trim( (string) $site_id );
+		$state   = self::state();
+		$stored  = isset( $state['site_id'] ) ? trim( (string) $state['site_id'] ) : '';
+		$pending = ! empty( $state['items'] ) || ! empty( self::$buffer );
+		if ( ! $pending ) {
+			return;
+		}
+		if ( '' !== $site_id && $stored === $site_id ) {
+			return;
+		}
+		self::reset();
 	}
 
 	/**
@@ -121,6 +160,18 @@ final class RWGC_Cloud_Event_Queue {
 				'uploaded'  => 0,
 				'remaining' => count( $state['items'] ),
 				'error'     => 'missing_credentials',
+			);
+		}
+
+		$stored_site = isset( $state['site_id'] ) ? trim( (string) $state['site_id'] ) : '';
+		if ( '' !== $stored_site && $stored_site !== (string) $creds['site_id'] ) {
+			self::reset();
+			return array(
+				'ok'        => true,
+				'status'    => 'empty',
+				'uploaded'  => 0,
+				'remaining' => 0,
+				'error'     => '',
 			);
 		}
 
@@ -341,20 +392,59 @@ final class RWGC_Cloud_Event_Queue {
 	/**
 	 * @return array<string, mixed>
 	 */
-	private static function state() {
-		$defaults = array(
+	private static function defaults() {
+		return array(
 			'items'         => array(),
+			'site_id'       => '',
 			'backoff_until' => 0,
 			'fail_count'    => 0,
 			'dropped'       => 0,
 			'last_flush_at' => '',
 			'last_error'    => '',
 		);
+	}
+
+	/**
+	 * @return string
+	 */
+	private static function current_site_id() {
+		if ( ! class_exists( 'RWGC_Cloud_Credentials', false ) ) {
+			return '';
+		}
+		$creds = RWGC_Cloud_Credentials::get();
+		if ( ! $creds || empty( $creds['site_id'] ) ) {
+			return '';
+		}
+		return (string) $creds['site_id'];
+	}
+
+	/**
+	 * Replace durable items stamped for another Cloud site. Keeps an unstamped
+	 * legacy queue so a still-connected site can flush after upgrade.
+	 *
+	 * @param array<string, mixed> $state State.
+	 * @return array<string, mixed>
+	 */
+	private static function drop_foreign_items( array $state ) {
+		$current = self::current_site_id();
+		$stored  = isset( $state['site_id'] ) ? trim( (string) $state['site_id'] ) : '';
+		if ( '' === $current || '' === $stored || $stored === $current ) {
+			return $state;
+		}
+		$next            = self::defaults();
+		$next['site_id'] = $current;
+		return $next;
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private static function state() {
 		$stored = get_option( self::OPTION, array() );
 		if ( ! is_array( $stored ) ) {
 			$stored = array();
 		}
-		return array_merge( $defaults, $stored );
+		return array_merge( self::defaults(), $stored );
 	}
 
 	/**

@@ -237,6 +237,102 @@ $recorded = reactwoo_cloud_record_event(
 );
 rwgc_events_assert( 'helper records when connected', $recorded );
 
+$GLOBALS['rwgc_cloud_mock']['events_fail'] = false;
+$GLOBALS['rwgc_cloud_mock']['last_batch']  = null;
+$GLOBALS['rwgc_cloud_mock']['pair_site_id'] = 'site_xyz';
+
+RWGC_Cloud_Event_Queue::reset();
+RWGC_Cloud_Credentials::store( 'site_abc', 'secret_xyz', 'https://cloud.test/api/v1' );
+RWGC_Cloud_Connection::update( array( 'state' => RWGC_Cloud_Connection::STATE_CONNECTED, 'site_id' => 'site_abc' ) );
+RWGC_Cloud_Event_Queue::enqueue(
+	array(
+		'type'  => 'commerce.purchase',
+		'value' => 99.5,
+	)
+);
+RWGC_Cloud_Event_Queue::persist_buffer();
+$queued = get_option( RWGC_Cloud_Event_Queue::OPTION, array() );
+rwgc_events_assert( 'persist stamps credential site_id', isset( $queued['site_id'] ) && 'site_abc' === $queued['site_id'] );
+rwgc_events_assert( 'purchase queued before disconnect', RWGC_Cloud_Event_Queue::size() >= 1 );
+
+RWGC_Cloud_Connection::disconnect();
+rwgc_events_assert( 'disconnect keeps pending events for same-site reconnect', RWGC_Cloud_Event_Queue::size() >= 1 );
+
+RWGC_Cloud_Credentials::store( 'site_abc', 'secret_xyz', 'https://cloud.test/api/v1' );
+RWGC_Cloud_Connection::update( array( 'state' => RWGC_Cloud_Connection::STATE_CONNECTED, 'site_id' => 'site_abc' ) );
+RWGC_Cloud_Event_Queue::discard_unless_site( 'site_abc' );
+rwgc_events_assert( 'same-site reconnect keeps stamped queue', RWGC_Cloud_Event_Queue::size() >= 1 );
+$kept = RWGC_Cloud_Event_Queue::flush();
+rwgc_events_assert( 'same-site reconnect flushes kept events', ! empty( $kept['ok'] ) && (int) $kept['uploaded'] >= 1 );
+
+RWGC_Cloud_Event_Queue::reset();
+RWGC_Cloud_Credentials::store( 'site_abc', 'secret_xyz', 'https://cloud.test/api/v1' );
+RWGC_Cloud_Connection::update( array( 'state' => RWGC_Cloud_Connection::STATE_CONNECTED, 'site_id' => 'site_abc' ) );
+RWGC_Cloud_Event_Queue::enqueue(
+	array(
+		'type'  => 'commerce.purchase',
+		'value' => 40,
+	)
+);
+RWGC_Cloud_Event_Queue::persist_buffer();
+RWGC_Cloud_Connection::disconnect();
+
+add_filter(
+	'rwgc_cloud_http_transport',
+	static function ( $response, $payload ) {
+		$url    = $payload['url'];
+		$method = $payload['method'];
+		if ( false !== strpos( $url, '/sites/pair' ) && 'POST' === $method ) {
+			$site = isset( $GLOBALS['rwgc_cloud_mock']['pair_site_id'] ) ? (string) $GLOBALS['rwgc_cloud_mock']['pair_site_id'] : 'site_xyz';
+			return array(
+				'ok'     => true,
+				'status' => 200,
+				'body'   => array(
+					'site_id'     => $site,
+					'site_secret' => 'secret_new',
+					'api_base'    => 'https://evil.example/api/v1',
+				),
+				'raw'    => '',
+				'error'  => '',
+			);
+		}
+		if ( false !== strpos( $url, '/sites/confirm' ) && 'POST' === $method ) {
+			return array(
+				'ok'     => true,
+				'status' => 200,
+				'body'   => array( 'confirmed' => true ),
+				'raw'    => '',
+				'error'  => '',
+			);
+		}
+		return $response;
+	},
+	5,
+	2
+);
+
+$GLOBALS['rwgc_cloud_mock']['last_batch'] = null;
+$pair_foreign = RWGC_Cloud_Pairing::pair( 'token-foreign' );
+rwgc_events_assert( 're-pair to another site succeeds', ! empty( $pair_foreign['ok'] ) && 'site_xyz' === $pair_foreign['site_id'] );
+rwgc_events_assert( 're-pair discards previous site events', 0 === RWGC_Cloud_Event_Queue::size() );
+
+$GLOBALS['rwgc_is_admin'] = true;
+$foreign_flush = RWGC_Cloud_Event_Queue::flush();
+rwgc_events_assert( 'maintenance after re-pair uploads nothing leftover', 0 === (int) $foreign_flush['uploaded'] );
+rwgc_events_assert( 'foreign purchase never posted', empty( $GLOBALS['rwgc_cloud_mock']['last_batch'] ) );
+
+RWGC_Cloud_Event_Queue::reset();
+RWGC_Cloud_Credentials::store( 'site_abc', 'secret_xyz', 'https://cloud.test/api/v1' );
+RWGC_Cloud_Connection::update( array( 'state' => RWGC_Cloud_Connection::STATE_CONNECTED, 'site_id' => 'site_abc' ) );
+RWGC_Cloud_Event_Queue::enqueue( array( 'type' => 'commerce.add_to_cart' ) );
+RWGC_Cloud_Event_Queue::persist_buffer();
+RWGC_Cloud_Credentials::store( 'site_xyz', 'secret_new', 'https://cloud.test/api/v1' );
+RWGC_Cloud_Connection::update( array( 'state' => RWGC_Cloud_Connection::STATE_CONNECTED, 'site_id' => 'site_xyz' ) );
+$GLOBALS['rwgc_cloud_mock']['last_batch'] = null;
+$dropped = RWGC_Cloud_Event_Queue::flush();
+rwgc_events_assert( 'flush drops foreign durable items', 0 === (int) $dropped['uploaded'] && 0 === RWGC_Cloud_Event_Queue::size() );
+rwgc_events_assert( 'flush does not post foreign durable items', empty( $GLOBALS['rwgc_cloud_mock']['last_batch'] ) );
+
 if ( $failed > 0 ) {
 	fwrite( STDERR, "\n$failed assertion(s) failed\n" );
 	exit( 1 );
