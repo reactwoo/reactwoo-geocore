@@ -66,7 +66,14 @@ final class RWGC_Cloud_Health {
 		$state     = isset( $facts['connection_state'] ) ? (string) $facts['connection_state'] : 'disconnected';
 
 		if ( ! $connected ) {
-			if ( 'pairing' === $state ) {
+			if ( 'connected' === $state && ! empty( $facts['has_credentials'] ) && isset( $facts['paired_site_matches'] ) && ! $facts['paired_site_matches'] ) {
+				$issues[] = self::issue(
+					'site_url_mismatch',
+					'configuration_error',
+					'Cloud credentials belong to a different WordPress URL (typical after a database clone).',
+					'Disconnect leftover credentials, then pair this site with its own Cloud token. Do not Import or Sync from a clone — that would change the original Cloud workspace.'
+				);
+			} elseif ( 'pairing' === $state ) {
 				$issues[] = self::issue(
 					'pairing_unconfirmed',
 					'warning',
@@ -210,6 +217,8 @@ final class RWGC_Cloud_Health {
 			'has_credentials'     => is_array( $creds ) && ! empty( $creds['site_secret'] ),
 			'connection_state'    => isset( $conn['state'] ) ? (string) $conn['state'] : 'disconnected',
 			'site_id'             => isset( $conn['site_id'] ) ? (string) $conn['site_id'] : '',
+			'site_url'            => isset( $conn['site_url'] ) ? (string) $conn['site_url'] : '',
+			'paired_site_matches' => class_exists( 'RWGC_Cloud_Connection', false ) ? RWGC_Cloud_Connection::paired_site_matches() : true,
 			'management_mode'     => isset( $conn['management_mode'] ) ? (string) $conn['management_mode'] : 'local',
 			'last_heartbeat_at'   => isset( $conn['last_heartbeat_at'] ) ? (string) $conn['last_heartbeat_at'] : '',
 			'last_sync_at'        => isset( $conn['last_sync_at'] ) ? (string) $conn['last_sync_at'] : '',
@@ -350,6 +359,11 @@ final class RWGC_Cloud_Health {
 	 * @return string
 	 */
 	public static function rollup( $connected, array $issues ) {
+		foreach ( $issues as $issue ) {
+			if ( 'configuration_error' === $issue['severity'] || self::STATUS_CONFIGURATION_ERROR === $issue['severity'] ) {
+				return self::STATUS_CONFIGURATION_ERROR;
+			}
+		}
 		if ( ! $connected ) {
 			foreach ( $issues as $issue ) {
 				if ( 'disconnected' === $issue['severity'] ) {
@@ -357,11 +371,6 @@ final class RWGC_Cloud_Health {
 				}
 			}
 			return self::STATUS_WARNING;
-		}
-		foreach ( $issues as $issue ) {
-			if ( 'configuration_error' === $issue['severity'] || self::STATUS_CONFIGURATION_ERROR === $issue['severity'] ) {
-				return self::STATUS_CONFIGURATION_ERROR;
-			}
 		}
 		foreach ( $issues as $issue ) {
 			if ( 'warning' === $issue['severity'] ) {

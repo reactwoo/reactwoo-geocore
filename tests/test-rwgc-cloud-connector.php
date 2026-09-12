@@ -279,6 +279,7 @@ add_filter( 'rwgc_cloud_api_base', static function () {
 $pair = reactwoo_cloud_pair( 'token-123' );
 rwgc_cloud_assert( 'pair ok', $pair['ok'] && 'site_abc' === $pair['site_id'] );
 rwgc_cloud_assert( 'connected', reactwoo_cloud_is_connected() );
+rwgc_cloud_assert( 'pair stores site_url', 'https://example.test/' === (string) RWGC_Cloud_Connection::get()['site_url'] );
 rwgc_cloud_assert( 'pair leaves management_mode local', 'local' === RWGC_Cloud_Connection::get()['management_mode'] );
 $creds = RWGC_Cloud_Credentials::get();
 rwgc_cloud_assert( 'secret stored encrypted', $creds && 'secret_xyz' === $creds['site_secret'] );

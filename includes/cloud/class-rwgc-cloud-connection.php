@@ -28,6 +28,7 @@ final class RWGC_Cloud_Connection {
 		$defaults = array(
 			'state'            => self::STATE_DISCONNECTED,
 			'site_id'          => '',
+			'site_url'         => '',
 			'manifest_revision'=> 0,
 			'last_sync_at'     => '',
 			'last_heartbeat_at'=> '',
@@ -65,7 +66,57 @@ final class RWGC_Cloud_Connection {
 	 * @return bool
 	 */
 	public static function is_connected() {
-		return self::STATE_CONNECTED === self::state() && RWGC_Cloud_Credentials::has();
+		return self::STATE_CONNECTED === self::state()
+			&& RWGC_Cloud_Credentials::has()
+			&& self::paired_site_matches();
+	}
+
+	/**
+	 * Whether stored pairing URL matches this WordPress home URL.
+	 *
+	 * Empty site_url (pairings stored before this field existed) is treated as
+	 * a match so existing production connections keep working until the next pair.
+	 *
+	 * @return bool
+	 */
+	public static function paired_site_matches() {
+		$row     = self::get();
+		$stored  = isset( $row['site_url'] ) ? (string) $row['site_url'] : '';
+		if ( '' === $stored ) {
+			return true;
+		}
+		$current = function_exists( 'home_url' ) ? home_url( '/' ) : '';
+		if ( '' === $current ) {
+			return true;
+		}
+		return self::normalize_site_url( $stored ) === self::normalize_site_url( $current );
+	}
+
+	/**
+	 * Compare hosts + path; ignore scheme and www.
+	 *
+	 * @param string $url URL.
+	 * @return string
+	 */
+	public static function normalize_site_url( $url ) {
+		$parts = function_exists( 'wp_parse_url' ) ? wp_parse_url( (string) $url ) : parse_url( (string) $url );
+		if ( ! is_array( $parts ) ) {
+			return '';
+		}
+		$host = isset( $parts['host'] ) ? strtolower( rtrim( (string) $parts['host'], '.' ) ) : '';
+		if ( 0 === strpos( $host, 'www.' ) ) {
+			$host = substr( $host, 4 );
+		}
+		$path = isset( $parts['path'] ) ? strtolower( (string) $parts['path'] ) : '';
+		if ( function_exists( 'untrailingslashit' ) ) {
+			$path = untrailingslashit( $path );
+		} else {
+			$path = rtrim( $path, '/\\' );
+		}
+		if ( '/' === $path ) {
+			$path = '';
+		}
+		return $host . $path;
 	}
 
 	/**
@@ -82,6 +133,7 @@ final class RWGC_Cloud_Connection {
 			array(
 				'state'           => self::STATE_DISCONNECTED,
 				'site_id'         => '',
+				'site_url'        => '',
 				'last_error'      => '',
 				'management_mode' => 'local',
 			)
