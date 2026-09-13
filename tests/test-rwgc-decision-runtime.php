@@ -159,6 +159,58 @@ $and_group = RWGC_Contract_Condition_Group::from_array(
 	)
 );
 $trace = array();
+$exclude_mobile = RWGC_Contract_Condition_Group::from_array(
+	array(
+		'all' => array(
+			array( 'capability' => 'geo.country', 'operator' => 'equals', 'value' => 'GB' ),
+			array( 'capability' => 'visitor.device', 'operator' => 'not_equals', 'value' => 'mobile' ),
+		),
+	)
+);
+$unresolved_trace = array();
+rwgc_dec_assert(
+	'unresolved device exclusion fails closed',
+	false === RWGC_Decision_Condition_Evaluator::matches_group(
+		$exclude_mobile,
+		RWGC_Contract_Context::from_array( array( 'geo.country' => 'GB' ) ),
+		$unresolved_trace
+	)
+);
+rwgc_dec_assert(
+	'unresolved device traces capability',
+	in_array( 'unresolved_capability:visitor.device', $unresolved_trace, true )
+);
+rwgc_dec_assert(
+	'resolved desktop exclusion matches',
+	true === RWGC_Decision_Condition_Evaluator::matches_group(
+		$exclude_mobile,
+		RWGC_Contract_Context::from_array( array( 'geo.country' => 'GB', 'visitor.device' => 'desktop' ) ),
+		$unresolved_trace
+	)
+);
+rwgc_dec_assert(
+	'resolved mobile exclusion does not match',
+	false === RWGC_Decision_Condition_Evaluator::matches_group(
+		$exclude_mobile,
+		RWGC_Contract_Context::from_array( array( 'geo.country' => 'GB', 'visitor.device' => 'mobile' ) ),
+		$unresolved_trace
+	)
+);
+$lazy_ok = RWGC_Contract_Context::from_array( array( 'geo.country' => 'GB' ) )->with_resolvers(
+	array(
+		'visitor.device' => static function () {
+			return 'desktop';
+		},
+	)
+);
+rwgc_dec_assert( 'context has eager country', $lazy_ok->has( 'geo.country' ) );
+rwgc_dec_assert( 'context has lazy device resolver', $lazy_ok->has( 'visitor.device' ) );
+rwgc_dec_assert( 'context lacks city', ! $lazy_ok->has( 'geo.city' ) );
+rwgc_dec_assert(
+	'lazy device resolver satisfies exclusion',
+	true === RWGC_Decision_Condition_Evaluator::matches_group( $exclude_mobile, $lazy_ok, $unresolved_trace )
+);
+
 rwgc_dec_assert( 'AND fails when device wrong', false === RWGC_Decision_Condition_Evaluator::matches_group( $and_group, $ctx_gb, $trace ) );
 rwgc_dec_assert(
 	'AND passes',

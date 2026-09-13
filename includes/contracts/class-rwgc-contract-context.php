@@ -89,6 +89,25 @@ final class RWGC_Contract_Context extends RWGC_Contract {
 	}
 
 	/**
+	 * Whether this context can supply a value (eager, already resolved, or lazy resolver).
+	 *
+	 * Missing resolvers must not be treated as an empty value — that would make
+	 * exclusion operators (`not_equals`, `not_in`, `not_exists`) match everyone.
+	 *
+	 * @param string $capability_id Capability ID (aliases accepted).
+	 * @return bool
+	 */
+	public function has( $capability_id ) {
+		$id = RWGC_Schema::normalize_capability_id( $capability_id );
+		if ( '' === $id ) {
+			return false;
+		}
+		return array_key_exists( $id, $this->values )
+			|| array_key_exists( $id, $this->resolved )
+			|| isset( $this->resolvers[ $id ] );
+	}
+
+	/**
 	 * Attach lazy capability resolvers (evaluated once per context, on first get).
 	 *
 	 * @param array<string, callable> $resolvers Map of capability ID → resolver.

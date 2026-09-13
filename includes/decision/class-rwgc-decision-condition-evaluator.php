@@ -76,6 +76,11 @@ final class RWGC_Decision_Condition_Evaluator {
 				return false;
 			}
 
+			if ( method_exists( $context, 'has' ) && ! $context->has( $capability ) ) {
+				$trace[] = 'unresolved_capability:' . $capability;
+				return false;
+			}
+
 			$actual   = $context->get( $capability, null );
 			$operator = $condition->operator();
 			$expected = $condition->value();

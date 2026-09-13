@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Visitor-path Decision Runtime now passes the anonymous visitor id into experiment assignment. Gate D previously always selected the control variant because `RWGC_Request_Decision` called `evaluate()` without `visitor_id`.
+- Unresolved Decision Runtime capabilities fail closed. Registered keys such as `visitor.device` with no resolver no longer make `not_equals` / `not_in` / `not_exists` match every visitor.
+
 ## [1.8.163] - 2026-08-21
 
 ### Changed
