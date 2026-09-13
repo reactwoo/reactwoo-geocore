@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Visitor country lookup no longer trusts client-supplied `X-Forwarded-For` / `CF-Connecting-IP` / `Client-IP` headers on a public origin. Those headers can spoof geo targeting, product visibility, and Cloud decisions. Cloudflare `CF-Connecting-IP` is used only when `REMOTE_ADDR` is a Cloudflare edge; reverse proxies on private addresses use the rightmost public `X-Forwarded-For` hop.
+
 ## [1.8.163] - 2026-08-21
 
 ### Changed
