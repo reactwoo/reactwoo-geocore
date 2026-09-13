@@ -201,6 +201,17 @@ final class RWGC_Cloud_Telemetry {
 	/**
 	 * Anonymous visitor id (cookie). Never email.
 	 *
+	 * Shared with {@see RWGC_Request_Decision} so experiment buckets match impressions.
+	 *
+	 * @return string
+	 */
+	public static function anonymous_visitor_id() {
+		return self::visitor_id();
+	}
+
+	/**
+	 * Anonymous visitor id (cookie). Never email.
+	 *
 	 * @return string
 	 */
 	private static function visitor_id() {

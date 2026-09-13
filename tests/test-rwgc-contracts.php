@@ -105,6 +105,8 @@ try {
 
 $ctx = RWGC_Contract_Context::from_array( array( 'device' => 'mobile', '_x' => 1 ) );
 rwgc_assert( 'context alias get', 'mobile' === $ctx->get( 'visitor.device' ) );
+rwgc_assert( 'context has aliased device', $ctx->has( 'device' ) && $ctx->has( 'visitor.device' ) );
+rwgc_assert( 'context lacks unresolved country', ! $ctx->has( 'geo.country' ) );
 rwgc_assert( 'context unknown key extras', 1 === $ctx->extras()['_x'] );
 
 if ( $failed > 0 ) {

@@ -220,6 +220,90 @@ rwgc_rd_assert(
 $miss_html = reactwoo_render_experience_slot( $slot_id, '<p>NATIVE</p>', $miss );
 rwgc_rd_assert( 'non-match keeps native content', false !== strpos( $miss_html, 'NATIVE' ) );
 
+$GLOBALS['rwgc_test_country'] = 'GB';
+$exp_row                     = array(
+	'id'       => 'ex_gate_d',
+	'control'  => 'var_uk',
+	'variants' => array(
+		array(
+			'id'         => 'var_b',
+			'allocation' => 50,
+		),
+	),
+);
+$experiment                  = RWGC_Contract_Experiment::from_array( $exp_row );
+$treatment_visitor           = '';
+$control_visitor             = '';
+for ( $i = 1; $i <= 400; $i++ ) {
+	$id  = sprintf( 'anon-visitor-%03d', $i );
+	$got = RWGC_Decision_Experiment_Assigner::assign( $experiment, $id );
+	if ( 'var_b' === $got && '' === $treatment_visitor ) {
+		$treatment_visitor = $id;
+	}
+	if ( 'var_uk' === $got && '' === $control_visitor ) {
+		$control_visitor = $id;
+	}
+	if ( '' !== $treatment_visitor && '' !== $control_visitor ) {
+		break;
+	}
+}
+rwgc_rd_assert( 'found treatment and control visitor ids', '' !== $treatment_visitor && '' !== $control_visitor );
+
+$exp_manifest = rwgc_rd_cloud_style_manifest();
+$exp_manifest['experiences'][0]['experiment_id'] = 'ex_gate_d';
+$exp_manifest['experiments']                     = array( $exp_row );
+$exp_manifest['variants'][]                      = array(
+	'id'      => 'var_b',
+	'type'    => 'content',
+	'payload' => array( 'html' => '<p>GATE-D-TREATMENT</p>' ),
+);
+
+RWGC_Cloud_Manifest_Store::clear();
+RWGC_Cloud_Manifest_Store::reset_request_cache();
+RWGC_Request_Decision::reset();
+$installed_exp = RWGC_Cloud_Manifest_Store::install( $exp_manifest, 'site_gate_d' );
+rwgc_rd_assert( 'experiment manifest installs', ! empty( $installed_exp['ok'] ) );
+
+$GLOBALS['rwgc_test_filters']['reactwoo_decision_visitor_id'] = array(
+	array(
+		'cb'   => static function () use ( $treatment_visitor ) {
+			return $treatment_visitor;
+		},
+		'args' => 1,
+	),
+);
+RWGC_Request_Decision::reset();
+$treated = apply_filters( 'reactwoo_current_decision_result', null );
+rwgc_rd_assert(
+	'request path assigns treatment when visitor id buckets treatment',
+	$treated instanceof RWGC_Decision_Result && 'var_b' === $treated->variant_for_slot( $slot_id )
+);
+$treated_html = reactwoo_render_experience_slot( $slot_id, '<p>NATIVE</p>', $treated );
+rwgc_rd_assert( 'treatment visitor sees treatment HTML', false !== strpos( $treated_html, 'GATE-D-TREATMENT' ) );
+
+$GLOBALS['rwgc_test_filters']['reactwoo_decision_visitor_id'] = array(
+	array(
+		'cb'   => static function () use ( $control_visitor ) {
+			return $control_visitor;
+		},
+		'args' => 1,
+	),
+);
+RWGC_Request_Decision::reset();
+$controlled = apply_filters( 'reactwoo_current_decision_result', null );
+rwgc_rd_assert(
+	'request path assigns control when visitor id buckets control',
+	$controlled instanceof RWGC_Decision_Result && 'var_uk' === $controlled->variant_for_slot( $slot_id )
+);
+
+unset( $GLOBALS['rwgc_test_filters']['reactwoo_decision_visitor_id'] );
+RWGC_Request_Decision::reset();
+$empty_vid = apply_filters( 'reactwoo_current_decision_result', null );
+rwgc_rd_assert(
+	'empty visitor id still falls back to control',
+	$empty_vid instanceof RWGC_Decision_Result && 'var_uk' === $empty_vid->variant_for_slot( $slot_id )
+);
+
 RWGC_Cloud_Manifest_Store::clear();
 RWGC_Request_Decision::reset();
 $GLOBALS['rwgc_test_country'] = 'GB';

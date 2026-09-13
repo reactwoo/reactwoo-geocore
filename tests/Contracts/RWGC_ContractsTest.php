@@ -89,6 +89,9 @@ final class RWGC_ContractsTest extends TestCase {
 		$this->assertSame( 'GB', $ctx->get( 'geo.country' ) );
 		$this->assertSame( 'GB', $ctx->get( 'country' ) );
 		$this->assertSame( 'mobile', $ctx->get( 'visitor.device' ) );
+		$this->assertTrue( $ctx->has( 'geo.country' ) );
+		$this->assertTrue( $ctx->has( 'country' ) );
+		$this->assertFalse( $ctx->has( 'geo.city' ) );
 		$this->assertTrue( $ctx->extras()['_debug'] );
 	}
 

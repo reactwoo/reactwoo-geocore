@@ -119,7 +119,13 @@ final class RWGC_Request_Decision {
 			}
 
 			$context = RWGC_Decision_Context_Factory::for_request( $eager );
-			return RWGC_Decision_Runtime::evaluate( $manifest, $context );
+			return RWGC_Decision_Runtime::evaluate(
+				$manifest,
+				$context,
+				array(
+					'visitor_id' => self::visitor_id(),
+				)
+			);
 		} catch ( \Throwable $e ) { // phpcs:ignore WordPress.CodeAnalysis.ExceptionDocumented
 			if ( function_exists( 'error_log' ) && defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 				error_log( 'RWGC_Request_Decision: ' . $e->getMessage() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
@@ -166,6 +172,38 @@ final class RWGC_Request_Decision {
 				)
 			);
 		}
+	}
+
+	/**
+	 * Stable anonymous visitor id for experiment assignment.
+	 *
+	 * Uses the Cloud telemetry cookie when present so impressions and buckets share an id.
+	 *
+	 * @return string
+	 */
+	private static function visitor_id() {
+		if ( function_exists( 'apply_filters' ) ) {
+			$filtered = apply_filters( 'reactwoo_decision_visitor_id', '' );
+			if ( is_string( $filtered ) ) {
+				$filtered = trim( $filtered );
+				if ( '' !== $filtered ) {
+					return $filtered;
+				}
+			}
+		}
+
+		if ( class_exists( 'RWGC_Cloud_Telemetry', false ) && method_exists( 'RWGC_Cloud_Telemetry', 'anonymous_visitor_id' ) ) {
+			return (string) RWGC_Cloud_Telemetry::anonymous_visitor_id();
+		}
+
+		if ( isset( $_COOKIE['rwgc_vid'] ) && is_string( $_COOKIE['rwgc_vid'] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$existing = preg_replace( '/[^a-zA-Z0-9._:-]/', '', (string) $_COOKIE['rwgc_vid'] );
+			if ( is_string( $existing ) && strlen( $existing ) >= 8 && strlen( $existing ) <= 64 ) {
+				return $existing;
+			}
+		}
+
+		return '';
 	}
 
 	/**
