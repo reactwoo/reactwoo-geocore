@@ -4,27 +4,24 @@
 done
 
 ## Task
-Production enablement after operator SQL + Cloud flag (PLAN.md §19 step 14).
+Critical bug hunt (cron). Found visitor-path fatal + unpublished library rules still targeting.
 
 ## Files changed
-- API Manager: `RWCC_Settings::merge_empty` / `catalogue_gaps`, admin warning, `scripts/merge_production_cloud_settings.php`, tests, docs
-- Geo Core: PLAN.md §13/§14/§21, work-packages, commerce-and-onboarding, gate-d, current-task
-- Decision Cloud: `docs/identity-production-cutover.md`
+- `includes/class-rwgc-visibility-rule-repository.php` — `get_rule_set()` reads meta only (breaks registry↔repository recursion)
+- `includes/targeting/class-rwgc-variant-rule-applications.php` — unpublished/missing rules are not active; `is_page_variant_rule()`
+- `includes/targeting/class-rwgc-targeting-surface-evaluator.php` — library inactive skips targeting; variant inactive still fail-closes
+- `tests/test-rwgc-library-rule-lookup.php` — cache-miss, draft/trash, variant fail-closed
+- `composer.json` — `test:library-rule-lookup`
+- `ai-handoff/cursor-output.md` — this note
 
 ## What was not changed
-- Production database (operators already ran SQL)
-- No `git push origin` of API Manager (production SSH)
-- No paid checkout
-- No private-window Sign in
-- Geo Core plugin version **1.8.163** (PLAN production enablement)
+- Plugin version / release tag
+- Drafts still appear in the builder picker (admin UX only)
+- Event-queue lost-update, GeoIP XFF (#62), visitor_id experiments (#63)
 
 ## Commands run
-- Public smoke: Store API 3166/3172–3177 purchasable at PLAN GBP; product copy present; license package 2271; Decision Cloud health 0.17.9
-- `php tests/run.php` — all passed (including merge_empty)
+- `php tests/test-rwgc-library-rule-lookup.php` — all passed
+- `php tests/test-rwgc-rule-evaluator.php` — pre-existing hide-mode fail (does not load `functions-rwgc.php`); not caused by this change
 
 ## Remaining
-1. Paste or merge `rwcc_settings` product IDs if empty
-2. Deploy API Manager 2.1.13+ if production is still on 2.1.12 (ISO dates)
-3. Private-window Sign in
-4. Paid production checkout E2E
-5. Gate E
+None for this bug.
