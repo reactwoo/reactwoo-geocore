@@ -234,17 +234,28 @@ class RWGC_Targeting_Surface_Evaluator {
 			}
 			if ( $library_rule_id > 0 && class_exists( 'RWGC_Variant_Rule_Applications', false )
 				&& ! RWGC_Variant_Rule_Applications::is_rule_active_for_frontend( $library_rule_id ) ) {
-				$portable_match           = false;
-				$result['portable_match'] = false;
-				$result['rule_source']    = 'library:' . (string) $library_rule_id;
-				$result['reason']         = 'variant_rule_inactive';
-				$rules_mode               = self::get_visibility_rules_mode( $settings, null );
-				$visibility_show          = function_exists( 'rwgc_visibility_mode_allows_render' )
-					? rwgc_visibility_mode_allows_render( $rules_mode, false )
-					: false;
-				$should_render            = $should_render && $visibility_show;
-				$result['rules_match']    = $country_on ? (bool) $result['country_match'] : false;
-				$result['should_render']  = $should_render;
+				$result['rule_source'] = 'library:' . (string) $library_rule_id;
+				// Variant popups/content stay hidden when the variant rule is archived.
+				// Reusable library rules that are draft/trash/missing must not constrain
+				// the surface (show_if would otherwise hide everyone).
+				if ( RWGC_Variant_Rule_Applications::is_page_variant_rule( $library_rule_id ) ) {
+					$portable_match           = false;
+					$result['portable_match'] = false;
+					$result['reason']         = 'variant_rule_inactive';
+					$rules_mode               = self::get_visibility_rules_mode( $settings, null );
+					$visibility_show          = function_exists( 'rwgc_visibility_mode_allows_render' )
+						? rwgc_visibility_mode_allows_render( $rules_mode, false )
+						: false;
+					$should_render            = $should_render && $visibility_show;
+					$result['rules_match']    = $country_on ? (bool) $result['country_match'] : false;
+					$result['should_render']  = $should_render;
+					return $result;
+				}
+				$result['portable_match']     = true;
+				$result['reason']             = 'library_rule_inactive';
+				$result['visibility_layer_on'] = false;
+				$result['rules_match']        = $country_on ? (bool) $result['country_match'] : true;
+				$result['should_render']      = $should_render;
 				return $result;
 			}
 			if ( class_exists( 'RWGC_Rule_Registry', false ) ) {
