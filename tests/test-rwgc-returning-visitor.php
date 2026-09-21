@@ -84,6 +84,23 @@ if ( ! empty( $again['returning_visitor'] ) ) {
 	rwgc_rv_fail( 'Memoized second resolve in the same request must stay new.' );
 }
 
+$_COOKIE['rwgc_returning'] = (string) time();
+RWGC_Context_Attribution::reset();
+$same_visit = RWGC_Context_Attribution::resolve();
+if ( ! empty( $same_visit['returning_visitor'] ) ) {
+	rwgc_rv_fail( 'Second HTTP request in the first visit must stay new.' );
+}
+if ( ! isset( $_COOKIE['rwgc_rv'] ) || 'n' !== $_COOKIE['rwgc_rv'] ) {
+	rwgc_rv_fail( 'First visit must pin session class cookie to new.' );
+}
+
+unset( $_COOKIE['rwgc_rv'] );
+RWGC_Context_Attribution::reset();
+$next_visit = RWGC_Context_Attribution::resolve();
+if ( empty( $next_visit['returning_visitor'] ) ) {
+	rwgc_rv_fail( 'A later session with rwgc_returning must classify as returning.' );
+}
+
 $_GET    = array();
 $_COOKIE = array( 'rwgc_returning' => '1700000000' );
 RWGC_Context_Attribution::reset();

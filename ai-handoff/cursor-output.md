@@ -4,29 +4,22 @@
 done
 
 ## Task
-Complete returning / new visitor conditions in the Geo family.
+Fix the same-visit returning-visitor flip and the skipped Geo Core tests check on Cursor Cloud PRs.
 
 ## Files changed
-- Geo Core attribution: first-seen `rwgc_returning` cookie, request memo, UTM no longer marks the same request as returning
-- `RWGC_Rule_Evaluator` resolvers for `returning_visitor`, `new_visitor`, `visitor.returning`
-- Free schema types so sanitize does not strip them when Pro is off
-- Platform capability `visitor.returning` + Decision Runtime lazy context
-- Tests, changelog, version **1.8.164**
-- Decision Cloud portal capability schema `visitor.returning` (**0.17.10**)
+- `includes/context/class-rwgc-context-attribution.php` — pin new vs returning for the browsing session (`rwgc_rv`)
+- Tests for the second HTTP request in the first visit, and for the next session
+- `.github/workflows/test.yml` — `cursor/*` PRs complete the `test` job instead of skipping it
+- Version **1.8.165**, changelog, schema help text
 
 ## What was not changed
-- Geo Commerce UI already listed the conditions; it now evaluates via the Core adapter
-- Geo Core Pro still advertises `visitor.returning` and skips if Core owns it
+- Persistent `rwgc_returning` / `rwgc_ft` still mark a later session as returning
+- Decision Cloud (already live at 0.17.11)
 - Cloud commerce operator steps / Gate E
 
 ## Commands run
-- `php tests/test-rwgc-rule-evaluator.php` — passed
-- `php tests/test-rwgc-returning-visitor.php` — passed
-- `php tests/test-rwgc-contracts.php` — passed
-- `php tests/test-rwgc-request-decision.php` — passed
-- `php tests/test-rwgc-platform-capabilities.php` — passed
-- Decision Cloud `portal.test.js`, `manifest-compile.test.js`, `health.test.js` — passed
-- Local `vendor/bin/phpunit` still missing `PHPUnit\TextUI\Command` (known Windows vendor issue)
+- `php tests/test-rwgc-returning-visitor.php`
+- `php tests/test-rwgc-rule-evaluator.php`
 
 ## Remaining errors
-None for returning visitors.
+None for this fix.

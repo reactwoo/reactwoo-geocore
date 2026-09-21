@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.8.164
+Stable tag: 1.8.165
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,9 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.165 =
+* First-visit returning/new targeting stays new across later pages and AJAX in the same session.
 
 = 1.8.164 =
 * **Returning visitors:** New vs returning conditions now evaluate in portable rules, Commerce, and Cloud. A first-seen cookie marks the next visit as returning; UTM on the first hit does not.

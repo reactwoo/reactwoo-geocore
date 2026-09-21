@@ -50,6 +50,31 @@ final class RWGC_ContextAttributionTest extends TestCase {
 		$this->assertFalse( $second['returning_visitor'] );
 	}
 
+	public function test_second_http_request_in_first_visit_stays_new(): void {
+		$_GET['utm_source'] = 'google';
+		$first              = RWGC_Context_Attribution::resolve();
+		$this->assertFalse( $first['returning_visitor'] );
+		$this->assertSame( 'n', $_COOKIE['rwgc_rv'] ?? '' );
+		$this->assertNotEmpty( $_COOKIE['rwgc_ft'] ?? '' );
+
+		// Next document or Store API / wc-ajax request in the same visit.
+		$_COOKIE['rwgc_returning'] = (string) time();
+		RWGC_Context_Attribution::reset();
+		$second = RWGC_Context_Attribution::resolve();
+		$this->assertFalse( $second['returning_visitor'] );
+	}
+
+	public function test_next_session_after_first_visit_is_returning(): void {
+		$first = RWGC_Context_Attribution::resolve();
+		$this->assertFalse( $first['returning_visitor'] );
+
+		$_COOKIE['rwgc_returning'] = (string) time();
+		unset( $_COOKIE['rwgc_rv'] );
+		RWGC_Context_Attribution::reset();
+		$next = RWGC_Context_Attribution::resolve();
+		$this->assertTrue( $next['returning_visitor'] );
+	}
+
 	public function test_resolve_uses_request_values_for_attribution_fields(): void {
 		$_GET['utm_source']   = 'google';
 		$_GET['utm_medium']   = 'cpc';

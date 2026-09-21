@@ -150,7 +150,7 @@ class RWGC_Targeting_Rule_Set_Schema {
 			'returning_visitor' => array(
 				'label'       => __( 'Returning visitor', 'reactwoo-geocore' ),
 				'pro'         => false,
-				'description' => __( 'True when a previous visit left a Geo Core cookie. The first visit is new.', 'reactwoo-geocore' ),
+				'description' => __( 'True when a previous visit left a Geo Core cookie. The first browsing session is new, including later pages and AJAX on that visit.', 'reactwoo-geocore' ),
 			),
 			'new_visitor'       => array(
 				'label'       => __( 'New visitor', 'reactwoo-geocore' ),

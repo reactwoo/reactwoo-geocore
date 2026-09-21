@@ -1,14 +1,12 @@
 # Current task
 
-Returning / new visitor conditions are implemented in Geo Core **1.8.164**.
+Same-visit returning-visitor classification is implemented in Geo Core **1.8.165**.
 
 ## Done this pass
 
-- First visit is never returning, even with UTM on the request
-- Persist `rwgc_returning` for the next visit; prior `rwgc_ft` still counts
-- Portable types `returning_visitor` / `new_visitor` evaluate in Core
-- Capability `visitor.returning` for Cloud manifests
-- Decision Cloud **0.17.10** portal schema includes Returning visitor
+- First browsing session stays new across page views and AJAX (`rwgc_rv`)
+- Persistent `rwgc_returning` still marks the next session as returning
+- Geo Core tests required check no longer looks failed on `cursor/*` WIP PRs
 
 ## Remaining (Cloud commerce, unchanged)
 
@@ -22,3 +20,4 @@ Returning / new visitor conditions are implemented in Geo Core **1.8.164**.
 - Re-run `bind_production_cloud_catalogue.sql` against Local
 - Restore HTTP `POST /api/v1/deploy`
 - Unhook Elementor add-ons
+- Merge Cursor Cloud `cursor/*` PRs; ship tagged releases on main

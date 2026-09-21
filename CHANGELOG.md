@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.165] - 2026-09-21
+
+### Fixed
+- First-visit `returning_visitor` / `new_visitor` targeting no longer flips to returning on the next page view or AJAX/Store API request in the same session.
+- Geo Core tests on `cursor/*` PRs now complete successfully instead of skipping the required check.
+
 ## [1.8.164] - 2026-09-21
 
 ### Added
