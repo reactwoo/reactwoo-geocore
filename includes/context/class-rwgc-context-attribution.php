@@ -61,6 +61,7 @@ class RWGC_Context_Attribution {
 
 		$returning = self::is_returning_visitor( $prior_first_touch );
 		if ( $should_persist ) {
+			self::persist_visit_class( $returning );
 			self::persist_returning_cookie();
 		}
 
@@ -236,15 +237,40 @@ class RWGC_Context_Attribution {
 	/**
 	 * Returning is true only when a previous visit already left a cookie.
 	 * Current-request UTM / click IDs do not count as returning.
+	 * A session class cookie keeps the first visit "new" across page views and AJAX.
 	 *
 	 * @param array<string, string> $prior_first_touch First-touch cookie from before this request.
 	 * @return bool
 	 */
 	private static function is_returning_visitor( array $prior_first_touch ) {
+		$session = self::read_visit_class();
+		if ( 'new' === $session ) {
+			return false;
+		}
+		if ( 'returning' === $session ) {
+			return true;
+		}
 		if ( self::has_returning_cookie() ) {
 			return true;
 		}
 		return self::has_attribution_data( $prior_first_touch );
+	}
+
+	/**
+	 * @return string '' | 'new' | 'returning'
+	 */
+	private static function read_visit_class() {
+		if ( ! isset( $_COOKIE['rwgc_rv'] ) ) {
+			return '';
+		}
+		$raw = sanitize_key( wp_unslash( (string) $_COOKIE['rwgc_rv'] ) );
+		if ( 'n' === $raw || 'new' === $raw ) {
+			return 'new';
+		}
+		if ( 'r' === $raw || 'returning' === $raw ) {
+			return 'returning';
+		}
+		return '';
 	}
 
 	/**
@@ -256,6 +282,30 @@ class RWGC_Context_Attribution {
 		}
 		$legacy = sanitize_text_field( wp_unslash( (string) $_COOKIE['rwgc_returning'] ) );
 		return '' !== $legacy;
+	}
+
+	/**
+	 * Pin new vs returning for this browsing session so the next page view / XHR
+	 * does not flip a first visit to returning.
+	 *
+	 * @param bool $returning Classification for this visit.
+	 * @return void
+	 */
+	private static function persist_visit_class( $returning ) {
+		$value = $returning ? 'r' : 'n';
+		$ttl   = defined( 'MINUTE_IN_SECONDS' ) ? 30 * (int) MINUTE_IN_SECONDS : 1800;
+		/**
+		 * Sliding session used to keep first-visit classification stable.
+		 *
+		 * @param int $ttl Default 30 minutes.
+		 */
+		$ttl           = (int) apply_filters( 'rwgc_returning_visitor_session_ttl', $ttl );
+		$expire        = time() + max( 60, $ttl );
+		$cookie_path   = defined( 'COOKIEPATH' ) && COOKIEPATH ? COOKIEPATH : '/';
+		$cookie_domain = defined( 'COOKIE_DOMAIN' ) ? COOKIE_DOMAIN : '';
+		$secure        = function_exists( 'is_ssl' ) ? (bool) is_ssl() : false;
+		setcookie( 'rwgc_rv', $value, $expire, $cookie_path, $cookie_domain, $secure, true );
+		$_COOKIE['rwgc_rv'] = $value;
 	}
 
 	/**
@@ -281,7 +331,7 @@ class RWGC_Context_Attribution {
 		$cookie_domain = defined( 'COOKIE_DOMAIN' ) ? COOKIE_DOMAIN : '';
 		$secure        = function_exists( 'is_ssl' ) ? (bool) is_ssl() : false;
 		setcookie( 'rwgc_returning', $value, $expire, $cookie_path, $cookie_domain, $secure, true );
-		// Do not populate $_COOKIE on first visit — this request stays "new".
+		// Do not populate $_COOKIE['rwgc_returning'] — session class cookie owns this visit.
 	}
 
 	/**

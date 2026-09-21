@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- First-visit `returning_visitor` / `new_visitor` targeting no longer flips to returning on the next page view or AJAX/Store API request in the same session.
+
 ## [1.8.164] - 2026-09-21
 
 ### Added
