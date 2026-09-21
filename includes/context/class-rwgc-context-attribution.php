@@ -15,32 +15,55 @@ if ( ! defined( 'ABSPATH' ) ) {
 class RWGC_Context_Attribution {
 
 	/**
+	 * Per-request memo so multiple consumers see the same new/returning classification.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	private static $resolved = null;
+
+	/**
+	 * Reset per-request memo (tests).
+	 *
+	 * @return void
+	 */
+	public static function reset() {
+		self::$resolved = null;
+	}
+
+	/**
 	 * Resolve normalized attribution payload for current request.
 	 *
 	 * @return array<string, mixed>
 	 */
 	public static function resolve() {
-		$first_touch   = self::read_cookie_snapshot( 'rwgc_ft' );
-		$session_touch = self::read_cookie_snapshot( 'rwgc_st' );
-		$request_touch = self::read_touch_from_request();
-
-		$merged_touch = self::merge_touch( $session_touch, $request_touch );
-		$first_touch  = self::merge_touch( $first_touch, $request_touch );
-
-		if ( self::has_attribution_data( $request_touch ) ) {
-			/**
-			 * Whether attribution cookies may be written for this request.
-			 *
-			 * @param bool $should_persist Default true.
-			 */
-			$should_persist = (bool) apply_filters( 'rwgc_context_attribution_should_persist', true );
-			if ( $should_persist ) {
-				self::write_cookie_snapshot( 'rwgc_ft', $first_touch );
-				self::write_cookie_snapshot( 'rwgc_st', $merged_touch );
-			}
+		if ( is_array( self::$resolved ) ) {
+			return self::$resolved;
 		}
 
-		$returning = self::is_returning_visitor( $first_touch );
+		$prior_first_touch = self::read_cookie_snapshot( 'rwgc_ft' );
+		$session_touch     = self::read_cookie_snapshot( 'rwgc_st' );
+		$request_touch     = self::read_touch_from_request();
+
+		$merged_touch = self::merge_touch( $session_touch, $request_touch );
+		$first_touch  = self::merge_touch( $prior_first_touch, $request_touch );
+
+		/**
+		 * Whether attribution / returning-visitor cookies may be written for this request.
+		 *
+		 * @param bool $should_persist Default true.
+		 */
+		$should_persist = (bool) apply_filters( 'rwgc_context_attribution_should_persist', true );
+
+		if ( $should_persist && self::has_attribution_data( $request_touch ) ) {
+			self::write_cookie_snapshot( 'rwgc_ft', $first_touch );
+			self::write_cookie_snapshot( 'rwgc_st', $merged_touch );
+		}
+
+		$returning = self::is_returning_visitor( $prior_first_touch );
+		if ( $should_persist ) {
+			self::persist_returning_cookie();
+		}
+
 		$audiences = apply_filters( 'rwgc_analytics_audiences', array(), array() );
 		$audiences = is_array( $audiences ) ? array_values( array_filter( array_map( 'sanitize_key', $audiences ) ) ) : array();
 
@@ -67,7 +90,8 @@ class RWGC_Context_Attribution {
 		 * @param array<string, mixed> $out Attribution payload.
 		 */
 		$out = apply_filters( 'rwgc_context_attribution', $out );
-		return is_array( $out ) ? $out : array();
+		self::$resolved = is_array( $out ) ? $out : array();
+		return self::$resolved;
 	}
 
 	/**
@@ -210,17 +234,54 @@ class RWGC_Context_Attribution {
 	}
 
 	/**
-	 * @param array<string, string> $first_touch First touch.
+	 * Returning is true only when a previous visit already left a cookie.
+	 * Current-request UTM / click IDs do not count as returning.
+	 *
+	 * @param array<string, string> $prior_first_touch First-touch cookie from before this request.
 	 * @return bool
 	 */
-	private static function is_returning_visitor( array $first_touch ) {
-		foreach ( $first_touch as $value ) {
-			if ( '' !== (string) $value ) {
-				return true;
-			}
+	private static function is_returning_visitor( array $prior_first_touch ) {
+		if ( self::has_returning_cookie() ) {
+			return true;
 		}
-		$legacy = isset( $_COOKIE['rwgc_returning'] ) ? sanitize_text_field( wp_unslash( (string) $_COOKIE['rwgc_returning'] ) ) : '';
+		return self::has_attribution_data( $prior_first_touch );
+	}
+
+	/**
+	 * @return bool
+	 */
+	private static function has_returning_cookie() {
+		if ( ! isset( $_COOKIE['rwgc_returning'] ) ) {
+			return false;
+		}
+		$legacy = sanitize_text_field( wp_unslash( (string) $_COOKIE['rwgc_returning'] ) );
 		return '' !== $legacy;
+	}
+
+	/**
+	 * Persist a first-seen cookie so the next visit classifies as returning.
+	 * Does not change this request's classification.
+	 *
+	 * @return void
+	 */
+	private static function persist_returning_cookie() {
+		$existing = self::has_returning_cookie()
+			? sanitize_text_field( wp_unslash( (string) $_COOKIE['rwgc_returning'] ) )
+			: '';
+		$value = '' !== $existing ? $existing : (string) time();
+		$ttl   = defined( 'YEAR_IN_SECONDS' ) ? (int) YEAR_IN_SECONDS : 31536000;
+		/**
+		 * Returning-visitor cookie lifetime in seconds.
+		 *
+		 * @param int $ttl Default one year.
+		 */
+		$ttl           = (int) apply_filters( 'rwgc_returning_visitor_cookie_ttl', $ttl );
+		$expire        = time() + max( 86400, $ttl );
+		$cookie_path   = defined( 'COOKIEPATH' ) && COOKIEPATH ? COOKIEPATH : '/';
+		$cookie_domain = defined( 'COOKIE_DOMAIN' ) ? COOKIE_DOMAIN : '';
+		$secure        = function_exists( 'is_ssl' ) ? (bool) is_ssl() : false;
+		setcookie( 'rwgc_returning', $value, $expire, $cookie_path, $cookie_domain, $secure, true );
+		// Do not populate $_COOKIE on first visit — this request stays "new".
 	}
 
 	/**

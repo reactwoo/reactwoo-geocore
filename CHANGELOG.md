@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.164] - 2026-09-21
+
+### Added
+- **Returning / new visitor conditions:** persist a first-seen `rwgc_returning` cookie, evaluate `returning_visitor` / `new_visitor` in the portable rule evaluator, register `visitor.returning` as a Core capability, and resolve it in Decision Runtime context.
+
+### Fixed
+- First-visit UTM no longer classified the visitor as returning on the same request. Portable rules using returning/new visitor no longer fail closed for lack of a resolver.
+
 ## [1.8.163] - 2026-08-21
 
 ### Changed

@@ -23,6 +23,7 @@ final class RWGC_ContractsTest extends TestCase {
 	public function test_legacy_condition_alias_to_capability_id(): void {
 		$this->assertSame( 'geo.country', RWGC_Schema::normalize_capability_id( 'country' ) );
 		$this->assertSame( 'visitor.device', RWGC_Schema::normalize_capability_id( 'device' ) );
+		$this->assertSame( 'visitor.returning', RWGC_Schema::normalize_capability_id( 'returning_visitor' ) );
 		$this->assertSame( 'geo.country', RWGC_Schema::normalize_capability_id( 'geo.country' ) );
 	}
 

@@ -98,4 +98,80 @@ class TargetingRuleEvaluatorTest extends TestCase {
 		);
 		$this->assertTrue( RWGC_Rule_Evaluator::matches( $set, $this->uk_evening_snapshot() ) );
 	}
+
+	public function test_returning_visitor_matches_when_snapshot_flag_is_true(): void {
+		RWGC_Rule_Evaluator::reset_resolver_cache();
+		$set = array(
+			'enabled' => true,
+			'mode'    => 'show',
+			'match'   => 'all',
+			'rules'   => array(
+				array(
+					'id'         => 'rv',
+					'match'      => 'all',
+					'conditions' => array(
+						array(
+							'type'     => 'returning_visitor',
+							'operator' => 'is',
+							'value'    => array( 'yes' ),
+						),
+					),
+				),
+			),
+		);
+		$returning = new RWGC_Context_Snapshot( array( 'returning_visitor' => true, 'new_visitor' => false ) );
+		$fresh     = new RWGC_Context_Snapshot( array( 'returning_visitor' => false, 'new_visitor' => true ) );
+		$this->assertTrue( RWGC_Rule_Evaluator::matches( $set, $returning ) );
+		$this->assertFalse( RWGC_Rule_Evaluator::matches( $set, $fresh ) );
+	}
+
+	public function test_new_visitor_matches_first_visit_snapshot(): void {
+		RWGC_Rule_Evaluator::reset_resolver_cache();
+		$set = array(
+			'enabled' => true,
+			'mode'    => 'show',
+			'match'   => 'all',
+			'rules'   => array(
+				array(
+					'id'         => 'nv',
+					'match'      => 'all',
+					'conditions' => array(
+						array(
+							'type'     => 'new_visitor',
+							'operator' => 'is',
+							'value'    => true,
+						),
+					),
+				),
+			),
+		);
+		$fresh     = new RWGC_Context_Snapshot( array( 'returning_visitor' => false ) );
+		$returning = new RWGC_Context_Snapshot( array( 'returning_visitor' => true, 'new_visitor' => false ) );
+		$this->assertTrue( RWGC_Rule_Evaluator::matches( $set, $fresh ) );
+		$this->assertFalse( RWGC_Rule_Evaluator::matches( $set, $returning ) );
+	}
+
+	public function test_sanitize_keeps_returning_visitor_without_pro(): void {
+		$raw = array(
+			'enabled' => true,
+			'mode'    => 'show',
+			'match'   => 'all',
+			'rules'   => array(
+				array(
+					'id'         => 'rv',
+					'match'      => 'all',
+					'conditions' => array(
+						array(
+							'type'     => 'returning_visitor',
+							'operator' => 'is',
+							'value'    => array( 'yes' ),
+						),
+					),
+				),
+			),
+		);
+		$set = RWGC_Targeting_Rule_Set_Schema::sanitize( $raw );
+		$this->assertIsArray( $set );
+		$this->assertSame( 'returning_visitor', $set['rules'][0]['conditions'][0]['type'] );
+	}
 }

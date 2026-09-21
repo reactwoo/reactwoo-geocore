@@ -5,7 +5,7 @@
 | Date | Decision | Rationale |
 |------|----------|-----------|
 | 2026-06-26 | Popup target resolution uses multi-view modal in Geo Core JS + `reactwoo-geocore/v1/targets/*` REST | Keeps Elementor popup create/search server-side; avoids listing all popups as top-level resolver buttons |
-| 2026-08-14 | Cloud billing: Stripe (default) + Paystack (Africa); one processor per org; same `cloud.*` entitlements | Local cards/bank/USSD/mobile money without a second entitlement model |
+| 2026-09-21 | Returning visitor is a Core cookie + evaluator, not UTM-on-this-request | First visit must stay new; Commerce/portable/Cloud all use `RWGC_Rule_Evaluator` / `visitor.returning` |
 
 ## ReactWoo defaults
 

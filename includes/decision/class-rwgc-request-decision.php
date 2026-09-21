@@ -73,6 +73,15 @@ final class RWGC_Request_Decision {
 				return '';
 			};
 		}
+		if ( ! isset( $resolvers['visitor.returning'] ) ) {
+			$resolvers['visitor.returning'] = static function () {
+				if ( class_exists( 'RWGC_Context_Attribution', false ) ) {
+					$attribution = RWGC_Context_Attribution::resolve();
+					return ! empty( $attribution['returning_visitor'] );
+				}
+				return false;
+			};
+		}
 		return $resolvers;
 	}
 

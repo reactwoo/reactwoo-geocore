@@ -1,20 +1,21 @@
 # Current task
 
-**Production Cloud commerce is enabled** (operator SQL + `REACTWOO_CLOUD_BRIDGE_ENABLED`, 2026-08-21).
+Returning / new visitor conditions are implemented in Geo Core **1.8.164**.
 
-## Verified on production
+## Done this pass
 
-- Store: parent **3166** purchasable; variations **3172–3177** at PLAN GBP; `rwcc-cloud-product-copy` on the product page
-- License: package slug `reactwoo-decision-cloud` id **2271**, `is_active=1`
-- Decision Cloud: `GET /health` → `0.17.9`; `store_login_url` includes `rwcc_open_cloud=1`
+- First visit is never returning, even with UTM on the request
+- Persist `rwgc_returning` for the next visit; prior `rwgc_ft` still counts
+- Portable types `returning_visitor` / `new_visitor` evaluate in Core
+- Capability `visitor.returning` for Cloud manifests
+- Decision Cloud **0.17.10** portal schema includes Returning visitor
 
-## Remaining
+## Remaining (Cloud commerce, unchanged)
 
-1. If `rwcc_settings` product IDs are still empty, paste them in wp-admin **or** `wp eval-file scripts/merge_production_cloud_settings.php` (empty keys only; never overwrites secrets). Individuals: 2294 / 2893 / 2891.
-2. Deploy API Manager **2.1.13** (ISO start-date conversion `132e7fe`) to ReactWoo.com if production is still on 2.1.12 — needed for pending-individual materialize.
-3. Private-window Sign in at `https://decision.reactwoo.com` (identity cutover).
-4. Paid production checkout E2E (operator).
-5. Gate E live attribution.
+1. Bind `rwcc_settings` product IDs if still empty
+2. Private-window Sign in at `https://decision.reactwoo.com`
+3. Paid production checkout E2E
+4. Gate E live attribution
 
 ## Do not
 

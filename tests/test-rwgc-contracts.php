@@ -29,6 +29,7 @@ function rwgc_assert( $label, $ok ) {
 
 rwgc_assert( 'schema version', 1 === RWGC_Schema::VERSION );
 rwgc_assert( 'alias country', 'geo.country' === RWGC_Schema::normalize_capability_id( 'country' ) );
+rwgc_assert( 'alias returning visitor', 'visitor.returning' === RWGC_Schema::normalize_capability_id( 'returning_visitor' ) );
 rwgc_assert( 'reject single segment', '' === RWGC_Schema::normalize_capability_id( 'single' ) );
 
 try {

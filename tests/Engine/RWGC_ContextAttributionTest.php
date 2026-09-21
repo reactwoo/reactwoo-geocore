@@ -11,6 +11,43 @@ final class RWGC_ContextAttributionTest extends TestCase {
 		parent::setUp();
 		$_GET    = array();
 		$_COOKIE = array();
+		RWGC_Context_Attribution::reset();
+	}
+
+	public function test_first_visit_is_not_returning_even_with_utm(): void {
+		$_GET['utm_source'] = 'google';
+		$payload            = RWGC_Context_Attribution::resolve();
+		$this->assertFalse( $payload['returning_visitor'] );
+	}
+
+	public function test_prior_returning_cookie_marks_returning_visitor(): void {
+		$_COOKIE['rwgc_returning'] = '1700000000';
+		$payload                   = RWGC_Context_Attribution::resolve();
+		$this->assertTrue( $payload['returning_visitor'] );
+	}
+
+	public function test_prior_first_touch_cookie_marks_returning_visitor(): void {
+		$_COOKIE['rwgc_ft'] = rawurlencode(
+			wp_json_encode(
+				array(
+					'source'   => 'newsletter',
+					'medium'   => 'email',
+					'campaign' => 'spring',
+					'content'  => '',
+					'term'     => '',
+					'gclid'    => '',
+				)
+			)
+		);
+		$payload = RWGC_Context_Attribution::resolve();
+		$this->assertTrue( $payload['returning_visitor'] );
+	}
+
+	public function test_second_resolve_in_same_request_stays_new(): void {
+		$first  = RWGC_Context_Attribution::resolve();
+		$second = RWGC_Context_Attribution::resolve();
+		$this->assertFalse( $first['returning_visitor'] );
+		$this->assertFalse( $second['returning_visitor'] );
 	}
 
 	public function test_resolve_uses_request_values_for_attribution_fields(): void {

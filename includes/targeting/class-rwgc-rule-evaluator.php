@@ -48,8 +48,11 @@ class RWGC_Rule_Evaluator {
 			'device_type'    => array( __CLASS__, 'eval_device_type' ),
 			'time_of_day'    => array( __CLASS__, 'eval_time_of_day' ),
 			'day_of_week'    => array( __CLASS__, 'eval_day_of_week' ),
-			'logged_in'        => array( __CLASS__, 'eval_logged_in' ),
-			'page_version_url' => array( __CLASS__, 'eval_page_version_url' ),
+			'logged_in'         => array( __CLASS__, 'eval_logged_in' ),
+			'returning_visitor' => array( __CLASS__, 'eval_returning_visitor' ),
+			'new_visitor'       => array( __CLASS__, 'eval_new_visitor' ),
+			'visitor.returning' => array( __CLASS__, 'eval_returning_visitor' ),
+			'page_version_url'  => array( __CLASS__, 'eval_page_version_url' ),
 			'page_type'        => array( __CLASS__, 'eval_page_type' ),
 			'request_uri'      => array( __CLASS__, 'eval_request_uri' ),
 			'condition_group'  => array( __CLASS__, 'eval_condition_group' ),
@@ -247,7 +250,44 @@ class RWGC_Rule_Evaluator {
 		if ( ! function_exists( 'is_user_logged_in' ) ) {
 			return true;
 		}
-		$actual = is_user_logged_in();
+		return self::eval_boolean_flag( is_user_logged_in(), $op, $val );
+	}
+
+	/**
+	 * Cookie-based returning visitor (previous visit left rwgc_returning or first-touch cookies).
+	 *
+	 * @param string                $op       Operator.
+	 * @param mixed                 $val      Expected boolean.
+	 * @param RWGC_Context_Snapshot $snapshot Snapshot.
+	 * @return bool
+	 */
+	public static function eval_returning_visitor( $op, $val, RWGC_Context_Snapshot $snapshot ) {
+		return self::eval_boolean_flag( (bool) $snapshot->get( 'returning_visitor', false ), $op, $val );
+	}
+
+	/**
+	 * Inverse of {@see eval_returning_visitor()}.
+	 *
+	 * @param string                $op       Operator.
+	 * @param mixed                 $val      Expected boolean.
+	 * @param RWGC_Context_Snapshot $snapshot Snapshot.
+	 * @return bool
+	 */
+	public static function eval_new_visitor( $op, $val, RWGC_Context_Snapshot $snapshot ) {
+		$new = $snapshot->get( 'new_visitor', null );
+		if ( null === $new ) {
+			$new = empty( $snapshot->get( 'returning_visitor', false ) );
+		}
+		return self::eval_boolean_flag( (bool) $new, $op, $val );
+	}
+
+	/**
+	 * @param bool   $actual Actual flag.
+	 * @param string $op     Operator.
+	 * @param mixed  $val    Expected boolean as 1/0, true/false, or yes/no list.
+	 * @return bool
+	 */
+	private static function eval_boolean_flag( $actual, $op, $val ) {
 		if ( is_array( $val ) && array() === $val ) {
 			return true;
 		}

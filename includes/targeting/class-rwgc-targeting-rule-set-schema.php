@@ -31,6 +31,9 @@ class RWGC_Targeting_Rule_Set_Schema {
 		'time_of_day',
 		'day_of_week',
 		'logged_in',
+		'returning_visitor',
+		'new_visitor',
+		'visitor.returning',
 		'page_version_url',
 		'page_type',
 		'request_uri',
@@ -143,6 +146,16 @@ class RWGC_Targeting_Rule_Set_Schema {
 				'label'       => __( 'Request URL', 'reactwoo-geocore' ),
 				'pro'         => false,
 				'description' => __( 'Match the current request path or URL fragment.', 'reactwoo-geocore' ),
+			),
+			'returning_visitor' => array(
+				'label'       => __( 'Returning visitor', 'reactwoo-geocore' ),
+				'pro'         => false,
+				'description' => __( 'True when a previous visit left a Geo Core cookie. The first visit is new.', 'reactwoo-geocore' ),
+			),
+			'new_visitor'       => array(
+				'label'       => __( 'New visitor', 'reactwoo-geocore' ),
+				'pro'         => false,
+				'description' => __( 'Inverse of returning visitor. First visit in this browser, or cookies cleared.', 'reactwoo-geocore' ),
 			),
 			'condition_group'  => array(
 				'label'       => __( 'Condition group', 'reactwoo-geocore' ),

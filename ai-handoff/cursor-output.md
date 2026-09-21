@@ -4,27 +4,29 @@
 done
 
 ## Task
-Production enablement after operator SQL + Cloud flag (PLAN.md §19 step 14).
+Complete returning / new visitor conditions in the Geo family.
 
 ## Files changed
-- API Manager: `RWCC_Settings::merge_empty` / `catalogue_gaps`, admin warning, `scripts/merge_production_cloud_settings.php`, tests, docs
-- Geo Core: PLAN.md §13/§14/§21, work-packages, commerce-and-onboarding, gate-d, current-task
-- Decision Cloud: `docs/identity-production-cutover.md`
+- Geo Core attribution: first-seen `rwgc_returning` cookie, request memo, UTM no longer marks the same request as returning
+- `RWGC_Rule_Evaluator` resolvers for `returning_visitor`, `new_visitor`, `visitor.returning`
+- Free schema types so sanitize does not strip them when Pro is off
+- Platform capability `visitor.returning` + Decision Runtime lazy context
+- Tests, changelog, version **1.8.164**
+- Decision Cloud portal capability schema `visitor.returning` (**0.17.10**)
 
 ## What was not changed
-- Production database (operators already ran SQL)
-- No `git push origin` of API Manager (production SSH)
-- No paid checkout
-- No private-window Sign in
-- Geo Core plugin version **1.8.163** (PLAN production enablement)
+- Geo Commerce UI already listed the conditions; it now evaluates via the Core adapter
+- Geo Core Pro still advertises `visitor.returning` and skips if Core owns it
+- Cloud commerce operator steps / Gate E
 
 ## Commands run
-- Public smoke: Store API 3166/3172–3177 purchasable at PLAN GBP; product copy present; license package 2271; Decision Cloud health 0.17.9
-- `php tests/run.php` — all passed (including merge_empty)
+- `php tests/test-rwgc-rule-evaluator.php` — passed
+- `php tests/test-rwgc-returning-visitor.php` — passed
+- `php tests/test-rwgc-contracts.php` — passed
+- `php tests/test-rwgc-request-decision.php` — passed
+- `php tests/test-rwgc-platform-capabilities.php` — passed
+- Decision Cloud `portal.test.js`, `manifest-compile.test.js`, `health.test.js` — passed
+- Local `vendor/bin/phpunit` still missing `PHPUnit\TextUI\Command` (known Windows vendor issue)
 
-## Remaining
-1. Paste or merge `rwcc_settings` product IDs if empty
-2. Deploy API Manager 2.1.13+ if production is still on 2.1.12 (ISO dates)
-3. Private-window Sign in
-4. Paid production checkout E2E
-5. Gate E
+## Remaining errors
+None for returning visitors.

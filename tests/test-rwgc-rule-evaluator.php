@@ -15,6 +15,22 @@ if ( ! function_exists( 'sanitize_key' ) ) {
 	}
 }
 
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	function sanitize_text_field( $str ) {
+		return is_scalar( $str ) ? (string) $str : '';
+	}
+}
+
+if ( ! function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
+	function rwgc_visibility_mode_allows_render( $mode, $matched ) {
+		$m = sanitize_key( (string) $mode );
+		if ( in_array( $m, array( 'hide', 'hide_if' ), true ) ) {
+			return ! $matched;
+		}
+		return (bool) $matched;
+	}
+}
+
 if ( ! function_exists( 'apply_filters' ) ) {
 	function apply_filters( $hook, $value, ...$args ) { // phpcs:ignore Universal.NamingConventions.NoReservedKeywordParameterNames
 		unset( $hook, $args );
@@ -135,6 +151,64 @@ $empty_country = array(
 );
 if ( ! RWGC_Rule_Evaluator::matches( $empty_country, $snap ) ) {
 	rwgc_test_fail( 'Empty country list should match all.' );
+}
+
+RWGC_Rule_Evaluator::reset_resolver_cache();
+$returning_set = array(
+	'enabled' => true,
+	'mode'    => 'show',
+	'match'   => 'all',
+	'rules'   => array(
+		array(
+			'id'         => 'rv',
+			'match'      => 'all',
+			'conditions' => array(
+				array(
+					'type'     => 'returning_visitor',
+					'operator' => 'is',
+					'value'    => array( 'yes' ),
+				),
+			),
+		),
+	),
+);
+$returning_snap = new RWGC_Context_Snapshot( array( 'returning_visitor' => true, 'new_visitor' => false ) );
+$fresh_snap     = new RWGC_Context_Snapshot( array( 'returning_visitor' => false, 'new_visitor' => true ) );
+if ( ! RWGC_Rule_Evaluator::matches( $returning_set, $returning_snap ) ) {
+	rwgc_test_fail( 'Returning visitor should match when snapshot flag is true.' );
+}
+if ( RWGC_Rule_Evaluator::matches( $returning_set, $fresh_snap ) ) {
+	rwgc_test_fail( 'Returning visitor should not match a first visit.' );
+}
+
+$new_set = array(
+	'enabled' => true,
+	'mode'    => 'show',
+	'match'   => 'all',
+	'rules'   => array(
+		array(
+			'id'         => 'nv',
+			'match'      => 'all',
+			'conditions' => array(
+				array(
+					'type'     => 'new_visitor',
+					'operator' => 'is',
+					'value'    => true,
+				),
+			),
+		),
+	),
+);
+if ( ! RWGC_Rule_Evaluator::matches( $new_set, $fresh_snap ) ) {
+	rwgc_test_fail( 'New visitor should match a first visit.' );
+}
+if ( RWGC_Rule_Evaluator::matches( $new_set, $returning_snap ) ) {
+	rwgc_test_fail( 'New visitor should not match a returning snapshot.' );
+}
+
+$sanitized = RWGC_Targeting_Rule_Set_Schema::sanitize( $returning_set );
+if ( ! is_array( $sanitized ) || 'returning_visitor' !== $sanitized['rules'][0]['conditions'][0]['type'] ) {
+	rwgc_test_fail( 'Sanitize should keep returning_visitor when Pro is off.' );
 }
 
 fwrite( STDOUT, "OK: RWGC_Rule_Evaluator CLI tests passed.\n" );

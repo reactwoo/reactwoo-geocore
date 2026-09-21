@@ -71,6 +71,11 @@ This document captures the agreed architecture and sprint order for introducing 
 - Replace direct request param reads in analytics provider with attribution context service.
 - Add extensibility hook for future Pro/Cloud integrations:
   - `rwgc_context_attribution`
+- **Returning visitor conditions (Geo Core 1.8.164):**
+  - First visit is never returning, even with UTM on the request.
+  - Persist `rwgc_returning` on any allowed visit; prior `rwgc_ft` still counts as returning.
+  - Portable types `returning_visitor` / `new_visitor` evaluate in `RWGC_Rule_Evaluator`.
+  - Platform capability `visitor.returning` for Cloud manifests.
 
 ## Next Sprint 1 tasks after this start
 
