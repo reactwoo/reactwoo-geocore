@@ -102,6 +102,13 @@ rwgc_assert(
 	! file_exists( dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-widgets-config.php' ),
 	'widgets-config file stays removed'
 );
+rwgc_assert(
+	false === strpos(
+		(string) file_get_contents( dirname( __DIR__ ) . '/includes/class-rwgc-elementor.php' ),
+		'$heavy'
+	),
+	'document Geo Visibility does not keep the abandoned $heavy flag'
+);
 
 /* 3. Profiling is opt-in and transparent. */
 

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.166] - 2026-09-22
+
+### Fixed
+- Elementor builder: removed leftover `$heavy` from document Geo Visibility (undefined-variable warnings could break `elementor_ajax` JSON and leave widgets spinning). Widget Geo Visibility visitor preview is memoized once per request.
+
 ## [1.8.165] - 2026-09-21
 
 ### Fixed

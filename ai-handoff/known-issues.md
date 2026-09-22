@@ -161,6 +161,35 @@ removing another plugin's registered callbacks; finishing an Elementor request e
 synthesising `tabs_controls` or hydrating the inspector ourselves; registering stub widgets
 in place of real ones.**
 
+**New evidence (20 Aug 2026):** Production `plugins_api()` WordPress.org TLS failures at 20s intervals, plus WP Activity Log WooCommerce sensor `doing_it_wrong` on `WC_Product_Variable_Subscription`. See **Outbound WordPress.org stalls + WP Activity Log / Subscriptions**. Neither stack includes ReactWoo. Do not treat this as a reason to revive Elementor interception.
+
+---
+
+### Outbound WordPress.org stalls + WP Activity Log / Subscriptions
+
+**Symptoms:** Production 503 on Elementor editor (LiteSpeed worker exhaustion, previously proven). New logs: `plugins_api(): WordPress could not establish a secure connection to WordPress.org` at 20-Aug-2026 07:40:21/41, 07:41:01/21 UTC. Repeated `ID was called incorrectly` from WSAL WooCommerce sensor on `WC_Product_Variable_Subscription::__get`, plus PHP 8.2 dynamic properties `$post_title` / `$post_status`.
+
+**Tried:** Source read of core `plugins_api()` (15s HTTPS timeout + HTTP fallback); Melapress `check_wc_ajax_change_events` / `check_variations_change`; Local WP-CLI on `reactwoo.local` (WP 7.0.4, PHP 8.2.27). Production SSH `reactwoo@reactwoo.com` still `Permission denied (publickey)` — production plugin list not collected.
+
+**Likely causes:**
+1. Sequential `plugins_api()` calls blocking an lsphp worker ~15–30s each while Elementor already occupies several 5–8s workers.
+2. WSAL treats a variable subscription product as a `WP_Post` (`$product->post_title = …`) during `woocommerce_save_variations` AJAX only — compatibility bug, not the Elementor widgets-config path.
+3. ReactWoo `filter_plugins_api` does not short-circuit WordPress.org slugs; it is not in either backtrace.
+
+**Do not retry:** Patching ReactWoo for WSAL/Subscriptions; Elementor registrar unhooking; blaming Geo country option payload size (already ruled out).
+
+---
+
+### Elementor builder spinner after returning-visitor release
+
+**Symptoms:** Elements panel / canvas widgets stay in a loading state after Geo Core 1.8.164–1.8.165.
+
+**Tried:** Attributing it to returning-visitor cookies or MaxMind on builder load — those paths are request-memoized and not in `get_widgets_config`.
+
+**Likely causes:** Document Geo Visibility still referenced undefined `$heavy` (abandoned 1.8.150 heavy-AJAX flag). With `WP_DEBUG` display on, the warning HTML can corrupt `elementor_ajax` JSON.
+
+**Do not retry:** Replacing `get_widgets_config`; unhooking Unlimited Elements / ACPT / WHMCS; early `wp_die` on Elementor AJAX; country-list slimming as the primary fix.
+
 ---
 
 ### Cloud pairing posts to Google vault (`cloud.reactwoo.com/api/v1`)

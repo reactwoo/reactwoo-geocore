@@ -175,9 +175,11 @@ class RWGC_Elementor {
 				)
 			);
 
-			if ( class_exists( 'RWGC_Elementor_Elements', false ) ) {
+			if ( class_exists( 'RWGC_Elementor_Elements', false ) || class_exists( 'RWGC_Elementor_Options', false ) ) {
 				$library_options = array( '' => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ) );
-				if ( ! $heavy ) {
+				if ( class_exists( 'RWGC_Elementor_Options', false ) ) {
+					$library_options = RWGC_Elementor_Options::visibility_library_select();
+				} else {
 					$library_options = RWGC_Elementor_Elements::get_visibility_library_select_options();
 				}
 				$element->add_control(

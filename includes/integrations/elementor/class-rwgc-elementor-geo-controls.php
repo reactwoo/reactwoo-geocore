@@ -62,7 +62,9 @@ class RWGC_Elementor_Geo_Controls {
 	 * @return void
 	 */
 	public static function add_visitor_preview( $element ) {
-		$preview = self::build_visitor_preview_markup();
+		$preview = class_exists( 'RWGC_Elementor_Options', false )
+			? RWGC_Elementor_Options::visitor_preview( array( __CLASS__, 'build_visitor_preview_markup' ) )
+			: self::build_visitor_preview_markup();
 		if ( '' === $preview ) {
 			return;
 		}
