@@ -313,6 +313,33 @@ final class RWGC_Elementor_Experience_Slots {
 	}
 
 	/**
+	 * Whether Elementor geo targeting allows this slot container to print.
+	 *
+	 * Elementor fires `before_render` / `after_render` actions even when
+	 * `should_render` is false. Buffering then would replace the (empty)
+	 * default with Cloud variant HTML for a geo-hidden container.
+	 *
+	 * @param array<string, mixed> $settings Element settings.
+	 * @return bool
+	 */
+	public static function geo_allows_slot_render( array $settings ) {
+		if ( function_exists( 'rwgc_is_builder_edit_request' ) && rwgc_is_builder_edit_request() ) {
+			return true;
+		}
+		if ( ! class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
+			return true;
+		}
+		if ( ! RWGC_Targeting_Surface_Evaluator::is_surface_active( $settings ) ) {
+			return true;
+		}
+		if ( class_exists( 'RWGC_Elementor_Frontend', false ) ) {
+			return RWGC_Elementor_Frontend::settings_should_render( $settings );
+		}
+		$result = RWGC_Targeting_Surface_Evaluator::evaluate( $settings );
+		return ! empty( $result['should_render'] );
+	}
+
+	/**
 	 * @param \Elementor\Element_Base $element Element.
 	 * @return void
 	 */
@@ -326,6 +353,9 @@ final class RWGC_Elementor_Experience_Slots {
 
 		$settings = $element->get_settings_for_display();
 		if ( ! is_array( $settings ) || empty( $settings[ self::SETTING_ENABLE ] ) || 'yes' !== (string) $settings[ self::SETTING_ENABLE ] ) {
+			return;
+		}
+		if ( ! self::geo_allows_slot_render( $settings ) ) {
 			return;
 		}
 
