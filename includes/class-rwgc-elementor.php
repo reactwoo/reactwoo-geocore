@@ -36,8 +36,13 @@ class RWGC_Elementor {
 		add_action( 'elementor/element/wp-post/document_settings/after_section_end', array( __CLASS__, 'add_document_controls' ), 10, 2 );
 		add_action( 'elementor/element/popup/document_settings/after_section_end', array( __CLASS__, 'add_document_controls' ), 10, 2 );
 
-		// Enforce page-level visibility on frontend Elementor-rendered pages.
+		// Enforce page-level visibility on Elementor HTML and on public WP render
+		// paths that never fire elementor/frontend/the_content (REST, feeds, loops).
 		add_filter( 'elementor/frontend/the_content', array( __CLASS__, 'filter_document_content' ), 10, 1 );
+		add_filter( 'the_content', array( __CLASS__, 'filter_document_content' ), 12 );
+		add_filter( 'the_excerpt', array( __CLASS__, 'filter_document_content' ), 12 );
+		add_filter( 'rest_prepare_post', array( __CLASS__, 'filter_rest_response' ), 10, 3 );
+		add_filter( 'rest_prepare_page', array( __CLASS__, 'filter_rest_response' ), 10, 3 );
 	}
 
 	/**
@@ -350,7 +355,13 @@ class RWGC_Elementor {
 	/**
 	 * Filter Elementor document content by geo rules.
 	 *
-	 * @param string $content Elementor-rendered content.
+	 * Canonical singular HTML already used this hook. Public REST
+	 * `content.rendered`, RSS/Atom, and Query Loop / archive `the_content` still
+	 * exposed the saved Elementor HTML because the gate required is_singular()
+	 * and only listened to elementor/frontend/the_content. Editors loading REST
+	 * keep the HTML so the canvas is not blanked for the author's country.
+	 *
+	 * @param string $content Elementor-rendered or stored post content.
 	 * @return string
 	 */
 	public static function filter_document_content( $content ) {
@@ -362,25 +373,127 @@ class RWGC_Elementor {
 			return $content;
 		}
 
-		if ( ! is_singular() ) {
+		$post_id = self::resolve_content_gate_post_id();
+		if ( $post_id <= 0 || self::editor_rest_bypasses_document_geo( $post_id ) ) {
 			return $content;
 		}
 
-		$post_id = get_queried_object_id();
 		if ( function_exists( 'rwgc_is_builder_edit_request' ) && rwgc_is_builder_edit_request( $post_id ) ) {
 			return $content;
 		}
 
-		if ( ! $post_id ) {
-			return $content;
+		return self::document_geo_allows_content( $post_id ) ? $content : '';
+	}
+
+	/**
+	 * Empty rendered REST fields for anonymous/public consumers.
+	 *
+	 * @param mixed $response REST response.
+	 * @param mixed $post     Post object.
+	 * @param mixed $request  REST request (unused).
+	 * @return mixed
+	 */
+	public static function filter_rest_response( $response, $post, $request = null ) {
+		unset( $request );
+		$post_id = 0;
+		if ( is_object( $post ) && isset( $post->ID ) ) {
+			$post_id = absint( $post->ID );
+		} elseif ( is_array( $post ) && isset( $post['ID'] ) ) {
+			$post_id = absint( $post['ID'] );
+		}
+		if ( $post_id <= 0 || self::editor_rest_bypasses_document_geo( $post_id ) ) {
+			return $response;
+		}
+		if ( self::document_geo_allows_content( $post_id ) ) {
+			return $response;
+		}
+		if ( ! is_object( $response ) || ! method_exists( $response, 'get_data' ) || ! method_exists( $response, 'set_data' ) ) {
+			return $response;
+		}
+		$data = $response->get_data();
+		if ( ! is_array( $data ) ) {
+			return $response;
+		}
+		if ( isset( $data['content'] ) && is_array( $data['content'] ) ) {
+			$data['content']['rendered'] = '';
+		}
+		if ( isset( $data['excerpt'] ) && is_array( $data['excerpt'] ) ) {
+			$data['excerpt']['rendered'] = '';
+		}
+		$response->set_data( $data );
+		return $response;
+	}
+
+	/**
+	 * @param int $post_id Post ID.
+	 * @return bool True when geo is inactive or the visitor may see the document.
+	 */
+	public static function document_geo_allows_content( $post_id ) {
+		$post_id = absint( $post_id );
+		if ( $post_id <= 0 ) {
+			return true;
 		}
 
+		$eval_settings = self::document_eval_settings( $post_id );
+		if ( empty( $eval_settings ) ) {
+			return true;
+		}
+
+		if ( ! class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) || ! RWGC_Targeting_Surface_Evaluator::is_surface_active( $eval_settings ) ) {
+			return true;
+		}
+
+		if ( class_exists( 'RWGC_Elementor_Frontend', false ) ) {
+			return RWGC_Elementor_Frontend::settings_should_render( $eval_settings );
+		}
+
+		$selected = array();
+		if ( isset( $eval_settings['egp_countries'] ) && is_array( $eval_settings['egp_countries'] ) ) {
+			$selected = array_map( 'strtoupper', array_map( 'sanitize_text_field', $eval_settings['egp_countries'] ) );
+		}
+		if ( empty( $selected ) ) {
+			return true;
+		}
+
+		$mode    = isset( $eval_settings['rwgc_visibility_mode'] ) ? (string) $eval_settings['rwgc_visibility_mode'] : 'show_if';
+		$country = function_exists( 'rwgc_get_visitor_country' ) ? strtoupper( (string) rwgc_get_visitor_country() ) : '';
+
+		if ( '' === $country ) {
+			return true;
+		}
+
+		$match = in_array( $country, $selected, true );
+		if ( function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
+			return rwgc_visibility_mode_allows_render( $mode, $match );
+		}
+		return $match;
+	}
+
+	/**
+	 * Block editor / REST still needs full HTML for users who can edit.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public static function editor_rest_bypasses_document_geo( $post_id ) {
+		$post_id = absint( $post_id );
+		if ( $post_id <= 0 || ! self::is_rest_request() ) {
+			return false;
+		}
+		return function_exists( 'current_user_can' ) && current_user_can( 'edit_post', $post_id );
+	}
+
+	/**
+	 * @param int $post_id Post ID.
+	 * @return array<string, mixed>
+	 */
+	private static function document_eval_settings( $post_id ) {
 		$settings = get_post_meta( $post_id, '_elementor_page_settings', true );
 		if ( ! is_array( $settings ) ) {
-			return $content;
+			return array();
 		}
 
-		$eval_settings = array(
+		return array(
 			'egp_enable_geo_targeting'         => isset( $settings['egp_enable_geo_targeting'] ) ? (string) $settings['egp_enable_geo_targeting'] : '',
 			'egp_geo_enabled'                 => isset( $settings['egp_geo_enabled'] ) ? (string) $settings['egp_geo_enabled'] : '',
 			'rwgc_enable_visibility_rules'    => isset( $settings['rwgc_enable_visibility_rules'] ) ? (string) $settings['rwgc_enable_visibility_rules'] : '',
@@ -395,35 +508,30 @@ class RWGC_Elementor {
 			'rwgc_visibility_rules_mode'      => isset( $settings['rwgc_visibility_rules_mode'] ) ? (string) $settings['rwgc_visibility_rules_mode'] : ( isset( $settings['rwgc_visibility_mode'] ) ? (string) $settings['rwgc_visibility_mode'] : 'show_if' ),
 			'rwgc_visibility_mode'            => isset( $settings['rwgc_visibility_mode'] ) ? (string) $settings['rwgc_visibility_mode'] : 'show_if',
 		);
+	}
 
-		if ( ! class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) || ! RWGC_Targeting_Surface_Evaluator::is_surface_active( $eval_settings ) ) {
-			return $content;
+	/**
+	 * @return int
+	 */
+	private static function resolve_content_gate_post_id() {
+		$post_id = function_exists( 'get_the_ID' ) ? absint( get_the_ID() ) : 0;
+		if ( $post_id > 0 ) {
+			return $post_id;
 		}
+		if ( function_exists( 'is_singular' ) && is_singular() && function_exists( 'get_queried_object_id' ) ) {
+			return absint( get_queried_object_id() );
+		}
+		return 0;
+	}
 
-		if ( class_exists( 'RWGC_Elementor_Frontend', false ) ) {
-			return RWGC_Elementor_Frontend::settings_should_render( $eval_settings ) ? $content : '';
+	/**
+	 * @return bool
+	 */
+	private static function is_rest_request() {
+		if ( function_exists( 'wp_is_serving_rest_request' ) && wp_is_serving_rest_request() ) {
+			return true;
 		}
-
-		$selected = array();
-		if ( isset( $settings['egp_countries'] ) && is_array( $settings['egp_countries'] ) ) {
-			$selected = array_map( 'strtoupper', array_map( 'sanitize_text_field', $settings['egp_countries'] ) );
-		}
-		if ( empty( $selected ) ) {
-			return $content;
-		}
-
-		$mode    = isset( $settings['rwgc_visibility_mode'] ) ? (string) $settings['rwgc_visibility_mode'] : ( isset( $settings['rwgc_geo_mode'] ) ? (string) $settings['rwgc_geo_mode'] : 'show_if' );
-		$country = strtoupper( rwgc_get_visitor_country() );
-
-		if ( '' === $country ) {
-			return $content;
-		}
-
-		$match = in_array( $country, $selected, true );
-		if ( function_exists( 'rwgc_visibility_mode_allows_render' ) ) {
-			return rwgc_visibility_mode_allows_render( $mode, $match ) ? $content : '';
-		}
-		return $match ? $content : '';
+		return defined( 'REST_REQUEST' ) && REST_REQUEST;
 	}
 
 	/**
