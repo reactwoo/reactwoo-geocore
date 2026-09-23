@@ -313,6 +313,29 @@ final class RWGC_Elementor_Experience_Slots {
 	}
 
 	/**
+	 * Read a stored Slot ID for visitor render. Never registers or writes options.
+	 *
+	 * Identity generation belongs on editor save. Calling register() here would
+	 * rewrite `rwgc_experience_slots` on every page view (lost updates) and mint
+	 * a new orphan ID per request when a duplicated container still carries the
+	 * original Slot ID.
+	 *
+	 * @param array<string, mixed> $settings Element settings.
+	 * @return string Valid stored Slot ID, or empty.
+	 */
+	public static function frontend_slot_id( array $settings ) {
+		$enabled = isset( $settings[ self::SETTING_ENABLE ] ) && 'yes' === (string) $settings[ self::SETTING_ENABLE ];
+		if ( ! $enabled ) {
+			return '';
+		}
+		$slot_id = isset( $settings[ self::SETTING_ID ] ) ? trim( (string) $settings[ self::SETTING_ID ] ) : '';
+		if ( '' === $slot_id || ! RWGC_Experience_Slot_Id::is_valid( $slot_id ) ) {
+			return '';
+		}
+		return $slot_id;
+	}
+
+	/**
 	 * @param \Elementor\Element_Base $element Element.
 	 * @return void
 	 */
@@ -325,21 +348,16 @@ final class RWGC_Elementor_Experience_Slots {
 		}
 
 		$settings = $element->get_settings_for_display();
-		if ( ! is_array( $settings ) || empty( $settings[ self::SETTING_ENABLE ] ) || 'yes' !== (string) $settings[ self::SETTING_ENABLE ] ) {
+		if ( ! is_array( $settings ) ) {
 			return;
 		}
 
-		$element_id = method_exists( $element, 'get_id' ) ? (string) $element->get_id() : '';
-		$page       = self::page_reference_for_post( get_the_ID() );
-		$sync       = self::sync_settings( $settings, $element_id, $page );
-		$slot_id    = $sync['slot_id'];
+		$slot_id = self::frontend_slot_id( $settings );
 		if ( '' === $slot_id ) {
 			return;
 		}
 
-		if ( method_exists( $element, 'set_settings' ) ) {
-			$element->set_settings( $sync['settings'] );
-		}
+		$element_id = method_exists( $element, 'get_id' ) ? (string) $element->get_id() : '';
 
 		if ( method_exists( $element, 'add_render_attribute' ) ) {
 			$element->add_render_attribute(
@@ -350,7 +368,10 @@ final class RWGC_Elementor_Experience_Slots {
 					'class'                => 'reactwoo-experience-slot',
 				)
 			);
-			$mode = isset( $sync['settings'][ self::SETTING_MODE ] ) ? (string) $sync['settings'][ self::SETTING_MODE ] : 'local';
+			$mode = isset( $settings[ self::SETTING_MODE ] ) ? (string) $settings[ self::SETTING_MODE ] : 'local';
+			if ( ! in_array( $mode, array( 'local', 'managed' ), true ) ) {
+				$mode = 'local';
+			}
 			$element->add_render_attribute( '_wrapper', 'data-reactwoo-slot-mode', $mode );
 		}
 
