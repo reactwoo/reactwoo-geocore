@@ -114,6 +114,7 @@ final class RWGC_Cloud_Pairing {
 			array(
 				'state'           => RWGC_Cloud_Connection::STATE_CONNECTED,
 				'site_id'         => $site_id,
+				'site_url'        => function_exists( 'home_url' ) ? home_url( '/' ) : '',
 				'paired_at'       => gmdate( 'c' ),
 				'last_error'      => '',
 				'management_mode' => 'local',

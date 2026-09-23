@@ -219,6 +219,16 @@ rwgc_events_assert( 'purchase value kept', isset( $batch['value'] ) && 12.5 === 
 RWGC_Cloud_Event_Queue::reset();
 RWGC_Cloud_Event_Queue::enqueue( array( 'type' => 'goal.click', 'variant' => 'var_b' ) );
 RWGC_Cloud_Event_Queue::persist_buffer();
+unset( $GLOBALS['rwgc_cloud_mock']['last_batch'] );
+RWGC_Cloud_Connection::update( array( 'site_url' => 'https://reactwoo.com/' ) );
+$clone_flush = RWGC_Cloud_Event_Queue::flush();
+rwgc_events_assert( 'flush skipped on cloned site URL', 'skipped' === $clone_flush['status'] );
+rwgc_events_assert( 'clone flush did not POST events', empty( $GLOBALS['rwgc_cloud_mock']['last_batch'] ) );
+RWGC_Cloud_Connection::update( array( 'site_url' => '' ) );
+
+RWGC_Cloud_Event_Queue::reset();
+RWGC_Cloud_Event_Queue::enqueue( array( 'type' => 'goal.click', 'variant' => 'var_b' ) );
+RWGC_Cloud_Event_Queue::persist_buffer();
 $GLOBALS['rwgc_cloud_mock']['events_fail'] = true;
 $fail = RWGC_Cloud_Event_Queue::flush();
 rwgc_events_assert( 'failed flush keeps queue', ! $fail['ok'] && RWGC_Cloud_Event_Queue::size() >= 1 );

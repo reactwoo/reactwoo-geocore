@@ -380,6 +380,21 @@ rwgc_mig_assert( 'preview mode is local', 'local' === $preview['management_mode'
 $pair = reactwoo_cloud_pair( 'token-123' );
 rwgc_mig_assert( 'pair ok', $pair['ok'] );
 rwgc_mig_assert( 'pair leaves management_mode local', 'local' === RWGC_Cloud_Connection::get()['management_mode'] );
+rwgc_mig_assert( 'pair stores site_url', 'https://example.test/' === (string) RWGC_Cloud_Connection::get()['site_url'] );
+
+RWGC_Cloud_Connection::update( array( 'site_url' => 'https://reactwoo.com/' ) );
+rwgc_mig_assert( 'cloned URL is not connected', ! reactwoo_cloud_is_connected() );
+$blocked_import = reactwoo_cloud_import();
+rwgc_mig_assert( 'import blocked on site_url mismatch', ! $blocked_import['ok'] && 'not_connected' === $blocked_import['error'] );
+rwgc_mig_assert( 'import did not POST to Cloud', empty( $GLOBALS['rwgc_cloud_mock']['last_import'] ) );
+$blocked_switch = reactwoo_cloud_switch_management_mode( 'cloud' );
+rwgc_mig_assert( 'switch blocked on site_url mismatch', ! $blocked_switch['ok'] );
+
+RWGC_Cloud_Connection::update( array( 'site_url' => '' ) );
+rwgc_mig_assert( 'legacy pairing without site_url still connected', reactwoo_cloud_is_connected() );
+RWGC_Cloud_Connection::update( array( 'site_url' => 'https://www.example.test' ) );
+rwgc_mig_assert( 'www and scheme differences still match', reactwoo_cloud_is_connected() );
+RWGC_Cloud_Connection::update( array( 'site_url' => 'https://example.test/' ) );
 
 $too_soon = reactwoo_cloud_switch_management_mode( 'cloud' );
 rwgc_mig_assert( 'switch before import blocked', ! $too_soon['ok'] && 'import_required' === $too_soon['error'] );

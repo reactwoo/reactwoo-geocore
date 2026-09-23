@@ -132,6 +132,14 @@ final class RWGC_Cloud_Admin {
 					</p>
 					<?php submit_button( __( 'Connect', 'reactwoo-geocore' ) ); ?>
 				</form>
+				<?php if ( RWGC_Cloud_Credentials::has() ) : ?>
+					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+						<input type="hidden" name="action" value="rwgc_cloud_disconnect" />
+						<?php wp_nonce_field( 'rwgc_cloud_disconnect' ); ?>
+						<p class="description"><?php esc_html_e( 'Leftover Cloud credentials from another WordPress URL are stored on this site. Disconnect them before pairing, or they can change the original Cloud workspace.', 'reactwoo-geocore' ); ?></p>
+						<?php submit_button( __( 'Disconnect leftover credentials', 'reactwoo-geocore' ), 'delete', 'submit', false ); ?>
+					</form>
+				<?php endif; ?>
 			<?php else : ?>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;margin-right:8px;">
 					<input type="hidden" name="action" value="rwgc_cloud_sync" />

@@ -218,6 +218,19 @@ $managed = RWGC_Cloud_Health::evaluate(
 );
 rwgc_health_assert( 'cloud-managed without manifest is configuration error', 'configuration_error' === $managed['status'] );
 
+$clone = RWGC_Cloud_Health::evaluate(
+	array(
+		'connected'           => false,
+		'has_credentials'     => true,
+		'connection_state'    => 'connected',
+		'paired_site_matches' => false,
+		'last_error'          => '',
+		'now'                 => $now,
+	)
+);
+rwgc_health_assert( 'clone URL mismatch is configuration error', 'configuration_error' === $clone['status'] );
+rwgc_health_assert( 'clone mismatch code', 'site_url_mismatch' === $clone['issues'][0]['code'] );
+
 if ( $failed > 0 ) {
 	fwrite( STDERR, "\n$failed assertion(s) failed\n" );
 	exit( 1 );
