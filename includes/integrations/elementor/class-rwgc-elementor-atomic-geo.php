@@ -38,7 +38,10 @@ class RWGC_Elementor_Atomic_Geo {
 	}
 
 	/**
-	 * Elementor experiment gate (same as promotions module).
+	 * Elementor Atomic / Editor V4 gate.
+	 *
+	 * Elementor 4.2 keeps `e_atomic_elements` hidden and drives the suite from
+	 * `e_opt_in_v4`. Either flag, or Module::is_active(), means the builder is V4.
 	 *
 	 * @return bool
 	 */
@@ -52,7 +55,18 @@ class RWGC_Elementor_Atomic_Geo {
 			return false;
 		}
 
-		return (bool) $plugin->experiments->is_feature_active( 'e_atomic_elements' );
+		if ( $plugin->experiments->is_feature_active( 'e_atomic_elements' ) ) {
+			return true;
+		}
+
+		if ( class_exists( '\Elementor\Modules\AtomicWidgets\Module' )
+			&& method_exists( '\Elementor\Modules\AtomicWidgets\Module', 'is_active' )
+			&& \Elementor\Modules\AtomicWidgets\Module::is_active()
+		) {
+			return true;
+		}
+
+		return (bool) $plugin->experiments->is_feature_active( 'e_opt_in_v4' );
 	}
 
 	/**

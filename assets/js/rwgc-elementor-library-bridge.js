@@ -96,12 +96,18 @@
 		var on = $panel.find('.elementor-control-rwgc_enable_visibility_rules input[type="checkbox"]').is(':checked');
 		var $legacy = $panel.find('.elementor-control-rwgc_use_portable_geo_targeting input');
 		if ($legacy.length) {
-			$legacy.val(on ? 'yes' : '').trigger('input').trigger('change');
+			var next = on ? 'yes' : '';
+			if (String($legacy.val() || '') !== next) {
+				$legacy.val(next).trigger('input').trigger('change');
+			}
 		}
 	}
 
 	function rebuildLibrarySelect($select) {
 		if (!$select || !$select.length) {
+			return;
+		}
+		if ($select.attr('data-rwgc-library-built') === '1') {
 			return;
 		}
 		var current = String($select.val() || '');
@@ -163,6 +169,7 @@
 				persistAppliedRuleId($('#elementor-panel-inner'), '');
 			}
 		}
+		$select.attr('data-rwgc-library-built', '1');
 	}
 
 	function showCompatibilityNotice($panel, row) {
@@ -263,12 +270,24 @@
 
 	indexRows();
 
-	$(window).on('elementor:init', scan);
-	$(document).on('elementor:init', scan);
+	var scanTimer = null;
+	function scheduleScan() {
+		if (scanTimer) {
+			return;
+		}
+		scanTimer = setTimeout(function () {
+			scanTimer = null;
+			scan();
+		}, 80);
+	}
+
+	$(window).on('elementor:init', scheduleScan);
+	$(document).on('elementor:init', scheduleScan);
 
 	var root = document.getElementById('elementor-panel-inner');
 	if (root) {
-		new MutationObserver(scan).observe(root, { childList: true, subtree: true });
+		new MutationObserver(scheduleScan).observe(root, { childList: true, subtree: true });
 	}
-	setTimeout(scan, 400);
+	scheduleScan();
+	setTimeout(scheduleScan, 400);
 })(jQuery);

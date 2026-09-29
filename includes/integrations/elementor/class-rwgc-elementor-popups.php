@@ -800,10 +800,12 @@ class RWGC_Elementor_Popups {
 
 		$rules = get_posts(
 			array(
-				'post_type'      => 'geo_rule',
-				'post_status'    => 'publish',
-				'posts_per_page' => -1,
-				'meta_query'     => array(
+				'post_type'              => 'geo_rule',
+				'post_status'            => 'publish',
+				'posts_per_page'         => -1,
+				'no_found_rows'          => true,
+				'update_post_term_cache' => false,
+				'meta_query'             => array(
 					array(
 						'key'   => self::META_PREFIX . 'target_type',
 						'value' => 'popup',
@@ -1110,10 +1112,12 @@ JS;
 		if ( post_type_exists( 'geo_rule' ) ) {
 			$rules = get_posts(
 				array(
-					'post_type'      => 'geo_rule',
-					'post_status'    => 'publish',
-					'posts_per_page' => 1,
-					'meta_query'     => array(
+					'post_type'              => 'geo_rule',
+					'post_status'            => 'publish',
+					'posts_per_page'         => 1,
+					'no_found_rows'          => true,
+					'update_post_term_cache' => false,
+					'meta_query'             => array(
 						'relation' => 'AND',
 						array(
 							'key'   => self::META_PREFIX . 'target_type',
@@ -1275,10 +1279,12 @@ JS;
 
 		$popups = get_posts(
 			array(
-				'post_type'      => 'elementor_library',
-				'post_status'    => 'publish',
-				'posts_per_page' => -1,
-				'meta_query'     => array(
+				'post_type'              => 'elementor_library',
+				'post_status'            => 'publish',
+				'posts_per_page'         => -1,
+				'no_found_rows'          => true,
+				'update_post_term_cache' => false,
+				'meta_query'             => array(
 					array(
 						'key'   => '_elementor_template_type',
 						'value' => 'popup',
