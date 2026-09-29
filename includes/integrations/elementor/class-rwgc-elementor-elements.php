@@ -271,13 +271,9 @@ class RWGC_Elementor_Elements {
 	 * @return string
 	 */
 	public static function get_countries_select_html() {
-		$opts = self::get_country_options();
-		$html = '<div class="egp-countries-native"><label class="elementor-control-title">' . esc_html__( 'Target Countries', 'reactwoo-geocore' ) . '</label><div class="elementor-control-input-wrapper">';
-		$html .= '<select id="egp_countries_native" class="egp-country-select" multiple size="12" style="width:100%;max-width:100%;min-height:220px;">';
-		foreach ( $opts as $code => $name ) {
-			$html .= '<option value="' . esc_attr( $code ) . '">' . esc_html( $name ) . '</option>';
-		}
-		$html .= '</select><p class="description">' . esc_html__( 'Hold Ctrl/Cmd to select multiple countries. Included in GeoCore Free.', 'reactwoo-geocore' ) . '</p></div></div>';
+		$html  = '<div class="egp-countries-native"><label class="elementor-control-title">' . esc_html__( 'Target Countries', 'reactwoo-geocore' ) . '</label><div class="elementor-control-input-wrapper">';
+		$html .= '<select id="egp_countries_native" class="egp-country-select" multiple size="12" style="width:100%;max-width:100%;min-height:220px;"></select>';
+		$html .= '<p class="description">' . esc_html__( 'Hold Ctrl/Cmd to select multiple countries. Included in GeoCore Free.', 'reactwoo-geocore' ) . '</p></div></div>';
 		return $html;
 	}
 

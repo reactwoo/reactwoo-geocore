@@ -185,26 +185,26 @@
 		$notice.text(row.compatibility.reason).show();
 	}
 
-	function hydrateCountriesSelect($panel) {
+	function hydrateOneCountrySelect($select, multiple) {
 		var countries = cfg.countries || window.rwgcGeoCountryOptions || {};
 		var codes = Object.keys(countries);
-		if (!codes.length) {
+		if (!codes.length || !$select.length) {
 			return;
 		}
-		var $select = $panel.find('.elementor-control-egp_countries select');
-		if (!$select.length) {
-			return;
-		}
-		// Bulk get_widgets_config ships empty options; hydrate once from localised list.
+		// Controls ship empty options; fill once from the shared catalogue.
 		if ($select.find('option').length > 20) {
 			return;
 		}
 		var current = $select.val();
-		if (current == null) {
-			current = [];
-		}
-		if (!Array.isArray(current)) {
-			current = current ? [String(current)] : [];
+		if (multiple) {
+			if (current == null) {
+				current = [];
+			}
+			if (!Array.isArray(current)) {
+				current = current ? [String(current)] : [];
+			}
+		} else if (Array.isArray(current)) {
+			current = current[0] || '';
 		}
 		$select.empty();
 		codes.forEach(function (code) {
@@ -219,6 +219,12 @@
 			}
 		}
 		$select.trigger('change');
+	}
+
+	function hydrateCountriesSelect($panel) {
+		hydrateOneCountrySelect($panel.find('.elementor-control-egp_countries select'), true);
+		hydrateOneCountrySelect($panel.find('.elementor-control-rwgc_route_country_iso2 select'), false);
+		hydrateOneCountrySelect($panel.find('.egp-country-select'), true);
 	}
 
 	function bindLibrarySelect($panel) {

@@ -181,4 +181,16 @@ rwgc_assert(
 	'abilities stay inert without the WordPress Abilities API'
 );
 
+/* 6. Country catalogues are not copied into each control. */
+
+$atomic_geo = (string) file_get_contents( dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-atomic-geo.php' );
+$geo_controls = (string) file_get_contents( dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-geo-controls.php' );
+$documents = (string) file_get_contents( dirname( __DIR__ ) . '/includes/class-rwgc-elementor.php' );
+$catalogue = (string) file_get_contents( dirname( __DIR__ ) . '/includes/integrations/elementor/class-rwgc-elementor-country-catalogue.php' );
+rwgc_assert( false === strpos( $atomic_geo, 'get_country_chip_options' ), 'Atomic chips do not inline country options' );
+rwgc_assert( false !== strpos( $atomic_geo, "'rwgcCatalogue' => 'countries'" ), 'Atomic chips point at the shared catalogue' );
+rwgc_assert( false === strpos( $geo_controls, 'self::get_country_options()' ), 'classic country select does not inline options' );
+rwgc_assert( false === strpos( $documents, 'self::get_country_options()' ), 'document country selects do not inline options' );
+rwgc_assert( false !== strpos( $catalogue, 'rwgcShared' ), 'editor config carries one country catalogue' );
+
 exit( $fails > 0 ? 1 : 0 );

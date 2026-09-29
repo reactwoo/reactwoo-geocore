@@ -119,7 +119,7 @@ class RWGC_Elementor {
 				'type'        => \Elementor\Controls_Manager::SELECT2,
 				'multiple'    => true,
 				'label_block' => true,
-				'options'     => self::get_country_options(),
+				'options'     => array(),
 				'description' => __( 'Search and pick countries. Leave empty for all countries.', 'reactwoo-geocore' ),
 				'condition'   => array(
 					'egp_enable_geo_targeting' => 'yes',
@@ -295,7 +295,7 @@ class RWGC_Elementor {
 				'type'        => \Elementor\Controls_Manager::SELECT2,
 				'multiple'    => false,
 				'label_block' => true,
-				'options'     => self::get_country_options(),
+				'options'     => array(),
 				'condition'   => array(
 					'rwgc_route_enabled'       => 'yes',
 					'rwgc_route_role'          => 'variant',
@@ -463,21 +463,6 @@ class RWGC_Elementor {
 		if ( class_exists( 'RWGC_Elementor_Elements', false ) ) {
 			RWGC_Elementor_Elements::enqueue_visibility_library_bridge();
 		}
-	}
-
-	/**
-	 * Country options for controls.
-	 *
-	 * @return array
-	 */
-	private static function get_country_options() {
-		if ( class_exists( 'RWGC_Elementor_Options', false ) ) {
-			return RWGC_Elementor_Options::countries();
-		}
-		if ( class_exists( 'RWGC_Elementor_Geo_Controls', false ) ) {
-			return RWGC_Elementor_Geo_Controls::get_country_options();
-		}
-		return class_exists( 'RWGC_Countries', false ) ? RWGC_Countries::get_options() : array();
 	}
 
 	/**

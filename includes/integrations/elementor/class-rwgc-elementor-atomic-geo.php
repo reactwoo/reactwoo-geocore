@@ -252,8 +252,13 @@ class RWGC_Elementor_Atomic_Geo {
 				),
 			$chips::bind_to( 'egp_countries' )
 				->set_label( __( 'Countries', 'reactwoo-geocore' ) )
-				->set_options( self::get_country_chip_options() )
+				->set_options( array() )
 				->set_free_chips( false )
+				->set_meta(
+					array(
+						'rwgcCatalogue' => 'countries',
+					)
+				)
 				->set_description( __( 'Search and pick countries. Leave empty for all countries.', 'reactwoo-geocore' ) ),
 		);
 
@@ -301,40 +306,6 @@ class RWGC_Elementor_Atomic_Geo {
 				->set_options( self::get_library_select_options_for_atomic() )
 				->set_description( __( 'Portable library rules only (Targeting → Visibility rules).', 'reactwoo-geocore' ) ),
 		);
-	}
-
-	/**
-	 * Canonical country list as Atomic chips { value, label } rows.
-	 *
-	 * @return array<int, array{value: string, label: string}>
-	 */
-	private static function get_country_chip_options() {
-		if ( class_exists( 'RWGC_Elementor_Options', false ) ) {
-			return RWGC_Elementor_Options::country_chips();
-		}
-
-		static $rows = null;
-		if ( null !== $rows ) {
-			return $rows;
-		}
-
-		$options = array();
-		if ( class_exists( 'RWGC_Countries', false ) ) {
-			$list    = RWGC_Countries::get_options();
-			$options = is_array( $list ) ? $list : array();
-		} elseif ( class_exists( 'RWGC_Elementor_Elements', false ) ) {
-			$options = RWGC_Elementor_Elements::get_country_options();
-		}
-
-		$rows = array();
-		foreach ( $options as $value => $label ) {
-			$rows[] = array(
-				'value' => (string) $value,
-				'label' => (string) $label,
-			);
-		}
-
-		return $rows;
 	}
 
 	/**

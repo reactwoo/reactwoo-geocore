@@ -153,7 +153,7 @@ class RWGC_Elementor_Geo_Controls {
 				'type'        => \Elementor\Controls_Manager::SELECT2,
 				'multiple'    => true,
 				'label_block' => true,
-				'options'     => self::get_country_options(),
+				'options'     => array(),
 				'description' => __( 'Search and pick countries (same as page and popup settings). Leave empty for all countries.', 'reactwoo-geocore' ),
 				'condition'   => array(
 					'egp_enable_geo_targeting' => 'yes',
