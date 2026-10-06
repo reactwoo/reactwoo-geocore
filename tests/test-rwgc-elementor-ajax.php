@@ -193,4 +193,15 @@ rwgc_assert( false === strpos( $geo_controls, 'self::get_country_options()' ), '
 rwgc_assert( false === strpos( $documents, 'self::get_country_options()' ), 'document country selects do not inline options' );
 rwgc_assert( false !== strpos( $catalogue, 'rwgcShared' ), 'editor config carries one country catalogue' );
 
+$bridge = (string) file_get_contents( dirname( __DIR__ ) . '/assets/js/rwgc-elementor-library-bridge.js' );
+$hydrate_at = strpos( $bridge, 'function hydrateOneCountrySelect' );
+$bind_at    = strpos( $bridge, 'function hydrateCountriesSelect' );
+rwgc_assert( false !== $hydrate_at && false !== $bind_at && $bind_at > $hydrate_at, 'country hydrate function is present' );
+$hydrate_body = substr( $bridge, $hydrate_at, $bind_at - $hydrate_at );
+rwgc_assert( false === strpos( $hydrate_body, ".trigger('change')" ), 'country hydrate does not write the Elementor model' );
+rwgc_assert( false === strpos( $hydrate_body, '.trigger("change")' ), 'country hydrate does not write the Elementor model (double quotes)' );
+rwgc_assert( false !== strpos( $hydrate_body, "trigger('change.select2')" ), 'country hydrate refreshes select2 without a model write' );
+rwgc_assert( false !== strpos( $hydrate_body, 'readSavedCountryValue' ), 'country hydrate restores the saved model value' );
+rwgc_assert( false !== strpos( $bridge, 'addWidgetsCache' ), 'country catalogue is applied to widget config after Elementor loads it' );
+
 exit( $fails > 0 ? 1 : 0 );

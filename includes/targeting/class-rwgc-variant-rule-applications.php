@@ -342,6 +342,22 @@ class RWGC_Variant_Rule_Applications {
 			return true;
 		}
 
+		if ( function_exists( 'get_post' ) ) {
+			$post = get_post( $rule_id );
+			if ( ! $post ) {
+				return false;
+			}
+			$status = isset( $post->post_status ) ? (string) $post->post_status : '';
+			if ( '' !== $status && 'publish' !== $status ) {
+				return false;
+			}
+			if ( isset( $post->post_type )
+				&& class_exists( 'RWGC_Visibility_Rule_CPT', false )
+				&& RWGC_Visibility_Rule_CPT::POST_TYPE !== (string) $post->post_type ) {
+				return false;
+			}
+		}
+
 		$lifecycle = sanitize_key( (string) get_post_meta( $rule_id, self::META_LIFECYCLE, true ) );
 		if ( in_array( $lifecycle, array( 'archived', 'disabled' ), true ) ) {
 			return false;
@@ -364,6 +380,21 @@ class RWGC_Variant_Rule_Applications {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Whether a library row was created for a page variant (fail-closed when inactive).
+	 *
+	 * @param int $rule_id Visibility rule post ID.
+	 * @return bool
+	 */
+	public static function is_page_variant_rule( $rule_id ) {
+		$rule_id = absint( $rule_id );
+		if ( $rule_id <= 0 ) {
+			return false;
+		}
+		$source_type = sanitize_key( (string) get_post_meta( $rule_id, self::META_SOURCE_TYPE, true ) );
+		return 'page_variant' === $source_type;
 	}
 
 	/**

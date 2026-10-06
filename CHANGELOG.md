@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.168] - 2026-10-06
+
+### Fixed
+- Elementor: filling the shared country catalogue no longer wipes countries already saved on a control when the editor updates (saved model value is restored; the catalogue fill does not write an empty SELECT2 change).
+- GeoIP: client forwarding headers (`X-Forwarded-For`, `CF-Connecting-IP`, `Client-IP`, and similar) are no longer trusted on their own. `CF-Connecting-IP` is used only when the TCP peer is a published Cloudflare range. A private or reserved peer may contribute only the rightmost public forwarding hop. Filter: `rwgc_visitor_ip`.
+- LiteSpeed: cache vary groups come from the server-resolved country and page version. Forged `rwgc_cc` / `rwgc_pv` cookies are overwritten and are not registered as vary cookies.
+- Visibility rules: looking up a missing, draft, trashed, or deleted library rule no longer recurses until the visitor page fatals. Those rules never match, so “show only if” content stays hidden, “hide if” content stays visible, and an inactive page-variant rule reports `variant_rule_inactive` so the page can fall back to the default.
+- Elementor: an unauthenticated `?elementor-preview` request no longer bypasses document geo rules. The preview bypass requires a logged-in user who can edit the document.
+
+## [1.8.167] - 2026-09-29
+
+### Fixed
+- Elementor: ship the country catalogue once and fill classic and Atomic country controls from that shared list.
+- Elementor V4: keep Geo Visibility selects responsive when Atomic widgets are active.
+
 ## [1.8.166] - 2026-09-22
 
 ### Fixed

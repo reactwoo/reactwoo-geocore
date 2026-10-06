@@ -53,3 +53,15 @@ jobs:
       - name: CLI rule condition regression
         if: steps.wip.outputs.skip != 'true'
         run: composer test:rules
+
+      - name: CLI library rule lookup
+        if: steps.wip.outputs.skip != 'true'
+        run: composer test:library-rule-lookup
+
+      - name: CLI GeoIP forwarding-header regression
+        if: steps.wip.outputs.skip != 'true'
+        run: composer test:geoip-ip
+
+      - name: CLI Elementor preview bypass regression
+        if: steps.wip.outputs.skip != 'true'
+        run: composer test:elementor-preview-bypass

@@ -57,17 +57,16 @@ class RWGC_Visibility_Rule_Repository {
 	}
 
 	/**
+	 * Read a portable rule set from post meta only.
+	 *
+	 * Do not call {@see RWGC_Rule_Registry::get_rule_set_by_id()} here: the registry
+	 * falls back to this method on cache miss (picker cap, trash, or deleted posts),
+	 * and the two-way call recurses until PHP fatals on the visitor path.
+	 *
 	 * @param int $post_id Post ID.
 	 * @return array<string, mixed>|null Sanitized portable rule set.
 	 */
 	public static function get_rule_set( $post_id ) {
-		if ( class_exists( 'RWGC_Rule_Registry', false ) ) {
-			$from_registry = RWGC_Rule_Registry::get_rule_set_by_id( $post_id );
-			if ( is_array( $from_registry ) ) {
-				return $from_registry;
-			}
-		}
-
 		$post_id = absint( $post_id );
 		if ( $post_id <= 0 ) {
 			return null;

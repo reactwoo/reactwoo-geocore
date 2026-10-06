@@ -224,9 +224,10 @@ class RWGC_Targeting_Surface_Evaluator {
 		}
 
 		if ( $visibility_on ) {
-			$set             = null;
-			$portable_match  = true;
-			$library_rule_id = 0;
+			$set                    = null;
+			$portable_match         = true;
+			$empty_visibility_rules = false;
+			$library_rule_id        = 0;
 			if ( ! empty( $settings['rwgc_visibility_rule_library'] ) ) {
 				$library_rule_id = absint( $settings['rwgc_visibility_rule_library'] );
 			} elseif ( ! empty( $settings['rwgc_applied_visibility_rule_id'] ) ) {
@@ -234,16 +235,22 @@ class RWGC_Targeting_Surface_Evaluator {
 			}
 			if ( $library_rule_id > 0 && class_exists( 'RWGC_Variant_Rule_Applications', false )
 				&& ! RWGC_Variant_Rule_Applications::is_rule_active_for_frontend( $library_rule_id ) ) {
+				$result['rule_source'] = 'library:' . (string) $library_rule_id;
+				// A missing, deleted, draft, trashed or archived library rule never matches
+				// (decision 2026-10-06): show_if content stays hidden, hide_if content stays
+				// visible. Page-variant rules keep their own reason so Suite can fall back to default.
 				$portable_match           = false;
 				$result['portable_match'] = false;
-				$result['rule_source']    = 'library:' . (string) $library_rule_id;
-				$result['reason']         = 'variant_rule_inactive';
+				$result['reason']         = RWGC_Variant_Rule_Applications::is_page_variant_rule( $library_rule_id )
+					? 'variant_rule_inactive'
+					: 'library_rule_inactive';
 				$rules_mode               = self::get_visibility_rules_mode( $settings, null );
+				$result['visibility_mode'] = $rules_mode;
 				$visibility_show          = function_exists( 'rwgc_visibility_mode_allows_render' )
 					? rwgc_visibility_mode_allows_render( $rules_mode, false )
 					: false;
 				$should_render            = $should_render && $visibility_show;
-				$result['rules_match']    = $country_on ? (bool) $result['country_match'] : false;
+				$result['rules_match']    = false;
 				$result['should_render']  = $should_render;
 				return $result;
 			}
@@ -260,9 +267,10 @@ class RWGC_Targeting_Surface_Evaluator {
 					$snapshot         = RWGC_Context_Resolver::resolve_current();
 					$portable_match   = RWGC_Rule_Evaluator::matches( $set, $snapshot );
 				}
-			} elseif ( self::uses_portable_rules( $settings ) || self::has_resolved_portable_config( $settings ) ) {
-				$portable_match = true;
-				$result['reason'] = 'visibility_rules_empty';
+			} else {
+				$portable_match         = false;
+				$empty_visibility_rules = true;
+				$result['reason']       = 'visibility_rules_empty';
 			}
 			$result['portable_match'] = $portable_match;
 			$rules_mode               = self::get_visibility_rules_mode( $settings, is_array( $set ) ? $set : null );
@@ -271,14 +279,16 @@ class RWGC_Targeting_Surface_Evaluator {
 				? rwgc_visibility_mode_allows_render( $rules_mode, $portable_match )
 				: $portable_match;
 			$should_render            = $should_render && $visibility_show;
-			$result['reason']         = $country_on ? 'country_and_visibility_rules' : 'visibility_rules';
+			if ( ! $empty_visibility_rules ) {
+				$result['reason'] = $country_on ? 'country_and_visibility_rules' : 'visibility_rules';
+			}
 		}
 
 		$rules_match = true;
 		if ( $country_on && ! empty( self::parse_countries( $settings ) ) ) {
 			$rules_match = $rules_match && $result['country_match'];
 		}
-		if ( $visibility_on && isset( $set ) && is_array( $set ) ) {
+		if ( $visibility_on ) {
 			$rules_match = $rules_match && $result['portable_match'];
 		}
 
