@@ -117,7 +117,9 @@ class RWGC_GeoIP {
 	 * a private/reserved reverse-proxy address, or a trusted public proxy.
 	 * Spoofed leftmost XFF values are ignored. A trusted proxy contributes the
 	 * rightmost public hop that is not itself a trusted proxy (QUIC.cloud's
-	 * header can end with the PoP address).
+	 * header can end with the PoP address). A private peer uses that same walk:
+	 * a local reverse proxy often leaves REMOTE_ADDR on a loopback address while
+	 * the QUIC.cloud PoP is still the last public hop.
 	 *
 	 * Trusted public proxies are off by default. Settings → “My site uses
 	 * QUIC.cloud CDN” trusts only QUIC.cloud's published edge list. Developers
@@ -164,7 +166,15 @@ class RWGC_GeoIP {
 
 		// Origin is on a private/reserved address (typical reverse proxy).
 		// Do not trust CF-Connecting-IP here — clients can send that header when
-		// the TCP peer is not Cloudflare. Use the rightmost public XFF hop.
+		// the TCP peer is not Cloudflare. Skip trusted proxy hops in X-Forwarded-For
+		// (QUIC.cloud appends its PoP) and use the visitor hop in front of them.
+		// If every public hop is a trusted proxy, keep the rightmost public address
+		// rather than the private REMOTE_ADDR.
+		$from_header = self::visitor_from_trusted_xff( $remote );
+		if ( '' !== $from_header ) {
+			return $from_header;
+		}
+
 		$xff = self::rightmost_public_ip( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ? (string) $_SERVER['HTTP_X_FORWARDED_FOR'] : '' );
 		if ( '' !== $xff ) {
 			return $xff;

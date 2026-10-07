@@ -201,7 +201,45 @@ rwgc_geoip_assert(
 		)
 	)
 );
+rwgc_geoip_assert(
+	'private origin with QUIC on skips the appended PoP',
+	$visitor === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => '127.0.0.1',
+			'HTTP_X_FORWARDED_FOR' => $spoof . ', ' . $visitor . ', ' . $quic_edge,
+			'HTTP_CLIENT_IP'       => $spoof,
+		)
+	)
+);
+rwgc_geoip_assert(
+	'private origin with QUIC on still uses a proxy-appended visitor',
+	'198.51.100.7' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => '10.0.0.2',
+			'HTTP_X_FORWARDED_FOR' => $spoof . ', 198.51.100.7',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'private origin falls back to the PoP when it is the only public hop',
+	$quic_edge === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => '127.0.0.1',
+			'HTTP_X_FORWARDED_FOR' => $quic_edge,
+		)
+	)
+);
 $GLOBALS['rwgc_test_quic'] = false;
+
+rwgc_geoip_assert(
+	'private origin without QUIC still uses the rightmost public hop',
+	$quic_edge === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => '127.0.0.1',
+			'HTTP_X_FORWARDED_FOR' => $visitor . ', ' . $quic_edge,
+		)
+	)
+);
 
 $GLOBALS['rwgc_test_trusted_cidrs'] = array( '198.51.100.0/24' );
 rwgc_geoip_assert(
@@ -219,6 +257,15 @@ rwgc_geoip_assert(
 		array(
 			'REMOTE_ADDR'          => $visitor,
 			'HTTP_X_FORWARDED_FOR' => $spoof,
+		)
+	)
+);
+rwgc_geoip_assert(
+	'private origin skips a trusted hop appended after the visitor',
+	'203.0.113.50' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => '10.0.0.2',
+			'HTTP_X_FORWARDED_FOR' => $spoof . ', 203.0.113.50, 198.51.100.8',
 		)
 	)
 );

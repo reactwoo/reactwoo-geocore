@@ -4,31 +4,20 @@
 done
 
 ## Task
-Prepare Geo Core 1.8.168 on a review PR (no tag, no merge). Port candidate fixes #69, #62, #55, #64, and the #16 preview bypass, plus the missing-rule semantics from #37.
+Critical-bug hunt on main after Geo Core 1.8.168 (`e5221ec`). Fix QUIC.cloud visitor IP when PHP’s TCP peer is a private reverse proxy.
 
 ## Files changed
-- Elementor country hydrate (`assets/js/rwgc-elementor-library-bridge.js`) so Update does not save an empty country list (#69)
-- `RWGC_GeoIP::get_current_ip()` ignores client forwarding headers unless the TCP peer is Cloudflare or a private proxy (#62)
-- LiteSpeed vary groups come from server-side country and page version, not client cookies (#55)
-- Library rule lookup no longer recurses; inactive rules never match (#64 + decision 2026-10-06, #37)
-- `filter_document_content()` no longer treats a bare `?elementor-preview` as an editor bypass (#16)
-- Version 1.8.168 in the plugin header, `RWGC_VERSION`, `readme.txt` stable tag, and changelogs (including the missing 1.8.167 CHANGELOG entry)
-- New/ported tests wired into `composer test:all` and the PHP ones into `.github/workflows/test.yml`
+- `includes/class-rwgc-geoip.php` — private/loopback `REMOTE_ADDR` now skips trusted-proxy hops in `X-Forwarded-For` (same walk as a public QUIC.cloud peer). If every public hop is a trusted proxy, the rightmost public hop is kept.
+- `tests/test-rwgc-geoip-ip.php` — private peer + QUIC PoP, unchanged rightmost behavior when the checkbox is off, and trusted-CIDR skip behind a private peer.
+- `CHANGELOG.md` — unreleased note. No version bump and no tag (`v1.8.168` is already on `e5221ec`).
 
 ## What was not changed
-- QUIC.cloud is an off-by-default checkbox. It trusts only QUIC.cloud’s published edge list (bundled snapshot plus a daily background refresh). `rwgc_trusted_proxy_cidrs` covers other CDNs. `rwgc_visitor_ip` still runs last
-- No editor warning when a block references a deleted rule
-- No git tag and no merge
-- Vendor autoload left as it was on main (Composer dev install is local only)
+- Cloudflare still uses `CF-Connecting-IP` only when `REMOTE_ADDR` is a published Cloudflare range.
+- Checkbox stays off by default. Public peers that are not trusted proxies still ignore forwarding headers.
+- No LiteSpeed, Elementor, or visibility-rule changes.
 
 ## Commands run
-- `composer install --prefer-dist --no-progress`
-- `vendor/bin/phpunit -c phpunit.xml.dist` — Tests: 97, Assertions: 366, Errors: 9, Failures: 7
-- Every other `composer test:*` script in `test:all` — all exit 0
+- `php tests/test-rwgc-geoip-ip.php` — all assertions passed (PHP 8.3.6).
 
 ## Remaining errors
-Pre-existing only:
-- 9 errors: `RWGC_ContextAttributionTest` “headers already sent”
-- 7 failures: `RWGCTargetingAssistantUiRegressionTest`
-
-New and ported tests passed. PHPUnit count went from 91 to 97 (4 cache-compat tests, 2 unresolved-rule tests).
+None in this test.
