@@ -24,6 +24,18 @@ $option_key = RWGC_Settings::OPTION_KEY;
 				</td>
 			</tr>
 			<tr>
+				<th scope="row"><?php esc_html_e( 'QUIC.cloud', 'reactwoo-geocore' ); ?></th>
+				<td>
+					<label>
+						<input type="checkbox" name="<?php echo esc_attr( $option_key ); ?>[quic_cloud_cdn]" value="1" <?php checked( (int) $settings['quic_cloud_cdn'], 1 ); ?> />
+						<?php esc_html_e( 'My site uses QUIC.cloud CDN', 'reactwoo-geocore' ); ?>
+					</label>
+					<p class="description">
+						<?php esc_html_e( 'Turn this on only if this site is served through QUIC.cloud. Geo Core then reads the visitor IP from the forwarding header when the connection comes from a QUIC.cloud server. A direct visitor still cannot change their country by sending that header.', 'reactwoo-geocore' ); ?>
+					</p>
+				</td>
+			</tr>
+			<tr>
 				<th scope="row"><?php esc_html_e( 'Cache results', 'reactwoo-geocore' ); ?></th>
 				<td>
 					<label>

@@ -136,6 +136,7 @@ class RWGC_Settings {
 		$out = $defaults;
 
 		$out['enabled']             = ! empty( $settings['enabled'] ) ? 1 : 0;
+		$out['quic_cloud_cdn']      = ! empty( $settings['quic_cloud_cdn'] ) ? 1 : 0;
 		$out['maxmind_account_id']  = isset( $settings['maxmind_account_id'] ) ? sanitize_text_field( $settings['maxmind_account_id'] ) : '';
 		$out['maxmind_license_key'] = isset( $settings['maxmind_license_key'] ) ? sanitize_text_field( $settings['maxmind_license_key'] ) : '';
 		$out['auto_update_db']      = ! empty( $settings['auto_update_db'] ) ? 1 : 0;
@@ -166,6 +167,7 @@ class RWGC_Settings {
 	public static function get_defaults() {
 		return array(
 			'enabled'             => 1,
+			'quic_cloud_cdn'      => 0,
 			'maxmind_account_id'  => '',
 			'maxmind_license_key' => '',
 			'auto_update_db'      => 1,

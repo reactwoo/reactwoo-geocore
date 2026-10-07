@@ -9,6 +9,33 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class RWGC_GeoIP {
 
+	const QUIC_REFRESH_HOOK = 'rwgc_refresh_quic_cloud_ips';
+
+	const QUIC_IPS_OPTION = 'rwgc_quic_cloud_ips';
+
+	const QUIC_IPS_URL = 'https://www.quic.cloud/ips-all?json';
+
+	/**
+	 * @var array<string, bool>|null
+	 */
+	private static $quic_lookup = null;
+
+	/**
+	 * @var array<int, string>|null
+	 */
+	private static $quic_ips = null;
+
+	/**
+	 * Schedule a background refresh of the QUIC.cloud edge list. Never fetches on a visitor render.
+	 *
+	 * @return void
+	 */
+	public static function init() {
+		add_action( self::QUIC_REFRESH_HOOK, array( __CLASS__, 'refresh_quic_cloud_ips' ) );
+		add_action( 'admin_init', array( __CLASS__, 'sync_quic_cloud_schedule' ) );
+		add_action( 'update_option_' . RWGC_Settings::OPTION_KEY, array( __CLASS__, 'sync_quic_cloud_schedule' ) );
+	}
+
 	/**
 	 * Resolve current visitor data.
 	 *
@@ -86,12 +113,16 @@ class RWGC_GeoIP {
 	 * Get current visitor IP (public address).
 	 *
 	 * Client-controlled forwarding headers (X-Forwarded-For, CF-Connecting-IP,
-	 * Client-IP, …) are not trusted unless the TCP peer is a Cloudflare edge
-	 * or a private/reserved reverse-proxy address. Spoofed leftmost XFF values
-	 * are ignored; a reverse proxy may contribute only the rightmost public hop.
-	 * A public peer that is not Cloudflare is used as-is, so a CDN in front of
-	 * the origin is geolocated instead of the visitor. Correct that with the
-	 * `rwgc_visitor_ip` filter until a trusted-proxy list exists.
+	 * Client-IP, …) are not trusted unless the TCP peer is a Cloudflare edge,
+	 * a private/reserved reverse-proxy address, or a trusted public proxy.
+	 * Spoofed leftmost XFF values are ignored. A trusted proxy contributes the
+	 * rightmost public hop that is not itself a trusted proxy (QUIC.cloud's
+	 * header can end with the PoP address).
+	 *
+	 * Trusted public proxies are off by default. Settings → “My site uses
+	 * QUIC.cloud CDN” trusts only QUIC.cloud's published edge list. Developers
+	 * can add other CDN ranges with the `rwgc_trusted_proxy_cidrs` filter.
+	 * `rwgc_visitor_ip` still runs last.
 	 *
 	 * @return string
 	 */
@@ -122,6 +153,12 @@ class RWGC_GeoIP {
 		}
 
 		if ( self::is_public_ip( $remote ) ) {
+			if ( self::peer_is_trusted_proxy( $remote ) ) {
+				$from_header = self::visitor_from_trusted_xff( $remote );
+				if ( '' !== $from_header ) {
+					return $from_header;
+				}
+			}
 			return $remote;
 		}
 
@@ -240,6 +277,335 @@ class RWGC_GeoIP {
 				return false;
 			}
 		}
+		return true;
+	}
+
+	/**
+	 * Whether the QUIC.cloud CDN setting is on.
+	 *
+	 * @return bool
+	 */
+	public static function quic_cloud_enabled() {
+		$enabled = false;
+		if ( class_exists( 'RWGC_Settings', false ) && function_exists( 'get_option' ) ) {
+			$enabled = (bool) RWGC_Settings::get( 'quic_cloud_cdn', 0 );
+		}
+		/**
+		 * Override the saved “My site uses QUIC.cloud CDN” checkbox.
+		 *
+		 * @param bool $enabled Saved setting, default false.
+		 */
+		return (bool) apply_filters( 'rwgc_quic_cloud_cdn_enabled', $enabled );
+	}
+
+	/**
+	 * Extra trusted proxy CIDRs or exact IPs for CDNs other than Cloudflare and QUIC.cloud.
+	 *
+	 * @return list<string>
+	 */
+	public static function trusted_proxy_cidrs() {
+		/**
+		 * Trusted reverse-proxy ranges. When REMOTE_ADDR matches, the visitor IP is
+		 * the rightmost public X-Forwarded-For hop that is not itself in this list.
+		 * Default is empty, so a public peer is never trusted from this filter alone.
+		 *
+		 * @param list<string> $cidrs CIDRs or exact IPs.
+		 */
+		$cidrs = apply_filters( 'rwgc_trusted_proxy_cidrs', array() );
+		if ( ! is_array( $cidrs ) ) {
+			return array();
+		}
+		$out = array();
+		foreach ( $cidrs as $cidr ) {
+			if ( ! is_string( $cidr ) ) {
+				continue;
+			}
+			$cidr = trim( $cidr );
+			if ( '' !== $cidr ) {
+				$out[] = $cidr;
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * @param string $remote REMOTE_ADDR.
+	 * @return bool
+	 */
+	private static function peer_is_trusted_proxy( $remote ) {
+		if ( self::quic_cloud_enabled() && self::is_quic_cloud_ip( $remote ) ) {
+			return true;
+		}
+		return self::ip_matches_proxy_list( $remote, self::trusted_proxy_cidrs() );
+	}
+
+	/**
+	 * Rightmost public X-Forwarded-For hop that is not the proxy itself.
+	 *
+	 * @param string $remote REMOTE_ADDR.
+	 * @return string Empty when the header has no usable visitor hop.
+	 */
+	private static function visitor_from_trusted_xff( $remote ) {
+		$header = isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ? (string) $_SERVER['HTTP_X_FORWARDED_FOR'] : '';
+		$ips    = self::public_ips_from_header( $header );
+		for ( $i = count( $ips ) - 1; $i >= 0; $i-- ) {
+			$hop = $ips[ $i ];
+			if ( self::ips_equal( $hop, $remote ) || self::peer_is_trusted_proxy( $hop ) ) {
+				continue;
+			}
+			return $hop;
+		}
+		return '';
+	}
+
+	/**
+	 * @param string            $ip    IP.
+	 * @param array<int,string> $cidrs CIDRs or exact IPs.
+	 * @return bool
+	 */
+	private static function ip_matches_proxy_list( $ip, array $cidrs ) {
+		foreach ( $cidrs as $cidr ) {
+			if ( false === strpos( $cidr, '/' ) ) {
+				if ( self::ips_equal( $ip, $cidr ) ) {
+					return true;
+				}
+				continue;
+			}
+			if ( self::ip_in_cidr( $ip, $cidr ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @param string $left  IP.
+	 * @param string $right IP.
+	 * @return bool
+	 */
+	private static function ips_equal( $left, $right ) {
+		$a = self::ip_lookup_key( $left );
+		$b = self::ip_lookup_key( $right );
+		return '' !== $a && $a === $b;
+	}
+
+	/**
+	 * Binary key so compressed and expanded IPv6 addresses match.
+	 *
+	 * @param string $ip IP.
+	 * @return string
+	 */
+	private static function ip_lookup_key( $ip ) {
+		$bin = inet_pton( trim( (string) $ip ) );
+		return false === $bin ? '' : $bin;
+	}
+
+	/**
+	 * Whether an address is a published QUIC.cloud edge.
+	 *
+	 * Uses the last successful refresh when one is stored, otherwise the list
+	 * bundled with this plugin. Does not fetch on the request that calls it.
+	 *
+	 * @param string $ip IP.
+	 * @return bool
+	 */
+	public static function is_quic_cloud_ip( $ip ) {
+		$key = self::ip_lookup_key( $ip );
+		if ( '' === $key ) {
+			return false;
+		}
+		$map = self::quic_cloud_lookup();
+		return isset( $map[ $key ] );
+	}
+
+	/**
+	 * @return array<string, bool>
+	 */
+	private static function quic_cloud_lookup() {
+		if ( null !== self::$quic_lookup ) {
+			return self::$quic_lookup;
+		}
+		$map = array();
+		foreach ( self::quic_cloud_ips() as $listed ) {
+			$key = self::ip_lookup_key( $listed );
+			if ( '' !== $key ) {
+				$map[ $key ] = true;
+			}
+		}
+		self::$quic_lookup = $map;
+		return $map;
+	}
+
+	/**
+	 * Edge addresses used for the QUIC.cloud setting.
+	 *
+	 * @return list<string>
+	 */
+	public static function quic_cloud_ips() {
+		if ( null !== self::$quic_ips ) {
+			return self::$quic_ips;
+		}
+		$cached = self::cached_quic_cloud_ips();
+		self::$quic_ips = ! empty( $cached ) ? $cached : self::bundled_quic_cloud_ips();
+		return self::$quic_ips;
+	}
+
+	/**
+	 * @return list<string>
+	 */
+	public static function bundled_quic_cloud_ips() {
+		$path = dirname( __FILE__ ) . '/data/quic-cloud-ips.json';
+		if ( ! is_readable( $path ) ) {
+			return array();
+		}
+		$decoded = json_decode( (string) file_get_contents( $path ), true );
+		return self::parse_quic_cloud_ip_payload( $decoded );
+	}
+
+	/**
+	 * Accept the published JSON array or the bundled `{ ips: [] }` document.
+	 *
+	 * @param mixed $decoded Decoded JSON.
+	 * @return list<string>
+	 */
+	public static function parse_quic_cloud_ip_payload( $decoded ) {
+		if ( ! is_array( $decoded ) ) {
+			return array();
+		}
+		if ( isset( $decoded['ips'] ) && is_array( $decoded['ips'] ) ) {
+			return self::normalize_ip_list( $decoded['ips'] );
+		}
+		$list = array();
+		foreach ( $decoded as $key => $value ) {
+			if ( is_int( $key ) && is_string( $value ) ) {
+				$list[] = $value;
+			}
+		}
+		return self::normalize_ip_list( $list );
+	}
+
+	/**
+	 * @param array<mixed> $ips Raw addresses.
+	 * @return list<string>
+	 */
+	private static function normalize_ip_list( array $ips ) {
+		$out  = array();
+		$seen = array();
+		foreach ( $ips as $ip ) {
+			if ( ! is_string( $ip ) ) {
+				continue;
+			}
+			$ip = trim( $ip );
+			if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+				continue;
+			}
+			$key = self::ip_lookup_key( $ip );
+			if ( '' === $key || isset( $seen[ $key ] ) ) {
+				continue;
+			}
+			$seen[ $key ] = true;
+			$out[]        = $ip;
+		}
+		return $out;
+	}
+
+	/**
+	 * @return list<string>
+	 */
+	private static function cached_quic_cloud_ips() {
+		if ( ! function_exists( 'get_option' ) ) {
+			return array();
+		}
+		$stored = get_option( self::QUIC_IPS_OPTION, array() );
+		if ( ! is_array( $stored ) || empty( $stored['ips'] ) || ! is_array( $stored['ips'] ) ) {
+			return array();
+		}
+		return self::normalize_ip_list( $stored['ips'] );
+	}
+
+	/**
+	 * Keep or clear the daily refresh. Runs from admin and after the setting is saved.
+	 *
+	 * @return void
+	 */
+	public static function sync_quic_cloud_schedule( $old = null, $new = null ) {
+		unset( $old, $new );
+		if ( ! function_exists( 'wp_next_scheduled' ) || ! function_exists( 'wp_schedule_event' ) ) {
+			return;
+		}
+		$scheduled = wp_next_scheduled( self::QUIC_REFRESH_HOOK );
+		if ( self::quic_cloud_enabled() ) {
+			if ( ! $scheduled ) {
+				wp_schedule_event( time() + 120, 'daily', self::QUIC_REFRESH_HOOK );
+			}
+			return;
+		}
+		while ( $scheduled ) {
+			wp_unschedule_event( $scheduled, self::QUIC_REFRESH_HOOK );
+			$scheduled = wp_next_scheduled( self::QUIC_REFRESH_HOOK );
+		}
+	}
+
+	/**
+	 * Replace the cached edge list from QUIC.cloud's published JSON.
+	 *
+	 * A failed or tiny response leaves the previous cache, and the request path
+	 * falls back to the bundled file. This does not run during visitor HTML.
+	 *
+	 * @return bool
+	 */
+	public static function refresh_quic_cloud_ips() {
+		if ( function_exists( 'wp_doing_cron' ) && ! wp_doing_cron() && function_exists( 'is_admin' ) && ! is_admin() ) {
+			return false;
+		}
+		if ( ! function_exists( 'wp_remote_get' ) || ! function_exists( 'update_option' ) ) {
+			return false;
+		}
+
+		$url = self::QUIC_IPS_URL;
+		/**
+		 * Source for the QUIC.cloud edge list. The published document is a JSON array of IPs.
+		 *
+		 * @param string $url Default https://www.quic.cloud/ips-all?json.
+		 */
+		$filtered = apply_filters( 'rwgc_quic_cloud_ip_list_url', $url );
+		if ( is_string( $filtered ) && '' !== $filtered ) {
+			$url = $filtered;
+		}
+
+		$response = wp_remote_get(
+			$url,
+			array(
+				'timeout' => 5,
+				'headers' => array(
+					'Accept' => 'application/json',
+				),
+			)
+		);
+		if ( is_wp_error( $response ) ) {
+			return false;
+		}
+		$code = function_exists( 'wp_remote_retrieve_response_code' ) ? (int) wp_remote_retrieve_response_code( $response ) : 0;
+		if ( 200 !== $code ) {
+			return false;
+		}
+		$body = function_exists( 'wp_remote_retrieve_body' ) ? (string) wp_remote_retrieve_body( $response ) : '';
+		$ips  = self::parse_quic_cloud_ip_payload( json_decode( $body, true ) );
+		// Refuse an empty or truncated body so a bad response cannot wipe a good cache.
+		if ( count( $ips ) < 10 ) {
+			return false;
+		}
+		update_option(
+			self::QUIC_IPS_OPTION,
+			array(
+				'ips'     => $ips,
+				'fetched' => time(),
+				'source'  => $url,
+			),
+			false
+		);
+		self::$quic_ips    = null;
+		self::$quic_lookup = null;
 		return true;
 	}
 

@@ -14,7 +14,16 @@ if ( ! function_exists( 'apply_filters' ) ) {
 	 * @return mixed
 	 */
 function apply_filters( $hook, $value, ...$args ) {
-	unset( $hook, $args );
+	unset( $args );
+	if ( 'rwgc_quic_cloud_cdn_enabled' === $hook ) {
+		return ! empty( $GLOBALS['rwgc_test_quic'] );
+	}
+	if ( 'rwgc_trusted_proxy_cidrs' === $hook && isset( $GLOBALS['rwgc_test_trusted_cidrs'] ) && is_array( $GLOBALS['rwgc_test_trusted_cidrs'] ) ) {
+		return $GLOBALS['rwgc_test_trusted_cidrs'];
+	}
+	if ( 'rwgc_visitor_ip' === $hook && isset( $GLOBALS['rwgc_test_visitor_ip'] ) ) {
+		return $GLOBALS['rwgc_test_visitor_ip'];
+	}
 	return $value;
 }
 }
@@ -123,6 +132,135 @@ rwgc_geoip_assert(
 		)
 	)
 );
+
+$quic_edge = '';
+foreach ( RWGC_GeoIP::bundled_quic_cloud_ips() as $candidate ) {
+	if ( is_string( $candidate ) && false === strpos( $candidate, ':' ) ) {
+		$quic_edge = $candidate;
+		break;
+	}
+}
+rwgc_geoip_assert( 'bundled QUIC.cloud list has an IPv4 edge', '' !== $quic_edge );
+rwgc_geoip_assert( 'bundled QUIC.cloud list is a real snapshot', count( RWGC_GeoIP::bundled_quic_cloud_ips() ) >= 10 );
+rwgc_geoip_assert( 'visitor address is not a QUIC.cloud edge', ! RWGC_GeoIP::is_quic_cloud_ip( $visitor ) );
+rwgc_geoip_assert( 'published edge matches the bundled list', RWGC_GeoIP::is_quic_cloud_ip( $quic_edge ) );
+$quic_v6 = '';
+foreach ( RWGC_GeoIP::bundled_quic_cloud_ips() as $candidate ) {
+	if ( is_string( $candidate ) && false !== strpos( $candidate, ':' ) ) {
+		$quic_v6 = $candidate;
+		break;
+	}
+}
+rwgc_geoip_assert( 'bundled QUIC.cloud list has an IPv6 edge', '' !== $quic_v6 && RWGC_GeoIP::is_quic_cloud_ip( $quic_v6 ) );
+rwgc_geoip_assert( 'refresh without HTTP does not replace the list', false === RWGC_GeoIP::refresh_quic_cloud_ips() );
+rwgc_geoip_assert( 'bad QUIC payload is ignored', array() === RWGC_GeoIP::parse_quic_cloud_ip_payload( 'nope' ) );
+rwgc_geoip_assert(
+	'json array payload parses',
+	array( '203.0.113.9' ) === RWGC_GeoIP::parse_quic_cloud_ip_payload( array( '203.0.113.9', 'not-an-ip' ) )
+);
+
+rwgc_geoip_assert(
+	'setting off ignores XFF from a QUIC.cloud peer',
+	$quic_edge === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => $quic_edge,
+			'HTTP_X_FORWARDED_FOR' => $spoof . ', ' . $visitor,
+			'HTTP_CLIENT_IP'       => $spoof,
+		)
+	)
+);
+
+$GLOBALS['rwgc_test_quic'] = true;
+rwgc_geoip_assert(
+	'setting on uses the visitor hop from a QUIC.cloud peer',
+	$visitor === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'           => $quic_edge,
+			'HTTP_X_FORWARDED_FOR'  => $spoof . ', ' . $visitor,
+			'HTTP_CF_CONNECTING_IP' => $spoof,
+			'HTTP_CLIENT_IP'        => $spoof,
+		)
+	)
+);
+rwgc_geoip_assert(
+	'setting on skips a QUIC.cloud hop appended after the visitor',
+	$visitor === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => $quic_edge,
+			'HTTP_X_FORWARDED_FOR' => $visitor . ', ' . $quic_edge,
+		)
+	)
+);
+rwgc_geoip_assert(
+	'setting on ignores XFF when the public peer is not QUIC.cloud',
+	$visitor === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'           => $visitor,
+			'HTTP_X_FORWARDED_FOR'  => $spoof,
+			'HTTP_CF_CONNECTING_IP' => $spoof,
+		)
+	)
+);
+$GLOBALS['rwgc_test_quic'] = false;
+
+$GLOBALS['rwgc_test_trusted_cidrs'] = array( '198.51.100.0/24' );
+rwgc_geoip_assert(
+	'trusted proxy filter uses the visitor hop',
+	'203.0.113.50' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => '198.51.100.8',
+			'HTTP_X_FORWARDED_FOR' => $spoof . ', 203.0.113.50',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'trusted proxy filter ignores a peer outside the range',
+	$visitor === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => $visitor,
+			'HTTP_X_FORWARDED_FOR' => $spoof,
+		)
+	)
+);
+$GLOBALS['rwgc_test_trusted_cidrs'] = null;
+
+$GLOBALS['rwgc_test_visitor_ip'] = '198.51.100.77';
+rwgc_geoip_assert(
+	'rwgc_visitor_ip filter still wins',
+	'198.51.100.77' === rwgc_geoip_resolve( array( 'REMOTE_ADDR' => $visitor ) )
+);
+unset( $GLOBALS['rwgc_test_visitor_ip'] );
+
+if ( ! defined( 'HOUR_IN_SECONDS' ) ) {
+	define( 'HOUR_IN_SECONDS', 3600 );
+}
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	/**
+	 * @param mixed $str Value.
+	 * @return string
+	 */
+	function sanitize_text_field( $str ) {
+		return is_scalar( $str ) ? (string) $str : '';
+	}
+}
+require_once dirname( __DIR__ ) . '/includes/class-rwgc-settings.php';
+$quic_defaults = RWGC_Settings::get_defaults();
+rwgc_geoip_assert( 'quic setting defaults off', isset( $quic_defaults['quic_cloud_cdn'] ) && 0 === (int) $quic_defaults['quic_cloud_cdn'] );
+$quic_on = RWGC_Settings::sanitize_settings(
+	array(
+		'enabled'        => '1',
+		'quic_cloud_cdn' => '1',
+	)
+);
+rwgc_geoip_assert( 'quic setting sanitizes on', 1 === (int) $quic_on['quic_cloud_cdn'] );
+$quic_again = RWGC_Settings::sanitize_settings( $quic_on );
+rwgc_geoip_assert( 'quic setting persists through sanitize', 1 === (int) $quic_again['quic_cloud_cdn'] );
+$quic_off = RWGC_Settings::sanitize_settings( array( 'enabled' => '1' ) );
+rwgc_geoip_assert( 'unchecked quic setting sanitizes off', 0 === (int) $quic_off['quic_cloud_cdn'] );
+
+$settings_page = (string) file_get_contents( dirname( __DIR__ ) . '/admin/views/settings-page.php' );
+rwgc_geoip_assert( 'settings screen labels the QUIC.cloud checkbox', false !== strpos( $settings_page, 'My site uses QUIC.cloud CDN' ) );
+rwgc_geoip_assert( 'settings screen saves quic_cloud_cdn', false !== strpos( $settings_page, '[quic_cloud_cdn]' ) );
 
 if ( $failed > 0 ) {
 	fwrite( STDERR, "\n$failed assertion(s) failed\n" );

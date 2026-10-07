@@ -16,7 +16,7 @@ Prepare Geo Core 1.8.168 on a review PR (no tag, no merge). Port candidate fixes
 - New/ported tests wired into `composer test:all` and the PHP ones into `.github/workflows/test.yml`
 
 ## What was not changed
-- No trusted-proxy allowlist (open question for the owner; `rwgc_visitor_ip` remains the escape hatch)
+- QUIC.cloud is an off-by-default checkbox. It trusts only QUIC.cloud’s published edge list (bundled snapshot plus a daily background refresh). `rwgc_trusted_proxy_cidrs` covers other CDNs. `rwgc_visitor_ip` still runs last
 - No editor warning when a block references a deleted rule
 - No git tag and no merge
 - Vendor autoload left as it was on main (Composer dev install is local only)

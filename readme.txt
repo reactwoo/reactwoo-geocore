@@ -82,6 +82,7 @@ No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (se
 = 1.8.168 =
 * Elementor: filling the shared country list no longer clears countries already saved on a control.
 * GeoIP: ignore client forwarding headers unless the connection is from Cloudflare or a private reverse proxy.
+* Settings: optional “My site uses QUIC.cloud CDN” checkbox. Off by default. When on, only a QUIC.cloud server connection uses the visitor IP from the forwarding header.
 * LiteSpeed: vary the page cache from the server-resolved country and page version, not from visitor cookies.
 * Visibility rules: a missing, draft, trashed, or deleted rule no longer crashes the page, and it never matches.
 * Elementor: a logged-out `?elementor-preview` link no longer skips document geo rules.

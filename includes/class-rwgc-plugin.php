@@ -216,6 +216,7 @@ class RWGC_Plugin {
 	private function register_services() {
 		// Settings and migration always available.
 		RWGC_Settings::init();
+		RWGC_GeoIP::init();
 		RWGC_Platform_Client::init();
 		RWGC_Migration::init();
 		RWGC_Country_Groups::init();

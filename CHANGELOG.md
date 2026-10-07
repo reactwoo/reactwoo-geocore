@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.8.168] - 2026-10-06
 
+### Added
+- Settings → Detection: **My site uses QUIC.cloud CDN** (off by default). When on, a connection from a published QUIC.cloud edge uses the visitor IP in `X-Forwarded-For`. Any other public connection still ignores forwarding headers. The edge list is the copy shipped with the plugin, replaced by a daily background refresh from `https://www.quic.cloud/ips-all?json` when that fetch succeeds. Filter `rwgc_trusted_proxy_cidrs` adds other CDN ranges. `rwgc_visitor_ip` still applies last.
+
 ### Fixed
 - Elementor: filling the shared country catalogue no longer wipes countries already saved on a control when the editor updates (saved model value is restored; the catalogue fill does not write an empty SELECT2 change).
 - GeoIP: client forwarding headers (`X-Forwarded-For`, `CF-Connecting-IP`, `Client-IP`, and similar) are no longer trusted on their own. `CF-Connecting-IP` is used only when the TCP peer is a published Cloudflare range. A private or reserved peer may contribute only the rightmost public forwarding hop. Filter: `rwgc_visitor_ip`.
