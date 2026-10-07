@@ -15,6 +15,8 @@ define( 'RWGC_VERSION', '0.0-test' );
 $GLOBALS['rwgc_status_posts']      = array();
 $GLOBALS['rwgc_status_meta']       = array();
 $GLOBALS['rwgc_status_post_calls'] = 0;
+$GLOBALS['rwgc_status_queries']    = array();
+$GLOBALS['rwgc_status_can_edit']   = array();
 
 if ( ! class_exists( 'WP_Post', false ) ) {
 	class WP_Post {
@@ -79,12 +81,37 @@ if ( ! function_exists( 'get_post_meta' ) ) {
 		return $GLOBALS['rwgc_status_meta'][ $id ][ $key ];
 	}
 }
+if ( ! function_exists( 'current_user_can' ) ) {
+	/**
+	 * @param string $cap  Capability.
+	 * @param mixed  ...$args Extra arguments.
+	 * @return bool
+	 */
+	function current_user_can( $cap, ...$args ) {
+		if ( 'edit_post' === $cap ) {
+			$id = isset( $args[0] ) ? (int) $args[0] : 0;
+			return ! empty( $GLOBALS['rwgc_status_can_edit'][ $id ] );
+		}
+		return false;
+	}
+}
 if ( ! function_exists( 'get_posts' ) ) {
+	/**
+	 * Honour post_type the way WordPress does: `any` (and a missing type) drops
+	 * types registered with exclude_from_search, including rwgc_visibility_rule.
+	 *
+	 * @param array<string, mixed> $args Query args.
+	 * @return array<int, WP_Post>
+	 */
 	function get_posts( $args = array() ) {
 		++$GLOBALS['rwgc_status_post_calls'];
+		$GLOBALS['rwgc_status_queries'][]  = $args;
 		$GLOBALS['rwgc_status_last_query'] = $args;
 		$wanted   = isset( $args['post__in'] ) ? array_map( 'intval', (array) $args['post__in'] ) : array();
 		$statuses = isset( $args['post_status'] ) ? (array) $args['post_status'] : array( 'publish' );
+		$type_arg = $args['post_type'] ?? '';
+		$types    = is_array( $type_arg ) ? $type_arg : array( (string) $type_arg );
+		$any      = in_array( 'any', $types, true ) || in_array( '', $types, true );
 		$out      = array();
 		foreach ( $wanted as $id ) {
 			if ( ! isset( $GLOBALS['rwgc_status_posts'][ $id ] ) ) {
@@ -92,6 +119,12 @@ if ( ! function_exists( 'get_posts' ) ) {
 			}
 			$post = $GLOBALS['rwgc_status_posts'][ $id ];
 			if ( ! in_array( (string) $post->post_status, $statuses, true ) ) {
+				continue;
+			}
+			if ( $any && RWGC_Visibility_Rule_CPT::POST_TYPE === (string) $post->post_type ) {
+				continue;
+			}
+			if ( ! $any && ! in_array( (string) $post->post_type, $types, true ) ) {
 				continue;
 			}
 			$out[] = $post;
@@ -189,28 +222,45 @@ $before = array(
 );
 
 $GLOBALS['rwgc_status_post_calls'] = 0;
+$GLOBALS['rwgc_status_queries']    = array();
 $rows = RWGC_Visibility_Rule_Editor_Status::lookup(
 	array( 501, '502', 503, 9999, 0, 'nope', 505, 506, 507, 508, 501 )
 );
 
-rwgc_status_assert( 'batch uses one get_posts query', 1 === $GLOBALS['rwgc_status_post_calls'] );
-$query_statuses = isset( $GLOBALS['rwgc_status_last_query']['post_status'] )
-	? (array) $GLOBALS['rwgc_status_last_query']['post_status']
-	: array();
-rwgc_status_assert( 'batch query includes trash', in_array( 'trash', $query_statuses, true ) );
-rwgc_status_assert( 'batch query includes draft', in_array( 'draft', $query_statuses, true ) );
+$rule_query = null;
+foreach ( $GLOBALS['rwgc_status_queries'] as $query ) {
+	$in = isset( $query['post__in'] ) ? array_map( 'intval', (array) $query['post__in'] ) : array();
+	if ( in_array( 501, $in, true ) ) {
+		$rule_query = $query;
+		break;
+	}
+}
+$rule_type = $rule_query['post_type'] ?? null;
+rwgc_status_assert( 'rule lookup query is present', is_array( $rule_query ) );
+rwgc_status_assert( 'rule lookup post_type is not any', 'any' !== $rule_type );
+rwgc_status_assert( 'rule lookup post_type is not missing', null !== $rule_type && '' !== $rule_type );
+rwgc_status_assert(
+	'rule lookup queries the visibility rule post type',
+	RWGC_Visibility_Rule_CPT::POST_TYPE === $rule_type
+);
+$query_statuses = isset( $rule_query['post_status'] ) ? (array) $rule_query['post_status'] : array();
+foreach ( array( 'publish', 'draft', 'pending', 'private', 'future', 'trash', 'auto-draft' ) as $needed_status ) {
+	rwgc_status_assert( 'rule lookup includes status ' . $needed_status, in_array( $needed_status, $query_statuses, true ) );
+}
 
 rwgc_status_assert( 'published status', isset( $rows[501]['status'] ) && 'published' === $rows[501]['status'] );
 rwgc_status_assert( 'published is resolvable', ! empty( $rows[501]['resolvable'] ) );
 rwgc_status_assert( 'published has no warning payload', empty( $rows[501]['messages'] ) );
-rwgc_status_assert( 'published keeps its title', 'Rule 501' === ( $rows[501]['title'] ?? '' ) );
+rwgc_status_assert( 'published rule returns its title', 'Rule 501' === ( $rows[501]['title'] ?? '' ) );
 
 rwgc_status_assert( 'draft status', isset( $rows[502]['status'] ) && 'draft' === $rows[502]['status'] );
 rwgc_status_assert( 'draft is not resolvable', empty( $rows[502]['resolvable'] ) );
+rwgc_status_assert( 'draft title is hidden without edit_post', '' === ( $rows[502]['title'] ?? 'x' ) );
 rwgc_status_assert(
-	'draft show-if warning names the rule and says content stays hidden',
+	'draft show-if warning uses the rule id and says content stays hidden',
 	isset( $rows[502]['messages']['show_if'] )
-		&& false !== strpos( $rows[502]['messages']['show_if'], "The rule 'Rule 502' was deleted or is unpublished." )
+		&& false !== strpos( $rows[502]['messages']['show_if'], 'The rule #502 was deleted or is unpublished.' )
+		&& false === strpos( $rows[502]['messages']['show_if'], 'Rule 502' )
 		&& false !== strpos( $rows[502]['messages']['show_if'], 'This content is now hidden for everyone.' )
 );
 rwgc_status_assert(
@@ -221,6 +271,8 @@ rwgc_status_assert(
 
 rwgc_status_assert( 'trashed status', isset( $rows[503]['status'] ) && 'trashed' === $rows[503]['status'] );
 rwgc_status_assert( 'trashed is not resolvable', empty( $rows[503]['resolvable'] ) );
+rwgc_status_assert( 'trashed title is hidden without edit_post', '' === ( $rows[503]['title'] ?? 'x' ) );
+rwgc_status_assert( 'private title is hidden without edit_post', '' === ( $rows[505]['title'] ?? 'x' ) );
 
 rwgc_status_assert( 'deleted status', isset( $rows[9999]['status'] ) && 'deleted' === $rows[9999]['status'] );
 rwgc_status_assert( 'deleted is not resolvable', empty( $rows[9999]['resolvable'] ) );
@@ -251,6 +303,20 @@ rwgc_status_assert( 'lookup does not trash a published rule', 'publish' === $GLO
 rwgc_status_assert( 'lookup does not change a draft', $before[502] === $GLOBALS['rwgc_status_posts'][502]->post_status );
 rwgc_status_assert( 'lookup does not restore trash', $before[503] === $GLOBALS['rwgc_status_posts'][503]->post_status );
 rwgc_status_assert( 'lookup does not invent a deleted post', ! isset( $GLOBALS['rwgc_status_posts'][9999] ) );
+
+$GLOBALS['rwgc_status_can_edit'][502] = true;
+$GLOBALS['rwgc_status_can_edit'][503] = true;
+$GLOBALS['rwgc_status_can_edit'][505] = true;
+$editable = RWGC_Visibility_Rule_Editor_Status::lookup( array( 501, 502, 503, 505 ) );
+rwgc_status_assert( 'published title does not depend on edit_post', 'Rule 501' === ( $editable[501]['title'] ?? '' ) );
+rwgc_status_assert(
+	'draft title is returned when the user can edit that rule',
+	'Rule 502' === ( $editable[502]['title'] ?? '' )
+		&& isset( $editable[502]['messages']['show_if'] )
+		&& false !== strpos( $editable[502]['messages']['show_if'], "The rule 'Rule 502' was deleted or is unpublished." )
+);
+rwgc_status_assert( 'trashed title is returned when the user can edit that rule', 'Rule 503' === ( $editable[503]['title'] ?? '' ) );
+rwgc_status_assert( 'private title is returned when the user can edit that rule', 'Rule 505' === ( $editable[505]['title'] ?? '' ) );
 
 $GLOBALS['rwgc_status_post_calls'] = 0;
 $none = RWGC_Visibility_Rule_Editor_Status::lookup( array( 0, 'abc', '' ) );

@@ -229,6 +229,15 @@ class RWGC_Visibility_Rule_Editor_Status {
 	}
 
 	/**
+	 * Statuses a library rule can be in and still be worth naming in the editor.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function query_statuses() {
+		return array( 'publish', 'draft', 'pending', 'private', 'future', 'trash', 'auto-draft' );
+	}
+
+	/**
 	 * @param array<int, int> $ids Positive IDs.
 	 * @return array<int, WP_Post>
 	 */
@@ -238,10 +247,48 @@ class RWGC_Visibility_Rule_Editor_Status {
 			return $found;
 		}
 
+		$rule_type = class_exists( 'RWGC_Visibility_Rule_CPT', false )
+			? RWGC_Visibility_Rule_CPT::POST_TYPE
+			: 'rwgc_visibility_rule';
+
+		// `post_type => any` drops types with exclude_from_search, which this CPT sets.
+		// Query the rule type by name or every published rule looks deleted.
+		foreach ( self::query_posts( $ids, $rule_type ) as $post ) {
+			$found[ (int) $post->ID ] = $post;
+		}
+
+		$missing = array();
+		foreach ( $ids as $id ) {
+			if ( ! isset( $found[ $id ] ) ) {
+				$missing[] = $id;
+			}
+		}
+		if ( ! $missing ) {
+			return $found;
+		}
+
+		// Leftover ids may be ordinary pages or posts. `any` still skips this CPT,
+		// so a hit here is some other type and must not be treated as a rule.
+		foreach ( self::query_posts( $missing, 'any' ) as $post ) {
+			if ( $rule_type === (string) $post->post_type ) {
+				continue;
+			}
+			$found[ (int) $post->ID ] = $post;
+		}
+
+		return $found;
+	}
+
+	/**
+	 * @param array<int, int> $ids       Positive IDs.
+	 * @param string          $post_type Rule post type, or `any` for other types.
+	 * @return array<int, WP_Post>
+	 */
+	private static function query_posts( array $ids, $post_type ) {
 		$posts = get_posts(
 			array(
-				'post_type'              => 'any',
-				'post_status'            => array( 'publish', 'draft', 'pending', 'private', 'future', 'trash', 'auto-draft', 'inherit' ),
+				'post_type'              => $post_type,
+				'post_status'            => self::query_statuses(),
 				'post__in'               => $ids,
 				'posts_per_page'         => count( $ids ),
 				'orderby'                => 'post__in',
@@ -251,18 +298,17 @@ class RWGC_Visibility_Rule_Editor_Status {
 				'update_post_meta_cache' => true,
 			)
 		);
-
 		if ( ! is_array( $posts ) ) {
-			return $found;
+			return array();
 		}
 
+		$out = array();
 		foreach ( $posts as $post ) {
 			if ( $post instanceof WP_Post ) {
-				$found[ (int) $post->ID ] = $post;
+				$out[] = $post;
 			}
 		}
-
-		return $found;
+		return $out;
 	}
 
 	/**
@@ -281,7 +327,7 @@ class RWGC_Visibility_Rule_Editor_Status {
 		}
 
 		$status = self::map_post_status( isset( $post->post_status ) ? (string) $post->post_status : '' );
-		$title  = isset( $post->post_title ) ? (string) $post->post_title : '';
+		$title  = self::title_for_editor( $post );
 		$active = true;
 		if ( class_exists( 'RWGC_Variant_Rule_Applications', false ) ) {
 			$active = RWGC_Variant_Rule_Applications::is_rule_active_for_frontend( $id );
@@ -295,6 +341,26 @@ class RWGC_Visibility_Rule_Editor_Status {
 		$resolvable   = ( 'published' === $status ) && $active && is_array( $set );
 
 		return self::row( $id, $status, $title, $resolvable, $page_variant );
+	}
+
+	/**
+	 * Published titles are visible to anyone who can edit posts.
+	 * Draft, private, and trashed titles need edit access to that rule.
+	 *
+	 * @param WP_Post $post Rule or other post.
+	 * @return string
+	 */
+	private static function title_for_editor( WP_Post $post ) {
+		$title  = isset( $post->post_title ) ? (string) $post->post_title : '';
+		$status = isset( $post->post_status ) ? (string) $post->post_status : '';
+		if ( 'publish' === $status ) {
+			return $title;
+		}
+		$id = (int) $post->ID;
+		if ( $id > 0 && function_exists( 'current_user_can' ) && current_user_can( 'edit_post', $id ) ) {
+			return $title;
+		}
+		return '';
 	}
 
 	/**
