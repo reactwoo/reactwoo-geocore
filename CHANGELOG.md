@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.169] - 2026-10-07
+
 ### Fixed
-- GeoIP: with “My site uses QUIC.cloud CDN” on, a private or loopback `REMOTE_ADDR` (local reverse proxy in front of PHP) no longer geolocates the QUIC.cloud PoP. The visitor is the rightmost public `X-Forwarded-For` hop that is not itself a QUIC.cloud edge.
+- With “My site uses QUIC.cloud CDN” on, a site whose PHP sees a loopback or private address (nginx/php-fpm, Docker, local LiteSpeed proxy) no longer geolocates visitors as the QUIC.cloud edge server.
 
 ## [1.8.168] - 2026-10-06
 
