@@ -74,6 +74,17 @@ class RWGC_Elementor_Elements {
 		);
 		// Same memoized catalogue the controls use, so the editor resolves it once.
 		$countries = self::get_country_options();
+		$context   = self::get_editor_document_context();
+		$statuses  = array(
+			'rules'  => array(),
+			'lookup' => array(),
+		);
+		if ( class_exists( 'RWGC_Visibility_Rule_Editor_Status', false ) ) {
+			$post_id  = isset( $context['post_id'] ) ? absint( $context['post_id'] ) : 0;
+			$statuses = RWGC_Visibility_Rule_Editor_Status::editor_bootstrap(
+				RWGC_Visibility_Rule_Editor_Status::referenced_ids_for_post( $post_id )
+			);
+		}
 
 		wp_localize_script(
 			'rwgc-elementor-library-bridge',
@@ -81,13 +92,21 @@ class RWGC_Elementor_Elements {
 			array(
 				'library'         => self::get_visibility_library_rows(),
 				'countries'       => $countries,
-				'documentContext' => self::get_editor_document_context(),
+				'documentContext' => $context,
+				'ruleStatuses'    => $statuses['rules'],
+				'statusLookup'    => $statuses['lookup'],
 				'labels'          => array(
 					'compatibleGroup'    => __( 'Compatible rules', 'reactwoo-geocore' ),
 					'attentionGroup'     => __( 'Needs attention', 'reactwoo-geocore' ),
 					'unavailableGroup'   => __( 'Not available for this context', 'reactwoo-geocore' ),
 					'incompatibleNotice' => __( 'This rule may not match in this document context.', 'reactwoo-geocore' ),
 					'choosePlaceholder'  => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ),
+					'missingRuleOption'  => __( 'Rule #', 'reactwoo-geocore' ),
+					'clearRule'          => __( 'Clear rule', 'reactwoo-geocore' ),
+					'pickAnother'        => __( 'Choose another saved rule above, or clear this reference. It stays saved until you do.', 'reactwoo-geocore' ),
+					'missingShowIf'      => __( 'The rule #%s was deleted or is unpublished. This content is now hidden for everyone.', 'reactwoo-geocore' ),
+					'missingHideIf'      => __( 'The rule #%s was deleted or is unpublished. This content is now never hidden.', 'reactwoo-geocore' ),
+					'missingVariant'     => __( 'The rule #%s was deleted or is unpublished. Visitors see the default page.', 'reactwoo-geocore' ),
 				),
 			)
 		);

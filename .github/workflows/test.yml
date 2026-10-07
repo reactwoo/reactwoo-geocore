@@ -58,6 +58,10 @@ jobs:
         if: steps.wip.outputs.skip != 'true'
         run: composer test:library-rule-lookup
 
+      - name: CLI visibility rule editor status
+        if: steps.wip.outputs.skip != 'true'
+        run: composer test:visibility-rule-status
+
       - name: CLI GeoIP forwarding-header regression
         if: steps.wip.outputs.skip != 'true'
         run: composer test:geoip-ip

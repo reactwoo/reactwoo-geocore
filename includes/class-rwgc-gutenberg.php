@@ -57,6 +57,21 @@ class RWGC_Gutenberg {
 			'window.rwgcPortableTargetingAssist = ' . wp_json_encode( $ctx ) . ';',
 			'before'
 		);
+		if ( class_exists( 'RWGC_Visibility_Rule_Editor_Status', false ) ) {
+			$post_id = 0;
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			if ( isset( $_GET['post'] ) && is_numeric( $_GET['post'] ) ) {
+				$post_id = absint( wp_unslash( $_GET['post'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			}
+			$bootstrap = RWGC_Visibility_Rule_Editor_Status::editor_bootstrap(
+				RWGC_Visibility_Rule_Editor_Status::referenced_ids_for_post( $post_id )
+			);
+			wp_add_inline_script(
+				$handle,
+				'window.rwgcVisibilityRuleStatus = ' . wp_json_encode( $bootstrap ) . ';',
+				'before'
+			);
+		}
 	}
 
 	/**

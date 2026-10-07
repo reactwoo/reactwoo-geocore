@@ -1,6 +1,6 @@
 (function (wp) {
 	const { registerBlockType } = wp.blocks;
-	const { ComboboxControl, Button, SelectControl, TextareaControl, ToggleControl } = wp.components;
+	const { ComboboxControl, Button, Notice, SelectControl, TextareaControl, ToggleControl } = wp.components;
 	const { useBlockProps, InspectorControls } = wp.blockEditor || wp.editor;
 	const { Fragment, useState, useEffect, useRef } = wp.element;
 	const { __ } = wp.i18n;
@@ -39,6 +39,174 @@
 			window.rwgcPortableTargetingAssist &&
 			window.rwgcPortableTargetingAssist.advancedTargeting;
 		const [comboKey, setComboKey] = useState(0);
+		const ruleId = String(attrs.visibilityRuleLibrary || attrs.appliedVisibilityRuleId || '');
+		const statusBoot =
+			typeof window !== 'undefined' && window.rwgcVisibilityRuleStatus
+				? window.rwgcVisibilityRuleStatus
+				: { rules: {}, lookup: null };
+		const [statusMap, setStatusMap] = useState(statusBoot.rules || {});
+		const libraryRows =
+			typeof window !== 'undefined' &&
+			window.rwgcPortableTargetingAssist &&
+			Array.isArray(window.rwgcPortableTargetingAssist.visibility_library)
+				? window.rwgcPortableTargetingAssist.visibility_library
+				: [];
+
+		useEffect(
+			function () {
+				if (!ruleId || statusMap[ruleId] || !statusBoot.lookup || !window.fetch) {
+					return undefined;
+				}
+				var cancelled = false;
+				var body = new window.URLSearchParams();
+				body.set('action', statusBoot.lookup.action || '');
+				body.set('nonce', statusBoot.lookup.nonce || '');
+				body.set('ids', ruleId);
+				window
+					.fetch(statusBoot.lookup.ajaxUrl, {
+						method: 'POST',
+						credentials: 'same-origin',
+						headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+						body: body.toString(),
+					})
+					.then(function (response) {
+						return response.json();
+					})
+					.then(function (payload) {
+						if (cancelled || !payload || !payload.success || !payload.data) {
+							return;
+						}
+						setStatusMap(function (prev) {
+							return Object.assign({}, prev, payload.data.rules || {});
+						});
+					})
+					.catch(function () {
+						if (cancelled) {
+							return;
+						}
+						setStatusMap(function (prev) {
+							if (prev[ruleId]) {
+								return prev;
+							}
+							var next = Object.assign({}, prev);
+							next[ruleId] = {
+								id: ruleId,
+								status: 'deleted',
+								title: '',
+								resolvable: false,
+								page_variant: false,
+							};
+							return next;
+						});
+					});
+				return function () {
+					cancelled = true;
+				};
+			},
+			[ruleId]
+		);
+
+		function applyLibraryRule(nextId) {
+			props.setAttributes({
+				visibilityRuleLibrary: nextId || '',
+				appliedVisibilityRuleId: nextId || '',
+			});
+		}
+
+		function ruleWarningText(row) {
+			var key = row && row.page_variant ? 'variant' : visibilityMode === 'hide_if' ? 'hide_if' : 'show_if';
+			if (row && row.messages && row.messages[key]) {
+				return row.messages[key];
+			}
+			var who = __('The rule #%s was deleted or is unpublished.', 'reactwoo-geocore').replace('%s', ruleId);
+			if (key === 'variant') {
+				return who + ' ' + __('Visitors see the default page.', 'reactwoo-geocore');
+			}
+			if (key === 'hide_if') {
+				return who + ' ' + __('This content is now never hidden.', 'reactwoo-geocore');
+			}
+			return who + ' ' + __('This content is now hidden for everyone.', 'reactwoo-geocore');
+		}
+
+		function ruleWarningElement() {
+			if (!ruleId) {
+				return null;
+			}
+			var row = statusMap[ruleId];
+			if (!row || row.resolvable) {
+				return null;
+			}
+			var options = [
+				{
+					label: __('Choose another saved rule', 'reactwoo-geocore'),
+					value: '',
+				},
+			];
+			libraryRows.forEach(function (item) {
+				if (!item || !item.id) {
+					return;
+				}
+				var itemStatus = statusMap[String(item.id)];
+				if (itemStatus && !itemStatus.resolvable) {
+					return;
+				}
+				options.push({
+					label: item.title || __('Rule #', 'reactwoo-geocore') + item.id,
+					value: String(item.id),
+				});
+			});
+			if (
+				!options.some(function (option) {
+					return option.value === ruleId;
+				})
+			) {
+				options.push({
+					label: (row.title ? row.title : __('Rule #', 'reactwoo-geocore') + ruleId),
+					value: ruleId,
+				});
+			}
+			return wp.element.createElement(
+				'div',
+				{ className: 'rwgc-library-rule-status', style: { margin: '8px 0 12px' } },
+				Notice
+					? wp.element.createElement(
+							Notice,
+							{ status: 'warning', isDismissible: false },
+							ruleWarningText(row)
+					  )
+					: wp.element.createElement('p', { role: 'alert' }, ruleWarningText(row)),
+				wp.element.createElement(
+					'p',
+					{ className: 'components-base-control__help' },
+					__(
+						'Choose another saved rule, or clear this reference. It stays saved until you do.',
+						'reactwoo-geocore'
+					)
+				),
+				wp.element.createElement(SelectControl, {
+					label: __('Apply saved visibility rule', 'reactwoo-geocore'),
+					value: ruleId,
+					options: options,
+					onChange: function (value) {
+						if (!value || value === ruleId) {
+							return;
+						}
+						applyLibraryRule(value);
+					},
+				}),
+				wp.element.createElement(
+					Button,
+					{
+						variant: 'secondary',
+						isSecondary: true,
+						onClick: function () {
+							applyLibraryRule('');
+						},
+					},
+					__('Clear rule', 'reactwoo-geocore')
+				)
+			);
+		}
 
 		const countryMode =
 			attrs.countryVisibilityMode === 'hide_if' || attrs.mode === 'hide'
@@ -141,6 +309,7 @@
 					'div',
 					{ className: 'rwgc-panel', style: { padding: '12px' } },
 					wp.element.createElement('hr', null),
+					!advanced || !visibilityOn ? ruleWarningElement() : null,
 					wp.element.createElement('p', { style: { fontWeight: 600, marginBottom: 4 } }, __('Country targeting', 'reactwoo-geocore')),
 					wp.element.createElement(ToggleControl, {
 						label: __('Enable country targeting', 'reactwoo-geocore'),
@@ -251,6 +420,7 @@
 											},
 									  })
 									: null,
+								visibilityOn ? ruleWarningElement() : null,
 								visibilityOn
 									? wp.element.createElement(
 											'div',
