@@ -8,6 +8,12 @@
 	var rowsById = {};
 	var labels = cfg.labels || {};
 
+	var statusById = {};
+	var pendingStatusIds = [];
+	var pendingStatusCallbacks = [];
+	var statusTimer = null;
+	var statusInflight = {};
+
 	function indexRows() {
 		rowsById = {};
 		(cfg.library || []).forEach(function (row) {
@@ -15,6 +21,215 @@
 				rowsById[String(row.id)] = row;
 			}
 		});
+	}
+
+	function indexStatuses(map) {
+		Object.keys(map || {}).forEach(function (id) {
+			if (map[id]) {
+				statusById[String(id)] = map[id];
+			}
+		});
+	}
+
+	function fallbackMessages(id) {
+		function fill(template) {
+			return String(template || '').replace('%s', String(id)).replace('%d', String(id));
+		}
+		return {
+			show_if: fill(labels.missingShowIf),
+			hide_if: fill(labels.missingHideIf),
+			variant: fill(labels.missingVariant),
+		};
+	}
+
+	function unresolvedStatus(id) {
+		return {
+			id: id,
+			status: 'deleted',
+			title: '',
+			resolvable: false,
+			page_variant: false,
+			messages: fallbackMessages(id),
+		};
+	}
+
+	function requestStatuses(ids, done) {
+		var missing = false;
+		(ids || []).forEach(function (id) {
+			id = String(id || '');
+			if (!id || statusById[id]) {
+				return;
+			}
+			missing = true;
+			if (!statusInflight[id]) {
+				pendingStatusIds.push(id);
+				statusInflight[id] = true;
+			}
+		});
+		if (!missing) {
+			if (typeof done === 'function') {
+				done();
+			}
+			return;
+		}
+		if (typeof done === 'function') {
+			pendingStatusCallbacks.push(done);
+		}
+		if (!pendingStatusIds.length || statusTimer) {
+			return;
+		}
+		statusTimer = setTimeout(flushStatuses, 40);
+	}
+
+	function finishStatusBatch(ids, callbacks) {
+		ids.forEach(function (id) {
+			if (!statusById[String(id)]) {
+				statusById[String(id)] = unresolvedStatus(id);
+			}
+			delete statusInflight[id];
+		});
+		callbacks.forEach(function (fn) {
+			fn();
+		});
+		if (pendingStatusIds.length) {
+			if (!statusTimer) {
+				statusTimer = setTimeout(flushStatuses, 40);
+			}
+			return;
+		}
+		if (pendingStatusCallbacks.length && !Object.keys(statusInflight).length) {
+			var rest = pendingStatusCallbacks.splice(0, pendingStatusCallbacks.length);
+			rest.forEach(function (fn) {
+				fn();
+			});
+		}
+	}
+
+	function flushStatuses() {
+		statusTimer = null;
+		var ids = pendingStatusIds.splice(0, 100);
+		var callbacks = pendingStatusCallbacks.splice(0, pendingStatusCallbacks.length);
+		var lookup = cfg.statusLookup || {};
+		if (!ids.length || !lookup.ajaxUrl) {
+			finishStatusBatch(ids, callbacks);
+			return;
+		}
+		$.post(lookup.ajaxUrl, {
+			action: lookup.action,
+			nonce: lookup.nonce,
+			ids: ids.join(','),
+		})
+			.done(function (res) {
+				var rules = res && res.success && res.data && res.data.rules ? res.data.rules : {};
+				indexStatuses(rules);
+			})
+			.always(function () {
+				finishStatusBatch(ids, callbacks);
+			});
+	}
+
+	function librarySelect($panel) {
+		var $select = $panel.find('.elementor-control-rwgc_visibility_rule_library select');
+		if ($select.length) {
+			return $select;
+		}
+		return $panel.find('[data-setting="rwgc_visibility_rule_library"]');
+	}
+
+	function currentRuleId($panel) {
+		var fromSelect = String(librarySelect($panel).val() || '');
+		if (fromSelect) {
+			return fromSelect;
+		}
+		var $applied = $panel.find(
+			'.elementor-control-rwgc_applied_visibility_rule_id input, [data-setting="rwgc_applied_visibility_rule_id"]'
+		);
+		return String($applied.first().val() || '');
+	}
+
+	function statusNotice($panel) {
+		var $anchor = $panel.find('.elementor-control-rwgc_visibility_rule_library');
+		if (!$anchor.length) {
+			$anchor = $panel.find('[data-setting="rwgc_visibility_rule_library"]').closest('.elementor-control');
+		}
+		if (!$anchor.length) {
+			return $();
+		}
+		var $wrap = $anchor.next('.rwgc-library-rule-status');
+		if (!$wrap.length) {
+			$wrap = $('<div class="rwgc-library-rule-status" style="margin:8px 0 4px;"></div>');
+			$anchor.after($wrap);
+		}
+		return $wrap;
+	}
+
+	function renderStatusWarning($panel) {
+		var $notice = statusNotice($panel);
+		if (!$notice.length) {
+			return;
+		}
+		var id = currentRuleId($panel);
+		if (!id) {
+			$notice.attr('data-rwgc-status-sig', '').empty().hide();
+			return;
+		}
+		var row = statusById[String(id)];
+		if (!row) {
+			if ($notice.attr('data-rwgc-status-wait') !== String(id)) {
+				$notice.attr('data-rwgc-status-wait', String(id));
+				requestStatuses([id], function () {
+					$notice.attr('data-rwgc-status-wait', '');
+					renderStatusWarning($panel);
+				});
+			}
+			return;
+		}
+		if (row.resolvable) {
+			$notice.attr('data-rwgc-status-sig', '').empty().hide();
+			return;
+		}
+		var mode = normalizeVisibilityMode(
+			$panel.find('.elementor-control-rwgc_visibility_rules_mode select, [data-setting="rwgc_visibility_rules_mode"]').val()
+		);
+		var key = row.page_variant ? 'variant' : mode;
+		var messages = row.messages || fallbackMessages(id);
+		var text = messages[key] || messages.show_if || '';
+		var signature = String(id) + '|' + key + '|' + text;
+		if ($notice.attr('data-rwgc-status-sig') === signature && $notice.is(':visible')) {
+			return;
+		}
+		$notice.attr('data-rwgc-status-sig', signature);
+		$notice.empty().show();
+		$notice.append(
+			$('<div role="alert"></div>')
+				.text(text)
+				.attr(
+					'style',
+					'margin:0;padding:8px 10px;border:1px solid #f0c36d;background:#fff8e5;color:#6b4e16;border-radius:3px;font-size:12px;line-height:1.45;'
+				)
+		);
+		$notice.append(
+			$('<p class="elementor-control-field-description" style="margin:6px 0 0;"></p>').text(
+				labels.pickAnother || ''
+			)
+		);
+		var $clear = $('<button type="button" class="elementor-button elementor-button-default"></button>')
+			.text(labels.clearRule || 'Clear rule')
+			.css({ marginTop: '8px' });
+		$clear.on('click', function (event) {
+			event.preventDefault();
+			var $select = librarySelect($panel);
+			$select.find('option[data-rwgc-stale="1"]').remove();
+			$select.val('');
+			persistAppliedRuleId($panel, '');
+			$select.trigger('change');
+			renderStatusWarning($panel);
+		});
+		$notice.append($clear);
+		var $stale = librarySelect($panel).find('option[data-rwgc-stale="1"]');
+		if ($stale.length && row.title) {
+			$stale.text(row.title);
+		}
 	}
 
 	function portableTextarea($panel) {
@@ -103,14 +318,14 @@
 		}
 	}
 
-	function rebuildLibrarySelect($select) {
+	function rebuildLibrarySelect($select, preferredId) {
 		if (!$select || !$select.length) {
 			return;
 		}
 		if ($select.attr('data-rwgc-library-built') === '1') {
 			return;
 		}
-		var current = String($select.val() || '');
+		var current = String($select.val() || preferredId || '');
 		var compatible = [];
 		var attention = [];
 		var unavailable = [];
@@ -168,6 +383,15 @@
 				$select.val('');
 				persistAppliedRuleId($('#elementor-panel-inner'), '');
 			}
+		} else if (current) {
+			// Keep a deleted or unpublished id selected. Clearing it here would drop the reference.
+			var known = statusById[current];
+			var staleLabel =
+				known && known.title ? known.title : (labels.missingRuleOption || 'Rule #') + current;
+			$select.append(
+				$('<option></option>').val(current).text(staleLabel).attr('data-rwgc-stale', '1')
+			);
+			$select.val(current);
 		}
 		$select.attr('data-rwgc-library-built', '1');
 	}
@@ -406,12 +630,14 @@
 	function bindLibrarySelect($panel) {
 		syncVisibilityRulesToggle($panel);
 		hydrateCountriesSelect($panel);
-		var $select = $panel.find('.elementor-control-rwgc_visibility_rule_library select');
-		if ($select.length) {
-			rebuildLibrarySelect($select);
+		var $select = librarySelect($panel);
+		if ($select.length && $select.is('select')) {
+			var preferredId = currentRuleId($panel);
+			rebuildLibrarySelect($select, preferredId);
 			var initial = rowsById[String($select.val() || '')];
 			showCompatibilityNotice($panel, initial);
 		}
+		renderStatusWarning($panel);
 
 		$panel
 			.find('.elementor-control-rwgc_enable_visibility_rules input')
@@ -420,7 +646,7 @@
 				syncVisibilityRulesToggle($panel);
 			});
 		$panel
-			.find('.elementor-control-rwgc_visibility_rule_library select')
+			.find('.elementor-control-rwgc_visibility_rule_library select, [data-setting="rwgc_visibility_rule_library"]')
 			.off('change.rwgcLib')
 			.on('change.rwgcLib', function () {
 				var id = String($(this).val() || '');
@@ -428,17 +654,26 @@
 				showCompatibilityNotice($panel, row);
 				if (!id) {
 					persistAppliedRuleId($panel, '');
+					renderStatusWarning($panel);
 					return;
 				}
 				if (row && row.compatibility && row.compatibility.status === 'incompatible') {
 					$(this).val('');
 					persistAppliedRuleId($panel, '');
+					renderStatusWarning($panel);
 					return;
 				}
 				if (row && row.json) {
 					applyLibraryJson($panel, row.json);
 				}
 				persistAppliedRuleId($panel, id);
+				renderStatusWarning($panel);
+			});
+		$panel
+			.find('.elementor-control-rwgc_visibility_rules_mode select, [data-setting="rwgc_visibility_rules_mode"]')
+			.off('change.rwgcRuleStatus')
+			.on('change.rwgcRuleStatus', function () {
+				renderStatusWarning($panel);
 			});
 	}
 
@@ -452,6 +687,7 @@
 	}
 
 	indexRows();
+	indexStatuses(cfg.ruleStatuses || {});
 
 	var scanTimer = null;
 	function scheduleScan() {

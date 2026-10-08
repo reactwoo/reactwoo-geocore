@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.170] - 2026-10-08
+
+### Added
+- Editors warn when a widget, section, container, popup, page setting, or Geo Content block still points at a deleted, missing, draft, or trashed visibility rule. The stored reference stays until someone picks another rule or clears it. Visitor-facing behaviour is unchanged.
+
+### Fixed
+- The editor status lookup queries the visibility-rule post type directly. `post_type => any` omitted that type, so every saved rule looked deleted. Draft, private, and trashed titles are returned only to users who can edit that rule.
+
 ## [1.8.169] - 2026-10-07
 
 ### Fixed

@@ -99,6 +99,7 @@ $rwgc_render_rule_chips = static function ( array $chips ) {
 				<h2 id="rwgc-portable-rules-heading"><?php esc_html_e( 'Portable rule library', 'reactwoo-geocore' ); ?></h2>
 				<p class="description">
 					<?php esc_html_e( 'Reusable rule sets you can attach in Elementor, Gutenberg, commerce, and other surfaces. Edit them here — they are not tied to a single page until applied in a builder.', 'reactwoo-geocore' ); ?>
+					<?php esc_html_e( 'A draft, trashed, or deleted rule never matches. Editors that still point at it show a warning and keep the reference until you pick another rule or clear it.', 'reactwoo-geocore' ); ?>
 				</p>
 			</div>
 			<?php if ( ! empty( $rules ) ) : ?>
@@ -287,7 +288,7 @@ $rwgc_render_rule_chips = static function ( array $chips ) {
 			<div class="rwgc-rules-card__head">
 				<div>
 					<h2 id="rwgc-orphan-rules-heading"><?php esc_html_e( 'Variant rule health', 'reactwoo-geocore' ); ?></h2>
-					<p class="description"><?php esc_html_e( 'These variant rules are archived or point at a removed page. Front-end evaluation fails closed (variant popups and content stay hidden).', 'reactwoo-geocore' ); ?></p>
+					<p class="description"><?php esc_html_e( 'These variant rules are archived or point at a removed page. Front-end evaluation fails closed (variant popups and content stay hidden). Open the page, popup, or block in the editor to see a warning beside the rule control. The reference is not removed automatically.', 'reactwoo-geocore' ); ?></p>
 				</div>
 			</div>
 			<div class="rwgc-rules-table-wrap">

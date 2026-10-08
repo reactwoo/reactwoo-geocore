@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.8.169
+Stable tag: 1.8.170
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,10 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.170 =
+* Editors warn when a block or element still points at a deleted, missing, draft, or trashed visibility rule. The reference stays until you pick another rule or clear it.
+* Editor status lookup queries the visibility-rule post type, so published rules no longer look deleted. Unpublished rule titles are shown only to users who can edit that rule.
 
 = 1.8.169 =
 * With “My site uses QUIC.cloud CDN” on, a site whose PHP sees a loopback or private address (nginx/php-fpm, Docker, local LiteSpeed proxy) no longer geolocates visitors as the QUIC.cloud edge server.
