@@ -110,4 +110,18 @@ assert(
 	'non-select controls are left alone'
 );
 
+const warningStart = src.indexOf('function renderStatusWarning');
+const warningEnd = src.indexOf('function portableTextarea');
+if (warningStart < 0 || warningEnd <= warningStart) {
+	throw new Error('status warning function missing');
+}
+const warningBody = src.slice(warningStart, warningEnd);
+const signatureGuard = warningBody.indexOf("data-rwgc-status-sig') === signature");
+const rebuild = warningBody.lastIndexOf('$notice.empty()');
+assert(signatureGuard > 0 && rebuild > signatureGuard, 'matching status signature returns before rebuilding the notice');
+assert(
+	!warningBody.includes(".is(':visible')") && !warningBody.includes('.is(":visible")'),
+	'collapsed Elementor sections must not force the status notice to rebuild'
+);
+
 console.log('OK: country hydrate keeps saved countries');

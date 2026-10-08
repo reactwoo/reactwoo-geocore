@@ -4,31 +4,17 @@
 done
 
 ## Task
-Editor warning when a block or element references a deleted, missing, draft, or trashed visibility library rule. Follow-up: status lookup must query `rwgc_visibility_rule` explicitly (`post_type => any` drops `exclude_from_search` types). No front-end behaviour change and no version bump.
+Stop the Elementor editor status warning from rebuilding itself while the Geo section is collapsed or on an inactive tab.
 
 ## Files changed
-- `includes/class-rwgc-visibility-rule-editor-status.php` — lookup queries `RWGC_Visibility_Rule_CPT::POST_TYPE` (not `any`) across publish, draft, pending, private, future, trash, and auto-draft. Other post types stay unresolved. Unpublished titles are returned only when `current_user_can( 'edit_post', $id )`. Does not delete the stored reference.
-- `includes/class-rwgc-plugin.php` — load the class and register the editor ajax action.
-- `includes/integrations/elementor/class-rwgc-elementor-elements.php` — put statuses for the open document and the library picker on the existing Elementor editor payload.
-- `assets/js/rwgc-elementor-library-bridge.js` — inline warning under the Geo panel rule control (widgets, sections, containers, popups, and page settings, including page-variant rules). Keeps the stale option selected. Clear is a button.
-- `includes/class-rwgc-gutenberg.php` — same payload for the block editor.
-- `blocks/geo-content/index.js` — inspector warning, replacement select, and clear for `visibilityRuleLibrary` / `appliedVisibilityRuleId`.
-- `admin/views/visibility-rules-list.php` — short note that editors keep the reference and show a warning.
-- `tests/test-rwgc-visibility-rule-status.php`, `composer.json`, `.github/workflows/test.yml` — CLI coverage wired into `test:all`.
+- `assets/js/rwgc-elementor-library-bridge.js` — a matching warning signature returns before emptying and recreating the notice. Visibility is not part of that decision, because a collapsed section keeps the node in the DOM but not `:visible`.
+- `tests/test-rwgc-country-hydrate.js` — locks the signature guard ahead of the rebuild and rejects a `:visible` rebuild condition.
 
 ## What was not changed
-- Front-end evaluation (`get_rule_set()`, `is_rule_active_for_frontend()`, show-if / hide-if / `variant_rule_inactive`).
-- Stored references are not removed unless the editor clicks Clear rule or picks another rule.
-- Plugin version, CHANGELOG version, and tags.
+- Front-end evaluation, stored rule references, Gutenberg warning, status lookup, plugin version, CHANGELOG, and tags.
 
 ## Commands run
-- `php tests/test-rwgc-visibility-rule-status.php` — passed, including the `post_type` regression and title-cap cases.
-- `vendor/bin/phpunit -c phpunit.xml.dist` — Tests: 97, Assertions: 366, Errors: 9, Failures: 7.
-- Every other `composer test:*` script in `test:all` — exit 0.
+- `node tests/test-rwgc-country-hydrate.js`
 
 ## Remaining errors
-Pre-existing only:
-- 9 errors: `RWGC_ContextAttributionTest` “headers already sent”
-- 7 failures: `RWGCTargetingAssistantUiRegressionTest`
-
-Nothing beyond that baseline. CI skips `cursor/*` branches, so this is the local run.
+None from this change.

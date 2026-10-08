@@ -195,7 +195,13 @@
 		var messages = row.messages || fallbackMessages(id);
 		var text = messages[key] || messages.show_if || '';
 		var signature = String(id) + '|' + key + '|' + text;
-		if ($notice.attr('data-rwgc-status-sig') === signature && $notice.is(':visible')) {
+		// Collapsed Elementor sections and inactive tabs keep this node in the DOM
+		// but not :visible. Rebuilding it mutates #elementor-panel-inner, and the
+		// panel MutationObserver would call this again on every tick.
+		if ($notice.attr('data-rwgc-status-sig') === signature) {
+			if ('none' === $notice.css('display')) {
+				$notice.show();
+			}
 			return;
 		}
 		$notice.attr('data-rwgc-status-sig', signature);
