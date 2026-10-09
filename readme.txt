@@ -175,6 +175,12 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * An uploaded country database no longer shows a license-key warning. That warning appears only when there is no usable database and no license key to download one.
 * The Geo Content block loads in the block editor.
 
+= 1.8.171 =
+* Elementor: the stale-rule warning now shows after the panel renders, for a deleted, draft, or trashed saved rule.
+* A deleted or unpublished rule stays selected in Apply saved visibility rule, labelled unpublished or deleted.
+* That picker lists only published rules.
+* The warning does not redraw itself while the Geo section is collapsed.
+
 = 1.8.170 =
 * Editors warn when a block or element still points at a deleted, missing, draft, or trashed visibility rule. The reference stays until you pick another rule or clear it.
 * Editor status lookup queries the visibility-rule post type, so published rules no longer look deleted. Unpublished rule titles are shown only to users who can edit that rule.

@@ -3,6 +3,28 @@
 ## Status
 done
 
+Merged `origin/main` (`c21d1de`, Geo Core 1.8.171) into `wporg-build`. Version stays 1.9.0 because main is still below 1.9.0. Not tagged. `publish-update.yml` still runs only on `v*` tags and `workflow_dispatch`.
+
+## Merge
+- Kept 1.9.0 header, `RWGC_VERSION`, Stable tag, directory description, Requires PHP 8.1, and `RWGC_DISTRIBUTION`.
+- Kept main's 1.8.171 changelog (Elementor stale-rule warning) in `CHANGELOG.md` and `readme.txt`, under 1.9.0.
+- Kept main's Elementor picker filter, unpublished/deleted labels, rule-status test, and `test:elementor-rule-status`.
+- Kept the directory MaxMind notice and Geo Content editor-script fixes.
+- `composer.json` has PHP `>=8.1` and both `test:wporg-build` and `test:elementor-rule-status`.
+
+## Checks after the merge
+- `php -l` on PHP files that differ from either parent: no syntax errors.
+- `php tests/test-rwgc-wporg-build.php`: passed.
+- `node tests/test-rwgc-elementor-rule-status.js`: passed.
+- `node tests/test-rwgc-country-hydrate.js`: passed.
+- PHPUnit: 102 tests, 374 assertions, 9 errors, 7 failures. Same 9 errors and 7 failures as main.
+- Plugin Check 2.1.0 on the rebuilt WordPress.org zip, WordPress 7.1.3: 0 errors, 375 warnings.
+
+Previous directory notes follow.
+
+## Status
+done
+
 Directory bugfixes on PR #74, still untagged. `publish-update.yml` untouched.
 
 ## This pass
@@ -32,6 +54,29 @@ Directory bugfixes on PR #74, still untagged. `publish-update.yml` untouched.
 - The ReactWoo updater class was not edited.
 
 Previous branding notes follow. The license-key warning and unsupported Geo Content block described there are fixed by this pass.
+
+## Merged from main (1.8.171)
+
+## Task
+Make the Elementor stale-rule warning attach on Elementor 3 and 4 after the panel exists, keep a deleted or unpublished rule selected, and list only published rules in the normal select. Includes the PR #73 signature guard.
+
+## Files changed
+- `assets/js/rwgc-elementor-library-bridge.js` — panel hooks and observer attach from `elementor:init` / `preview:loaded`, not at script load. Stale ids stay selected. Normal options are published rules only. The unchanged-signature guard from PR #73 stays.
+- `includes/targeting/class-rwgc-rule-registry.php` — picker rows carry post status.
+- `includes/integrations/elementor/class-rwgc-elementor-options.php` — Elementor select options omit non-published rules.
+- `includes/integrations/elementor/class-rwgc-elementor-elements.php` — same filter on the fallback picker, plus unpublished/deleted option labels.
+- `tests/test-rwgc-elementor-rule-status.js` — panel is created after the script loads.
+- `composer.json`, `.github/workflows/test.yml` — `test:elementor-rule-status`.
+
+## What was not changed
+- Front-end evaluation, stored references (still not auto-cleared), plugin version, CHANGELOG, and tags.
+- PR #73's branch was not updated. This branch starts from its head `f3f16fa`.
+
+## Commands run
+- `node tests/test-rwgc-elementor-rule-status.js` — passed.
+- `node tests/test-rwgc-country-hydrate.js` — passed.
+- `vendor/bin/phpunit -c phpunit.xml.dist` via `composer test` — Tests: 97, Assertions: 366, Errors: 9, Failures: 7.
+- Every other `composer test:*` script — exit 0.
 
 ## Status
 done

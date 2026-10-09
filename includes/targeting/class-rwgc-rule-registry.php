@@ -68,11 +68,15 @@ class RWGC_Rule_Registry {
 			if ( '' === trim( $json ) ) {
 				continue;
 			}
-			$out[] = array(
+			$item = array(
 				'id'    => $id,
 				'title' => isset( $row['label'] ) ? (string) $row['label'] : $id,
 				'json'  => $json,
 			);
+			if ( isset( $row['status'] ) && is_string( $row['status'] ) && '' !== $row['status'] ) {
+				$item['status'] = $row['status'];
+			}
+			$out[] = $item;
 		}
 		return $out;
 	}
@@ -206,6 +210,7 @@ class RWGC_Rule_Registry {
 					'id'             => (string) (int) $post->ID,
 					'source'         => self::SOURCE_RWGC_LIBRARY,
 					'label'          => $post->post_title ? $post->post_title : __( 'Untitled visibility rule', 'reactwoo-geocore' ),
+					'status'         => isset( $post->post_status ) ? (string) $post->post_status : 'publish',
 					'rules'          => $set,
 					'visibilityMode' => function_exists( 'rwgc_normalize_visibility_mode' ) ? rwgc_normalize_visibility_mode( $mode ) : 'show_if',
 					'json'           => is_string( $json ) ? $json : '',

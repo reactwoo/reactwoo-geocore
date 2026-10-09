@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Request UTM and click-id conditions (`utm_source`, `utm_medium`, `utm_campaign`, `source`, `medium`, `campaign`, `content`, `term`, `gclid`) are part of Geo Core. Audience, weather, and profile conditions still need the separate GeoCore Pro plugin.
 - The WordPress.org build does not include the ReactWoo update client. If a Pro add-on calls `RWGC_Satellite_Updater`, that call does nothing instead of stopping the site. Pro add-ons update themselves.
 
+## [1.8.171] - 2026-10-09
+
+### Fixed
+- Elementor: the stale-rule editor warning now shows. It attaches after the panel renders, so selecting a widget and opening Geo Visibility shows the notice.
+- A deleted or unpublished rule stays selected in the saved-rule picker (`Title (unpublished)` or `Rule #<id> (deleted)`), so Update does not drop the reference.
+- The saved-rule picker lists only published rules. A draft or trashed rule appears only as that selected stale option.
+- The warning is not rebuilt when its text is unchanged, including while the Geo section is collapsed.
+
 ## [1.8.170] - 2026-10-08
 
 ### Added

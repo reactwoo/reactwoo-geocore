@@ -69,3 +69,7 @@ jobs:
       - name: CLI Elementor preview bypass regression
         if: steps.wip.outputs.skip != 'true'
         run: composer test:elementor-preview-bypass
+
+      - name: JS Elementor stale-rule panel
+        if: steps.wip.outputs.skip != 'true'
+        run: composer test:elementor-rule-status
