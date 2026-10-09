@@ -16,6 +16,11 @@ final class RWGC_Cloud_Telemetry {
 
 	const COOKIE = 'rwgc_vid';
 
+	/**
+	 * Option name. Absent or empty means telemetry is off.
+	 */
+	const OPT_IN_OPTION = 'rwgc_cloud_telemetry_opt_in';
+
 	/** @var array{experience: string, variant: string, audience: string, goal: string} */
 	private static $last = array(
 		'experience' => '',
@@ -32,6 +37,7 @@ final class RWGC_Cloud_Telemetry {
 		add_action( 'rwgc_geo_event', array( __CLASS__, 'observe_geo_event' ), 40 );
 		add_action( 'woocommerce_add_to_cart', array( __CLASS__, 'observe_add_to_cart' ), 40, 0 );
 		add_action( 'woocommerce_thankyou', array( __CLASS__, 'observe_purchase' ), 40, 1 );
+		add_action( 'admin_init', array( __CLASS__, 'register_privacy_policy' ) );
 	}
 
 	/**
@@ -183,19 +189,73 @@ final class RWGC_Cloud_Telemetry {
 	/**
 	 * @return bool
 	 */
+	/**
+	 * Whether an administrator has opted in. The filter default is that option, which is off.
+	 *
+	 * @return bool
+	 */
+	public static function is_opted_in() {
+		$opted = false;
+		if ( function_exists( 'get_option' ) ) {
+			$opted = (bool) get_option( self::OPT_IN_OPTION, false );
+		}
+		/**
+		 * Consent gate for Cloud telemetry. Default is the stored opt-in, which is off.
+		 *
+		 * @param bool $allowed Allowed.
+		 */
+		return (bool) apply_filters( 'rwgc_cloud_telemetry_allowed', $opted );
+	}
+
+	/**
+	 * @return bool
+	 */
 	private static function allowed() {
+		if ( ! self::is_opted_in() ) {
+			return false;
+		}
 		if ( class_exists( 'RWGC_Cloud_Connection', false ) && ! RWGC_Cloud_Connection::is_connected() ) {
 			return false;
 		}
 		if ( function_exists( 'is_admin' ) && is_admin() && ! ( function_exists( 'wp_doing_ajax' ) && wp_doing_ajax() ) ) {
 			return false;
 		}
-		/**
-		 * Consent-aware telemetry gate. Default true (anonymous IDs only).
-		 *
-		 * @param bool $allowed Allowed.
-		 */
-		return (bool) apply_filters( 'rwgc_cloud_telemetry_allowed', true );
+		return true;
+	}
+
+	/**
+	 * Suggested privacy-policy text for Settings → Privacy.
+	 *
+	 * @return void
+	 */
+	public static function register_privacy_policy() {
+		if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
+			return;
+		}
+		$content = '<p>' . esc_html__( 'ReactWoo Geo Core stores first-party cookies on this site for country cache variation (rwgc_cc, rwgc_pv), returning-visitor detection (rwgc_returning, rwgc_rv), and campaign parameters from the request (rwgc_ft, rwgc_st). Those cookies are not uploaded to ReactWoo.', 'reactwoo-geocore' ) . '</p>';
+		$content .= '<p>' . esc_html__( 'Anonymous Cloud telemetry is off unless an administrator enables it on ReactWoo Cloud. When enabled, and only while the site is paired, the plugin sets rwgc_vid (a random id, about one year) and later sends experience, variant, audience, and goal ids, the event type, and an optional order total to https://decision.reactwoo.com. Email addresses are not included. Turning telemetry off clears rwgc_vid.', 'reactwoo-geocore' ) . '</p>';
+		$content .= '<p>' . esc_html__( 'If an administrator downloads the GeoLite2 database, the MaxMind account ID and license key are sent to download.maxmind.com. If QUIC.cloud CDN mode is enabled, the site requests QUIC.cloud’s public edge IP list. Optional AI calls https://api.reactwoo.com only when a commercial add-on supplies a license key. The WordPress.org build of Geo Core does not check api.reactwoo.com for plugin updates.', 'reactwoo-geocore' ) . '</p>';
+		wp_add_privacy_policy_content(
+			'ReactWoo Geo Core',
+			wp_kses_post( $content )
+		);
+	}
+
+	/**
+	 * Expire the anonymous visitor cookie after opt-out.
+	 *
+	 * @return void
+	 */
+	public static function clear_visitor_cookie() {
+		if ( function_exists( 'headers_sent' ) && headers_sent() ) {
+			return;
+		}
+		if ( function_exists( 'setcookie' ) ) {
+			$secure = function_exists( 'is_ssl' ) ? is_ssl() : false;
+			$past   = time() - ( defined( 'YEAR_IN_SECONDS' ) ? YEAR_IN_SECONDS : 31536000 );
+			setcookie( self::COOKIE, '', $past, '/', '', $secure, true );
+		}
+		unset( $_COOKIE[ self::COOKIE ] );
 	}
 
 	/**

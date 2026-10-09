@@ -104,7 +104,14 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-api.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-preview.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-platform-client.php';
-		require_once RWGC_PATH . 'includes/class-rwgc-satellite-updater.php';
+		// WordPress.org builds must not ship or register a third-party updater (guideline 8).
+		// Pro add-ons update themselves; they do not receive updates through Geo Core.
+		if ( ! function_exists( 'rwgc_is_wordpress_org_distribution' ) || ! rwgc_is_wordpress_org_distribution() ) {
+			$rwgc_updater = RWGC_PATH . 'includes/class-rwgc-satellite-updater.php';
+			if ( is_readable( $rwgc_updater ) ) {
+				require_once $rwgc_updater;
+			}
+		}
 		require_once RWGC_PATH . 'includes/class-rwgc-ai-orchestrator.php';
 		require_once RWGC_PATH . 'includes/ai/class-rwgc-ai-snapshot-schema.php';
 		require_once RWGC_PATH . 'includes/ai/class-rwgc-ai-snapshot-sync-status.php';
@@ -271,7 +278,9 @@ class RWGC_Plugin {
 		RWGC_REST::init();
 		RWGC_Upsells::init();
 
-		add_action( 'init', array( __CLASS__, 'register_satellite_updater' ), 2 );
+		if ( ! function_exists( 'rwgc_is_wordpress_org_distribution' ) || ! rwgc_is_wordpress_org_distribution() ) {
+			add_action( 'init', array( __CLASS__, 'register_satellite_updater' ), 2 );
+		}
 	}
 
 	/**

@@ -38,14 +38,24 @@ class RWGC_Targeting_Rule_Set_Schema {
 		'page_type',
 		'request_uri',
 		'condition_group',
-	);
-
-	/** @var string[] */
-	const PRO_CONDITION_TYPES = array(
-		'campaign',
-		'utm_campaign',
 		'utm_source',
 		'utm_medium',
+		'utm_campaign',
+		'source',
+		'medium',
+		'campaign',
+		'content',
+		'term',
+		'gclid',
+	);
+
+	/**
+	 * Types whose working implementation is a separate plugin (GeoCore Pro or another add-on).
+	 * Request UTM and click-id fields are free: Geo Core already reads and evaluates them.
+	 *
+	 * @var string[]
+	 */
+	const PRO_CONDITION_TYPES = array(
 		'audience',
 		'time',
 		'day',
@@ -56,11 +66,6 @@ class RWGC_Targeting_Rule_Set_Schema {
 		'precipitation_probability',
 		'wind_speed',
 		'humidity',
-		'source',
-		'medium',
-		'gclid',
-		'content',
-		'term',
 		'profile_id',
 	);
 
@@ -165,8 +170,8 @@ class RWGC_Targeting_Rule_Set_Schema {
 			),
 			'campaign'      => array(
 				'label'       => __( 'Campaign', 'reactwoo-geocore' ),
-				'pro'         => true,
-				'description' => __( 'UTM / Ads campaign context. Empty means all campaigns.', 'reactwoo-geocore' ),
+				'pro'         => false,
+				'description' => __( 'Campaign name from the request (utm_campaign). Empty means all campaigns. Synced Google Ads campaign lists need GeoCore Pro.', 'reactwoo-geocore' ),
 			),
 			'audience'      => array(
 				'label'       => __( 'Audience', 'reactwoo-geocore' ),

@@ -7,6 +7,7 @@
     "pluginSlug": "reactwoo-geocore"
   },
   "scripts": {
-    "package:zip": "python scripts/package_zip.py"
+    "package:zip": "python scripts/package_zip.py",
+    "package:wporg": "python scripts/package_zip.py --target wporg"
   }
 }

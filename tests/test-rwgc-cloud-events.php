@@ -225,6 +225,16 @@ rwgc_events_assert( 'failed flush keeps queue', ! $fail['ok'] && RWGC_Cloud_Even
 $backoff = RWGC_Cloud_Event_Queue::flush();
 rwgc_events_assert( 'exponential backoff', 'backoff' === $backoff['status'] );
 
+$blocked = reactwoo_cloud_record_event(
+	'variant.impression',
+	array(
+		'experience' => 'exp_a',
+		'variant'    => 'var_b',
+	)
+);
+rwgc_events_assert( 'telemetry off until opt-in', ! $blocked );
+rwgc_events_assert( 'opt-in option defaults off', ! RWGC_Cloud_Telemetry::is_opted_in() );
+
 add_filter( 'rwgc_cloud_telemetry_allowed', static function () {
 	return true;
 } );

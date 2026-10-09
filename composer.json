@@ -4,7 +4,7 @@
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
   "require": {
-    "php": ">=7.4",
+    "php": ">=8.1",
     "geoip2/geoip2": "^2.0",
     "maxmind-db/reader": "^1.0"
   },
@@ -43,6 +43,7 @@
     "test:cloud-security": "php tests/test-rwgc-cloud-security.php",
     "test:request-decision": "php tests/test-rwgc-request-decision.php",
     "test:entitlements": "php tests/test-rwgc-entitlements.php",
+    "test:wporg-build": "php tests/test-rwgc-wporg-build.php",
     "test:recommendations": "php tests/test-rwgc-recommendations.php",
     "test:all": [
       "@test",
@@ -71,7 +72,8 @@
       "@test:cloud-security",
       "@test:request-decision",
       "@test:entitlements",
-      "@test:recommendations"
+      "@test:recommendations",
+      "@test:wporg-build"
     ]
   },
   "config": {

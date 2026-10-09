@@ -59,6 +59,12 @@ class RWGC_Rule_Evaluator {
 			'utm_source'       => array( __CLASS__, 'eval_utm_source' ),
 			'utm_medium'       => array( __CLASS__, 'eval_utm_medium' ),
 			'utm_campaign'     => array( __CLASS__, 'eval_utm_campaign' ),
+			'source'           => array( __CLASS__, 'eval_utm_source' ),
+			'medium'           => array( __CLASS__, 'eval_utm_medium' ),
+			'campaign'         => array( __CLASS__, 'eval_utm_campaign' ),
+			'content'          => array( __CLASS__, 'eval_utm_content' ),
+			'term'             => array( __CLASS__, 'eval_utm_term' ),
+			'gclid'            => array( __CLASS__, 'eval_gclid' ),
 		);
 	}
 
@@ -699,6 +705,36 @@ class RWGC_Rule_Evaluator {
 	 */
 	public static function eval_utm_campaign( $op, $val, RWGC_Context_Snapshot $snapshot ) {
 		return self::eval_attribution_scalar( 'campaign', $op, $val, $snapshot );
+	}
+
+	/**
+	 * @param string                $op       Operator.
+	 * @param mixed                 $val      Expected values.
+	 * @param RWGC_Context_Snapshot $snapshot Snapshot.
+	 * @return bool
+	 */
+	public static function eval_utm_content( $op, $val, RWGC_Context_Snapshot $snapshot ) {
+		return self::eval_attribution_scalar( 'content', $op, $val, $snapshot );
+	}
+
+	/**
+	 * @param string                $op       Operator.
+	 * @param mixed                 $val      Expected values.
+	 * @param RWGC_Context_Snapshot $snapshot Snapshot.
+	 * @return bool
+	 */
+	public static function eval_utm_term( $op, $val, RWGC_Context_Snapshot $snapshot ) {
+		return self::eval_attribution_scalar( 'term', $op, $val, $snapshot );
+	}
+
+	/**
+	 * @param string                $op       Operator.
+	 * @param mixed                 $val      Expected values.
+	 * @param RWGC_Context_Snapshot $snapshot Snapshot.
+	 * @return bool
+	 */
+	public static function eval_gclid( $op, $val, RWGC_Context_Snapshot $snapshot ) {
+		return self::eval_attribution_scalar( 'gclid', $op, $val, $snapshot );
 	}
 
 	/**

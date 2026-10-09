@@ -251,4 +251,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-Older entries through **0.1.x**–**1.8.x** are maintained in `readme.txt` (WordPress.org changelog section).
+Older readme changelog entries that are not repeated in the current `readme.txt` remain in the Git history of that file.
