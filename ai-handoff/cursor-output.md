@@ -3,6 +3,31 @@
 ## Status
 done
 
+Geo Content 1.9.1 on the same draft branch: the rule builder mounts when the inspector is shown, and Choose from library lists published rules only. Version is 1.9.1 so `index.js` is not cached as 1.9.0. No tag, no merge.
+
+## Root cause
+The mount effect depended only on `visibilityOn` and returned immediately when `rbWrapRef` was null. Gutenberg renders that inspector node through a SlotFill only while the block is selected, so after a reload the effect never ran. Toggling visibility rules changed `visibilityOn` and was the only way to start it. If the interval did start, it stopped after 40 tries (about 5 seconds).
+
+## Files changed
+- `blocks/geo-content/index.js` — mount from the inspector ref and when `isSelected` changes. No poll.
+- `includes/targeting/class-rwgc-rule-registry.php` — picker rows require `publish`.
+- `reactwoo-geocore.php`, `readme.txt`, `CHANGELOG.md`, `blocks/geo-content/index.asset.php` — 1.9.1.
+- Tests for selection-after-load and the published-only picker.
+
+## Not changed
+- Front-end rule matching. Drafts stay in `get_rules_for_builder()` for lookup; they are omitted from the picker.
+- No tag, no merge.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — Tests 109, Assertions 393, Errors 9 (`RWGC_ContextAttributionTest`), Failures 7 (`RWGCTargetingAssistantUiRegressionTest`).
+- Every `composer test:*` script except `test` / `test:all` — exit 0.
+
+## Remaining errors
+- Baseline only: 9 ContextAttribution header errors, 7 Targeting Assistant UI failures.
+
+## Status
+done
+
 Gutenberg Geo Content block: visibility-rule controls read either `advancedTargeting` or `advanced_targeting`, and the block can hold inner blocks. Existing self-closing blocks stay valid through a deprecated `save` that returns null. Server render shows or hides the inner HTML with the existing targeting gate. No version bump, no tag, no merge.
 
 ## Files changed

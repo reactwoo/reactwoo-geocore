@@ -3,7 +3,7 @@
 	const { ComboboxControl, Button, Notice, SelectControl, TextareaControl, ToggleControl } = wp.components;
 	const blockEditor = wp.blockEditor || wp.editor;
 	const { useBlockProps, InspectorControls, InnerBlocks } = blockEditor;
-	const { Fragment, useState, useEffect, useRef } = wp.element;
+	const { Fragment, useState, useEffect, useRef, useCallback } = wp.element;
 	const { __ } = wp.i18n;
 
 	function rwgcGeoContentAdvancedEnabled(config) {
@@ -11,6 +11,39 @@
 			return false;
 		}
 		return !!(config.advancedTargeting || config.advanced_targeting);
+	}
+
+	function rwgcGeoContentMountRuleBuilder(node, env) {
+		env = env || {};
+		var builder = env.builder;
+		if (!env.visibilityOn || !node || !builder || typeof builder.mount !== 'function') {
+			return false;
+		}
+		var ta = typeof node.querySelector === 'function' ? node.querySelector('textarea') : null;
+		if (!ta) {
+			return false;
+		}
+		if (ta.getAttribute('data-rwgc-rb-mounted')) {
+			return true;
+		}
+		builder.mount({
+			textarea: ta,
+			getMode:
+				typeof env.getMode === 'function'
+					? env.getMode
+					: function () {
+							return 'show_if';
+					  },
+			onChange: env.onChange,
+		});
+		return ta.getAttribute('data-rwgc-rb-mounted') === '1';
+	}
+
+	function rwgcGeoContentScheduleRuleBuilder(state) {
+		if (!state || !state.isSelected) {
+			return false;
+		}
+		return rwgcGeoContentMountRuleBuilder(state.node, state);
 	}
 
 	function GeoContentEdit(props) {
@@ -222,42 +255,44 @@
 		const visibilityMode =
 			attrs.visibilityRulesMode === 'hide_if' ? 'hide_if' : 'show_if';
 
-		useEffect(
-			function () {
-				if (!visibilityOn || !rbWrapRef.current || !window.ReactWooRuleBuilder) {
-					return undefined;
-				}
-				var cancelled = false;
-				var tries = 0;
-				var id = setInterval(function () {
-					if (cancelled || tries++ > 40) {
-						clearInterval(id);
-						return;
-					}
-					var ta = rbWrapRef.current && rbWrapRef.current.querySelector('textarea');
-					if (ta && !ta.getAttribute('data-rwgc-rb-mounted')) {
-						window.ReactWooRuleBuilder.mount({
-							textarea: ta,
-							getMode: function () {
-								var m = attrsRef.current.visibilityRulesMode || 'show_if';
-								return m === 'hide_if' ? 'hide_if' : 'show_if';
-							},
-							onChange: function (json) {
-								if (attrsRef.current.portableTargeting !== json) {
-									setAttr('portableTargeting', json);
-								}
-							},
-						});
-						rbMountedRef.current = true;
-						clearInterval(id);
-					}
-				}, 120);
-				return function () {
-					cancelled = true;
-					clearInterval(id);
+		var ruleBuilderState = useCallback(
+			function (node) {
+				return {
+					visibilityOn: visibilityOn,
+					isSelected: !!props.isSelected,
+					node: node || rbWrapRef.current,
+					builder: typeof window !== 'undefined' ? window.ReactWooRuleBuilder : null,
+					getMode: function () {
+						var m = attrsRef.current.visibilityRulesMode || 'show_if';
+						return m === 'hide_if' ? 'hide_if' : 'show_if';
+					},
+					onChange: function (json) {
+						if (attrsRef.current.portableTargeting !== json) {
+							setAttr('portableTargeting', json);
+						}
+					},
 				};
 			},
-			[visibilityOn]
+			[visibilityOn, props.isSelected]
+		);
+
+		var setRuleBuilderNode = useCallback(
+			function (node) {
+				rbWrapRef.current = node || null;
+				if (rwgcGeoContentScheduleRuleBuilder(ruleBuilderState(node))) {
+					rbMountedRef.current = true;
+				}
+			},
+			[ruleBuilderState]
+		);
+
+		useEffect(
+			function () {
+				if (rwgcGeoContentScheduleRuleBuilder(ruleBuilderState(rbWrapRef.current))) {
+					rbMountedRef.current = true;
+				}
+			},
+			[props.isSelected, visibilityOn, ruleBuilderState]
 		);
 
 		useEffect(
@@ -431,7 +466,7 @@
 								visibilityOn
 									? wp.element.createElement(
 											'div',
-											{ ref: rbWrapRef, className: 'rwgc-rb-mount-wrap' },
+											{ ref: setRuleBuilderNode, className: 'rwgc-rb-mount-wrap' },
 											wp.element.createElement(TextareaControl, {
 												label: __('Visibility rules', 'reactwoo-geocore'),
 												value: portable,

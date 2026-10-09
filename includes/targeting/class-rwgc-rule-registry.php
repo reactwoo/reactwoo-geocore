@@ -56,6 +56,14 @@ class RWGC_Rule_Registry {
 	public static function get_portable_library_picker_rows() {
 		$out = array();
 		foreach ( self::get_rwgc_library_rows() as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			// Choose-from-library matches the saved-rule select: published rules only.
+			$status = isset( $row['status'] ) ? (string) $row['status'] : '';
+			if ( 'publish' !== $status ) {
+				continue;
+			}
 			$id = isset( $row['id'] ) ? (string) $row['id'] : '';
 			if ( '' === $id ) {
 				continue;

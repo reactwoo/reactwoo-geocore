@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-10-09
+
+### Fixed
+- Geo Content visibility-rule controls render when advanced targeting is on. The block reads `advancedTargeting` or `advanced_targeting`, and the editor payload sends both.
+- Geo Content can contain inner blocks. The server shows or hides that inner HTML with the block’s targeting. Blocks saved as self-closing comments stay valid.
+- The Geo Content rule builder mounts when a block with visibility rules is selected, including after the editor reloads and when the block is selected again. The JSON textarea remains only if the builder script does not load.
+- Choose from library lists published visibility rules only, the same as the saved-rule select.
+
 ## [1.9.0] - 2026-10-09
 
 ### Fixed

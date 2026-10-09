@@ -22,9 +22,12 @@ const start = src.indexOf('function rwgcGeoContentAdvancedEnabled');
 const end = src.indexOf('function GeoContentEdit');
 assert(start !== -1 && end > start, 'advanced-targeting reader is missing');
 
-const readAdvanced = new Function(
-	src.slice(start, end) + '\nreturn rwgcGeoContentAdvancedEnabled;'
+const helpers = new Function(
+	src.slice(start, end) +
+		'\nreturn { readAdvanced: rwgcGeoContentAdvancedEnabled, schedule: rwgcGeoContentScheduleRuleBuilder };'
 )();
+const readAdvanced = helpers.readAdvanced;
+const schedule = helpers.schedule;
 
 assert(readAdvanced({ advancedTargeting: true }) === true, 'camelCase flag should enable rules');
 assert(readAdvanced({ advanced_targeting: true }) === true, 'snake_case flag should enable rules');
@@ -44,6 +47,105 @@ assert(src.indexOf('rwgc-library-rule-status') !== -1, 'stale-rule warning is mi
 assert(src.indexOf('Choose another saved rule') !== -1, 'replacement select is missing');
 assert(src.indexOf('Clear rule') !== -1, 'Clear rule button is missing');
 assert(src.indexOf('visibilityOn ? ruleWarningElement() : null') !== -1, 'warning must stay inside visibility rules');
+
+function textareaNode() {
+	const textarea = {
+		attrs: {},
+		value: '{"mode":"show_if"}',
+		setAttribute(name, value) {
+			this.attrs[name] = String(value);
+		},
+		getAttribute(name) {
+			return Object.prototype.hasOwnProperty.call(this.attrs, name) ? this.attrs[name] : null;
+		},
+	};
+	return {
+		textarea,
+		querySelector(selector) {
+			return selector === 'textarea' ? textarea : null;
+		},
+	};
+}
+
+function recordingBuilder() {
+	const calls = [];
+	return {
+		calls,
+		mount(options) {
+			calls.push(options);
+			options.textarea.setAttribute('data-rwgc-rb-mounted', '1');
+		},
+	};
+}
+
+const unloaded = textareaNode();
+assert(
+	schedule({
+		visibilityOn: true,
+		isSelected: false,
+		node: unloaded,
+		builder: recordingBuilder(),
+	}) === false,
+	'a saved block must not mount the builder before it is selected'
+);
+assert(unloaded.textarea.getAttribute('data-rwgc-rb-mounted') === null, 'unselected inspector leaves the textarea unmarked');
+
+const afterLoad = textareaNode();
+const builder = recordingBuilder();
+assert(
+	schedule({
+		visibilityOn: true,
+		isSelected: true,
+		node: afterLoad,
+		builder,
+		getMode() {
+			return 'show_if';
+		},
+	}) === true,
+	'selecting the block after load must mount the builder'
+);
+assert(builder.calls.length === 1, 'selecting once mounts once');
+assert(afterLoad.textarea.getAttribute('data-rwgc-rb-mounted') === '1', 'mounted textarea is marked');
+
+assert(
+	schedule({
+		visibilityOn: true,
+		isSelected: true,
+		node: afterLoad,
+		builder,
+	}) === true,
+	'selecting again while the same inspector is open does not fail'
+);
+assert(builder.calls.length === 1, 'an already mounted textarea is not mounted twice');
+
+const reselected = textareaNode();
+assert(
+	schedule({
+		visibilityOn: true,
+		isSelected: true,
+		node: reselected,
+		builder,
+	}) === true,
+	're-selecting the block mounts the builder on the new inspector node'
+);
+assert(builder.calls.length === 2, 're-select mounts again');
+
+const fallback = textareaNode();
+assert(
+	schedule({
+		visibilityOn: true,
+		isSelected: true,
+		node: fallback,
+		builder: null,
+	}) === false,
+	'a missing rule builder leaves the JSON textarea in place'
+);
+assert(fallback.textarea.getAttribute('data-rwgc-rb-mounted') === null, 'failed load does not mark the textarea mounted');
+
+assert(src.indexOf('setInterval') === -1, 'builder mount must not poll on a timeout');
+assert(src.indexOf('tries++ > 40') === -1, 'builder mount must not give up after 5 seconds');
+assert(src.indexOf('props.isSelected') !== -1, 'mount follows block selection');
+assert(src.indexOf('setRuleBuilderNode') !== -1, 'mount runs when the inspector node is attached');
 
 assert(src.indexOf('InnerBlocks') !== -1, 'edit must render InnerBlocks');
 assert(src.indexOf('InnerBlocks.Content') !== -1, 'save must persist InnerBlocks.Content');
