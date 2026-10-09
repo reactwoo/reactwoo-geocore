@@ -57,7 +57,12 @@ if ( preg_match( '/const FREE_CONDITION_TYPES = array\((.*?)\);/s', $schema, $fr
 
 rwgc_wporg_assert( 'readme external services', false !== strpos( $readme, '== External services ==' ) );
 rwgc_wporg_assert( 'readme tested up to 7.1', false !== strpos( $readme, 'Tested up to: 7.1' ) );
-rwgc_wporg_assert( 'readme stable tag matches header', false !== strpos( $readme, 'Stable tag: 1.8.170' ) && false !== strpos( $main, 'Version: 1.8.170' ) );
+rwgc_wporg_assert( 'readme stable tag matches header', false !== strpos( $readme, 'Stable tag: 1.9.0' ) && false !== strpos( $main, 'Version: 1.9.0' ) );
+rwgc_wporg_assert( 'version constant is 1.9.0', false !== strpos( $main, "define( 'RWGC_VERSION', '1.9.0' );" ) );
+rwgc_wporg_assert( 'readme upgrade notice', false !== strpos( $readme, '== Upgrade Notice ==' ) && false !== strpos( $readme, 'Requires PHP 8.1' ) );
+rwgc_wporg_assert( 'updater stub exists', is_file( $root . '/includes/class-rwgc-satellite-updater-stub.php' ) );
+rwgc_wporg_assert( 'wporg build loads the updater stub', false !== strpos( $plugin, 'class-rwgc-satellite-updater-stub.php' ) );
+rwgc_wporg_assert( 'distignore drops directory assets', false !== strpos( $distignore, '.wordpress-org' ) );
 rwgc_wporg_assert( 'readme requires PHP 8.1', false !== strpos( $readme, 'Requires PHP: 8.1' ) );
 rwgc_wporg_assert( 'readme discloses MaxMind', false !== strpos( $readme, 'download.maxmind.com' ) );
 rwgc_wporg_assert( 'readme discloses QUIC.cloud', false !== strpos( $readme, 'quic.cloud' ) );

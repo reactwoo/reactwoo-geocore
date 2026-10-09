@@ -3,6 +3,8 @@
 ## Status
 done
 
+Follow-up on PR #74: version 1.9.0, readme free-feature copy, updater stub, `.wordpress-org` assets. Not tagged. publish-update.yml untouched.
+
 Pull request: https://github.com/reactwoo/reactwoo-geocore/pull/74 (`wporg-build` → `main`). Not merged, not tagged, publish-update.yml untouched.
 
 ## Task

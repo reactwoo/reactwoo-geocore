@@ -8,6 +8,9 @@
 .cursor
 ai-handoff
 
+# WordPress.org directory assets (icon, banner, screenshots). Not part of either plugin zip.
+.wordpress-org
+
 # Docs, tests, and maintainer tooling (not needed to run the plugin)
 docs
 tests

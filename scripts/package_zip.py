@@ -75,6 +75,12 @@ def _zip_paths(base: Path, target: str) -> tuple[str, str]:
     return folder, zfile
 
 
+# Directory artwork lives here for the 10up deploy action. Neither zip ships it.
+SKIP_DIR_PREFIXES = (
+    ".wordpress-org/",
+)
+
+
 INCLUDE_DIRS = [
     "admin",
     "assets",
@@ -230,6 +236,8 @@ def _assert_wporg_zip(zf: zipfile.ZipFile, root_folder: str) -> None:
         body = zf.read(name).decode("utf-8", errors="replace")
         if "pre_set_site_transient_update_plugins" in body:
             raise RuntimeError(f"{name} still hooks the plugin update transient.")
+    if any(".wordpress-org/" in name for name in names):
+        raise RuntimeError("WordPress.org zip contains .wordpress-org assets.")
 
 
 def main() -> None:
@@ -263,6 +271,8 @@ def main() -> None:
                 for filename in files:
                     filepath = Path(root) / filename
                     rel = filepath.relative_to(base).as_posix()
+                    if rel.startswith(SKIP_DIR_PREFIXES):
+                        continue
                     if target == "wporg" and _is_distignored(rel, ignore_rules):
                         continue
                     arcname = f"{root_folder}/{rel}"
@@ -292,6 +302,8 @@ def main() -> None:
                 "Invalid zip structure detected: "
                 f"backslashes={len(bad_backslashes)} nested_root={len(nested)}"
             )
+        if any(".wordpress-org/" in name for name in names):
+            raise RuntimeError("Zip contains .wordpress-org directory assets.")
 
     print(f"Created ({target}): {out}")
 

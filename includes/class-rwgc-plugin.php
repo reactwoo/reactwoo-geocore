@@ -105,8 +105,13 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-preview.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-platform-client.php';
 		// WordPress.org builds must not ship or register a third-party updater (guideline 8).
-		// Pro add-ons update themselves; they do not receive updates through Geo Core.
-		if ( ! function_exists( 'rwgc_is_wordpress_org_distribution' ) || ! rwgc_is_wordpress_org_distribution() ) {
+		// Pro add-ons update themselves. The stub below only keeps their register() call from fatalling.
+		if ( function_exists( 'rwgc_is_wordpress_org_distribution' ) && rwgc_is_wordpress_org_distribution() ) {
+			$rwgc_updater_stub = RWGC_PATH . 'includes/class-rwgc-satellite-updater-stub.php';
+			if ( is_readable( $rwgc_updater_stub ) && ! class_exists( 'RWGC_Satellite_Updater', false ) ) {
+				require_once $rwgc_updater_stub;
+			}
+		} else {
 			$rwgc_updater = RWGC_PATH . 'includes/class-rwgc-satellite-updater.php';
 			if ( is_readable( $rwgc_updater ) ) {
 				require_once $rwgc_updater;

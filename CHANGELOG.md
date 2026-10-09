@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-10-09
+
+### Changed
+- Requires PHP 8.1, matching the MaxMind libraries shipped in `vendor/`.
+- Anonymous Cloud telemetry, including the `rwgc_vid` cookie, stays off until an administrator opts in on the ReactWoo Cloud screen.
+- Request UTM and click-id conditions (`utm_source`, `utm_medium`, `utm_campaign`, `source`, `medium`, `campaign`, `content`, `term`, `gclid`) are part of Geo Core. Audience, weather, and profile conditions still need the separate GeoCore Pro plugin.
+- The WordPress.org build does not include the ReactWoo update client. If a Pro add-on calls `RWGC_Satellite_Updater`, that call does nothing instead of stopping the site. Pro add-ons update themselves.
+
 ## [1.8.170] - 2026-10-08
 
 ### Added

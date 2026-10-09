@@ -4,27 +4,29 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.8.170
+Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Free country detection for WordPress using your MaxMind GeoLite2 database, plus shortcodes, REST, and a block.
+Detect a visitor’s country with your MaxMind database, then show content with shortcodes, a block, and rules.
 
 == Description ==
 
-ReactWoo Geo Core is a free geolocation engine for WordPress.
+ReactWoo Geo Core detects a visitor’s country on your server and lets you use that result in content, rules, and page routing. Country lookup uses a GeoLite2 Country database that you download with your own MaxMind account. No ReactWoo account is required for the features below.
 
-It provides:
+Included:
 
-* MaxMind-based country detection (GeoLite2 Country)
-* Centralised storage and update of the MaxMind database
-* A simple PHP API for add-ons and themes
-* Shortcodes for country, city, and currency
-* A REST API endpoint for frontend apps
-* A basic Gutenberg "Geo Content" block
-* Free page-level master/secondary routing (server-side, 1 master + 1 secondary country mapping per master page)
+* Country detection from the GeoLite2 Country database stored on your site
+* Download or upload that database from the MaxMind screen
+* Shortcodes for country, country code, city, region, and currency
+* A conditional shortcode for showing content to selected countries
+* A REST location endpoint for front-end code, and a capabilities endpoint for discovery
+* The Geo Content block for the block editor
+* Page routing with one default page and one country-specific page
+* Visibility rules for country, country group, language, locale, device, time of day, day of week, logged-in state, new and returning visitors, page type, URL, and request parameters (`utm_source`, `utm_medium`, `utm_campaign`, `source`, `medium`, `campaign`, `content`, `term`, `gclid`)
+* PHP helpers for themes and other plugins
 
-It is designed to be used on its own, or as a shared geo engine for premium ReactWoo plugins such as GeoElementor and ReactWoo WHMCS Bridge.
+Optional add-ons are separate plugins. Geo Core keeps working when they are not installed. GeoCore Pro adds audience, weather, and visitor-profile conditions. Other ReactWoo plugins, including GeoElementor, Geo Commerce, and WHMCS Bridge, can use this plugin as their country source. Those products update themselves.
 
 == Installation ==
 
@@ -65,9 +67,21 @@ No. ReactWoo Geo Core works with any theme and editor. It exposes helper functio
 
 No. You must provide your own MaxMind license key and accept their terms of use. The plugin then downloads the GeoLite2 Country database to your site.
 
+= What is included without another plugin? =
+
+Country detection, the shortcodes, the Geo Content block, the REST location endpoint, page routing, and the visibility-rule conditions listed in the description. Request parameters such as `utm_source` and `gclid` are included. You do not need a ReactWoo account for those features.
+
+= Do I need an add-on? =
+
+No. Audience, weather, and visitor-profile conditions are provided by the separate GeoCore Pro plugin. GeoElementor, Geo Commerce, and WHMCS Bridge are also separate plugins. Install one only if you want that product. Geo Core does not hide or limit the included features when an add-on is absent.
+
 = Does Geo Core require a ReactWoo product license? =
 
-No. Detection, shortcodes, the Gutenberg block, page routing, and the public REST location endpoint work without a ReactWoo key. A ReactWoo product license in settings is **optional** and used only if you enable optional AI-assisted features that call the ReactWoo API.
+No. Detection, shortcodes, the block, page routing, visibility rules, and the public REST location endpoint work without a ReactWoo key. A license key is used only when a separately installed add-on turns on an optional AI tool that calls the ReactWoo API.
+
+= Which PHP version is required? =
+
+PHP 8.1 or newer, and WordPress 6.2 or newer. The MaxMind libraries included with Geo Core require PHP 8.1.
 
 = Does the server need Composer or SSH? =
 
@@ -142,13 +156,22 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 == Screenshots ==
 
-1. Geo Core dashboard after activation. Placeholder caption — a screenshot file is not included in this commit.
-2. MaxMind (GeoLite2) account credentials and country database screen. Placeholder caption.
-3. Geo Content block in the block editor. Placeholder caption.
+1. The Geo Core overview in wp-admin, with setup progress and shortcuts to the main sections.
+2. Integrations → MaxMind (GeoLite2), where you add a MaxMind account and download or upload the country database.
+3. Targeting rules, with a sample rule named United Kingdom visitors.
+4. Geo insights, including the shortcodes that ship with Geo Core.
+5. Geo Core settings, including country detection and cache options.
+6. Integrations → ReactWoo Cloud. Anonymous experience events stay off until an administrator opts in.
 
 == Changelog ==
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
+
+= 1.9.0 =
+* Requires PHP 8.1.
+* Anonymous Cloud telemetry, including the visitor cookie, stays off until an administrator opts in.
+* UTM and click-id conditions are included in Geo Core. Audience, weather, and profile conditions remain in the separate GeoCore Pro plugin.
+* The WordPress.org build does not check api.reactwoo.com for updates. A Pro add-on that still calls the old Core updater helper is ignored instead of causing an error. Pro add-ons update themselves.
 
 = 1.8.170 =
 * Editors warn when a block or element still points at a deleted, missing, draft, or trashed visibility rule. The reference stays until you pick another rule or clear it.
@@ -189,3 +212,8 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 
 = 1.8.160 =
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
+
+== Upgrade Notice ==
+
+= 1.9.0 =
+Requires PHP 8.1. Anonymous Cloud telemetry is off until an administrator opts in. UTM and click-id conditions are included.
