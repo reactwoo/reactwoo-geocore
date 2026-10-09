@@ -3,6 +3,11 @@
 ## Status
 done
 
+WordPress.org rejected the 1.9.0 zip before review because `vendor/maxmind/web-service-common/dev-bin/release.sh` is an unexpected `.sh` file. The directory zip now drops `vendor/**/dev-bin/` (and other vendor docs/VCS paths), plus `.phar`, `.sh`, `.zip`, `.gz`, `.tar`, `.rar`, and `.7z` anywhere. `scripts/package_zip.py --target wporg` refuses to finish if one of those names is still in the archive. Version stays 1.9.0. Not tagged.
+
+## Status
+done
+
 Merged `origin/main` (`c21d1de`, Geo Core 1.8.171) into `wporg-build`. Version stays 1.9.0 because main is still below 1.9.0. Not tagged. `publish-update.yml` still runs only on `v*` tags and `workflow_dispatch`.
 
 ## Merge

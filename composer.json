@@ -44,7 +44,7 @@
     "test:cloud-security": "php tests/test-rwgc-cloud-security.php",
     "test:request-decision": "php tests/test-rwgc-request-decision.php",
     "test:entitlements": "php tests/test-rwgc-entitlements.php",
-    "test:wporg-build": "php tests/test-rwgc-wporg-build.php",
+    "test:wporg-build": "php tests/test-rwgc-wporg-build.php && python3 tests/test-rwgc-wporg-zip-guard.py",
     "test:recommendations": "php tests/test-rwgc-recommendations.php",
     "test:all": [
       "@test",

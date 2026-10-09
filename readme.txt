@@ -174,6 +174,7 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * The WordPress.org build does not check api.reactwoo.com for updates. A Pro add-on that still calls the old Core updater helper is ignored instead of causing an error. Pro add-ons update themselves.
 * An uploaded country database no longer shows a license-key warning. That warning appears only when there is no usable database and no license key to download one.
 * The Geo Content block loads in the block editor.
+* The WordPress.org package leaves out vendor maintainer scripts, including MaxMind's release.sh.
 
 = 1.8.171 =
 * Elementor: the stale-rule warning now shows after the panel renders, for a deleted, draft, or trashed saved rule.

@@ -200,8 +200,33 @@ def _main_php_bytes(path: Path, target: str) -> bytes:
     return text.encode("utf-8")
 
 
+# WordPress.org rejects these anywhere in a plugin zip, including inside vendor/.
+_WPORG_PROHIBITED_EXTENSIONS = (".phar", ".sh", ".zip", ".gz", ".tar", ".rar", ".7z")
+_WPORG_VCS_DIRS = {".git", ".svn", ".hg", ".bzr"}
+
+
+def wporg_prohibited_names(names: list[str]) -> list[str]:
+    """Return archive paths WordPress.org will reject before review."""
+    bad: list[str] = []
+    for name in names:
+        parts = [part for part in name.split("/") if part]
+        if any(part.lower() in _WPORG_VCS_DIRS for part in parts):
+            bad.append(name)
+            continue
+        filename = parts[-1].lower() if parts else name.lower()
+        if any(filename.endswith(ext) for ext in _WPORG_PROHIBITED_EXTENSIONS):
+            bad.append(name)
+    return bad
+
+
 def _assert_wporg_zip(zf: zipfile.ZipFile, root_folder: str) -> None:
     names = zf.namelist()
+    prohibited = wporg_prohibited_names(names)
+    if prohibited:
+        raise RuntimeError(
+            "WordPress.org zip contains prohibited files "
+            "(VCS directories or .phar/.sh/.zip/.gz/.tar/.rar/.7z):\n" + "\n".join(prohibited[:30])
+        )
     banned_fragments = (
         "class-rwgc-satellite-updater.php",
         "/docs/",

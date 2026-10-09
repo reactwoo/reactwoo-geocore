@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - An uploaded country database no longer shows the MaxMind license-key warning. The warning appears only when there is no usable database and no license key to download one.
 - The Geo Content block registers its editor script, so the block editor can insert it.
+- The WordPress.org zip omits vendor maintainer files such as `dev-bin/release.sh`, and the packager refuses to build if a VCS directory or a `.phar`, `.sh`, `.zip`, `.gz`, `.tar`, `.rar`, or `.7z` file is still inside.
 
 ### Changed
 - Requires PHP 8.1, matching the MaxMind libraries shipped in `vendor/`.
