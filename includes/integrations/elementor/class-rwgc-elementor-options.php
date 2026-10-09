@@ -250,6 +250,19 @@ class RWGC_Elementor_Options {
 					$rows = RWGC_Visibility_Rule_Repository::get_library_picker_rows();
 				}
 				$rows = is_array( $rows ) ? array_values( $rows ) : array();
+				$published = array();
+				foreach ( $rows as $row ) {
+					if ( ! is_array( $row ) ) {
+						continue;
+					}
+					// Draft and other unpublished rules stay out of the normal SELECT.
+					// The editor bridge adds the current one back as a stale option.
+					if ( isset( $row['status'] ) && '' !== (string) $row['status'] && 'publish' !== (string) $row['status'] ) {
+						continue;
+					}
+					$published[] = $row;
+				}
+				$rows = $published;
 
 				$limit = (int) apply_filters( 'rwgc_elementor_max_library_rules', self::MAX_LIBRARY_RULES );
 				if ( $limit > 0 && count( $rows ) > $limit ) {

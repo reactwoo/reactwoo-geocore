@@ -102,6 +102,8 @@ class RWGC_Elementor_Elements {
 					'incompatibleNotice' => __( 'This rule may not match in this document context.', 'reactwoo-geocore' ),
 					'choosePlaceholder'  => __( '— Choose saved visibility rule —', 'reactwoo-geocore' ),
 					'missingRuleOption'  => __( 'Rule #', 'reactwoo-geocore' ),
+					'unpublishedSuffix'  => __( ' (unpublished)', 'reactwoo-geocore' ),
+					'deletedSuffix'      => __( ' (deleted)', 'reactwoo-geocore' ),
 					'clearRule'          => __( 'Clear rule', 'reactwoo-geocore' ),
 					'pickAnother'        => __( 'Choose another saved rule above, or clear this reference. It stays saved until you do.', 'reactwoo-geocore' ),
 					'missingShowIf'      => __( 'The rule #%s was deleted or is unpublished. This content is now hidden for everyone.', 'reactwoo-geocore' ),
@@ -137,6 +139,19 @@ class RWGC_Elementor_Elements {
 			$rows = RWGC_Rule_Registry::get_library_picker_rows();
 		} elseif ( class_exists( 'RWGC_Visibility_Rule_Repository', false ) ) {
 			$rows = RWGC_Visibility_Rule_Repository::get_library_picker_rows();
+		}
+		if ( is_array( $rows ) ) {
+			$rows = array_values(
+				array_filter(
+					$rows,
+					static function ( $row ) {
+						if ( ! is_array( $row ) ) {
+							return false;
+						}
+						return ! isset( $row['status'] ) || '' === (string) $row['status'] || 'publish' === (string) $row['status'];
+					}
+				)
+			);
 		}
 
 		self::$visibility_library_rows_cache[ $cache_key ] = is_array( $rows ) ? $rows : array();
@@ -194,7 +209,10 @@ class RWGC_Elementor_Elements {
 			$rows = RWGC_Visibility_Rule_Repository::get_library_picker_rows();
 		}
 		foreach ( $rows as $row ) {
-			if ( empty( $row['id'] ) ) {
+			if ( empty( $row['id'] ) || ! is_array( $row ) ) {
+				continue;
+			}
+			if ( isset( $row['status'] ) && '' !== (string) $row['status'] && 'publish' !== (string) $row['status'] ) {
 				continue;
 			}
 			$key = (string) $row['id'];

@@ -144,7 +144,18 @@
 		var $applied = $panel.find(
 			'.elementor-control-rwgc_applied_visibility_rule_id input, [data-setting="rwgc_applied_visibility_rule_id"]'
 		);
-		return String($applied.first().val() || '');
+		var fromApplied = String($applied.first().val() || '');
+		if (fromApplied) {
+			return fromApplied;
+		}
+		// Elementor leaves the SELECT blank when the saved id is not one of its options.
+		// The model still holds the id; reading it is what keeps a stale reference.
+		var fromLibrary = readSavedCountryValue('rwgc_visibility_rule_library');
+		if (fromLibrary) {
+			return String(fromLibrary);
+		}
+		var fromAppliedModel = readSavedCountryValue('rwgc_applied_visibility_rule_id');
+		return fromAppliedModel ? String(fromAppliedModel) : '';
 	}
 
 	function statusNotice($panel) {
@@ -233,9 +244,40 @@
 		});
 		$notice.append($clear);
 		var $stale = librarySelect($panel).find('option[data-rwgc-stale="1"]');
-		if ($stale.length && row.title) {
-			$stale.text(row.title);
+		if ($stale.length) {
+			$stale.text(staleOptionLabel(id));
 		}
+	}
+
+	function rowIsPublishedChoice(row) {
+		if (!row || !row.id) {
+			return false;
+		}
+		var postStatus = row.status ? String(row.status) : '';
+		if (postStatus && postStatus !== 'publish' && postStatus !== 'published') {
+			return false;
+		}
+		var known = statusById[String(row.id)];
+		if (known && known.status && String(known.status) !== 'published') {
+			return false;
+		}
+		return true;
+	}
+
+	function staleOptionLabel(id) {
+		var known = statusById[String(id)];
+		var status = known && known.status ? String(known.status) : '';
+		var deleted =
+			!known || status === 'deleted' || status === 'nonexistent' || status === 'unresolvable';
+		var prefix = labels.missingRuleOption || 'Rule #';
+		if (deleted) {
+			return prefix + String(id) + (labels.deletedSuffix || ' (deleted)');
+		}
+		var suffix = labels.unpublishedSuffix || ' (unpublished)';
+		if (known && known.title) {
+			return String(known.title) + suffix;
+		}
+		return prefix + String(id) + suffix;
 	}
 
 	function portableTextarea($panel) {
@@ -337,7 +379,7 @@
 		var unavailable = [];
 
 		(cfg.library || []).forEach(function (row) {
-			if (!row || !row.id) {
+			if (!rowIsPublishedChoice(row)) {
 				return;
 			}
 			var status = row.compatibility && row.compatibility.status ? row.compatibility.status : 'compatible';
@@ -381,21 +423,22 @@
 		appendGroup(labels.attentionGroup || 'Needs attention', attention, false);
 		appendGroup(labels.unavailableGroup || 'Not available for this context', unavailable, true);
 
-		if (current && rowsById[current]) {
-			var rowStatus = rowsById[current].compatibility ? rowsById[current].compatibility.status : 'compatible';
+		var chosen = rowIsPublishedChoice(rowsById[current]) ? rowsById[current] : null;
+		if (chosen) {
+			var rowStatus = chosen.compatibility ? chosen.compatibility.status : 'compatible';
 			if (rowStatus !== 'incompatible') {
 				$select.val(current);
 			} else {
 				$select.val('');
-				persistAppliedRuleId($('#elementor-panel-inner'), '');
+				persistAppliedRuleId(panelRoot(), '');
 			}
 		} else if (current) {
 			// Keep a deleted or unpublished id selected. Clearing it here would drop the reference.
-			var known = statusById[current];
-			var staleLabel =
-				known && known.title ? known.title : (labels.missingRuleOption || 'Rule #') + current;
 			$select.append(
-				$('<option></option>').val(current).text(staleLabel).attr('data-rwgc-stale', '1')
+				$('<option></option>')
+					.val(current)
+					.text(staleOptionLabel(current))
+					.attr('data-rwgc-stale', '1')
 			);
 			$select.val(current);
 		}
@@ -683,9 +726,22 @@
 			});
 	}
 
+	function panelNode() {
+		return (
+			document.getElementById('elementor-panel-inner') ||
+			document.getElementById('elementor-panel') ||
+			null
+		);
+	}
+
+	function panelRoot() {
+		var node = panelNode();
+		return node ? $(node) : $();
+	}
+
 	function scan() {
 		fillLoadedCatalogues();
-		var $panel = $('#elementor-panel-inner');
+		var $panel = panelRoot();
 		if (!$panel.length) {
 			return;
 		}
@@ -702,24 +758,111 @@
 		}
 		scanTimer = setTimeout(function () {
 			scanTimer = null;
+			ensurePanelObserver();
 			scan();
 		}, 80);
 	}
 
-	$(window).on('elementor:init', function () {
-		installCatalogueFill();
-		if (window.elementor && elementor.hooks && typeof elementor.hooks.addAction === 'function') {
-			elementor.hooks.addAction('elementor/widgets/refreshed', fillLoadedCatalogues);
+	var panelObserverRoot = null;
+	function ensurePanelObserver() {
+		var root = panelNode();
+		if (!root || panelObserverRoot === root || typeof MutationObserver !== 'function') {
+			return;
 		}
-		scheduleScan();
-	});
-	$(document).on('elementor:init', scheduleScan);
-	installCatalogueFill();
-
-	var root = document.getElementById('elementor-panel-inner');
-	if (root) {
+		panelObserverRoot = root;
 		new MutationObserver(scheduleScan).observe(root, { childList: true, subtree: true });
 	}
-	scheduleScan();
-	setTimeout(scheduleScan, 400);
+
+	function watchEditorView(view) {
+		if (!view || view.__rwgcRuleStatus || typeof view.on !== 'function') {
+			return;
+		}
+		view.__rwgcRuleStatus = true;
+		view.on('render', scheduleScan);
+		view.on('section:activated', scheduleScan);
+		view.on('childview:section:activated', scheduleScan);
+	}
+
+	function watchOpenPanel() {
+		ensurePanelObserver();
+		if (!window.elementor || typeof elementor.getPanelView !== 'function') {
+			return;
+		}
+		var panelView = null;
+		try {
+			panelView = elementor.getPanelView();
+		} catch (err) {
+			panelView = null;
+		}
+		if (!panelView) {
+			return;
+		}
+		watchEditorView(panelView);
+		if (!panelView.__rwgcPageListener && typeof panelView.on === 'function') {
+			panelView.__rwgcPageListener = true;
+			panelView.on('set:page', function () {
+				watchOpenPanel();
+				scheduleScan();
+			});
+		}
+		if (typeof panelView.getCurrentPageView === 'function') {
+			try {
+				watchEditorView(panelView.getCurrentPageView());
+			} catch (err) {
+				/* The panel has no page view until an element is selected. */
+			}
+		}
+	}
+
+	function onOpenEditor(panel) {
+		watchEditorView(panel);
+		watchOpenPanel();
+		scheduleScan();
+	}
+
+	function installEditorHooks() {
+		installCatalogueFill();
+		ensurePanelObserver();
+		if (!window.elementor) {
+			return;
+		}
+		if (elementor.hooks && typeof elementor.hooks.addAction === 'function' && !installEditorHooks.bound) {
+			installEditorHooks.bound = true;
+			// Classic Elementor 3 and Elementor 4 both open the panel through these hooks.
+			['widget', 'section', 'column', 'container', 'page', 'popup', 'wp-post', 'wp-page'].forEach(
+				function (type) {
+					elementor.hooks.addAction('panel/open_editor/' + type, onOpenEditor);
+				}
+			);
+			elementor.hooks.addAction('elementor/widgets/refreshed', fillLoadedCatalogues);
+		}
+		if (typeof elementor.on === 'function' && !installEditorHooks.preview) {
+			installEditorHooks.preview = true;
+			elementor.on('preview:loaded', function () {
+				ensurePanelObserver();
+				watchOpenPanel();
+				scheduleScan();
+			});
+		}
+		if (
+			elementor.channels &&
+			elementor.channels.editor &&
+			typeof elementor.channels.editor.on === 'function' &&
+			!installEditorHooks.channel
+		) {
+			installEditorHooks.channel = true;
+			elementor.channels.editor.on('section:activated', scheduleScan);
+		}
+		watchOpenPanel();
+		scheduleScan();
+	}
+
+	// #elementor-panel-inner is created when the panel view renders, which is after
+	// this script runs. Observing it here used to no-op, so selecting a widget never
+	// refreshed the rule notice. Attach from Elementor's own init and panel hooks.
+	$(window).on('elementor:init', installEditorHooks);
+	$(document).on('elementor:init', installEditorHooks);
+	if (window.elementor) {
+		installEditorHooks();
+	}
 })(jQuery);
