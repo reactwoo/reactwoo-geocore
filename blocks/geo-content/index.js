@@ -1,9 +1,17 @@
 (function (wp) {
 	const { registerBlockType } = wp.blocks;
 	const { ComboboxControl, Button, Notice, SelectControl, TextareaControl, ToggleControl } = wp.components;
-	const { useBlockProps, InspectorControls } = wp.blockEditor || wp.editor;
+	const blockEditor = wp.blockEditor || wp.editor;
+	const { useBlockProps, InspectorControls, InnerBlocks } = blockEditor;
 	const { Fragment, useState, useEffect, useRef } = wp.element;
 	const { __ } = wp.i18n;
+
+	function rwgcGeoContentAdvancedEnabled(config) {
+		if (!config || typeof config !== 'object') {
+			return false;
+		}
+		return !!(config.advancedTargeting || config.advanced_targeting);
+	}
 
 	function GeoContentEdit(props) {
 		const attrs = props.attributes;
@@ -34,10 +42,9 @@
 			(typeof attrs.portableTargeting === 'string' && attrs.portableTargeting.trim() !== '');
 		const selected = Array.isArray(attrs.showCountries) ? attrs.showCountries : [];
 		const portable = typeof attrs.portableTargeting === 'string' ? attrs.portableTargeting : '';
-		const advanced =
-			typeof window !== 'undefined' &&
-			window.rwgcPortableTargetingAssist &&
-			window.rwgcPortableTargetingAssist.advancedTargeting;
+		const advanced = rwgcGeoContentAdvancedEnabled(
+			typeof window !== 'undefined' ? window.rwgcPortableTargetingAssist : null
+		);
 		const [comboKey, setComboKey] = useState(0);
 		const ruleId = String(attrs.visibilityRuleLibrary || attrs.appliedVisibilityRuleId || '');
 		const statusBoot =
@@ -445,12 +452,17 @@
 				blockProps,
 				wp.element.createElement(
 					'p',
-					null,
+					{ className: 'rwgc-geo-content-block__hint' },
 					countryOn || visibilityOn
 						? __('Geo Content — inner blocks use country and/or visibility rules above.', 'reactwoo-geocore')
 						: __('Geo Content — enable country or visibility rules in the sidebar.', 'reactwoo-geocore')
 				),
-				props.children
+				InnerBlocks
+					? wp.element.createElement(InnerBlocks, {
+							templateLock: false,
+							renderAppender: InnerBlocks.ButtonBlockAppender,
+					  })
+					: null
 			)
 		);
 	}
@@ -458,7 +470,15 @@
 	registerBlockType('reactwoo-geocore/geo-content', {
 		edit: GeoContentEdit,
 		save: function () {
-			return null;
+			return InnerBlocks ? wp.element.createElement(InnerBlocks.Content, null) : null;
 		},
+		// Blocks saved before inner content used save() === null (self-closing comments).
+		deprecated: [
+			{
+				save: function () {
+					return null;
+				},
+			},
+		],
 	});
 })(window.wp);

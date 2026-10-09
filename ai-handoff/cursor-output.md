@@ -3,6 +3,30 @@
 ## Status
 done
 
+Gutenberg Geo Content block: visibility-rule controls read either `advancedTargeting` or `advanced_targeting`, and the block can hold inner blocks. Existing self-closing blocks stay valid through a deprecated `save` that returns null. Server render shows or hides the inner HTML with the existing targeting gate. No version bump, no tag, no merge.
+
+## Files changed
+- `blocks/geo-content/index.js` — both config spellings; `InnerBlocks` in edit; `InnerBlocks.Content` in save; deprecated null save; stale-rule warning, replacement select, and Clear rule kept.
+- `includes/targeting/class-rwgc-targeting-rule-set-schema.php` — editor context sends both spellings of the Pro flag.
+- `includes/class-rwgc-gutenberg.php` — render docblock states that `$content` (inner HTML) is what gating shows or omits.
+- `tests/Integrations/RWGCGeoContentBlockTest.php` — both keys, inner render, show_if hide, hide_if show.
+- `tests/test-rwgc-geo-content-block.js` — key reader and editor contract.
+- `composer.json`, `.github/workflows/test.yml` — `test:geo-content-block`.
+
+## Not changed
+- Version 1.9.0, changelog, front-end rule matching, Elementor bridge.
+- No tag, no merge.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — Tests 107, Assertions 389, Errors 9 (`RWGC_ContextAttributionTest`), Failures 7 (`RWGCTargetingAssistantUiRegressionTest`). New class: 5 tests, 15 assertions, all passing.
+- Every `composer test:*` script except `test` / `test:all` — exit 0, including `test:geo-content-block` and `test:wporg-build`.
+
+## Remaining errors
+- Baseline only: 9 ContextAttribution header errors, 7 Targeting Assistant UI failures.
+
+## Status
+done
+
 WordPress.org rejected the 1.9.0 zip before review because Plugin URI and Author URI were both `https://reactwoo.com/`. Plugin URI is now `https://reactwoo.com/geo-core/` (live page title "Geo Core - ReactWoo"). Author URI stays `https://reactwoo.com/`. Version stays 1.9.0. The plugin name and text domain are unchanged. Not tagged.
 
 The upload handler assigns slug `reactwoo-geo-core` from Plugin Name. Text Domain `reactwoo-geocore` does not match that slug. That is a Plugin Check warning (`textdomain_mismatch`), not an upload rejection: `class-upload-handler.php` only stores `header_textdomain`, and `class-plugin-scan.php` fails the upload only when a result type is `ERROR`.

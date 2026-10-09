@@ -77,8 +77,11 @@ class RWGC_Gutenberg {
 	/**
 	 * Server-side render for geo-content block.
 	 *
+	 * $content is the rendered InnerBlocks HTML. Targeting shows that HTML inside
+	 * the wrapper, or returns an empty string so the inner content stays hidden.
+	 *
 	 * @param array  $attributes Block attributes.
-	 * @param string $content    Inner content.
+	 * @param string $content    Rendered inner blocks.
 	 * @return string
 	 */
 	public static function render_geo_content_block( $attributes, $content ) {

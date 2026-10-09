@@ -434,6 +434,23 @@ class RWGC_Targeting_Rule_Set_Schema {
 	}
 
 	/**
+	 * Both editor spellings of the Pro advanced-targeting flag.
+	 *
+	 * The Geo Content block historically read `advancedTargeting`. The portable
+	 * context sends `advanced_targeting`. Older scripts may rely on either key.
+	 *
+	 * @param mixed $enabled Whether advanced targeting is enabled.
+	 * @return array{advanced_targeting:bool,advancedTargeting:bool}
+	 */
+	public static function advanced_targeting_editor_flags( $enabled ) {
+		$on = (bool) $enabled;
+		return array(
+			'advanced_targeting' => $on,
+			'advancedTargeting'  => $on,
+		);
+	}
+
+	/**
 	 * Authoring payload for portable JSON (Elementor, Geo Content block, Targeting admin).
 	 *
 	 * GeoCore Pro extends `audiences` / `campaigns` from synced Google entities.
@@ -454,13 +471,17 @@ class RWGC_Targeting_Rule_Set_Schema {
 		}
 
 		$weather_connected = (bool) apply_filters( 'rwgc_weather_targets_configured', false );
+		$advanced_flags    = self::advanced_targeting_editor_flags(
+			function_exists( 'rwgc_advanced_targeting_enabled' ) && rwgc_advanced_targeting_enabled()
+		);
 
 		$base = array(
 			'pro'                  => self::is_pro_active(),
 			'weather_connected'    => $weather_connected,
 			'weather_facets'       => array(),
 			'site_url'             => home_url( '/' ),
-			'advanced_targeting'   => function_exists( 'rwgc_advanced_targeting_enabled' ) && rwgc_advanced_targeting_enabled(),
+			'advanced_targeting'   => $advanced_flags['advanced_targeting'],
+			'advancedTargeting'    => $advanced_flags['advancedTargeting'],
 			'visibility_library'   => $library,
 			'audiences'            => array(),
 			'campaigns'            => array(),

@@ -73,3 +73,7 @@ jobs:
       - name: JS Elementor stale-rule panel
         if: steps.wip.outputs.skip != 'true'
         run: composer test:elementor-rule-status
+
+      - name: JS Geo Content block
+        if: steps.wip.outputs.skip != 'true'
+        run: composer test:geo-content-block
