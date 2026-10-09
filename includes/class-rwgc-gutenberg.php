@@ -17,7 +17,7 @@ class RWGC_Gutenberg {
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'register_blocks' ) );
 		add_action( 'enqueue_block_editor_assets', array( __CLASS__, 'inline_portable_editor_context' ), 5 );
-		add_action( 'enqueue_block_editor_assets', array( __CLASS__, 'inject_editor_country_options' ) );
+		add_action( 'enqueue_block_editor_assets', array( __CLASS__, 'inject_editor_country_options' ), 11 );
 	}
 
 	/**

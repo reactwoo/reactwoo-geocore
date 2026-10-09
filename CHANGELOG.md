@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.9.0] - 2026-10-09
 
+### Fixed
+- An uploaded country database no longer shows the MaxMind license-key warning. The warning appears only when there is no usable database and no license key to download one.
+- The Geo Content block registers its editor script, so the block editor can insert it.
+
 ### Changed
 - Requires PHP 8.1, matching the MaxMind libraries shipped in `vendor/`.
 - Anonymous Cloud telemetry, including the `rwgc_vid` cookie, stays off until an administrator opts in on the ReactWoo Cloud screen.

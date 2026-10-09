@@ -54,7 +54,7 @@
       "default": false
     }
   },
-  "editorScript": "rwgc-geo-content-editor",
+  "editorScript": "file:./index.js",
   "editorStyle": "rwgc-geo-content-editor",
   "style": "rwgc-geo-content"
 }

@@ -77,6 +77,13 @@ if ( preg_match( '/^License URI:.*\R\R(.+)\R/m', $readme, $short_match ) ) {
 	$short = trim( $short_match[1] );
 }
 rwgc_wporg_assert( 'short description within 150 characters (' . strlen( $short ) . ')', strlen( $short ) > 0 && strlen( $short ) <= 150 );
+$block_json = (string) file_get_contents( $root . '/blocks/geo-content/block.json' );
+$block_asset = (string) file_get_contents( $root . '/blocks/geo-content/index.asset.php' );
+rwgc_wporg_assert( 'geo content editor script is a file', false !== strpos( $block_json, '"editorScript": "file:./index.js"' ) );
+rwgc_wporg_assert( 'geo content editor handle is registered from the asset file', false !== strpos( $block_asset, "'rwgc-geo-content-editor'" ) );
+$admin = (string) file_get_contents( $root . '/includes/class-rwgc-admin.php' );
+rwgc_wporg_assert( 'license-key warning is not the only MaxMind notice', false === strpos( $admin, 'MaxMind license key is not configured' ) );
+rwgc_wporg_assert( 'missing database notice uses the notice code', false !== strpos( $admin, 'admin_notice_code' ) );
 
 if ( $failed > 0 ) {
 	fwrite( STDERR, "\n$failed assertion(s) failed\n" );

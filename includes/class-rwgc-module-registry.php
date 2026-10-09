@@ -190,19 +190,33 @@ class RWGC_Module_Registry {
 			case self::MODULE_MAXMIND:
 				$settings = class_exists( 'RWGC_Settings', false ) ? RWGC_Settings::get_settings() : array();
 				$has_key  = ! empty( $settings['maxmind_license_key'] );
+				$usable   = class_exists( 'RWGC_MaxMind', false ) && RWGC_MaxMind::db_is_usable();
+				if ( $usable && ! $has_key ) {
+					$detail      = __( 'Country database is on this site. A license key is only needed for automatic updates.', 'reactwoo-geocore' );
+					$status_name = 'ready';
+					$consequence = '';
+				} elseif ( $has_key ) {
+					$detail      = __( 'MaxMind credentials saved.', 'reactwoo-geocore' );
+					$status_name = 'ready';
+					$consequence = '';
+				} else {
+					$detail      = __( 'Upload a country database, or add a MaxMind license key to download one.', 'reactwoo-geocore' );
+					$status_name = 'needs_setup';
+					$consequence = __( 'Without a database, lookups use fallback values.', 'reactwoo-geocore' );
+				}
 				return array_merge(
 					$defaults,
 					array(
-						'status'        => $has_key ? 'ready' : 'needs_setup',
-						'detail'        => $has_key ? __( 'MaxMind credentials saved.', 'reactwoo-geocore' ) : __( 'Add your GeoLite2 license key.', 'reactwoo-geocore' ),
+						'status'        => $status_name,
+						'detail'        => $detail,
 						'configure_url' => function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ),
-						'consequence'   => $has_key ? '' : __( 'Without credentials, downloads and accurate lookups may not work.', 'reactwoo-geocore' ),
+						'consequence'   => $consequence,
 					)
 				);
 
 			case self::MODULE_DB:
-				$status = class_exists( 'RWGC_MaxMind', false ) ? RWGC_MaxMind::get_status() : array( 'exists' => false );
-				$ok     = ! empty( $status['exists'] );
+				$status = class_exists( 'RWGC_MaxMind', false ) ? RWGC_MaxMind::get_status() : array( 'usable' => false );
+				$ok     = ! empty( $status['usable'] );
 				return array_merge(
 					$defaults,
 					array(

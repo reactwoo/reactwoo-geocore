@@ -76,6 +76,11 @@ settings_errors( 'rwgc_maxmind' );
 							<input type="checkbox" name="auto_update_db" value="1" <?php checked( ! empty( $settings['auto_update_db'] ) ); ?> />
 							<?php esc_html_e( 'Download or refresh the database automatically when possible.', 'reactwoo-geocore' ); ?>
 						</label>
+						<?php if ( ! empty( $status['usable'] ) && empty( $status['has_license'] ) ) : ?>
+							<p class="description">
+								<?php esc_html_e( 'A country database is already on this site, so lookups do not need a license key. Add a MaxMind license key only if you want automatic downloads.', 'reactwoo-geocore' ); ?>
+							</p>
+						<?php endif; ?>
 					</td>
 				</tr>
 			</table>

@@ -3,6 +3,39 @@
 ## Status
 done
 
+Directory bugfixes on PR #74, still untagged. `publish-update.yml` untouched.
+
+## This pass
+
+- MaxMind admin warning now uses `RWGC_MaxMind::admin_notice_code()`. A usable `.mmdb` with no license key does not raise the license-key warning. The global warning is only `no_database` (nothing usable and no key) or `missing_file` (key saved, file missing). A stale database that also has a key still shows the existing info notice. The automatic-update hint stays on the MaxMind screen and on the Overview setup step.
+- Geo Content `editorScript` is `file:./index.js`. `blocks/geo-content/index.asset.php` keeps the handle `rwgc-geo-content-editor`. Country options are injected after WordPress enqueues that script.
+- Verified on WordPress 7.1.3 with the directory zip: Overview has no admin notice, “Geo database ready” is checked, and the block editor inserts Geo Content with United Kingdom selected. Not the unsupported-block recovery UI.
+- Screenshots 1–6 replaced. Screenshot 1 is Overview. Screenshot 2 is the Geo Content block in the editor.
+
+## Checks
+- `php -l` on changed PHP: no syntax errors.
+- `php tests/test-rwgc-wporg-build.php`: passed.
+- `RWGC_MaxMindDatabaseTest`: 5 tests, 8 assertions, OK.
+- PHPUnit: 102 tests, 374 assertions, 9 errors, 7 failures. Same 9 errors and 7 failures as main (97 tests, 366 assertions). The extra tests are the new MaxMind cases.
+- Plugin Check 2.1.0 on the installed WordPress.org build, WordPress 7.1.3: 0 errors, 375 warnings. Same warning groups as the previous pass.
+- `python scripts/package_zip.py --target wporg` includes `file:./index.js` and the asset handle, and the admin class no longer contains “license key is not configured”.
+
+## Files changed
+- `includes/class-rwgc-maxmind.php`, `includes/class-rwgc-admin.php`, `includes/class-rwgc-onboarding.php`, `includes/class-rwgc-module-registry.php`, `admin/views/integrations-maxmind-page.php`
+- `blocks/geo-content/block.json`, `blocks/geo-content/index.asset.php`, `includes/class-rwgc-gutenberg.php`
+- `tests/Engine/RWGC_MaxMindDatabaseTest.php`, `tests/test-rwgc-wporg-build.php`
+- `readme.txt`, `CHANGELOG.md`, `.wordpress-org/screenshot-1.png` through `screenshot-6.png`
+
+## What was not changed
+- Version stays 1.9.0. No tag, no release, no edit to `.github/workflows/publish-update.yml`.
+- Icon and banner files were not redesigned.
+- The ReactWoo updater class was not edited.
+
+Previous branding notes follow. The license-key warning and unsupported Geo Content block described there are fixed by this pass.
+
+## Status
+done
+
 Branding follow-up on PR #74: owner-approved icon and banners, tagline, recaptured screenshots. Not tagged. publish-update.yml untouched.
 
 ## Branding pass

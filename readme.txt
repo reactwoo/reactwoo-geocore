@@ -156,11 +156,11 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 == Screenshots ==
 
-1. A demo page in the editor, with a country shortcode and Geo Variant Routing pointed at the United Kingdom page.
-2. Targeting rules, with a sample rule named United Kingdom visitors.
-3. The visibility rule editor, with a country condition for the United Kingdom.
-4. Integrations → MaxMind (GeoLite2), with a country database on disk.
-5. Getting Started, the setup wizard for choosing a goal.
+1. The Geo Core overview, with the country database counted as ready.
+2. The Geo Content block in the page editor, set up for a United Kingdom offer.
+3. Targeting rules, with a sample rule named United Kingdom visitors.
+4. Integrations → MaxMind (GeoLite2), with a country database on disk. A license key is only needed for automatic downloads.
+5. The visibility rule editor, with a country condition for the United Kingdom.
 6. Integrations → ReactWoo Cloud. Anonymous experience events stay off until an administrator opts in.
 
 == Changelog ==
@@ -172,6 +172,8 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * Anonymous Cloud telemetry, including the visitor cookie, stays off until an administrator opts in.
 * UTM and click-id conditions are included in Geo Core. Audience, weather, and profile conditions remain in the separate GeoCore Pro plugin.
 * The WordPress.org build does not check api.reactwoo.com for updates. A Pro add-on that still calls the old Core updater helper is ignored instead of causing an error. Pro add-ons update themselves.
+* An uploaded country database no longer shows a license-key warning. That warning appears only when there is no usable database and no license key to download one.
+* The Geo Content block loads in the block editor.
 
 = 1.8.170 =
 * Editors warn when a block or element still points at a deleted, missing, draft, or trashed visibility rule. The reference stays until you pick another rule or clear it.

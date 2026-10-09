@@ -1506,19 +1506,24 @@ class RWGC_Admin {
 			}
 		}
 
-		$status   = RWGC_MaxMind::get_status();
-		$settings = RWGC_Settings::get_settings();
+		$status = RWGC_MaxMind::get_status();
 
 		$maxmind_url = function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' );
+		$notice_code = RWGC_MaxMind::admin_notice_code(
+			! empty( $status['usable'] ),
+			! empty( $status['has_license'] ),
+			! empty( $status['is_stale'] )
+		);
 
-		if ( empty( $settings['maxmind_license_key'] ) ) {
+		// auto_update_hint is shown on the MaxMind screen, not as a warning on every Geo page.
+		if ( 'no_database' === $notice_code ) {
 			printf(
 				'<div class="notice notice-warning rwgc-notice"><p>%1$s <a href="%2$s">%3$s</a></p></div>',
-				esc_html__( 'ReactWoo Geo Core: MaxMind license key is not configured. GeoIP lookups will use fallback values.', 'reactwoo-geocore' ),
+				esc_html__( 'ReactWoo Geo Core: No country database is on this site, and no MaxMind license key is saved to download one. Lookups will use fallback values.', 'reactwoo-geocore' ),
 				esc_url( $maxmind_url ),
 				esc_html__( 'Open MaxMind integration', 'reactwoo-geocore' )
 			);
-		} elseif ( ! $status['exists'] ) {
+		} elseif ( 'missing_file' === $notice_code ) {
 			if ( ! empty( $status['last_error'] ) ) {
 				printf(
 					'<div class="notice notice-warning rwgc-notice"><p>%1$s <a href="%2$s">%3$s</a></p><p><code>%4$s</code></p></div>',
@@ -1535,7 +1540,7 @@ class RWGC_Admin {
 					esc_html__( 'Download or upload the database', 'reactwoo-geocore' )
 				);
 			}
-		} elseif ( $status['is_stale'] ) {
+		} elseif ( 'stale' === $notice_code ) {
 			printf(
 				'<div class="notice notice-info rwgc-notice"><p>%1$s <a href="%2$s">%3$s</a></p></div>',
 				esc_html__( 'ReactWoo Geo Core: MaxMind database may be stale.', 'reactwoo-geocore' ),
