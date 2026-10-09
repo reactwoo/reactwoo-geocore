@@ -224,12 +224,14 @@ class RWGC_Visibility_Rule_Editor_Presenter {
 				implode( ' ' . __( 'or', 'reactwoo-geocore' ) . ' ', $chips['include'] ),
 				! empty( $chips['exclude'] )
 					? ', ' . sprintf(
+						/* translators: %s: excluded country list. */
 						__( 'excluding %s', 'reactwoo-geocore' ),
 						implode( ' ' . __( 'and', 'reactwoo-geocore' ) . ' ', $chips['exclude'] )
 					)
 					: '',
 				! empty( $chips['traffic'] )
 					? ', ' . sprintf(
+						/* translators: %s: traffic source list. */
 						__( 'when they came from %s', 'reactwoo-geocore' ),
 						implode( ' ' . __( 'or', 'reactwoo-geocore' ) . ' ', $chips['traffic'] )
 					)
@@ -248,24 +250,35 @@ class RWGC_Visibility_Rule_Editor_Presenter {
 		}
 		if ( ! empty( $chips['include'] ) ) {
 			$parts[] = sprintf(
+				/* translators: %s: included country list. */
 				__( 'Includes visitors from %s.', 'reactwoo-geocore' ),
 				implode( ' ' . __( 'or', 'reactwoo-geocore' ) . ' ', $chips['include'] )
 			);
 		}
 		if ( ! empty( $chips['exclude'] ) ) {
 			$parts[] = sprintf(
+				/* translators: %s: excluded country list. */
 				__( 'Excludes visitors from %s.', 'reactwoo-geocore' ),
 				implode( ' ' . __( 'or', 'reactwoo-geocore' ) . ' ', $chips['exclude'] )
 			);
 		}
 		if ( ! empty( $chips['device'] ) ) {
-			$parts[] = sprintf( __( 'Device: %s.', 'reactwoo-geocore' ), implode( ', ', $chips['device'] ) );
+			$parts[] = sprintf(
+				/* translators: %s: comma-separated device names. */
+				__( 'Device: %s.', 'reactwoo-geocore' ),
+				implode( ', ', $chips['device'] )
+			);
 		}
 		if ( ! empty( $chips['page'] ) ) {
-			$parts[] = sprintf( __( 'Page: %s.', 'reactwoo-geocore' ), implode( ', ', $chips['page'] ) );
+			$parts[] = sprintf(
+				/* translators: %s: comma-separated page types. */
+				__( 'Page: %s.', 'reactwoo-geocore' ),
+				implode( ', ', $chips['page'] )
+			);
 		}
 		if ( ! empty( $chips['traffic'] ) ) {
 			$parts[] = sprintf(
+				/* translators: %s: traffic source list. */
 				__( 'Traffic: %s.', 'reactwoo-geocore' ),
 				implode( ' ' . __( 'OR', 'reactwoo-geocore' ) . ' ', $chips['traffic'] )
 			);

@@ -7,6 +7,16 @@
 
 define( 'ABSPATH', dirname( __DIR__ ) . '/' );
 
+if ( ! function_exists( 'wp_unslash' ) ) {
+	/**
+	 * @param mixed $value Value.
+	 * @return mixed
+	 */
+	function wp_unslash( $value ) {
+		return is_string( $value ) ? stripslashes( $value ) : $value;
+	}
+}
+
 if ( ! function_exists( 'apply_filters' ) ) {
 	/**
 	 * @param string $hook Hook.

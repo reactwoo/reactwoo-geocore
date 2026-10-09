@@ -315,7 +315,7 @@ class RWGC_Context_Attribution {
 	 * @return void
 	 */
 	private static function persist_returning_cookie() {
-		$existing = self::has_returning_cookie()
+		$existing = ( isset( $_COOKIE['rwgc_returning'] ) && self::has_returning_cookie() )
 			? sanitize_text_field( wp_unslash( (string) $_COOKIE['rwgc_returning'] ) )
 			: '';
 		$value = '' !== $existing ? $existing : (string) time();

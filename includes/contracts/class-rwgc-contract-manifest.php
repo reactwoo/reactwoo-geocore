@@ -96,7 +96,7 @@ final class RWGC_Contract_Manifest extends RWGC_Contract {
 
 		$schema = self::optional_string( $core, 'schema', RWGC_Schema::MANIFEST_SCHEMA );
 		if ( ! self::is_compatible_schema( $schema ) ) {
-			throw new RWGC_Contract_Exception( sprintf( 'Unsupported manifest schema: %s.', $schema ) );
+			throw new RWGC_Contract_Exception( esc_html( sprintf( 'Unsupported manifest schema: %s.', $schema ) ) );
 		}
 
 		if ( ! isset( $core['revision'] ) || ! is_numeric( $core['revision'] ) ) {
@@ -158,12 +158,12 @@ final class RWGC_Contract_Manifest extends RWGC_Contract {
 	 */
 	private static function map_list( $raw, $mapper, $label ) {
 		if ( ! is_array( $raw ) ) {
-			throw new RWGC_Contract_Exception( sprintf( 'Manifest %s must be an array.', $label ) );
+			throw new RWGC_Contract_Exception( esc_html( sprintf( 'Manifest %s must be an array.', $label ) ) );
 		}
 		$out = array();
 		foreach ( $raw as $row ) {
 			if ( ! is_array( $row ) ) {
-				throw new RWGC_Contract_Exception( sprintf( 'Manifest %s entries must be objects.', $label ) );
+				throw new RWGC_Contract_Exception( esc_html( sprintf( 'Manifest %s entries must be objects.', $label ) ) );
 			}
 			$out[] = call_user_func( $mapper, $row );
 		}

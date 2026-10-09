@@ -72,6 +72,14 @@ if ( ! function_exists( 'untrailingslashit' ) ) {
 		return rtrim( (string) $s, '/\\' );
 	}
 }
+if ( ! function_exists( 'wp_parse_url' ) ) {
+	function wp_parse_url( $url, $component = -1 ) {
+		if ( -1 === $component ) {
+			return parse_url( (string) $url );
+		}
+		return parse_url( (string) $url, $component );
+	}
+}
 if ( ! function_exists( 'wp_json_encode' ) ) {
 	function wp_json_encode( $data ) {
 		return json_encode( $data );

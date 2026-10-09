@@ -185,7 +185,7 @@ class RWGC_MaxMind {
 		$dest_dir = self::get_storage_dir();
 		$db_path  = self::extract_mmdb_from_archive( $tmp, $dest_dir );
 
-		@unlink( $tmp );
+		wp_delete_file( $tmp );
 
 		if ( is_wp_error( $db_path ) ) {
 			self::record_error( $db_path );
@@ -232,7 +232,14 @@ class RWGC_MaxMind {
 			}
 			$phar->extractTo( $dest_dir, null, true );
 		} catch ( Exception $e ) {
-			return new WP_Error( 'rwgc_extract_failed', sprintf( __( 'Failed to extract MaxMind archive: %s', 'reactwoo-geocore' ), $e->getMessage() ) );
+			return new WP_Error(
+				'rwgc_extract_failed',
+				sprintf(
+					/* translators: %s: archive extraction error message. */
+					__( 'Failed to extract MaxMind archive: %s', 'reactwoo-geocore' ),
+					$e->getMessage()
+				)
+			);
 		}
 
 		// Find first .mmdb file in dest_dir recursively.

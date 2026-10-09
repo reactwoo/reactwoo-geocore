@@ -39,7 +39,7 @@ final class RWGC_Variant_Diagnostics {
 				'code'       => (string) $code,
 				'variant_id' => (string) $variant_id,
 				'slot_id'    => (string) $slot_id,
-				'time'       => function_exists( 'gmdate' ) ? gmdate( 'c' ) : date( 'c' ),
+				'time'       => gmdate( 'c' ),
 			),
 			$extra
 		);

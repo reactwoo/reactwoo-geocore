@@ -265,7 +265,7 @@ final class RWGC_Cloud_Telemetry {
 	 */
 	private static function visitor_id() {
 		if ( isset( $_COOKIE[ self::COOKIE ] ) && is_string( $_COOKIE[ self::COOKIE ] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-			$existing = preg_replace( '/[^a-zA-Z0-9._:-]/', '', (string) $_COOKIE[ self::COOKIE ] );
+			$existing = preg_replace( '/[^a-zA-Z0-9._:-]/', '', (string) wp_unslash( $_COOKIE[ self::COOKIE ] ) );
 			if ( is_string( $existing ) && strlen( $existing ) >= 8 && strlen( $existing ) <= 64 ) {
 				return $existing;
 			}

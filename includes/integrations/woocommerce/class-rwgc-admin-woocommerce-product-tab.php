@@ -420,7 +420,9 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 					'globalGeo'      => __( 'Using global GeoCore rules — product is visible unless commerce rules hide it.', 'reactwoo-geocore' ),
 					'hiddenCountry'  => __( 'Hidden for the simulated country based on product geo targeting.', 'reactwoo-geocore' ),
 					'visibleCountry' => __( 'Visible for the simulated country.', 'reactwoo-geocore' ),
-					'weatherMatch'   => __( 'Weather overlap: %s', 'reactwoo-geocore' ),
+					'weatherMatch'   =>
+						/* translators: %s: weather facet names that overlap. */
+						__( 'Weather overlap: %s', 'reactwoo-geocore' ),
 					'weatherNoMatch' => __( 'No overlap with simulated visitor weather.', 'reactwoo-geocore' ),
 					'boostEnabled'   => __( 'Would be boosted in catalog when weather matches.', 'reactwoo-geocore' ),
 					'boostDisabled'  => __( 'Catalogue boost excluded for this product.', 'reactwoo-geocore' ),

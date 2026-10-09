@@ -771,23 +771,31 @@ class RWGC_Admin {
 						'trafficSourceLabel'    => __( 'Google Ads traffic', 'reactwoo-geocore' ),
 						'resolveGoogleAds'      => __( 'Resolve Google Ads mapping', 'reactwoo-geocore' ),
 						'resolvePopupTarget'    => __( 'Resolve popup target', 'reactwoo-geocore' ),
-						'popupTargetStartExplanation' => __( 'I could not find an exact popup called "%s". You can create it now, choose an existing popup, or remove this action.', 'reactwoo-geocore' ),
+						'popupTargetStartExplanation' =>
+							/* translators: %s: popup name that was not found. */
+							__( 'I could not find an exact popup called "%s". You can create it now, choose an existing popup, or remove this action.', 'reactwoo-geocore' ),
 						'popupCreateNew'        => __( 'Create new popup', 'reactwoo-geocore' ),
 						'popupChooseExisting'   => __( 'Choose existing popup', 'reactwoo-geocore' ),
 						'popupCreateTitle'      => __( 'Create popup', 'reactwoo-geocore' ),
 						'popupNameLabel'        => __( 'Name', 'reactwoo-geocore' ),
 						'popupStatusLabel'      => __( 'Status', 'reactwoo-geocore' ),
 						'popupStatusDraft'      => __( 'Draft', 'reactwoo-geocore' ),
-						'popupAttachAction'     => __( 'Use this popup as the target for Action %d', 'reactwoo-geocore' ),
+						'popupAttachAction'     =>
+							/* translators: %d: action number. */
+							__( 'Use this popup as the target for Action %d', 'reactwoo-geocore' ),
 						'popupCreateButton'     => __( 'Create popup', 'reactwoo-geocore' ),
 						'popupChooseTitle'      => __( 'Choose existing popup', 'reactwoo-geocore' ),
 						'popupSearchPlaceholder' => __( 'Search popups…', 'reactwoo-geocore' ),
 						'popupUseSelected'      => __( 'Use selected popup', 'reactwoo-geocore' ),
 						'popupSearchLoading'    => __( 'Searching popups…', 'reactwoo-geocore' ),
 						'popupSearchEmpty'      => __( 'No matching popups found.', 'reactwoo-geocore' ),
-						'popupCreateFromEmpty'  => __( 'Create new popup: %s', 'reactwoo-geocore' ),
+						'popupCreateFromEmpty'  =>
+							/* translators: %s: popup name to create. */
+							__( 'Create new popup: %s', 'reactwoo-geocore' ),
 						'popupRemoveConfirmTitle' => __( 'Remove action?', 'reactwoo-geocore' ),
-						'popupRemoveConfirmBody' => __( 'This will remove the rule setup for %s.', 'reactwoo-geocore' ),
+						'popupRemoveConfirmBody' =>
+							/* translators: %s: action name being removed. */
+							__( 'This will remove the rule setup for %s.', 'reactwoo-geocore' ),
 						'popupCreateFailed'     => __( 'Could not create the popup. Try again or choose an existing popup.', 'reactwoo-geocore' ),
 						'popupCreateErrorTitle' => __( 'Could not create popup', 'reactwoo-geocore' ),
 						'popupCreateErrorReason' => __( 'Reason:', 'reactwoo-geocore' ),
@@ -850,7 +858,9 @@ class RWGC_Admin {
 						'urlMatchStartsWith'    => __( 'Path starts with', 'reactwoo-geocore' ),
 						'urlMatchExact'         => __( 'Exact path', 'reactwoo-geocore' ),
 						'urlMatchWildcard'      => __( 'Wildcard', 'reactwoo-geocore' ),
-						'urlMatchContainsHint'  => __( 'This matches any URL where %s appears.', 'reactwoo-geocore' ),
+						'urlMatchContainsHint'  =>
+							/* translators: %s: URL fragment that must appear. */
+							__( 'This matches any URL where %s appears.', 'reactwoo-geocore' ),
 						'urlMatchWildcardHint'  => __( 'This matches child paths under the path but may not match parent segments like /shop/winter-sale.', 'reactwoo-geocore' ),
 						'urlMatchApply'         => __( 'Apply URL match', 'reactwoo-geocore' ),
 						'removeGoogleAdsCondition' => __( 'Remove Google Ads condition', 'reactwoo-geocore' ),
@@ -1064,7 +1074,8 @@ class RWGC_Admin {
 		$dest_dir  = RWGC_MaxMind::get_storage_dir();
 		$dest_path = trailingslashit( $dest_dir ) . 'GeoLite2-Country.mmdb';
 
-		if ( ! @move_uploaded_file( $file['tmp_name'], $dest_path ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Detected
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Detected, Generic.PHP.ForbiddenFunctions.Found -- Nonce, capability, is_uploaded_file(), and a fixed GeoLite2-Country.mmdb path are already checked. move_uploaded_file() is required for PHP uploads; wp_handle_upload() would reject this binary and store it outside the MaxMind directory.
+		if ( ! @move_uploaded_file( $file['tmp_name'], $dest_path ) ) {
 			add_settings_error( 'rwgc_maxmind', 'rwgc_upload_move', __( 'Failed to move uploaded file into storage directory.', 'reactwoo-geocore' ), 'error' );
 			set_transient( 'settings_errors', get_settings_errors(), 30 );
 			wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
@@ -1603,7 +1614,7 @@ class RWGC_Admin {
 				array(
 					'name'             => 'rwgc_route_master_page_id',
 					'id'               => 'rwgc_route_master_page_id',
-					'show_option_none' => __( '-- Select master page --', 'reactwoo-geocore' ),
+					'show_option_none' => esc_html__( '-- Select master page --', 'reactwoo-geocore' ),
 					'option_none_value'=> '0',
 					'selected'         => (int) $config['master_page_id'],
 				)

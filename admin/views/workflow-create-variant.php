@@ -112,9 +112,9 @@ if ( is_array( $result ) && ! empty( $result['variant_page_id'] ) && class_exist
 				array(
 					'name'              => 'rwgc_master_page_id',
 					'id'                => 'rwgc_master_page_id',
-					'show_option_none'  => __( '— Select —', 'reactwoo-geocore' ),
+					'show_option_none'  => esc_html__( '— Select —', 'reactwoo-geocore' ),
 					'option_none_value' => '0',
-					'selected'          => $prefill_master,
+					'selected'          => absint( $prefill_master ),
 					'class'             => 'widefat',
 				)
 			);

@@ -45,15 +45,32 @@ A build target, not a fork of the plugin. `RWGC_DISTRIBUTION` stays `reactwoo` i
 - `python scripts/package_zip.py --target reactwoo` — versioned zip still contains the updater, `docs/`, and `composer.json`.
 - Plugin Check 2.1.0 via WP-CLI 2.12.0 on WordPress 7.1.3 (MariaDB), against the WordPress.org zip: exit 0, 58 errors, 383 warnings after the block `apiVersion` and modal guard fixes. No updater error. `missing_composer_json_file` is a warning and is intentional.
 
-## Remaining errors
-Plugin Check errors left in place (pre-existing, not introduced by this packaging work):
-- 44 `WordPress.WP.I18n.MissingTranslatorsComment`
-- 5 `WordPress.Security.EscapeOutput.ExceptionNotEscaped` (exception messages)
-- 3 `WordPress.Security.EscapeOutput.OutputNotEscaped`
-- 2 `parse_url()` in Cloud config (fallback when `wp_parse_url` is absent)
-- 1 `unlink()` in MaxMind update
-- 1 `move_uploaded_file()` in the database upload handler
-- 1 `date()` in variant diagnostics
-- 1 `suppress_filters` on the visibility-rule status query
+## Plugin Check errors (follow-up on the same PR)
+Status: done. Errors on the WordPress.org zip are 0. Version was not bumped. `publish-update.yml` was not edited. The ReactWoo zip still contains the updater and `RWGC_DISTRIBUTION` `reactwoo`.
 
-PHPCS on the whole plugin was not cleaned. Screenshot files for the readme captions are not in the repo.
+Before (Plugin Check 2.1.0, WordPress 7.1.3, same zip as the first pass): 58 errors, 382 warnings. The first PR note said 383 warnings; a fresh count of that zip was 382.
+
+After: 0 errors, 375 warnings.
+
+Fixes: translators comments on placeholder strings, `esc_html()` around contract exception messages, `esc_html__()` / `absint()` for `wp_dropdown_pages()`, `wp_parse_url()`, `wp_delete_file()`, `gmdate()`. `move_uploaded_file()` and `suppress_filters => true` keep a one-line `phpcs:ignore` with a reason (PHP upload move into a fixed MaxMind path; editor status must not be rewritten by other plugins' post filters). `wp_unslash()` on visitor IP headers and the telemetry cookie, an `isset` on the returning-visitor cookie, and a justified ignore on `load_plugin_textdomain()` (still required for the ReactWoo channel) cleared 7 warnings.
+
+Standalone tests that run without WordPress now stub `wp_parse_url()`, `esc_html()`, and `wp_unslash()` where those calls are new.
+
+`php vendor/bin/phpunit -c phpunit.xml.dist` — Tests: 97, Assertions: 366, Errors: 9, Failures: 7. Same baseline as main.
+
+## Remaining warnings
+375, grouped by code:
+- 264 `WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound` (view locals shared with the including admin class)
+- 37 `WordPress.Security.NonceVerification.Recommended`
+- 28 `WordPress.Security.ValidatedSanitizedInput.InputNotSanitized`
+- 19 `WordPress.DB.SlowDBQuery.slow_db_query_meta_query`
+- 7 `WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound` (public `geocore_product_tab_*` hooks and LiteSpeed's `litespeed_vary_add`)
+- 6 `WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound` (`rw_geo_*` public API)
+- 6 `WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_exclude`
+- 3 `WordPress.PHP.DevelopmentFunctions.error_log_error_log`
+- 2 `WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound`
+- 1 `missing_composer_json_file` (intentional; runtime needs `vendor/`)
+- 1 `WordPress.PHP.DevelopmentFunctions.error_log_var_export`
+- 1 `WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in`
+
+Screenshot files for the readme captions are not in the repo.

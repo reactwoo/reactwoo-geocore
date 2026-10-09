@@ -181,7 +181,9 @@ class RWGC_Targeting_Rule_Builder_Assets {
 			'visibilityHide'       => __( 'Hide when rules match', 'reactwoo-geocore' ),
 			'selectedLabel'        => __( 'Selected', 'reactwoo-geocore' ),
 			'playgroundIntro'      => __( 'Try the same rule builder used in Elementor and the Geo Content block. Changes here are for practice only until you paste them into a page, block, or geo rule.', 'reactwoo-geocore' ),
-			'syncedCount'          => __( '%1$d synced', 'reactwoo-geocore' ),
+			'syncedCount'          =>
+				/* translators: %1$d: number of synced items. */
+				__( '%1$d synced', 'reactwoo-geocore' ),
 			'enableAdvancedHint'   => __( 'Turn on “Use visibility rule builder” above to edit multi-condition rules.', 'reactwoo-geocore' ),
 			'noConditionsYet'      => __( 'Add at least one condition to define who should see this content.', 'reactwoo-geocore' ),
 			'summaryPrefixShow'    => __( 'This content will only be visible to visitors who match these targeting rules:', 'reactwoo-geocore' ),
@@ -192,7 +194,9 @@ class RWGC_Targeting_Rule_Builder_Assets {
 			'pageVersionPlaceholder' => __( 'campaign_name', 'reactwoo-geocore' ),
 			'pageVersionHelper'    => __( 'Visitors using this URL will see the targeted version of this page.', 'reactwoo-geocore' ),
 			'pageVersionPattern'   => __( 'Page Version URL:', 'reactwoo-geocore' ),
-			'pageVersionSummary'   => __( 'This content will show only on %s.', 'reactwoo-geocore' ),
+			'pageVersionSummary'   =>
+				/* translators: %s: page version URL. */
+				__( 'This content will show only on %s.', 'reactwoo-geocore' ),
 			'pageVersionFullUrl'   => __( 'Full URL to test or share', 'reactwoo-geocore' ),
 			'pageVersionCopy'      => __( 'Copy URL', 'reactwoo-geocore' ),
 			'pageVersionCopied'    => __( 'Copied', 'reactwoo-geocore' ),

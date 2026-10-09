@@ -80,6 +80,7 @@ class RWGC_I18n {
 			return;
 		}
 		self::$loaded[ $text_domain ] = true;
-		load_plugin_textdomain( $text_domain, false, dirname( plugin_basename( $plugin_file ) ) . '/languages' );
+		// ReactWoo's own channel is not hosted on WordPress.org, so bundled languages still need this call. WordPress.org also loads translations automatically.
+		load_plugin_textdomain( $text_domain, false, dirname( plugin_basename( $plugin_file ) ) . '/languages' ); // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound
 	}
 }

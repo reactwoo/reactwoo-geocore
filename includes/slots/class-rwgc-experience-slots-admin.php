@@ -58,10 +58,34 @@ final class RWGC_Experience_Slots_Admin {
 				<?php esc_html_e( 'Stable named locations where ReactWoo may select alternate content. Default website content is always the safe fallback. Elementor/Gutenberg adapters (WP6–7) bind slots to builders.', 'reactwoo-geocore' ); ?>
 			</p>
 			<ul>
-				<li><?php printf( esc_html__( 'Total: %d', 'reactwoo-geocore' ), (int) $diag['total'] ); ?></li>
-				<li><?php printf( esc_html__( 'Active: %d', 'reactwoo-geocore' ), (int) $diag['active'] ); ?></li>
-				<li><?php printf( esc_html__( 'Unavailable: %d', 'reactwoo-geocore' ), (int) $diag['unavailable'] ); ?></li>
-				<li><?php printf( esc_html__( 'Invalid rows: %d', 'reactwoo-geocore' ), (int) $diag['invalid'] ); ?></li>
+				<li><?php
+					printf(
+						/* translators: %d: total experience slots. */
+						esc_html__( 'Total: %d', 'reactwoo-geocore' ),
+						(int) $diag['total']
+					);
+				?></li>
+				<li><?php
+					printf(
+						/* translators: %d: active experience slots. */
+						esc_html__( 'Active: %d', 'reactwoo-geocore' ),
+						(int) $diag['active']
+					);
+				?></li>
+				<li><?php
+					printf(
+						/* translators: %d: unavailable experience slots. */
+						esc_html__( 'Unavailable: %d', 'reactwoo-geocore' ),
+						(int) $diag['unavailable']
+					);
+				?></li>
+				<li><?php
+					printf(
+						/* translators: %d: invalid experience slot rows. */
+						esc_html__( 'Invalid rows: %d', 'reactwoo-geocore' ),
+						(int) $diag['invalid']
+					);
+				?></li>
 				<?php if ( ! empty( $diag['duplicates'] ) ) : ?>
 					<li>
 						<strong><?php esc_html_e( 'Duplicate binding keys:', 'reactwoo-geocore' ); ?></strong>

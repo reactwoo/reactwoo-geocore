@@ -104,9 +104,15 @@ class RWGC_Elementor_Elements {
 					'missingRuleOption'  => __( 'Rule #', 'reactwoo-geocore' ),
 					'clearRule'          => __( 'Clear rule', 'reactwoo-geocore' ),
 					'pickAnother'        => __( 'Choose another saved rule above, or clear this reference. It stays saved until you do.', 'reactwoo-geocore' ),
-					'missingShowIf'      => __( 'The rule #%s was deleted or is unpublished. This content is now hidden for everyone.', 'reactwoo-geocore' ),
-					'missingHideIf'      => __( 'The rule #%s was deleted or is unpublished. This content is now never hidden.', 'reactwoo-geocore' ),
-					'missingVariant'     => __( 'The rule #%s was deleted or is unpublished. Visitors see the default page.', 'reactwoo-geocore' ),
+					'missingShowIf'      =>
+						/* translators: %s: visibility rule ID. */
+						__( 'The rule #%s was deleted or is unpublished. This content is now hidden for everyone.', 'reactwoo-geocore' ),
+					'missingHideIf'      =>
+						/* translators: %s: visibility rule ID. */
+						__( 'The rule #%s was deleted or is unpublished. This content is now never hidden.', 'reactwoo-geocore' ),
+					'missingVariant'     =>
+						/* translators: %s: visibility rule ID. */
+						__( 'The rule #%s was deleted or is unpublished. Visitors see the default page.', 'reactwoo-geocore' ),
 				),
 			)
 		);
