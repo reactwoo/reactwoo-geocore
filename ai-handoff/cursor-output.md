@@ -21,7 +21,16 @@ The upload handler assigns slug `reactwoo-geo-core` from Plugin Name. Text Domai
 ## Commands
 - `python3 tests/test-rwgc-wporg-upload-precheck.py --require-zip` — 0 failed. One WARN: `textdomain_mismatch`.
 - `php tests/test-rwgc-wporg-build.php` and `python3 tests/test-rwgc-wporg-zip-guard.py` — passed.
-- `python scripts/package_zip.py --target wporg` — wrote `reactwoo-geocore-wporg.zip`.
+- `python scripts/package_zip.py --target wporg` — `reactwoo-geocore-wporg.zip`, sha256 `47d885e11205d6ba44914ae827aefe3e673daec2897ef6edd28710e4074d1dd2`, 2,849,875 bytes, 357 files, 0 prohibited files.
+- Plugin Check 2.1.0 on WordPress 7.1.3, `--mode=new --include-low-severity-errors --include-low-severity-warnings`: 0 errors, 375 warnings.
+- Same install with `--slug=reactwoo-geo-core --categories=plugin_repo --exclude-checks=prefixing`: 0 errors, warnings `textdomain_mismatch` and `missing_composer_json_file`.
+- Clean site `/tmp/wporg-clean` (WP_DEBUG): front `geo-smoke` 200 (United States / US, Geo Content “United Kingdom offer”) and Overview h1 “Overview” 200. No PHP notice, warning, deprecated, or fatal. No `debug.log`.
+
+## Artifacts
+- `/opt/cursor/artifacts/submission-v3/reactwoo-geocore.zip`
+- `/opt/cursor/artifacts/submission-v3/plugin-check-1.9.0.txt`
+- `/opt/cursor/artifacts/submission-v3/zip-manifest-1.9.0.txt`
+- `/opt/cursor/artifacts/submission-v3/upload-precheck-1.9.0.txt`
 
 ## Status
 done
