@@ -27,12 +27,19 @@ vendor/sebastian
 vendor/theseer
 vendor/doctrine
 
-# Library examples and nested test fixtures
+# Library examples, nested tests, docs, and maintainer scripts.
+# Composer autoload does not reference these. WordPress.org also rejects .sh files.
 vendor/**/examples
 vendor/**/example
 vendor/**/test
 vendor/**/tests
+vendor/**/docs
+vendor/**/dev-bin
 vendor/**/.github
+vendor/**/.git
+vendor/**/.svn
+vendor/**/.hg
+vendor/**/.bzr
 
 # Project manifests. Runtime uses vendor/autoload.php, not these files.
 composer.json
@@ -51,11 +58,23 @@ phpcs.xml.dist.example
 .gitattributes
 .editorconfig
 .distignore
-*.zip
 *.sql
 .env
 .env.*
 *.md
+
+# WordPress.org rejects VCS directories and these archive/script extensions anywhere in the zip.
+.git
+.svn
+.hg
+.bzr
+*.phar
+*.sh
+*.zip
+*.gz
+*.tar
+*.rar
+*.7z
 
 # Guideline 8: the WordPress.org build must not contain the api.reactwoo.com updater.
 # Pro add-ons ship their own updater. The ReactWoo channel zip still includes this file.

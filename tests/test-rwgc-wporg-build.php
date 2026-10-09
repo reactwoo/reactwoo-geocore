@@ -70,7 +70,10 @@ rwgc_wporg_assert( 'readme discloses api.reactwoo.com', false !== strpos( $readm
 rwgc_wporg_assert( 'readme discloses decision.reactwoo.com', false !== strpos( $readme, 'decision.reactwoo.com' ) );
 rwgc_wporg_assert( 'distignore drops the updater', false !== strpos( $distignore, 'includes/class-rwgc-satellite-updater.php' ) );
 rwgc_wporg_assert( 'distignore drops docs', (bool) preg_match( '/^docs$/m', $distignore ) );
+rwgc_wporg_assert( 'distignore drops vendor dev-bin', false !== strpos( $distignore, 'vendor/**/dev-bin' ) );
+rwgc_wporg_assert( 'distignore drops shell scripts', (bool) preg_match( '/^\*\.sh$/m', $distignore ) );
 rwgc_wporg_assert( 'packager has a wporg target', false !== strpos( $package, 'wporg' ) );
+rwgc_wporg_assert( 'packager refuses prohibited archive names', false !== strpos( $package, 'def wporg_prohibited_names' ) );
 
 $short = '';
 if ( preg_match( '/^License URI:.*\R\R(.+)\R/m', $readme, $short_match ) ) {
