@@ -201,7 +201,7 @@ def _main_php_bytes(path: Path, target: str) -> bytes:
 
 
 # WordPress.org rejects these anywhere in a plugin zip, including inside vendor/.
-_WPORG_PROHIBITED_EXTENSIONS = (".phar", ".sh", ".zip", ".gz", ".tar", ".rar", ".7z")
+_WPORG_PROHIBITED_EXTENSIONS = (".phar", ".sh", ".zip", ".gz", ".tgz", ".tar", ".rar", ".7z")
 _WPORG_VCS_DIRS = {".git", ".svn", ".hg", ".bzr"}
 
 
@@ -225,7 +225,7 @@ def _assert_wporg_zip(zf: zipfile.ZipFile, root_folder: str) -> None:
     if prohibited:
         raise RuntimeError(
             "WordPress.org zip contains prohibited files "
-            "(VCS directories or .phar/.sh/.zip/.gz/.tar/.rar/.7z):\n" + "\n".join(prohibited[:30])
+            "(VCS directories or .phar/.sh/.zip/.gz/.tgz/.tar/.rar/.7z):\n" + "\n".join(prohibited[:30])
         )
     banned_fragments = (
         "class-rwgc-satellite-updater.php",

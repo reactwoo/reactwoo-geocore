@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - An uploaded country database no longer shows the MaxMind license-key warning. The warning appears only when there is no usable database and no license key to download one.
 - The Geo Content block registers its editor script, so the block editor can insert it.
-- The WordPress.org zip omits vendor maintainer files such as `dev-bin/release.sh`, and the packager refuses to build if a VCS directory or a `.phar`, `.sh`, `.zip`, `.gz`, `.tar`, `.rar`, or `.7z` file is still inside.
+- The WordPress.org zip omits vendor maintainer files such as `dev-bin/release.sh`, and the packager refuses to build if a VCS directory or a `.phar`, `.sh`, `.zip`, `.gz`, `.tgz`, `.tar`, `.rar`, or `.7z` file is still inside.
+- Plugin URI is `https://reactwoo.com/geo-core/`, so it is not the same address as the author URI.
 
 ### Changed
 - Requires PHP 8.1, matching the MaxMind libraries shipped in `vendor/`.

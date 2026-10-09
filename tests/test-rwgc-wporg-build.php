@@ -34,6 +34,8 @@ $package = (string) file_get_contents( $root . '/scripts/package_zip.py' );
 
 rwgc_wporg_assert( 'header Requires at least', false !== strpos( $main, 'Requires at least: 6.2' ) );
 rwgc_wporg_assert( 'header Requires PHP 8.1', false !== strpos( $main, 'Requires PHP: 8.1' ) );
+rwgc_wporg_assert( 'plugin uri is the geo core page', false !== strpos( $main, 'Plugin URI: https://reactwoo.com/geo-core/' ) );
+rwgc_wporg_assert( 'author uri stays the site root', false !== strpos( $main, 'Author URI: https://reactwoo.com/' ) );
 rwgc_wporg_assert( 'default distribution is reactwoo', false !== strpos( $main, "define( 'RWGC_DISTRIBUTION', 'reactwoo' );" ) );
 rwgc_wporg_assert( 'helper detects wporg distribution', false !== strpos( $functions, 'function rwgc_is_wordpress_org_distribution()' ) );
 rwgc_wporg_assert( 'plugin skips updater on wporg', false !== strpos( $plugin, 'rwgc_is_wordpress_org_distribution()' ) );
@@ -72,6 +74,7 @@ rwgc_wporg_assert( 'distignore drops the updater', false !== strpos( $distignore
 rwgc_wporg_assert( 'distignore drops docs', (bool) preg_match( '/^docs$/m', $distignore ) );
 rwgc_wporg_assert( 'distignore drops vendor dev-bin', false !== strpos( $distignore, 'vendor/**/dev-bin' ) );
 rwgc_wporg_assert( 'distignore drops shell scripts', (bool) preg_match( '/^\*\.sh$/m', $distignore ) );
+rwgc_wporg_assert( 'distignore drops tgz archives', (bool) preg_match( '/^\*\.tgz$/m', $distignore ) );
 rwgc_wporg_assert( 'packager has a wporg target', false !== strpos( $package, 'wporg' ) );
 rwgc_wporg_assert( 'packager refuses prohibited archive names', false !== strpos( $package, 'def wporg_prohibited_names' ) );
 

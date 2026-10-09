@@ -175,6 +175,7 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * An uploaded country database no longer shows a license-key warning. That warning appears only when there is no usable database and no license key to download one.
 * The Geo Content block loads in the block editor.
 * The WordPress.org package leaves out vendor maintainer scripts, including MaxMind's release.sh.
+* Plugin URI is the Geo Core page, which is separate from the author URI.
 
 = 1.8.171 =
 * Elementor: the stale-rule warning now shows after the panel renders, for a deleted, draft, or trashed saved rule.
