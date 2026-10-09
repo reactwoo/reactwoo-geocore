@@ -3,6 +3,8 @@
 ## Status
 done
 
+Pull request: https://github.com/reactwoo/reactwoo-geocore/pull/74 (`wporg-build` → `main`). Not merged, not tagged, publish-update.yml untouched.
+
 ## Task
 Make ReactWoo Geo Core submittable to the WordPress.org Plugin Directory as a packaging variant. Do not merge, tag, release, or change the R2 / api.reactwoo.com publish workflow.
 
