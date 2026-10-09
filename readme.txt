@@ -8,11 +8,11 @@ Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Detect a visitor’s country with your MaxMind database, then show content with shortcodes, a block, and rules.
+Country-targeted content for your website. Detect a visitor's country, then show it with shortcodes, a block, and rules.
 
 == Description ==
 
-ReactWoo Geo Core detects a visitor’s country on your server and lets you use that result in content, rules, and page routing. Country lookup uses a GeoLite2 Country database that you download with your own MaxMind account. No ReactWoo account is required for the features below.
+ReactWoo Geo Core provides country-targeted content for your website. It detects a visitor’s country on your server and lets you use that result in content, rules, and page routing. Country lookup uses a GeoLite2 Country database that you download with your own MaxMind account. No ReactWoo account is required for the features below.
 
 Included:
 
@@ -156,11 +156,11 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 == Screenshots ==
 
-1. The Geo Core overview in wp-admin, with setup progress and shortcuts to the main sections.
-2. Integrations → MaxMind (GeoLite2), where you add a MaxMind account and download or upload the country database.
-3. Targeting rules, with a sample rule named United Kingdom visitors.
-4. Geo insights, including the shortcodes that ship with Geo Core.
-5. Geo Core settings, including country detection and cache options.
+1. A demo page in the editor, with a country shortcode and Geo Variant Routing pointed at the United Kingdom page.
+2. Targeting rules, with a sample rule named United Kingdom visitors.
+3. The visibility rule editor, with a country condition for the United Kingdom.
+4. Integrations → MaxMind (GeoLite2), with a country database on disk.
+5. Getting Started, the setup wizard for choosing a goal.
 6. Integrations → ReactWoo Cloud. Anonymous experience events stay off until an administrator opts in.
 
 == Changelog ==

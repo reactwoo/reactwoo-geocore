@@ -3,7 +3,34 @@
 ## Status
 done
 
-Follow-up on PR #74: version 1.9.0, readme free-feature copy, updater stub, `.wordpress-org` assets. Not tagged. publish-update.yml untouched.
+Branding follow-up on PR #74: owner-approved icon and banners, tagline, recaptured screenshots. Not tagged. publish-update.yml untouched.
+
+## Branding pass
+
+- Replaced `.wordpress-org/icon.svg`, `icon-128x128.png`, `icon-256x256.png`, `banner-772x250.png`, and `banner-1544x500.png` with the owner files unchanged.
+- Readme short description (120 characters) and plugin header Description now lead with “Country-targeted content for your website.”
+- Screenshots 1–6 recaptured from WordPress 7.1.3 with the directory build active. Site title is Demo Site. MaxMind’s public `GeoLite2-Country-Test.mmdb` was uploaded through the plugin upload form. Database on disk is Yes.
+- The “MaxMind license key is not configured” notice still shows on every Geo Core admin screen. It checks an empty license key before the database file, so the test database does not clear it. Screenshot 1 is the page editor (shortcode and Geo Variant Routing), which does not show that notice.
+- The country line on the MaxMind screen is the US fallback. This install’s address is 127.0.0.1, which is not in the test database. A direct lookup of 81.2.69.160 in that file returns GB.
+- The Geo Content block is registered in PHP, but `blocks/geo-content/block.json` points `editorScript` at the handle `rwgc-geo-content-editor`, which is never registered with `index.js`. The editor shows the unsupported-block notice. That code was not changed. Screenshot 1 uses the shortcode and routing meta box instead.
+
+## Checks
+- Plugin Check 2.1.0 on the rebuilt WordPress.org zip: 0 errors, 375 warnings.
+- `php tests/test-rwgc-wporg-build.php`: passed. Short description 120 characters.
+- PHPUnit: 97 tests, 366 assertions, 9 errors, 7 failures. Same baseline as main.
+- Neither zip contains `.wordpress-org/`.
+
+## Files changed
+- `.wordpress-org/*` icons, banners, screenshots
+- `readme.txt` short description, Description opening, screenshot captions
+- `reactwoo-geocore.php` header Description
+
+## What was not changed
+- Version, tag, release, and `.github/workflows/publish-update.yml`
+- No UI or code change to hide the license-key notice
+- Block registration left as it is
+
+Previous pass notes follow.
 
 Pull request: https://github.com/reactwoo/reactwoo-geocore/pull/74 (`wporg-build` → `main`). Not merged, not tagged, publish-update.yml untouched.
 
