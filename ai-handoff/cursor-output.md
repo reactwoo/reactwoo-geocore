@@ -3,6 +3,29 @@
 ## Status
 done
 
+WordPress.org rejected the 1.9.0 zip before review because Plugin URI and Author URI were both `https://reactwoo.com/`. Plugin URI is now `https://reactwoo.com/geo-core/` (live page title "Geo Core - ReactWoo"). Author URI stays `https://reactwoo.com/`. Version stays 1.9.0. The plugin name and text domain are unchanged. Not tagged.
+
+The upload handler assigns slug `reactwoo-geo-core` from Plugin Name. Text Domain `reactwoo-geocore` does not match that slug. That is a Plugin Check warning (`textdomain_mismatch`), not an upload rejection: `class-upload-handler.php` only stores `header_textdomain`, and `class-plugin-scan.php` fails the upload only when a result type is `ERROR`.
+
+## Files changed
+- `reactwoo-geocore.php` — Plugin URI.
+- `.distignore`, `scripts/package_zip.py` — also reject `.tgz`, matching the upload handler's unexpected-file regex.
+- `tests/test-rwgc-wporg-upload-precheck.py` — local copy of the applicable upload checks.
+- `tests/test-rwgc-wporg-build.php`, `tests/test-rwgc-wporg-zip-guard.py`, `composer.json` — wire the new guard.
+- `readme.txt`, `CHANGELOG.md` — 1.9.0 notes.
+
+## Not changed
+- Plugin Name, Text Domain, version 1.9.0, `publish-update.yml`.
+- No tag, no merge.
+
+## Commands
+- `python3 tests/test-rwgc-wporg-upload-precheck.py --require-zip` — 0 failed. One WARN: `textdomain_mismatch`.
+- `php tests/test-rwgc-wporg-build.php` and `python3 tests/test-rwgc-wporg-zip-guard.py` — passed.
+- `python scripts/package_zip.py --target wporg` — wrote `reactwoo-geocore-wporg.zip`.
+
+## Status
+done
+
 WordPress.org rejected the 1.9.0 zip before review because `vendor/maxmind/web-service-common/dev-bin/release.sh` is an unexpected `.sh` file. The directory zip now drops `vendor/**/dev-bin/` (and other vendor docs/VCS paths), plus `.phar`, `.sh`, `.zip`, `.gz`, `.tar`, `.rar`, and `.7z` anywhere. `scripts/package_zip.py --target wporg` refuses to finish if one of those names is still in the archive. Version stays 1.9.0. Not tagged.
 
 ## Status

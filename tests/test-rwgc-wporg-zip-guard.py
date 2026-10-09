@@ -39,6 +39,7 @@ def main() -> None:
         "reactwoo-geocore/vendor/foo/library.sh",
         "reactwoo-geocore/vendor/foo/library.zip",
         "reactwoo-geocore/vendor/foo/library.gz",
+        "reactwoo-geocore/vendor/foo/library.tgz",
         "reactwoo-geocore/vendor/foo/library.tar",
         "reactwoo-geocore/vendor/foo/library.rar",
         "reactwoo-geocore/vendor/foo/library.7z",
