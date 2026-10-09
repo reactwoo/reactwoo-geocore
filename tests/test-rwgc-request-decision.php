@@ -71,6 +71,19 @@ if ( ! function_exists( 'wp_json_encode' ) ) {
 		return json_encode( $value );
 	}
 }
+if ( ! function_exists( 'esc_html' ) ) {
+	function esc_html( $text ) {
+		return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
+	}
+}
+if ( ! function_exists( 'wp_parse_url' ) ) {
+	function wp_parse_url( $url, $component = -1 ) {
+		if ( -1 === $component ) {
+			return parse_url( (string) $url );
+		}
+		return parse_url( (string) $url, $component );
+	}
+}
 if ( ! function_exists( 'is_admin' ) ) {
 	function is_admin() {
 		return false;

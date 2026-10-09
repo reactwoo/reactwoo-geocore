@@ -100,6 +100,7 @@ class RWGC_Visibility_Rule_Logic_Preview {
 		if ( 'country' === $type && in_array( $op, array( 'in', 'is' ), true ) ) {
 			return array(
 				'text'     => sprintf(
+					/* translators: %s: country list joined with "or". */
 					__( 'Visitor country is %s.', 'reactwoo-geocore' ),
 					self::or_list( self::country_labels( $val ) )
 				),
@@ -109,6 +110,7 @@ class RWGC_Visibility_Rule_Logic_Preview {
 		if ( 'country' === $type && in_array( $op, array( 'not_in', 'is_not' ), true ) ) {
 			return array(
 				'text'     => sprintf(
+					/* translators: %s: country list joined with "or". */
 					__( 'Visitor is not from %s.', 'reactwoo-geocore' ),
 					self::or_list( self::country_labels( $val ) )
 				),
@@ -118,7 +120,11 @@ class RWGC_Visibility_Rule_Logic_Preview {
 		if ( in_array( $type, array( 'device', 'device_type' ), true ) ) {
 			$labels = array_map( 'ucfirst', self::string_list( $val ) );
 			return array(
-				'text'     => sprintf( __( 'Device is %s.', 'reactwoo-geocore' ), self::or_list( $labels ) ),
+				'text'     => sprintf(
+					/* translators: %s: device list joined with "or". */
+					__( 'Device is %s.', 'reactwoo-geocore' ),
+					self::or_list( $labels )
+				),
 				'children' => array(),
 			);
 		}
@@ -128,7 +134,11 @@ class RWGC_Visibility_Rule_Logic_Preview {
 				$labels[] = self::page_type_label( $slug );
 			}
 			return array(
-				'text'     => sprintf( __( 'Page type is %s.', 'reactwoo-geocore' ), self::or_list( $labels ) ),
+				'text'     => sprintf(
+					/* translators: %s: page type list joined with "or". */
+					__( 'Page type is %s.', 'reactwoo-geocore' ),
+					self::or_list( $labels )
+				),
 				'children' => array(),
 			);
 		}
@@ -167,6 +177,7 @@ class RWGC_Visibility_Rule_Logic_Preview {
 		if ( 'country' === $type && in_array( $op, array( 'in', 'is' ), true ) ) {
 			return array(
 				'text'     => sprintf(
+					/* translators: %s: country list joined with "OR". */
 					__( 'Visitor country is any of %s', 'reactwoo-geocore' ),
 					self::or_list_upper( self::country_labels( $val ) )
 				),
@@ -176,6 +187,7 @@ class RWGC_Visibility_Rule_Logic_Preview {
 		if ( 'country' === $type && in_array( $op, array( 'not_in', 'is_not' ), true ) ) {
 			return array(
 				'text'     => sprintf(
+					/* translators: %s: country list joined with "OR". */
 					__( 'Visitor country is not any of %s', 'reactwoo-geocore' ),
 					self::or_list_upper( self::country_labels( $val ) )
 				),
@@ -185,7 +197,11 @@ class RWGC_Visibility_Rule_Logic_Preview {
 		if ( in_array( $type, array( 'device', 'device_type' ), true ) ) {
 			$labels = array_map( 'ucfirst', self::string_list( $val ) );
 			return array(
-				'text'     => sprintf( __( 'Device is %s', 'reactwoo-geocore' ), self::or_list_upper( $labels ) ),
+				'text'     => sprintf(
+					/* translators: %s: device list joined with "OR". */
+					__( 'Device is %s', 'reactwoo-geocore' ),
+					self::or_list_upper( $labels )
+				),
 				'children' => array(),
 			);
 		}
@@ -195,7 +211,11 @@ class RWGC_Visibility_Rule_Logic_Preview {
 				$labels[] = self::page_type_label( $slug );
 			}
 			return array(
-				'text'     => sprintf( __( 'Page type is %s', 'reactwoo-geocore' ), self::or_list_upper( $labels ) ),
+				'text'     => sprintf(
+					/* translators: %s: page type list joined with "OR". */
+					__( 'Page type is %s', 'reactwoo-geocore' ),
+					self::or_list_upper( $labels )
+				),
 				'children' => array(),
 			);
 		}
@@ -254,7 +274,11 @@ class RWGC_Visibility_Rule_Logic_Preview {
 			$path = self::string_list( $cond['value'] ?? array() );
 			$path = ! empty( $path[0] ) ? $path[0] : '';
 			if ( '' !== $path ) {
-				return sprintf( __( 'URL contains %s', 'reactwoo-geocore' ), $path );
+				return sprintf(
+					/* translators: %s: URL path fragment. */
+					__( 'URL contains %s', 'reactwoo-geocore' ),
+					$path
+				);
 			}
 		}
 		return '' !== $label ? $label : '';

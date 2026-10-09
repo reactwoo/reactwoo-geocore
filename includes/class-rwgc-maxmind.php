@@ -58,6 +58,61 @@ class RWGC_MaxMind {
 	}
 
 	/**
+	 * Whether a path is a readable MaxMind .mmdb (metadata marker present).
+	 *
+	 * A license key is not required. An uploaded test or production database counts.
+	 *
+	 * @param string|null $path Absolute path. Null uses the configured database path.
+	 * @return bool
+	 */
+	public static function db_is_usable( $path = null ) {
+		if ( null === $path ) {
+			$path = self::get_db_path();
+		}
+		if ( ! is_string( $path ) || '' === $path || ! is_readable( $path ) ) {
+			return false;
+		}
+		if ( 'mmdb' !== strtolower( (string) pathinfo( $path, PATHINFO_EXTENSION ) ) ) {
+			return false;
+		}
+		$size = filesize( $path );
+		if ( false === $size || $size < 128 ) {
+			return false;
+		}
+		$tail_len = (int) min( 131072, $size );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read only the MaxMind metadata tail. WP_Filesystem is not available for this binary check.
+		$tail = file_get_contents( $path, false, null, max( 0, $size - $tail_len ), $tail_len );
+		return is_string( $tail ) && false !== strpos( $tail, "\xab\xcd\xefMaxMind.com" );
+	}
+
+	/**
+	 * Decide the MaxMind admin notice.
+	 *
+	 * A usable database suppresses the license-key warning. The key is required
+	 * only when there is nothing on disk to look up, or for automatic downloads.
+	 *
+	 * @param bool $usable      Readable MaxMind database.
+	 * @param bool $has_license License key saved.
+	 * @param bool $is_stale    Database is past the refresh window.
+	 * @return string Empty when no notice is needed. Otherwise auto_update_hint, stale, no_database, or missing_file.
+	 */
+	public static function admin_notice_code( $usable, $has_license, $is_stale ) {
+		if ( $usable ) {
+			if ( ! $has_license ) {
+				return 'auto_update_hint';
+			}
+			if ( $is_stale ) {
+				return 'stale';
+			}
+			return '';
+		}
+		if ( ! $has_license ) {
+			return 'no_database';
+		}
+		return 'missing_file';
+	}
+
+	/**
 	 * Whether DB appears stale (older than 35 days).
 	 *
 	 * @return bool
@@ -185,7 +240,7 @@ class RWGC_MaxMind {
 		$dest_dir = self::get_storage_dir();
 		$db_path  = self::extract_mmdb_from_archive( $tmp, $dest_dir );
 
-		@unlink( $tmp );
+		wp_delete_file( $tmp );
 
 		if ( is_wp_error( $db_path ) ) {
 			self::record_error( $db_path );
@@ -232,7 +287,14 @@ class RWGC_MaxMind {
 			}
 			$phar->extractTo( $dest_dir, null, true );
 		} catch ( Exception $e ) {
-			return new WP_Error( 'rwgc_extract_failed', sprintf( __( 'Failed to extract MaxMind archive: %s', 'reactwoo-geocore' ), $e->getMessage() ) );
+			return new WP_Error(
+				'rwgc_extract_failed',
+				sprintf(
+					/* translators: %s: archive extraction error message. */
+					__( 'Failed to extract MaxMind archive: %s', 'reactwoo-geocore' ),
+					$e->getMessage()
+				)
+			);
 		}
 
 		// Find first .mmdb file in dest_dir recursively.
@@ -258,6 +320,7 @@ class RWGC_MaxMind {
 		$exists = self::db_exists();
 		return array(
 			'exists'        => $exists,
+			'usable'        => self::db_is_usable(),
 			'path'          => self::get_db_path(),
 			'last_updated'  => RWGC_Settings::get( 'db_last_updated', '' ),
 			'is_stale'      => self::db_is_stale(),

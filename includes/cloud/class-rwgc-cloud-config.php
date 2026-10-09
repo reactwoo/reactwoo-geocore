@@ -47,7 +47,7 @@ final class RWGC_Cloud_Config {
 	 * @return bool
 	 */
 	public static function is_legacy_vault_decision_base( $base ) {
-		$parts = function_exists( 'wp_parse_url' ) ? wp_parse_url( (string) $base ) : parse_url( (string) $base );
+		$parts = wp_parse_url( (string) $base );
 		if ( ! is_array( $parts ) ) {
 			return false;
 		}
@@ -71,7 +71,7 @@ final class RWGC_Cloud_Config {
 			return false;
 		}
 
-		$parts = function_exists( 'wp_parse_url' ) ? wp_parse_url( $base ) : parse_url( $base );
+		$parts = wp_parse_url( $base );
 		if ( ! is_array( $parts ) || empty( $parts['host'] ) ) {
 			return false;
 		}

@@ -129,7 +129,7 @@ class RWGC_GeoIP {
 	 * @return string
 	 */
 	public static function get_current_ip() {
-		$remote = isset( $_SERVER['REMOTE_ADDR'] ) ? trim( (string) $_SERVER['REMOTE_ADDR'] ) : '';
+		$remote = isset( $_SERVER['REMOTE_ADDR'] ) ? trim( (string) wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
 		$ip     = self::resolve_client_ip( $remote );
 
 		/**
@@ -148,7 +148,7 @@ class RWGC_GeoIP {
 	 */
 	private static function resolve_client_ip( $remote ) {
 		$remote = trim( (string) $remote );
-		$cf     = self::first_public_ip( isset( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ? (string) $_SERVER['HTTP_CF_CONNECTING_IP'] : '' );
+		$cf     = self::first_public_ip( isset( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ? (string) wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) : '' );
 
 		if ( '' !== $cf && self::is_cloudflare_ip( $remote ) ) {
 			return $cf;
@@ -175,7 +175,7 @@ class RWGC_GeoIP {
 			return $from_header;
 		}
 
-		$xff = self::rightmost_public_ip( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ? (string) $_SERVER['HTTP_X_FORWARDED_FOR'] : '' );
+		$xff = self::rightmost_public_ip( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ? (string) wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) : '' );
 		if ( '' !== $xff ) {
 			return $xff;
 		}
@@ -356,7 +356,7 @@ class RWGC_GeoIP {
 	 * @return string Empty when the header has no usable visitor hop.
 	 */
 	private static function visitor_from_trusted_xff( $remote ) {
-		$header = isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ? (string) $_SERVER['HTTP_X_FORWARDED_FOR'] : '';
+		$header = isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ? (string) wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) : '';
 		$ips    = self::public_ips_from_header( $header );
 		for ( $i = count( $ips ) - 1; $i >= 0; $i-- ) {
 			$hop = $ips[ $i ];

@@ -1,9 +1,13 @@
 <?php
 /**
  * Plugin Name: ReactWoo Geo Core
- * Description: Free geolocation engine for WordPress (WordPress.org). MaxMind-based country detection, cache, shortcodes, REST API, and a Gutenberg block. No ReactWoo product license required for core geo; optional AI uses ReactWoo API when configured.
- * Version: 1.8.171
+ * Plugin URI: https://reactwoo.com/
+ * Description: Country-targeted content for your website. MaxMind country detection, shortcodes, a Gutenberg block, REST, and visibility rules. No ReactWoo product license is required for those features.
+ * Version: 1.9.0
+ * Requires at least: 6.2
+ * Requires PHP: 8.1
  * Author: ReactWoo
+ * Author URI: https://reactwoo.com/
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: reactwoo-geocore
@@ -15,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Core constants.
 if ( ! defined( 'RWGC_VERSION' ) ) {
-	define( 'RWGC_VERSION', '1.8.171' );
+	define( 'RWGC_VERSION', '1.9.0' );
 }
 if ( ! defined( 'RWGC_FILE' ) ) {
 	define( 'RWGC_FILE', __FILE__ );
@@ -34,6 +38,10 @@ if ( ! defined( 'RWGC_PLUGIN_SLUG' ) ) {
 }
 if ( ! defined( 'RWGC_TEXT_DOMAIN' ) ) {
 	define( 'RWGC_TEXT_DOMAIN', 'reactwoo-geocore' );
+}
+if ( ! defined( 'RWGC_DISTRIBUTION' ) ) {
+	// reactwoo = R2 / api.reactwoo.com channel. package_zip.py --target wporg rewrites this to wporg.
+	define( 'RWGC_DISTRIBUTION', 'reactwoo' );
 }
 if ( ! defined( 'RWGC_REACTWOO_SCHEMA_VERSION' ) ) {
 	define( 'RWGC_REACTWOO_SCHEMA_VERSION', 1 );

@@ -29,6 +29,7 @@ final class RWGC_Cloud_Admin {
 		add_action( 'admin_post_rwgc_cloud_switch_mode', array( __CLASS__, 'handle_switch_mode' ) );
 		add_action( 'admin_post_rwgc_cloud_rec_approve', array( __CLASS__, 'handle_rec_approve' ) );
 		add_action( 'admin_post_rwgc_cloud_rec_dismiss', array( __CLASS__, 'handle_rec_dismiss' ) );
+		add_action( 'admin_post_rwgc_cloud_telemetry', array( __CLASS__, 'handle_telemetry' ) );
 	}
 
 	/**
@@ -72,6 +73,7 @@ final class RWGC_Cloud_Admin {
 			<p class="description">
 				<?php esc_html_e( 'Connect this site to ReactWoo Cloud for authored experiences. Cloud is never contacted during visitor page rendering.', 'reactwoo-geocore' ); ?>
 			</p>
+			<?php self::render_telemetry_opt_in(); ?>
 			<?php if ( $notice ) : ?>
 				<div class="notice <?php echo esc_attr( self::notice_class( $notice ) ); ?> is-dismissible"><p><?php echo esc_html( self::notice_message( $notice ) ); ?></p></div>
 			<?php endif; ?>
@@ -148,6 +150,46 @@ final class RWGC_Cloud_Admin {
 			<?php endif; ?>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Opt-in for anonymous Cloud events. Off until an administrator enables it.
+	 *
+	 * @return void
+	 */
+	private static function render_telemetry_opt_in() {
+		$opted = class_exists( 'RWGC_Cloud_Telemetry', false ) && (bool) get_option( RWGC_Cloud_Telemetry::OPT_IN_OPTION, false );
+		?>
+		<h2><?php esc_html_e( 'Anonymous experience events', 'reactwoo-geocore' ); ?></h2>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="rwgc_cloud_telemetry" />
+			<?php wp_nonce_field( 'rwgc_cloud_telemetry' ); ?>
+			<label>
+				<input type="checkbox" name="rwgc_cloud_telemetry_opt_in" value="1" <?php checked( $opted ); ?> />
+				<?php esc_html_e( 'Share anonymous experience events with ReactWoo Cloud', 'reactwoo-geocore' ); ?>
+			</label>
+			<p class="description">
+				<?php esc_html_e( 'Off by default. Connecting Cloud does not enable this. When you enable it, and only while this site is paired, Geo Core sets a first-party cookie named rwgc_vid (a random id, about one year) and later sends experience, variant, audience, and goal ids, the event type, and an optional order total to decision.reactwoo.com. Email addresses are not included. Events are not sent while a visitor page is rendering. Turning this off stops collection and clears rwgc_vid.', 'reactwoo-geocore' ); ?>
+				<a href="<?php echo esc_url( 'https://reactwoo.com/privacy-policy/' ); ?>"><?php esc_html_e( 'ReactWoo privacy policy', 'reactwoo-geocore' ); ?></a>
+			</p>
+			<?php submit_button( __( 'Save telemetry choice', 'reactwoo-geocore' ), 'secondary', 'submit', false ); ?>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Save the telemetry opt-in. Off clears the visitor cookie.
+	 *
+	 * @return void
+	 */
+	public static function handle_telemetry() {
+		self::guard( 'rwgc_cloud_telemetry' );
+		$enabled = ! empty( $_POST['rwgc_cloud_telemetry_opt_in'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- guard() verified the nonce.
+		update_option( RWGC_Cloud_Telemetry::OPT_IN_OPTION, $enabled ? 1 : 0, false );
+		if ( ! $enabled && class_exists( 'RWGC_Cloud_Telemetry', false ) ) {
+			RWGC_Cloud_Telemetry::clear_visitor_cookie();
+		}
+		self::redirect( $enabled ? 'telemetry_on' : 'telemetry_off' );
 	}
 
 	/**
@@ -452,6 +494,8 @@ final class RWGC_Cloud_Admin {
 			'rec_approved'   => __( 'Recommendation approved as a Cloud draft. The live site was not changed.', 'reactwoo-geocore' ),
 			'rec_dismissed'  => __( 'Recommendation dismissed.', 'reactwoo-geocore' ),
 			'rec_failed'     => __( 'Could not update the recommendation.', 'reactwoo-geocore' ),
+			'telemetry_on'   => __( 'Anonymous Cloud telemetry is on. A visitor cookie is set only while this stays enabled and the site is paired.', 'reactwoo-geocore' ),
+			'telemetry_off'  => __( 'Anonymous Cloud telemetry is off. The visitor cookie was cleared.', 'reactwoo-geocore' ),
 		);
 		return isset( $map[ $key ] ) ? $map[ $key ] : $key;
 	}

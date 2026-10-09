@@ -72,6 +72,14 @@ if ( ! function_exists( 'untrailingslashit' ) ) {
 		return rtrim( (string) $s, '/\\' );
 	}
 }
+if ( ! function_exists( 'wp_parse_url' ) ) {
+	function wp_parse_url( $url, $component = -1 ) {
+		if ( -1 === $component ) {
+			return parse_url( (string) $url );
+		}
+		return parse_url( (string) $url, $component );
+	}
+}
 if ( ! function_exists( 'wp_json_encode' ) ) {
 	function wp_json_encode( $data ) {
 		return json_encode( $data );
@@ -224,6 +232,16 @@ $fail = RWGC_Cloud_Event_Queue::flush();
 rwgc_events_assert( 'failed flush keeps queue', ! $fail['ok'] && RWGC_Cloud_Event_Queue::size() >= 1 );
 $backoff = RWGC_Cloud_Event_Queue::flush();
 rwgc_events_assert( 'exponential backoff', 'backoff' === $backoff['status'] );
+
+$blocked = reactwoo_cloud_record_event(
+	'variant.impression',
+	array(
+		'experience' => 'exp_a',
+		'variant'    => 'var_b',
+	)
+);
+rwgc_events_assert( 'telemetry off until opt-in', ! $blocked );
+rwgc_events_assert( 'opt-in option defaults off', ! RWGC_Cloud_Telemetry::is_opted_in() );
 
 add_filter( 'rwgc_cloud_telemetry_allowed', static function () {
 	return true;

@@ -29,7 +29,7 @@ class RWGC_Capability_Registry {
 			),
 			'advanced_variants'      => array(
 				'label'          => __( 'Advanced variants', 'reactwoo-geocore' ),
-				'description'    => __( 'Audience, campaign, weather, time, and ads-based page variants.', 'reactwoo-geocore' ),
+				'description'    => __( 'GA4 audiences, shopping weather, and synced ads campaigns. Request UTM fields are included in Geo Core.', 'reactwoo-geocore' ),
 				'product'        => __( 'GeoCore Pro', 'reactwoo-geocore' ),
 				'area'           => 'targeting',
 				'badge'          => __( 'GeoCore Pro', 'reactwoo-geocore' ),
@@ -46,7 +46,7 @@ class RWGC_Capability_Registry {
 			),
 			'advanced_rules'         => array(
 				'label'        => __( 'Advanced rules', 'reactwoo-geocore' ),
-				'description'  => __( 'Audience, campaign, weather, and time-window content rules.', 'reactwoo-geocore' ),
+				'description'  => __( 'GA4 audiences, shopping weather, and synced ads campaigns. Request UTM fields are included in Geo Core.', 'reactwoo-geocore' ),
 				'product'      => __( 'GeoCore Pro', 'reactwoo-geocore' ),
 				'area'         => 'targeting',
 				'badge'        => __( 'GeoCore Pro', 'reactwoo-geocore' ),

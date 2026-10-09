@@ -293,6 +293,8 @@ class RWGC_Visibility_Rule_Editor_Status {
 				'posts_per_page'         => count( $ids ),
 				'orderby'                => 'post__in',
 				'no_found_rows'          => true,
+				// The editor must read the stored rule row. A posts filter from another plugin would mark a published rule deleted.
+				// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.SuppressFilters_suppress_filters
 				'suppress_filters'       => true,
 				'update_post_term_cache' => false,
 				'update_post_meta_cache' => true,

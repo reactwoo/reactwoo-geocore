@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-10-09
+
+### Fixed
+- An uploaded country database no longer shows the MaxMind license-key warning. The warning appears only when there is no usable database and no license key to download one.
+- The Geo Content block registers its editor script, so the block editor can insert it.
+
+### Changed
+- Requires PHP 8.1, matching the MaxMind libraries shipped in `vendor/`.
+- Anonymous Cloud telemetry, including the `rwgc_vid` cookie, stays off until an administrator opts in on the ReactWoo Cloud screen.
+- Request UTM and click-id conditions (`utm_source`, `utm_medium`, `utm_campaign`, `source`, `medium`, `campaign`, `content`, `term`, `gclid`) are part of Geo Core. Audience, weather, and profile conditions still need the separate GeoCore Pro plugin.
+- The WordPress.org build does not include the ReactWoo update client. If a Pro add-on calls `RWGC_Satellite_Updater`, that call does nothing instead of stopping the site. Pro add-ons update themselves.
+
 ## [1.8.171] - 2026-10-09
 
 ### Fixed
@@ -259,4 +271,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-Older entries through **0.1.x**–**1.8.x** are maintained in `readme.txt` (WordPress.org changelog section).
+Older readme changelog entries that are not repeated in the current `readme.txt` remain in the Git history of that file.

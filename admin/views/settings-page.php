@@ -3,6 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 $option_key = RWGC_Settings::OPTION_KEY;
+$rwgc_wporg = function_exists( 'rwgc_is_wordpress_org_distribution' ) && rwgc_is_wordpress_org_distribution();
 ?>
 <div class="wrap rwgc-wrap">
 	<h1><?php esc_html_e( 'Geo Core Settings', 'reactwoo-geocore' ); ?></h1>
@@ -119,14 +120,21 @@ $option_key = RWGC_Settings::OPTION_KEY;
 					<td>
 						<label>
 							<input type="checkbox" name="<?php echo esc_attr( $option_key ); ?>[debug_mode]" value="1" <?php checked( $settings['debug_mode'], 1 ); ?> />
-							<?php esc_html_e( 'Log geo and plugin updater diagnostics to debug.log.', 'reactwoo-geocore' ); ?>
+							<?php
+							if ( $rwgc_wporg ) {
+								esc_html_e( 'Log geo diagnostics to debug.log.', 'reactwoo-geocore' );
+							} else {
+								esc_html_e( 'Log geo and plugin updater diagnostics to debug.log.', 'reactwoo-geocore' );
+							}
+							?>
 						</label>
 					</td>
 				</tr>
+				<?php if ( ! $rwgc_wporg ) : ?>
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Plugin updates', 'reactwoo-geocore' ); ?></th>
 					<td>
-						<p class="description"><?php esc_html_e( 'Geo Core checks api.reactwoo.com for new releases. WordPress may cache “no update” for several hours after a failed check.', 'reactwoo-geocore' ); ?></p>
+						<p class="description"><?php esc_html_e( 'This ReactWoo release checks api.reactwoo.com for new Geo Core releases. WordPress may cache “no update” for several hours after a failed check. Commercial add-ons update themselves. The WordPress.org build of Geo Core does not include this check.', 'reactwoo-geocore' ); ?></p>
 						<p>
 							<a class="button button-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=rwgc-settings&rwgc_force_plugin_updates=1' ), 'rwgc_force_plugin_updates' ) ); ?>">
 								<?php esc_html_e( 'Clear update cache & check now', 'reactwoo-geocore' ); ?>
@@ -134,6 +142,7 @@ $option_key = RWGC_Settings::OPTION_KEY;
 						</p>
 					</td>
 				</tr>
+				<?php endif; ?>
 			</table>
 		</details>
 

@@ -1,5 +1,5 @@
 {
-  "apiVersion": 2,
+  "apiVersion": 3,
   "name": "reactwoo-geocore/geo-content",
   "title": "Geo Content (ReactWoo)",
   "category": "widgets",
@@ -54,7 +54,7 @@
       "default": false
     }
   },
-  "editorScript": "rwgc-geo-content-editor",
+  "editorScript": "file:./index.js",
   "editorStyle": "rwgc-geo-content-editor",
   "style": "rwgc-geo-content"
 }

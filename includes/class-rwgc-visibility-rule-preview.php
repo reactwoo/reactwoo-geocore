@@ -148,34 +148,70 @@ class RWGC_Visibility_Rule_Preview {
 			$cc = strtoupper( substr( (string) $snapshot->get( 'country', '' ), 0, 2 ) );
 			if ( in_array( $op, array( 'not_in', 'is_not' ), true ) ) {
 				return $passed
-					? sprintf( __( 'Country %s is not excluded.', 'reactwoo-geocore' ), $cc )
-					: sprintf( __( 'Country %s is excluded.', 'reactwoo-geocore' ), $cc );
+					? sprintf(
+						/* translators: %s: ISO country code. */
+						__( 'Country %s is not excluded.', 'reactwoo-geocore' ),
+						$cc
+					)
+					: sprintf(
+						/* translators: %s: ISO country code. */
+						__( 'Country %s is excluded.', 'reactwoo-geocore' ),
+						$cc
+					);
 			}
 			return $passed
-				? sprintf( __( 'Country %s is allowed.', 'reactwoo-geocore' ), $cc )
-				: sprintf( __( 'Country %s is not in the allowed list.', 'reactwoo-geocore' ), $cc );
+				? sprintf(
+					/* translators: %s: ISO country code. */
+					__( 'Country %s is allowed.', 'reactwoo-geocore' ),
+					$cc
+				)
+				: sprintf(
+					/* translators: %s: ISO country code. */
+					__( 'Country %s is not in the allowed list.', 'reactwoo-geocore' ),
+					$cc
+				);
 		}
 
 		if ( in_array( $type, array( 'device', 'device_type' ), true ) ) {
 			$device = ucfirst( (string) $snapshot->get( 'device_type', '' ) );
 			return $passed
-				? sprintf( __( 'Device %s is allowed.', 'reactwoo-geocore' ), $device )
-				: sprintf( __( 'Device %s is not allowed.', 'reactwoo-geocore' ), $device );
+				? sprintf(
+					/* translators: %s: device type. */
+					__( 'Device %s is allowed.', 'reactwoo-geocore' ),
+					$device
+				)
+				: sprintf(
+					/* translators: %s: device type. */
+					__( 'Device %s is not allowed.', 'reactwoo-geocore' ),
+					$device
+				);
 		}
 
 		if ( 'page_type' === $type ) {
 			$page_slug = (string) $snapshot->get( 'page_type', '' );
 			$page_type = ucwords( str_replace( '_', ' ', $page_slug ) );
 			return $passed
-				? sprintf( __( 'Page type %s is allowed.', 'reactwoo-geocore' ), $page_type )
-				: sprintf( __( 'Page type %s does not match the rule.', 'reactwoo-geocore' ), $page_type );
+				? sprintf(
+					/* translators: %s: page type. */
+					__( 'Page type %s is allowed.', 'reactwoo-geocore' ),
+					$page_type
+				)
+				: sprintf(
+					/* translators: %s: page type. */
+					__( 'Page type %s does not match the rule.', 'reactwoo-geocore' ),
+					$page_type
+				);
 		}
 
 		if ( 'condition_group' === $type ) {
 			if ( $passed ) {
 				$branch = self::matching_traffic_branch( $cond, $snapshot );
 				if ( '' !== $branch ) {
-					return sprintf( __( '%s matched.', 'reactwoo-geocore' ), $branch );
+					return sprintf(
+						/* translators: %s: traffic branch that matched. */
+						__( '%s matched.', 'reactwoo-geocore' ),
+						$branch
+					);
 				}
 				return __( 'A traffic branch matched.', 'reactwoo-geocore' );
 			}

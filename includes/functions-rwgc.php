@@ -4,6 +4,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+if ( ! function_exists( 'rwgc_is_wordpress_org_distribution' ) ) {
+	/**
+	 * Whether this copy is the WordPress.org package.
+	 *
+	 * The ReactWoo release channel leaves RWGC_DISTRIBUTION as reactwoo and keeps
+	 * the api.reactwoo.com updater. The WordPress.org zip sets the constant to
+	 * wporg and does not ship that updater. Pro add-ons update themselves.
+	 *
+	 * @return bool
+	 */
+	function rwgc_is_wordpress_org_distribution() {
+		return defined( 'RWGC_DISTRIBUTION' ) && 'wporg' === RWGC_DISTRIBUTION;
+	}
+}
+
 if ( ! function_exists( 'rwgc_is_geo_core_active' ) ) {
 	/**
 	 * Whether ReactWoo Geo Core is loaded (for satellite plugin guards).

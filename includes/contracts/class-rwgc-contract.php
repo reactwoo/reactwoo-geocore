@@ -74,11 +74,11 @@ abstract class RWGC_Contract {
 	protected static function require_string( array $data, $key, $label = '' ) {
 		$label = '' !== $label ? $label : $key;
 		if ( ! isset( $data[ $key ] ) || ! is_scalar( $data[ $key ] ) ) {
-			throw new RWGC_Contract_Exception( sprintf( 'Missing required field: %s.', $label ) );
+			throw new RWGC_Contract_Exception( esc_html( sprintf( 'Missing required field: %s.', $label ) ) );
 		}
 		$value = trim( (string) $data[ $key ] );
 		if ( '' === $value ) {
-			throw new RWGC_Contract_Exception( sprintf( 'Missing required field: %s.', $label ) );
+			throw new RWGC_Contract_Exception( esc_html( sprintf( 'Missing required field: %s.', $label ) ) );
 		}
 		return $value;
 	}

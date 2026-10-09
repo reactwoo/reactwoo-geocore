@@ -1,0 +1,62 @@
+# WordPress.org package exclusions. Used by:
+#   python scripts/package_zip.py --target wporg
+# The ReactWoo release zip (no --target, or --target reactwoo) does not read this file.
+
+# Version control, agent, and CI
+.git
+.github
+.cursor
+ai-handoff
+
+# WordPress.org directory assets (icon, banner, screenshots). Not part of either plugin zip.
+.wordpress-org
+
+# Docs, tests, and maintainer tooling (not needed to run the plugin)
+docs
+tests
+scripts
+node_modules
+
+# PHPUnit / Composer dev trees if a maintainer packaged before --no-dev
+vendor/bin
+vendor/phpunit
+vendor/phar-io
+vendor/nikic
+vendor/myclabs
+vendor/sebastian
+vendor/theseer
+vendor/doctrine
+
+# Library examples and nested test fixtures
+vendor/**/examples
+vendor/**/example
+vendor/**/test
+vendor/**/tests
+vendor/**/.github
+
+# Project manifests. Runtime uses vendor/autoload.php, not these files.
+composer.json
+composer.lock
+package.json
+package-lock.json
+pyproject.toml
+phpunit.xml
+phpunit.xml.dist
+phpcs.xml
+phpcs.xml.dist
+phpcs.xml.dist.example
+
+# Editor and OS noise
+.gitignore
+.gitattributes
+.editorconfig
+.distignore
+*.zip
+*.sql
+.env
+.env.*
+*.md
+
+# Guideline 8: the WordPress.org build must not contain the api.reactwoo.com updater.
+# Pro add-ons ship their own updater. The ReactWoo channel zip still includes this file.
+includes/class-rwgc-satellite-updater.php

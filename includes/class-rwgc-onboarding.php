@@ -242,7 +242,7 @@ class RWGC_Onboarding {
 		$maxmind_ok = false;
 		if ( class_exists( 'RWGC_MaxMind', false ) ) {
 			$status   = RWGC_MaxMind::get_status();
-			$db_ready = ! empty( $status['exists'] );
+			$db_ready = ! empty( $status['usable'] );
 		}
 		if ( class_exists( 'RWGC_Settings', false ) ) {
 			$maxmind_ok = '' !== trim( (string) RWGC_Settings::get( 'maxmind_license_key', '' ) );
@@ -284,10 +284,12 @@ class RWGC_Onboarding {
 			array(
 				'id'       => 'geo_database',
 				'label'    => __( 'Geo database ready', 'reactwoo-geocore' ),
-				'done'     => $db_ready && $maxmind_ok,
+				'done'     => $db_ready,
 				'url'      => function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ),
 				'optional' => false,
-				'hint'     => __( 'MaxMind credentials and country database (Integrations).', 'reactwoo-geocore' ),
+				'hint'     => ( $db_ready && ! $maxmind_ok )
+					? __( 'Country database is on this site. A MaxMind license key is only needed for automatic updates.', 'reactwoo-geocore' )
+					: __( 'Upload a country database, or save a MaxMind license key to download one.', 'reactwoo-geocore' ),
 			),
 			array(
 				'id'       => 'detection',

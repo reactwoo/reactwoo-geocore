@@ -97,7 +97,13 @@ if ( $rwgc_pro_enabled && ! empty( $help['integrations_ga'] ) ) {
 				<p class="description">
 					<?php
 					if ( count( $audiences ) > 0 ) {
-						echo esc_html( sprintf( _n( '%d audience available', '%d audiences available', count( $audiences ), 'reactwoo-geocore' ), count( $audiences ) ) );
+						echo esc_html(
+							sprintf(
+								/* translators: %d: number of GA4 audiences. */
+								_n( '%d audience available', '%d audiences available', count( $audiences ), 'reactwoo-geocore' ),
+								count( $audiences )
+							)
+						);
 					} elseif ( $rwgc_pro_enabled ) {
 						esc_html_e( 'No audiences synced yet.', 'reactwoo-geocore' );
 					} else {
@@ -112,7 +118,13 @@ if ( $rwgc_pro_enabled && ! empty( $help['integrations_ga'] ) ) {
 				<p class="description">
 					<?php
 					if ( count( $campaigns ) > 0 ) {
-						echo esc_html( sprintf( _n( '%d campaign available', '%d campaigns available', count( $campaigns ), 'reactwoo-geocore' ), count( $campaigns ) ) );
+						echo esc_html(
+							sprintf(
+								/* translators: %d: number of Google Ads campaigns. */
+								_n( '%d campaign available', '%d campaigns available', count( $campaigns ), 'reactwoo-geocore' ),
+								count( $campaigns )
+							)
+						);
 					} elseif ( $rwgc_pro_enabled ) {
 						esc_html_e( 'No campaigns synced yet.', 'reactwoo-geocore' );
 					} else {
@@ -178,7 +190,15 @@ if ( $rwgc_pro_enabled && ! empty( $help['integrations_ga'] ) ) {
 				<?php endforeach; ?>
 				</tbody>
 			</table>
-			<p class="description"><?php echo esc_html( sprintf( __( 'Registered targeting entries: %d', 'reactwoo-geocore' ), count( $rwgc_target_types ) ) ); ?></p>
+			<p class="description"><?php
+				echo esc_html(
+					sprintf(
+						/* translators: %d: number of registered targeting entries. */
+						__( 'Registered targeting entries: %d', 'reactwoo-geocore' ),
+						count( $rwgc_target_types )
+					)
+				);
+			?></p>
 		</div>
 	</details>
 </div>
