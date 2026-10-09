@@ -168,7 +168,7 @@
 		}
 		var $wrap = $anchor.next('.rwgc-library-rule-status');
 		if (!$wrap.length) {
-			$wrap = $('<div class="rwgc-library-rule-status" style="margin:8px 0 4px;"></div>');
+			$wrap = $('<div class="rwgc-library-rule-status" style="margin:8px 20px 4px;"></div>');
 			$anchor.after($wrap);
 		}
 		return $wrap;

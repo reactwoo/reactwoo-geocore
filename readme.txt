@@ -4,7 +4,7 @@ Tags: geo, geolocation, maxmind, country, currency
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.8.170
+Stable tag: 1.8.171
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,12 @@ No. Detection, shortcodes, the Gutenberg block, page routing, and the public RES
 No. Geo Core runs without WooCommerce. The optional **Geo Commerce** product (separate plugin) adds Woo-specific overlays and uses `rwgc_is_woocommerce_active()` / the REST `woocommerce_active` field for discovery.
 
 == Changelog ==
+
+= 1.8.171 =
+* Elementor: the stale-rule warning now shows after the panel renders, for a deleted, draft, or trashed saved rule.
+* A deleted or unpublished rule stays selected in Apply saved visibility rule, labelled unpublished or deleted.
+* That picker lists only published rules.
+* The warning does not redraw itself while the Geo section is collapsed.
 
 = 1.8.170 =
 * Editors warn when a block or element still points at a deleted, missing, draft, or trashed visibility rule. The reference stays until you pick another rule or clear it.
