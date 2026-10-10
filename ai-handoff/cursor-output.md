@@ -3,6 +3,27 @@
 ## Status
 done
 
+Geo Content country options follow the editor script handle WordPress actually registered. WordPress 6.5+ still uses `rwgc-geo-content-editor` from the asset file. WordPress 6.2–6.4 registers `reactwoo-geocore-geo-content-editor-script` and previously left the country combobox empty. No version bump, no tag.
+
+## Files changed
+- `includes/class-rwgc-gutenberg.php` — read `editor_script_handles` for inline country data and portable context.
+- `includes/class-rwgc-targeting-rule-builder-assets.php` — attach the rule builder to that same handle.
+- `tests/Integrations/RWGCGeoContentBlockTest.php` — handle normalization and the hardcoded enqueue check.
+
+## Not changed
+- Front-end rendering, block save output, MaxMind notices, plugin version.
+
+## Commands
+- `php vendor/phpunit/phpunit/phpunit --bootstrap tests/bootstrap.php --stderr tests/Integrations/RWGCGeoContentBlockTest.php` — OK (8 tests, 25 assertions).
+- `node tests/test-rwgc-geo-content-block.js` — OK.
+- `php tests/test-rwgc-wporg-build.php` — OK.
+
+## Remaining errors
+- None in these checks.
+
+## Status
+done
+
 Geo Content 1.9.1 on the same draft branch: the rule builder mounts when the inspector is shown, and Choose from library lists published rules only. Version is 1.9.1 so `index.js` is not cached as 1.9.0. No tag, no merge.
 
 ## Root cause
