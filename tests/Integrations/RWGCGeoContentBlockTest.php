@@ -95,6 +95,36 @@ final class RWGCGeoContentBlockTest extends TestCase {
 		$this->assertSame( '', $html );
 	}
 
+	public function test_editor_script_handle_follows_the_handle_wordpress_registered(): void {
+		$this->assertSame(
+			'rwgc-geo-content-editor',
+			RWGC_Gutenberg::normalize_editor_script_handle( array( 'rwgc-geo-content-editor' ) )
+		);
+		$this->assertSame(
+			'reactwoo-geocore-geo-content-editor-script',
+			RWGC_Gutenberg::normalize_editor_script_handle( array( 'reactwoo-geocore-geo-content-editor-script' ) )
+		);
+		$this->assertSame(
+			'rwgc-geo-content-editor',
+			RWGC_Gutenberg::normalize_editor_script_handle( 'rwgc-geo-content-editor' )
+		);
+	}
+
+	public function test_editor_script_handle_falls_back_when_block_metadata_has_none(): void {
+		$this->assertSame( 'rwgc-geo-content-editor', RWGC_Gutenberg::normalize_editor_script_handle( array() ) );
+		$this->assertSame( 'rwgc-geo-content-editor', RWGC_Gutenberg::normalize_editor_script_handle( '' ) );
+		$this->assertSame( 'rwgc-geo-content-editor', RWGC_Gutenberg::normalize_editor_script_handle( null ) );
+		$this->assertSame( 'rwgc-geo-content-editor', RWGC_Gutenberg::normalize_editor_script_handle( false ) );
+	}
+
+	public function test_country_options_follow_the_registered_editor_handle(): void {
+		$src = (string) file_get_contents( dirname( __DIR__, 2 ) . '/includes/class-rwgc-gutenberg.php' );
+
+		$this->assertStringContainsString( 'editor_script_handle()', $src );
+		$this->assertStringNotContainsString( "wp_script_is( 'rwgc-geo-content-editor', 'enqueued' )", $src );
+		$this->assertStringNotContainsString( "wp_add_inline_script(\n\t\t\t'rwgc-geo-content-editor'", $src );
+	}
+
 	public function test_inner_content_renders_when_hide_if_rule_does_not_match(): void {
 		$html = RWGC_Gutenberg::render_geo_content_block(
 			array(
