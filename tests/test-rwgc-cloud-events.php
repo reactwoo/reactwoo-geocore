@@ -243,6 +243,18 @@ $blocked = reactwoo_cloud_record_event(
 rwgc_events_assert( 'telemetry off until opt-in', ! $blocked );
 rwgc_events_assert( 'opt-in option defaults off', ! RWGC_Cloud_Telemetry::is_opted_in() );
 
+$GLOBALS['rwgc_test_options'][ RWGC_Cloud_Telemetry::OPT_IN_OPTION ] = '0';
+rwgc_events_assert( 'stored string 0 stays opted out', ! RWGC_Cloud_Telemetry::is_opted_in() );
+rwgc_events_assert( 'checkbox follows stored string 0', ! RWGC_Cloud_Telemetry::option_is_enabled() );
+$GLOBALS['rwgc_test_options'][ RWGC_Cloud_Telemetry::OPT_IN_OPTION ] = 0;
+rwgc_events_assert( 'stored int 0 stays opted out', ! RWGC_Cloud_Telemetry::is_opted_in() );
+$GLOBALS['rwgc_test_options'][ RWGC_Cloud_Telemetry::OPT_IN_OPTION ] = '1';
+rwgc_events_assert( 'stored string 1 is opted in', RWGC_Cloud_Telemetry::is_opted_in() );
+$GLOBALS['rwgc_test_options'][ RWGC_Cloud_Telemetry::OPT_IN_OPTION ] = 1;
+rwgc_events_assert( 'stored int 1 is opted in', RWGC_Cloud_Telemetry::is_opted_in() );
+unset( $GLOBALS['rwgc_test_options'][ RWGC_Cloud_Telemetry::OPT_IN_OPTION ] );
+rwgc_events_assert( 'missing option stays opted out', ! RWGC_Cloud_Telemetry::is_opted_in() );
+
 add_filter( 'rwgc_cloud_telemetry_allowed', static function () {
 	return true;
 } );

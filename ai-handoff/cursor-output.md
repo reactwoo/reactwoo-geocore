@@ -3,6 +3,32 @@
 ## Status
 done
 
+Anonymous Cloud telemetry stays off when the saved opt-in is `0`. No version bump, no tag.
+
+## Root cause
+`RWGC_Cloud_Telemetry::is_opted_in()` cast `get_option()` with `(bool)`. WordPress stores the integer `0` and returns it on the next request as the string `"0"`, which is truthy. Saving the Cloud form with the box unchecked, or unchecking it later, stored `0`, then the next request treated that as consent, checked the box again, and resumed `rwgc_vid` plus event upload.
+
+## Files changed
+- `includes/cloud/class-rwgc-cloud-telemetry.php` — opt-in is only `true`, `1`, or `"1"`.
+- `includes/cloud/class-rwgc-cloud-admin.php` — the checkbox uses that same reader.
+- `tests/test-rwgc-cloud-events.php` — string `0`, int `0`, string `1`, int `1`, and a missing option.
+- `tests/test-rwgc-wporg-build.php` — source guard against the boolean cast.
+- `CHANGELOG.md` — unreleased note.
+
+## Not changed
+- The `rwgc_cloud_telemetry_allowed` filter still overrides the stored choice.
+- No version bump, no tag.
+
+## Commands
+- `php tests/test-rwgc-cloud-events.php` — all assertions passed.
+- `php tests/test-rwgc-wporg-build.php` — all guards passed.
+
+## Remaining errors
+- None in these tests.
+
+## Status
+done
+
 Geo Content 1.9.1 on the same draft branch: the rule builder mounts when the inspector is shown, and Choose from library lists published rules only. Version is 1.9.1 so `index.js` is not cached as 1.9.0. No tag, no merge.
 
 ## Root cause
