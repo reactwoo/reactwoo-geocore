@@ -21,7 +21,6 @@ class RWGC_Suite_Admin {
 		add_action( 'admin_init', array( 'RWGC_Onboarding', 'clear_stale_activation_redirect' ), 0 );
 		add_action( 'admin_init', array( 'RWGC_Onboarding', 'maybe_redirect_after_activation' ), 20 );
 		add_action( 'admin_post_rwgc_save_wizard', array( __CLASS__, 'handle_save_wizard' ) );
-		add_action( 'admin_post_rwgc_create_variant_workflow', array( __CLASS__, 'handle_create_variant' ) );
 		add_action( 'admin_post_rwgc_dismiss_welcome', array( __CLASS__, 'handle_dismiss_welcome' ) );
 		add_filter( 'rwgc_inner_nav_items', array( __CLASS__, 'filter_inner_nav_items' ), 5, 2 );
 	}
@@ -95,35 +94,6 @@ class RWGC_Suite_Admin {
 	/**
 	 * @return void
 	 */
-	public static function render_suite_variants() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-		include RWGC_PATH . 'admin/views/targeting-variants-page.php';
-	}
-
-	/**
-	 * @return void
-	 */
-	public static function render_workflow_variant() {
-		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_die( esc_html__( 'You do not have permission to manage pages.', 'reactwoo-geocore' ) );
-		}
-		$result = get_transient( 'rwgc_variant_workflow_result_' . get_current_user_id() );
-		if ( false !== $result ) {
-			delete_transient( 'rwgc_variant_workflow_result_' . get_current_user_id() );
-		} else {
-			$result = null;
-		}
-		$prefill_master    = isset( $_GET['rwgc_master_page_id'] ) ? absint( wp_unslash( $_GET['rwgc_master_page_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$prefill_rule_id   = isset( $_GET['rwgc_rule_id'] ) ? absint( wp_unslash( $_GET['rwgc_rule_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$prefill_condition = isset( $_GET['rwgc_condition_type'] ) ? sanitize_key( wp_unslash( (string) $_GET['rwgc_condition_type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		include RWGC_PATH . 'admin/views/workflow-create-variant.php';
-	}
-
-	/**
-	 * @return void
-	 */
 	public static function handle_save_wizard() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Forbidden.', 'reactwoo-geocore' ) );
@@ -162,57 +132,6 @@ class RWGC_Suite_Admin {
 		}
 
 		wp_safe_redirect( admin_url( 'admin.php?page=rwgc-getting-started&rwgc_saved=1' ) );
-		exit;
-	}
-
-	/**
-	 * @return void
-	 */
-	public static function handle_create_variant() {
-		if ( ! current_user_can( 'edit_pages' ) ) {
-			wp_die( esc_html__( 'Forbidden.', 'reactwoo-geocore' ) );
-		}
-		if ( ! function_exists( 'rwgc_page_variants_available' ) || ! rwgc_page_variants_available() ) {
-			wp_die( esc_html__( 'Page versions are not available in this install.', 'reactwoo-geocore' ) );
-		}
-		check_admin_referer( 'rwgc_create_variant_workflow' );
-
-		$countries = isset( $_POST['rwgc_countries'] ) && is_array( $_POST['rwgc_countries'] )
-			? array_map( 'sanitize_text_field', wp_unslash( $_POST['rwgc_countries'] ) )
-			: array();
-
-		$input = array(
-			'master_page_id'        => isset( $_POST['rwgc_master_page_id'] ) ? absint( wp_unslash( $_POST['rwgc_master_page_id'] ) ) : 0,
-			'condition_type'        => isset( $_POST['rwgc_condition_type'] ) ? sanitize_key( wp_unslash( (string) $_POST['rwgc_condition_type'] ) ) : 'countries',
-			'content_mode'          => isset( $_POST['rwgc_content_mode'] ) ? sanitize_key( wp_unslash( (string) $_POST['rwgc_content_mode'] ) ) : 'duplicate',
-			'experience_name'       => isset( $_POST['rwgc_experience_name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['rwgc_experience_name'] ) ) : '',
-			'saved_rule_id'         => isset( $_POST['rwgc_saved_rule_id'] ) ? absint( wp_unslash( $_POST['rwgc_saved_rule_id'] ) ) : 0,
-			'existing_variant_id'   => isset( $_POST['rwgc_existing_variant_id'] ) ? absint( wp_unslash( $_POST['rwgc_existing_variant_id'] ) ) : 0,
-			'save_countries_as_rule'=> ! empty( $_POST['rwgc_save_countries_as_rule'] ),
-			'countries'             => $countries,
-		);
-
-		$res = class_exists( 'RWGC_Experience_Workflow', false )
-			? RWGC_Experience_Workflow::submit( $input )
-			: new WP_Error( 'rwgc_exp_missing', __( 'Experience workflow is unavailable.', 'reactwoo-geocore' ) );
-
-		if ( is_wp_error( $res ) ) {
-			set_transient(
-				'rwgc_variant_workflow_result_' . get_current_user_id(),
-				array(
-					'error' => $res->get_error_message(),
-				),
-				120
-			);
-		} else {
-			set_transient(
-				'rwgc_variant_workflow_result_' . get_current_user_id(),
-				$res,
-				120
-			);
-		}
-
-		wp_safe_redirect( admin_url( 'admin.php?page=rwgc-workflow-variant&rwgc_done=1' ) );
 		exit;
 	}
 

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.4] - 2026-10-13
+
+### Changed
+- The page-version redirect, `/_gc/` rewrite, and page-version editor moved to Geo Core Pro. Geo Core keeps stored pages and `_rwgc_route_*` settings and does not run that redirect.
+
 ## [1.9.3] - 2026-10-13
 
 ### Changed

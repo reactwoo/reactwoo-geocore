@@ -3,7 +3,7 @@
  * Plugin Name: ReactWoo Geo Core
  * Plugin URI: https://reactwoo.com/geo-core/
  * Description: Country-targeted content for your website. MaxMind country detection, shortcodes, a Gutenberg block, REST, and visibility rules. No ReactWoo product license is required for those features.
- * Version: 1.9.3
+ * Version: 1.9.4
  * Requires at least: 6.2
  * Requires PHP: 8.1
  * Author: ReactWoo
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Core constants.
 if ( ! defined( 'RWGC_VERSION' ) ) {
-	define( 'RWGC_VERSION', '1.9.3' );
+	define( 'RWGC_VERSION', '1.9.4' );
 }
 if ( ! defined( 'RWGC_FILE' ) ) {
 	define( 'RWGC_FILE', __FILE__ );
@@ -53,13 +53,6 @@ require_once RWGC_PATH . 'includes/class-rwgc-i18n.php';
 RWGC_I18n::bootstrap( RWGC_FILE, RWGC_TEXT_DOMAIN );
 require_once RWGC_PATH . 'includes/class-rwgc-settings.php';
 require_once RWGC_PATH . 'includes/class-rwgc-maxmind.php';
-require_once RWGC_PATH . 'includes/targeting/class-rwgc-page-version.php';
-require_once RWGC_PATH . 'includes/targeting/class-rwgc-page-version-routing.php';
-// Directory builds do not boot page-version rewrites. The ReactWoo channel still
-// resolves URLs already stored on the site until Pro takes that runtime over.
-if ( ! defined( 'RWGC_DISTRIBUTION' ) || 'wporg' !== RWGC_DISTRIBUTION ) {
-	RWGC_Page_Version_Routing::bootstrap_early();
-}
 require_once RWGC_PATH . 'includes/class-rwgc-plugin.php';
 require_once RWGC_PATH . 'includes/functions-rwgc.php';
 

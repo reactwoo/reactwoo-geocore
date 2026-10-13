@@ -733,16 +733,16 @@ if ( ! function_exists( 'rwgc_is_builder_edit_request' ) ) {
 	/**
 	 * Whether the current request is an Elementor (or future builder) edit/preview surface that should skip geo routing.
 	 *
-	 * Delegates to {@see RWGC_Routing::is_builder_edit_request()}.
+	 * Page-version routing does not own this check. Country visibility uses it in Core.
 	 *
 	 * @param int|null $post_id Optional document ID for capability checks.
 	 * @return bool
 	 */
 	function rwgc_is_builder_edit_request( $post_id = null ) {
-		if ( ! class_exists( 'RWGC_Routing', false ) ) {
+		if ( ! class_exists( 'RWGC_Builder_Request', false ) ) {
 			return false;
 		}
-		return RWGC_Routing::is_builder_edit_request( $post_id );
+		return RWGC_Builder_Request::is_edit_request( $post_id );
 	}
 }
 

@@ -136,12 +136,9 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-capability-registry.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-suite-capability-map.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-targeting-nav.php';
-		require_once RWGC_PATH . 'includes/class-rwgc-admin-targeting-variants.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-module-registry.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-onboarding.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-workflows.php';
-		require_once RWGC_PATH . 'includes/class-rwgc-variant-manager.php';
-		require_once RWGC_PATH . 'includes/class-rwgc-experience-workflow.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-suite-admin.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-shortcodes.php';
@@ -160,21 +157,16 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-rule-tester-rendered-impacts.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-copy-context.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-visibility-rules.php';
+		require_once RWGC_PATH . 'includes/class-rwgc-builder-request.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-elementor.php';
 		require_once RWGC_PATH . 'includes/integrations/class-rwgc-integrations-loader.php';
 		require_once RWGC_PATH . 'includes/context/class-rwgc-context-attribution.php';
 		require_once RWGC_PATH . 'includes/engine/class-rwgc-context.php';
 		require_once RWGC_PATH . 'includes/engine/class-rwgc-country-groups.php';
 		require_once RWGC_PATH . 'includes/rules/class-rwgc-rule-condition-evaluator.php';
-		require_once RWGC_PATH . 'includes/engine/class-rwgc-variant.php';
-		require_once RWGC_PATH . 'includes/engine/class-rwgc-page-route-bundle.php';
-		require_once RWGC_PATH . 'includes/engine/class-rwgc-fallback-resolver.php';
-		require_once RWGC_PATH . 'includes/engine/class-rwgc-page-route-resolver.php';
 		require_once RWGC_PATH . 'includes/events/class-rwgc-event.php';
 		require_once RWGC_PATH . 'includes/events/class-rwgc-events.php';
 		require_once RWGC_PATH . 'includes/rules/class-rwgc-rule.php';
-		require_once RWGC_PATH . 'includes/class-rwgc-routing.php';
-		require_once RWGC_PATH . 'includes/migration/class-rwgc-legacy-route-mapper.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-rest.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-upsells.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-migration.php';
@@ -194,8 +186,6 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-availability.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-simulator.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-registry.php';
-		require_once RWGC_PATH . 'includes/targeting/class-rwgc-page-version.php';
-		require_once RWGC_PATH . 'includes/targeting/class-rwgc-page-version-routing.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-variant-rule-applications.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-editor-status.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-context-resolver.php';
@@ -277,11 +267,6 @@ class RWGC_Plugin {
 		RWGC_Targeting_Rule_Builder_Assets::init();
 		RWGC_Visibility_Rule_Tester_Assets::init();
 		RWGC_Integrations_Loader::init();
-		if ( ! function_exists( 'rwgc_is_wordpress_org_distribution' ) || ! rwgc_is_wordpress_org_distribution() ) {
-			RWGC_Routing::init();
-			RWGC_Page_Version_Routing::init();
-			add_filter( 'rwgc_portable_targeting_editor_context', array( 'RWGC_Page_Version_Routing', 'filter_editor_context' ), 20 );
-		}
 		RWGC_REST::init();
 		RWGC_Upsells::init();
 

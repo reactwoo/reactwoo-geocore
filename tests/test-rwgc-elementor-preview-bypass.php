@@ -49,8 +49,8 @@ $body = substr( $src, $at, false === $end ? 4000 : $end - $at );
 rwgc_assert( false === strpos( $body, "isset( \$_GET['elementor-preview'] )" ), 'document filter no longer trusts a bare ?elementor-preview' );
 rwgc_assert( false !== strpos( $body, 'rwgc_is_builder_edit_request()' ), 'document filter uses the capability-checked builder bypass' );
 
+require_once dirname( __DIR__ ) . '/includes/class-rwgc-builder-request.php';
 require_once dirname( __DIR__ ) . '/includes/functions-rwgc.php';
-require_once dirname( __DIR__ ) . '/includes/class-rwgc-routing.php';
 
 $_GET['elementor-preview'] = '123';
 rwgc_assert( false === rwgc_is_builder_edit_request(), 'logged-out visitor with ?elementor-preview is not a builder request' );

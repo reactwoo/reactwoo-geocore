@@ -169,8 +169,8 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 		$country_style = RWGC_Product_Meta::GEO_MODE_GLOBAL === $geo_mode ? ' style="display:none;"' : '';
 		echo '<div class="rwgc-product-field rwgc-product-countries-wrap"' . $country_style . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '<label class="rwgc-product-field__label" for="_geocore_product_countries"><strong>' . esc_html__( 'Countries / regions', 'reactwoo-geocore' ) . '</strong></label>';
-		if ( class_exists( 'RWGC_Experience_Workflow', false ) ) {
-			RWGC_Experience_Workflow::render_country_multi_select(
+		if ( class_exists( 'RWGC_Admin', false ) ) {
+			RWGC_Admin::render_country_multi_select(
 				'_geocore_product_countries',
 				$countries,
 				array(

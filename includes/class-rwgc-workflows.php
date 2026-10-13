@@ -20,14 +20,6 @@ class RWGC_Workflows {
 	public static function get_launchers() {
 		$launchers = array(
 			array(
-				'id'          => 'create_variant',
-				'title'       => __( 'Create a country-specific page version', 'reactwoo-geocore' ),
-				'description' => __( 'Pick a page, choose a country, and publish a linked local version — without editing meta boxes first.', 'reactwoo-geocore' ),
-				'url'         => admin_url( 'admin.php?page=rwgc-workflow-variant' ),
-				'primary'     => true,
-				'icon'        => 'dashicons-admin-page',
-			),
-			array(
 				'id'          => 'ai_draft',
 				'title'       => __( 'Generate a localised draft with AI', 'reactwoo-geocore' ),
 				'description' => __( 'Open Geo AI to adapt copy for a country or audience.', 'reactwoo-geocore' ),

@@ -59,7 +59,7 @@ Full-page country versions (`geo.page_variants`) are **Geo Core Pro**, not a one
 - a standalone `reactwoo-geocore-pro` licence, or
 - a Decision Cloud grant of `cloud.personalisation` (Starter and above, which already covers the Geo Core Pro SKU)
 
-Those two grants are the same entitlement. A customer with Decision Cloud does not also subscribe to Geo Core Pro for page versions. There is no numeric cap. If the Cloud grant ends and the customer has no standalone Pro licence, stored pages and `_rwgc_route_*` settings stay on the site; new page-version editing stops. The WordPress.org Geo Core package does not boot that redirect. Shipped in Geo Core **1.9.3** and Geo Core Pro **0.1.53**.
+Those two grants are the same entitlement. A customer with Decision Cloud does not also subscribe to Geo Core Pro for page versions. There is no numeric cap. The redirect, rewrite, and page-version editor live in Geo Core Pro, not in the free Geo Core package, so Geo Core is not a locked or one-page mode of that feature. If the Cloud grant ends and the customer has no standalone Pro licence, stored pages and `_rwgc_route_*` settings stay on the site and the redirect stops. Shipped in Geo Core **1.9.4** and Geo Core Pro **0.1.54**.
 
 ### Level 2 — Decision Cloud bundle
 

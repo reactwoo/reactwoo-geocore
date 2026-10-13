@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.3
+Stable tag: 1.9.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -166,6 +166,9 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.4 =
+* Full-page country versions, including the redirect and the editor, are in ReactWoo Geo Core Pro. This plugin keeps existing pages and saved routing settings and does not run that redirect.
+
 = 1.9.3 =
 * Full-page country versions are no longer a one-page limit inside Geo Core. Geo Core Pro provides them, including when Decision Cloud already covers Geo Core Pro.
 * The WordPress.org build does not run page-version redirects. Pages and saved routing settings are left in place.
@@ -237,6 +240,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.4 =
+The page-version redirect now runs from Geo Core Pro. Existing pages and routing settings are not deleted.
 
 = 1.9.3 =
 Page versions are part of Geo Core Pro, with no one-page limit. Existing pages and routing settings are not deleted.

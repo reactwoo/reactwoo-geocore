@@ -236,74 +236,12 @@ class RWGC_Elementor {
 			);
 		}
 
-		if ( function_exists( 'rwgc_page_variants_available' ) && rwgc_page_variants_available() ) {
-			$element->add_control(
-				'rwgc_route_heading',
-				array(
-					'type'      => \Elementor\Controls_Manager::HEADING,
-					'label'     => __( 'Page versions', 'reactwoo-geocore' ),
-					'separator' => 'before',
-				)
-			);
-
-			$element->add_control(
-				'rwgc_route_enabled',
-				array(
-					'label'        => __( 'Enable page versions', 'reactwoo-geocore' ),
-					'type'         => \Elementor\Controls_Manager::SWITCHER,
-					'label_on'     => __( 'On', 'reactwoo-geocore' ),
-					'label_off'    => __( 'Off', 'reactwoo-geocore' ),
-					'return_value' => 'yes',
-					'default'      => '',
-				)
-			);
-
-			$element->add_control(
-				'rwgc_route_role',
-				array(
-					'label'     => __( 'Page role', 'reactwoo-geocore' ),
-					'type'      => \Elementor\Controls_Manager::SELECT,
-					'default'   => 'master',
-					'options'   => array(
-						'master'  => __( 'Master (default page)', 'reactwoo-geocore' ),
-						'variant' => __( 'Secondary (country-specific page)', 'reactwoo-geocore' ),
-					),
-					'condition' => array(
-						'rwgc_route_enabled' => 'yes',
-					),
-				)
-			);
-
-			$element->add_control(
-				'rwgc_route_master_page_id',
-				array(
-					'label'       => __( 'Master page', 'reactwoo-geocore' ),
-					'type'        => \Elementor\Controls_Manager::SELECT2,
-					'multiple'    => false,
-					'label_block' => true,
-					'options'     => self::get_master_page_options(),
-					'condition'   => array(
-						'rwgc_route_enabled' => 'yes',
-						'rwgc_route_role'    => 'variant',
-					),
-				)
-			);
-
-			$element->add_control(
-				'rwgc_route_country_iso2',
-				array(
-					'label'       => __( 'Variant country', 'reactwoo-geocore' ),
-					'type'        => \Elementor\Controls_Manager::SELECT2,
-					'multiple'    => false,
-					'label_block' => true,
-					'options'     => array(),
-					'condition'   => array(
-						'rwgc_route_enabled' => 'yes',
-						'rwgc_route_role'    => 'variant',
-					),
-				)
-			);
-		}
+		/**
+		 * Geo Core Pro adds page-version controls. Country visibility above stays here.
+		 *
+		 * @param \Elementor\Element_Base $element Element receiving controls.
+		 */
+		do_action( 'rwgc_elementor_page_version_controls', $element );
 
 		$element->end_controls_section();
 	}
@@ -454,49 +392,5 @@ class RWGC_Elementor {
 		}
 	}
 
-	/**
-	 * Master page options for variant routing selection.
-	 *
-	 * @return array
-	 */
-	private static function get_master_page_options() {
-		if ( class_exists( 'RWGC_Elementor_Options', false ) ) {
-			return RWGC_Elementor_Options::master_pages();
-		}
-
-		$options = array(
-			'' => __( '-- Select master page --', 'reactwoo-geocore' ),
-		);
-
-		$pages = get_pages(
-			array(
-				'post_status' => array( 'publish', 'draft', 'pending', 'private', 'future' ),
-				'sort_column' => 'post_title',
-			)
-		);
-
-		$masters = array();
-		foreach ( $pages as $page ) {
-			if ( ! ( $page instanceof \WP_Post ) ) {
-				continue;
-			}
-
-			$config = RWGC_Routing::get_page_route_config( (int) $page->ID );
-			if ( empty( $config['enabled'] ) || 'master' !== $config['role'] ) {
-				continue;
-			}
-
-			$title = $page->post_title ? $page->post_title : ( '#' . (string) $page->ID );
-			$masters[ (string) $page->ID ] = $title . ' (#' . (string) $page->ID . ')';
-		}
-
-		if ( ! empty( $masters ) ) {
-			$options = $options + $masters;
-		} else {
-			$options[''] = __( '-- No enabled master pages found --', 'reactwoo-geocore' );
-		}
-
-		return $options;
-	}
 }
 
