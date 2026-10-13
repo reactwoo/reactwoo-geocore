@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.2
+Stable tag: 1.9.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Country-targeted content for your website. Detect a visitor's country, then show
 
 == Description ==
 
-ReactWoo Geo Core provides country-targeted content for your website. It detects a visitor’s country on your server and lets you use that result in content, rules, and page routing. Country lookup uses a GeoLite2 Country database that you download with your own MaxMind account. No ReactWoo account is required for the features below.
+ReactWoo Geo Core provides country-targeted content for your website. It detects a visitor’s country on your server and lets you use that result in content and rules. Country lookup uses a GeoLite2 Country database that you download with your own MaxMind account. No ReactWoo account is required for the features below.
 
 Included:
 
@@ -22,11 +22,10 @@ Included:
 * A conditional shortcode for showing content to selected countries
 * A REST location endpoint for front-end code, and a capabilities endpoint for discovery
 * The Geo Content block for the block editor
-* Page routing with one default page and one country-specific page
 * Visibility rules for country, country group, language, locale, device, time of day, day of week, logged-in state, new and returning visitors, page type, URL, and request parameters (`utm_source`, `utm_medium`, `utm_campaign`, `source`, `medium`, `campaign`, `content`, `term`, `gclid`)
 * PHP helpers for themes and other plugins
 
-Optional add-ons are separate plugins. Geo Core keeps working when they are not installed. GeoCore Pro adds audience, weather, and visitor-profile conditions. Other ReactWoo plugins, including GeoElementor, Geo Commerce, and WHMCS Bridge, can use this plugin as their country source. Those products update themselves.
+Optional add-ons are separate plugins. Geo Core keeps working when they are not installed. Geo Core Pro adds full-page country versions, audience, weather, and visitor-profile conditions. Geo Commerce and WHMCS Bridge can use this plugin as their country source. Those products update themselves.
 
 == Installation ==
 
@@ -69,15 +68,15 @@ No. You must provide your own MaxMind license key and accept their terms of use.
 
 = What is included without another plugin? =
 
-Country detection, the shortcodes, the Geo Content block, the REST location endpoint, page routing, and the visibility-rule conditions listed in the description. Request parameters such as `utm_source` and `gclid` are included. You do not need a ReactWoo account for those features.
+Country detection, the shortcodes, the Geo Content block, the REST location endpoint, and the visibility-rule conditions listed in the description. Request parameters such as `utm_source` and `gclid` are included. You do not need a ReactWoo account for those features.
 
 = Do I need an add-on? =
 
-No. Audience, weather, and visitor-profile conditions are provided by the separate GeoCore Pro plugin. GeoElementor, Geo Commerce, and WHMCS Bridge are also separate plugins. Install one only if you want that product. Geo Core does not hide or limit the included features when an add-on is absent.
+No. Full-page country versions, audience, weather, and visitor-profile conditions are provided by the separate Geo Core Pro plugin. Geo Commerce and WHMCS Bridge are also separate plugins. Install one only if you want that product. Geo Core does not hide or limit the included features when an add-on is absent.
 
 = Does Geo Core require a ReactWoo product license? =
 
-No. Detection, shortcodes, the block, page routing, visibility rules, and the public REST location endpoint work without a ReactWoo key. A license key is used only when a separately installed add-on turns on an optional AI tool that calls the ReactWoo API.
+No. Detection, shortcodes, the block, visibility rules, and the public REST location endpoint work without a ReactWoo key. A license key is used only when a separately installed add-on turns on an optional AI tool that calls the ReactWoo API.
 
 = Which PHP version is required? =
 
@@ -167,6 +166,10 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.3 =
+* Full-page country versions are no longer a one-page limit inside Geo Core. Geo Core Pro provides them, including when Decision Cloud already covers Geo Core Pro.
+* The WordPress.org build does not run page-version redirects. Pages and saved routing settings are left in place.
+
 = 1.9.2 =
 * Anonymous Cloud telemetry stays off for any stored value other than an explicit opt-in. That includes 0, no, off, false, and an empty value.
 * The Geo Content country list loads on WordPress 6.2, 6.3, and 6.4.
@@ -234,6 +237,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.3 =
+Page versions are part of Geo Core Pro, with no one-page limit. Existing pages and routing settings are not deleted.
 
 = 1.9.2 =
 Anonymous Cloud telemetry stays off unless the stored choice is an explicit opt-in. The Geo Content country list loads on WordPress 6.2–6.4.

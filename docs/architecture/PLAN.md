@@ -2,7 +2,7 @@
 
 **Status:** Canonical commercial plan. Local/code complete. Operator catalogue SQL, license package SQL, and production `REACTWOO_CLOUD_BRIDGE_ENABLED` are done (verified 2026-08-21). Remaining: paste/merge `rwcc_settings` product IDs if still empty, production checkout E2E, identity Sign in, then Gate E.  
 **Authority:** This document supersedes any previous wording that Decision Cloud and covered individual-plugin subscriptions should normally run as separately billed subscriptions.  
-**Last updated:** 2026-08-21  
+**Last updated:** 2026-10-13  
 **Parent architecture:** [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md)  
 **Store/onboarding sequence:** [commerce-and-onboarding.md](./commerce-and-onboarding.md)  
 **Billing ownership:** [billing-providers.md](./billing-providers.md)  
@@ -53,6 +53,13 @@ Each individual subscription grants **only** that product’s premium capabiliti
 Individual plugin customers **do not** receive Decision Cloud console access, site connection for Cloud authoring, Cloud analytics, or Cloud team features.
 
 Geo Core (`reactwoo-geocore`) remains **free** at every level. It is never superseded because it is never billed.
+
+Full-page country versions (`geo.page_variants`) are **Geo Core Pro**, not a one-page mode inside free Geo Core. Pro turns that capability on when either of these is valid:
+
+- a standalone `reactwoo-geocore-pro` licence, or
+- a Decision Cloud grant of `cloud.personalisation` (Starter and above, which already covers the Geo Core Pro SKU)
+
+Those two grants are the same entitlement. A customer with Decision Cloud does not also subscribe to Geo Core Pro for page versions. There is no numeric cap. If the Cloud grant ends and the customer has no standalone Pro licence, stored pages and `_rwgc_route_*` settings stay on the site; new page-version editing stops. The WordPress.org Geo Core package does not boot that redirect. Shipped in Geo Core **1.9.3** and Geo Core Pro **0.1.53**.
 
 ### Level 2 — Decision Cloud bundle
 

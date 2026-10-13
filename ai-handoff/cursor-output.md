@@ -3,6 +3,30 @@
 ## Status
 done
 
+Geo Core 1.9.3 includes the 1.9.2 telemetry and Geo Content fixes plus page-version ownership. Geo Core Pro 0.1.53 turns page versions on for a standalone licence or Decision Cloud `cloud.personalisation`.
+
+## Files changed
+- Version 1.9.3 in the plugin header, `RWGC_VERSION`, readme, changelog, and the Geo Content asset file.
+- Dashboard and readme no longer describe a one-page free limit or GeoElementor as the page-version product.
+- `docs/architecture/PLAN.md` records that page versions are Geo Core Pro and that a Cloud personalisation grant is the same entitlement, not a second bill.
+- Geo Core Pro 0.1.53: `RWGCP_VERSION`, readme Requires PHP 8.1, changelog.
+
+## Not changed
+- Routing PHP files still ship in the WordPress.org zip. The org build does not boot them.
+- MaxMind upload still uses `move_uploaded_file`.
+- Composer vendor dump stash and `scripts/release_commit_tag.py` were not committed.
+
+## Commands
+- `php tests/test-rwgc-page-variant-ownership.php`
+- `php tests/test-rwgc-wporg-build.php`
+- `php tests/test-weather-facets.php` (Geo Core Pro)
+
+## Remaining errors
+- On this Windows checkout, `.distignore` is CRLF, so three distignore regexes in `test-rwgc-wporg-build.php` fail locally. The same three failed on the released 1.9.2 tree. CI checks out LF.
+
+## Status
+done
+
 Geo Core 1.9.2 release branch merges PR #80 (telemetry opt-out) and PR #79 (Geo Content country list on WordPress 6.2–6.4). The only merge conflict was `ai-handoff/cursor-output.md`; both sections are kept. PR #81 is not included.
 
 ## Files changed

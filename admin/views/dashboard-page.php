@@ -159,7 +159,7 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 			);
 			RWGC_Admin_UI::render_checklist_row(
 				true,
-				__( 'Geo Core routing is ready — edit a page to use “Geo Variant Routing (Free)” when needed.', 'reactwoo-geocore' )
+				__( 'Country visibility is included. Full-page versions are in Geo Core Pro when that plugin is entitled.', 'reactwoo-geocore' )
 			);
 			$addons = class_exists( 'RWGC_Upsells', false ) ? RWGC_Upsells::get_addons() : array();
 			$any_addon_active = false;
@@ -171,7 +171,7 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 			}
 			RWGC_Admin_UI::render_checklist_row(
 				$any_addon_active,
-				__( 'Install ReactWoo add-ons (GeoElementor, bridges, …) from Add-ons when you need them.', 'reactwoo-geocore' ),
+				__( 'Install ReactWoo add-ons (Geo Core Pro, bridges, …) from Add-ons when you need them.', 'reactwoo-geocore' ),
 				admin_url( 'admin.php?page=rwgc-addons' ),
 				__( 'View add-ons', 'reactwoo-geocore' )
 			);
@@ -238,7 +238,7 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 					<tr>
 						<th><?php esc_html_e( 'Capability', 'reactwoo-geocore' ); ?></th>
 						<th><?php esc_html_e( 'Geo Core (free baseline)', 'reactwoo-geocore' ); ?></th>
-						<th><?php esc_html_e( 'GeoElementor (Pro extension)', 'reactwoo-geocore' ); ?></th>
+						<th><?php esc_html_e( 'Geo Core Pro', 'reactwoo-geocore' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -249,8 +249,8 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 					</tr>
 					<tr>
 						<td><?php esc_html_e( 'Page-level server-side routing', 'reactwoo-geocore' ); ?></td>
-						<td><?php esc_html_e( 'Yes (1 default + 1 additional country)', 'reactwoo-geocore' ); ?></td>
-						<td><?php esc_html_e( 'Extends for advanced variants', 'reactwoo-geocore' ); ?></td>
+						<td><?php esc_html_e( 'No', 'reactwoo-geocore' ); ?></td>
+						<td><?php esc_html_e( 'Yes, with no numeric cap', 'reactwoo-geocore' ); ?></td>
 					</tr>
 					<tr>
 						<td><?php esc_html_e( 'Variant groups / advanced mappings', 'reactwoo-geocore' ); ?></td>
@@ -273,9 +273,8 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 		</div>
 
 		<div class="rwgc-card">
-			<h2><?php esc_html_e( 'Free variant routing', 'reactwoo-geocore' ); ?></h2>
-			<p><?php esc_html_e( 'Server-side routing with a free limit of one default fallback plus one country variant per master page.', 'reactwoo-geocore' ); ?></p>
-			<p class="description"><?php esc_html_e( 'Use the page editor’s “Geo Variant Routing (Free)” panel. For multiple variants per page, use GeoElementor.', 'reactwoo-geocore' ); ?></p>
+			<h2><?php esc_html_e( 'Page versions', 'reactwoo-geocore' ); ?></h2>
+			<p><?php esc_html_e( 'Country show and hide is included here. Full-page country versions are provided by ReactWoo Geo Core Pro, with no limit on how many a page can have.', 'reactwoo-geocore' ); ?></p>
 		</div>
 	</details>
 </div>

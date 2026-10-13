@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.3] - 2026-10-13
+
+### Changed
+- Full-page country versions are no longer capped at one page inside Geo Core, and the editor for them appears only when Geo Core Pro is entitled. A Decision Cloud personalisation grant counts as that entitlement.
+- The WordPress.org build does not boot page-version redirects. Stored routing settings and pages are not deleted. The ReactWoo update channel still runs routes that are already saved.
+- Includes the Geo Core 1.9.2 fixes for Cloud telemetry opt-out and the Geo Content country list on WordPress 6.2–6.4.
+
 ## [1.9.2] - 2026-10-13
 
 ### Fixed

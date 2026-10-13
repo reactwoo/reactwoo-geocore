@@ -110,8 +110,7 @@ No `composer install`, SSH, or WP-CLI is required on customer sites.
 
 ## Known Limitations
 
-- Country-level routing only in Core; city-level advanced routing remains in legacy Geo Elementor when used without full portable rules.
-- Free page routing: one master + one secondary country mapping per page.
+- Country-level detection in Core. Full-page country versions are Geo Core Pro, with no numeric cap.
 - MaxMind database must be refreshed manually or on schedule you configure; Core does not host geo data.
 - Elementor popup edge cases on variant URLs may still require targeting debug and recent 1.8.x builds.
 - Optional AI features require reachable **reactwoo-api** and valid JWT from **react-license**.
