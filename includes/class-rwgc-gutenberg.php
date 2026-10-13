@@ -37,8 +37,52 @@ class RWGC_Gutenberg {
 			)
 		);
 		if ( class_exists( 'RWGC_Targeting_Rule_Builder_Assets', false ) ) {
-			RWGC_Targeting_Rule_Builder_Assets::patch_block_editor_script_deps();
+			RWGC_Targeting_Rule_Builder_Assets::patch_block_editor_script_deps( self::editor_script_handle() );
 		}
+	}
+
+	/**
+	 * Script handle WordPress registered for the Geo Content editor.
+	 *
+	 * `blocks/geo-content/index.asset.php` asks for `rwgc-geo-content-editor`.
+	 * Core only honors that asset-file handle from WordPress 6.5. On 6.2–6.4,
+	 * `file:./index.js` is registered as `reactwoo-geocore-geo-content-editor-script`.
+	 * Inline country data and the rule-builder dependency have to use the handle
+	 * that was actually registered, or the country combobox stays empty.
+	 *
+	 * @return string
+	 */
+	public static function editor_script_handle() {
+		$raw = null;
+		if ( class_exists( 'WP_Block_Type_Registry', false ) ) {
+			$registry = WP_Block_Type_Registry::get_instance();
+			if ( $registry->is_registered( 'reactwoo-geocore/geo-content' ) ) {
+				$block = $registry->get_registered( 'reactwoo-geocore/geo-content' );
+				$handles = ( is_object( $block ) && isset( $block->editor_script_handles ) ) ? $block->editor_script_handles : null;
+				if ( is_array( $handles ) && array() !== $handles ) {
+					$raw = $handles;
+				} elseif ( is_object( $block ) && isset( $block->editor_script ) ) {
+					$raw = $block->editor_script;
+				}
+			}
+		}
+		return self::normalize_editor_script_handle( $raw );
+	}
+
+	/**
+	 * First non-empty editor script handle, or the historical handle.
+	 *
+	 * @param mixed $editor_script Handle string or `editor_script_handles` list.
+	 * @return string
+	 */
+	public static function normalize_editor_script_handle( $editor_script ) {
+		if ( is_array( $editor_script ) ) {
+			$editor_script = reset( $editor_script );
+		}
+		if ( is_string( $editor_script ) && '' !== $editor_script ) {
+			return $editor_script;
+		}
+		return 'rwgc-geo-content-editor';
 	}
 
 	/**
@@ -51,7 +95,10 @@ class RWGC_Gutenberg {
 			return;
 		}
 		$ctx    = rwgc_get_portable_targeting_editor_context();
-		$handle = wp_script_is( 'rwgc-geo-content-editor', 'registered' ) ? 'rwgc-geo-content-editor' : 'wp-blocks';
+		$handle = self::editor_script_handle();
+		if ( ! wp_script_is( $handle, 'registered' ) ) {
+			$handle = 'wp-blocks';
+		}
 		wp_add_inline_script(
 			$handle,
 			'window.rwgcPortableTargetingAssist = ' . wp_json_encode( $ctx ) . ';',
@@ -108,7 +155,8 @@ class RWGC_Gutenberg {
 	 * @return void
 	 */
 	public static function inject_editor_country_options() {
-		if ( ! wp_script_is( 'rwgc-geo-content-editor', 'enqueued' ) ) {
+		$handle = self::editor_script_handle();
+		if ( ! wp_script_is( $handle, 'enqueued' ) ) {
 			return;
 		}
 
@@ -118,7 +166,7 @@ class RWGC_Gutenberg {
 		}
 
 		wp_add_inline_script(
-			'rwgc-geo-content-editor',
+			$handle,
 			'window.rwgcGeoCountryOptions = ' . $json . ';',
 			'before'
 		);

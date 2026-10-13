@@ -308,19 +308,23 @@ class RWGC_Targeting_Rule_Builder_Assets {
 	/**
 	 * Ensure the block editor script depends on the rule builder (metadata may register the handle first).
 	 *
+	 * @param string $handle Geo Content editor script handle. Empty uses the asset-file handle.
 	 * @return void
 	 */
-	public static function patch_block_editor_script_deps() {
+	public static function patch_block_editor_script_deps( $handle = '' ) {
 		global $wp_scripts;
 		if ( ! ( $wp_scripts instanceof WP_Scripts ) ) {
 			return;
 		}
-		if ( ! isset( $wp_scripts->registered['rwgc-geo-content-editor'] ) ) {
+		if ( ! is_string( $handle ) || '' === $handle ) {
+			$handle = 'rwgc-geo-content-editor';
+		}
+		if ( ! isset( $wp_scripts->registered[ $handle ] ) ) {
 			return;
 		}
 		$dep = self::SCRIPT_HANDLE;
-		if ( ! in_array( $dep, $wp_scripts->registered['rwgc-geo-content-editor']->deps, true ) ) {
-			$wp_scripts->registered['rwgc-geo-content-editor']->deps[] = $dep;
+		if ( ! in_array( $dep, $wp_scripts->registered[ $handle ]->deps, true ) ) {
+			$wp_scripts->registered[ $handle ]->deps[] = $dep;
 		}
 	}
 }
