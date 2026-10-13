@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Saving a visibility rule no longer deletes a stored Page Version URL condition when Geo Core Pro is not loaded. The condition stays in the library and in post meta until Pro can evaluate it.
+
 ## [1.9.5] - 2026-10-13
 
 ### Removed

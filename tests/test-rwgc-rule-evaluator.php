@@ -211,5 +211,87 @@ if ( ! is_array( $sanitized ) || 'returning_visitor' !== $sanitized['rules'][0][
 	rwgc_test_fail( 'Sanitize should keep returning_visitor when Pro is off.' );
 }
 
+if ( class_exists( 'RWGC_Page_Version', false ) ) {
+	rwgc_test_fail( 'Page version class must be absent so the preserve path is what this test covers.' );
+}
+$page_version_set = array(
+	'enabled' => true,
+	'mode'    => 'show_if',
+	'match'   => 'all',
+	'rules'   => array(
+		array(
+			'id'         => 'pv',
+			'match'      => 'all',
+			'conditions' => array(
+				array(
+					'type'     => 'country',
+					'operator' => 'in',
+					'value'    => array( 'GB' ),
+				),
+				array(
+					'type'     => 'page_version_url',
+					'operator' => 'equals',
+					'value'    => array(
+						'page_id' => 42,
+						'version' => 'uk-offer',
+					),
+				),
+			),
+		),
+	),
+);
+$page_version_sanitized = RWGC_Targeting_Rule_Set_Schema::sanitize( $page_version_set );
+if ( ! is_array( $page_version_sanitized ) ) {
+	rwgc_test_fail( 'Sanitize must not discard a rule that still has a page version condition.' );
+} else {
+	$kept_types = array();
+	foreach ( $page_version_sanitized['rules'][0]['conditions'] as $kept ) {
+		$kept_types[] = $kept['type'];
+	}
+	if ( array( 'country', 'page_version_url' ) !== $kept_types ) {
+		rwgc_test_fail( 'Sanitize dropped a stored page_version_url condition while RWGC_Page_Version is not loaded.' );
+	}
+	$kept_value = $page_version_sanitized['rules'][0]['conditions'][1]['value'];
+	if ( 42 !== (int) $kept_value['page_id'] || 'uk-offer' !== $kept_value['version'] ) {
+		rwgc_test_fail( 'Stored page version page_id or version was rewritten.' );
+	}
+	$gb_snap = new RWGC_Context_Snapshot( array( 'country' => 'GB' ) );
+	if ( RWGC_Rule_Evaluator::matches( $page_version_sanitized, $gb_snap ) ) {
+		rwgc_test_fail( 'Country plus page version must not match on country alone while the page version class is absent.' );
+	}
+}
+$only_page_version = array(
+	'enabled' => true,
+	'mode'    => 'show_if',
+	'match'   => 'all',
+	'rules'   => array(
+		array(
+			'id'         => 'pv-only',
+			'match'      => 'all',
+			'conditions' => array(
+				array(
+					'type'     => 'page_version_url',
+					'operator' => 'is',
+					'value'    => array(
+						'page_id' => '15',
+						'version' => 'spring_sale',
+					),
+				),
+			),
+		),
+	),
+);
+$only_sanitized = RWGC_Targeting_Rule_Set_Schema::sanitize( $only_page_version );
+if ( ! is_array( $only_sanitized ) || 'page_version_url' !== $only_sanitized['rules'][0]['conditions'][0]['type'] ) {
+	rwgc_test_fail( 'A page-version-only rule must survive sanitize when the router class is not loaded.' );
+} elseif ( 15 !== (int) $only_sanitized['rules'][0]['conditions'][0]['value']['page_id'] ) {
+	rwgc_test_fail( 'Numeric page_id strings must stay as the stored page id.' );
+}
+$invalid_version = $only_page_version;
+$invalid_version['rules'][0]['conditions'][0]['value']['version'] = 'not a slug';
+if ( null !== RWGC_Targeting_Rule_Set_Schema::sanitize( $invalid_version ) ) {
+	rwgc_test_fail( 'A page version name with spaces must still be rejected.' );
+}
+
 fwrite( STDOUT, "OK: RWGC_Rule_Evaluator CLI tests passed.\n" );
 exit( 0 );

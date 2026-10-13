@@ -3,6 +3,30 @@
 ## Status
 done
 
+Saving a visibility rule keeps a stored Page Version URL condition when `RWGC_Page_Version` is not loaded. No version bump, no tag.
+
+## Root cause
+Geo Core 1.9.4 stopped loading `RWGC_Page_Version`. `RWGC_Targeting_Rule_Set_Schema::sanitize()` treated a missing class as “drop this condition”. The visibility-rule library and Gutenberg post-geo meta both persist that sanitized JSON, so the next save deleted the condition. A rule that only had that condition was stored as an empty string.
+
+## Files changed
+- `includes/targeting/class-rwgc-targeting-rule-set-schema.php` — keep a well-formed `{ page_id, version }` when the Pro class is absent. Pro still uses its own sanitizer when the class is loaded.
+- `tests/test-rwgc-rule-evaluator.php` — mixed rule, page-version-only rule, and a version name with spaces.
+- `CHANGELOG.md` — unreleased note.
+
+## Not changed
+- Page-version redirects and `/_gc/` rewrites stay in Geo Core Pro. Evaluation still returns false for this condition until that class is loaded.
+- No version bump, no tag.
+
+## Commands
+- `php -l includes/targeting/class-rwgc-targeting-rule-set-schema.php`
+- `php tests/test-rwgc-rule-evaluator.php`
+
+## Remaining errors
+- None in these checks.
+
+## Status
+done
+
 Geo Core 1.9.5 removes customer-facing GeoElementor cards and the install, MaxMind, and geo_rule compatibility that only existed for that plugin. Geo Core Pro 0.1.55 no longer copies a GeoElementor licence. Elementor country controls still use the stored `egp_*` keys.
 
 ## Files changed

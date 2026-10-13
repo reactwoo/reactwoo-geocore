@@ -319,10 +319,7 @@ class RWGC_Targeting_Rule_Set_Schema {
 				if ( ! in_array( $op, array( 'equals', 'is', 'is_not' ), true ) ) {
 					$op = 'equals';
 				}
-				if ( ! class_exists( 'RWGC_Page_Version', false ) ) {
-					continue;
-				}
-				$pv_val = RWGC_Page_Version::sanitize_condition_value( isset( $c['value'] ) ? $c['value'] : array() );
+				$pv_val = self::sanitize_page_version_condition_value( isset( $c['value'] ) ? $c['value'] : array() );
 				if ( null === $pv_val ) {
 					continue;
 				}
@@ -364,6 +361,41 @@ class RWGC_Targeting_Rule_Set_Schema {
 			'label'      => $label,
 			'match'      => self::sanitize_rule_match( isset( $rule['match'] ) ? $rule['match'] : 'all' ),
 			'conditions' => $conditions_out,
+		);
+	}
+
+	/**
+	 * Keep a stored Page Version URL condition.
+	 *
+	 * Geo Core Pro owns RWGC_Page_Version and applies the stricter post check.
+	 * When that class is not loaded, dropping the condition here deletes it from
+	 * the visibility-rule library and from post meta on the next save.
+	 *
+	 * @param mixed $raw Raw value from JSON.
+	 * @return array{page_id:int,version:string}|null
+	 */
+	private static function sanitize_page_version_condition_value( $raw ) {
+		if ( class_exists( 'RWGC_Page_Version', false ) ) {
+			$sanitized = RWGC_Page_Version::sanitize_condition_value( $raw );
+			return is_array( $sanitized ) ? $sanitized : null;
+		}
+		if ( ! is_array( $raw ) ) {
+			return null;
+		}
+
+		$page_raw = $raw['page_id'] ?? 0;
+		if ( is_array( $page_raw ) || is_object( $page_raw ) ) {
+			return null;
+		}
+		$page_id = abs( (int) $page_raw );
+		$version = isset( $raw['version'] ) ? trim( (string) $raw['version'] ) : '';
+		if ( $page_id <= 0 || ! preg_match( '/^[a-zA-Z0-9_-]{1,80}$/', $version ) ) {
+			return null;
+		}
+
+		return array(
+			'page_id' => $page_id,
+			'version' => $version,
 		);
 	}
 
