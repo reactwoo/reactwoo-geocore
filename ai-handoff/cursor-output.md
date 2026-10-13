@@ -3,6 +3,26 @@
 ## Status
 done
 
+Planning and handoff docs match Geo Core 1.9.1 and the open Gate E / 1.9.2 work. Docs only. No version bump, no tag.
+
+## Files changed
+- `docs/architecture/PLAN.md` — status date, §19 shipped releases and release process, §21 operator order and backlog.
+- `ai-handoff/current-task.md` — 1.9.1 is current; 1.8.165 is no longer the active task.
+- `ai-handoff/known-issues.md` — element cache, `rules[]` provenance, PHPUnit baseline, security/leak drafts, older `cursor/*` draft backlog.
+
+## Not changed
+- Plugin code, version, changelog, CI, tags.
+
+## Commands
+- Tags `v1.8.168`–`v1.9.1` and `CHANGELOG.md` checked. Tag date for 1.8.168 is 2026-10-07; the changelog entry is 2026-10-06. Tag date for 1.9.1 is 2026-10-10; the changelog entry is 2026-10-09.
+- `gh pr view` 79 and 80 (both open drafts). `gh pr list` counted 63 open `cursor/*` drafts numbered #1–#67.
+
+## Remaining errors
+- None in these docs. Product baseline is unchanged: 9 errors in `RWGC_ContextAttributionTest`, 7 failures in `RWGCTargetingAssistantUiRegressionTest`.
+
+## Status
+done
+
 Geo Content 1.9.1 on the same draft branch: the rule builder mounts when the inspector is shown, and Choose from library lists published rules only. Version is 1.9.1 so `index.js` is not cached as 1.9.0. No tag, no merge.
 
 ## Root cause

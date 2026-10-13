@@ -201,3 +201,63 @@ in place of real ones.**
 **Likely causes:** Geo Core ≤1.8.156 defaulted the Decision Cloud API base to the Google/Reviews vault. Stored option `rwgc_cloud_api_base` can pin that URL after update. Cloud screen was not in the Geo admin shell.
 
 **Do not retry:** Extra mu-plugins on staging/production to retarget Decision Cloud. Fix belongs in Geo Core (1.8.157+).
+
+---
+
+### Elementor element cache serves geo-gated widget HTML after a rule change
+
+**Symptoms:** After a visibility rule changes, Elementor still serves the previous geo-gated widget HTML from `_elementor_element_cache`.
+
+**Tried:** Not attempted. Recorded 2026-10-13 from the current backlog.
+
+**Likely causes:** The widgets are not marked dynamic, so Elementor is free to reuse the cached element HTML.
+
+**Do not retry:** Treating a rule save as a visitor-HTML refresh while the widget stays static in Elementor's element cache.
+
+---
+
+### Page-variant provenance ignores `rules[]`
+
+**Symptoms:** A page-version rule is not marked as a page variant.
+
+**Tried:** Not attempted. `RWGC_Variant_Rule_Applications::infer_provenance_from_rule_set()` reads `$set['conditions']` and `$set['groups'][]['conditions']` only (`includes/targeting/class-rwgc-variant-rule-applications.php`).
+
+**Likely causes:** Portable rule sets store conditions under `rules[]` (`RWGC_Targeting_Rule_Set_Schema::sanitize()`). A `page_version_url` condition in that list never sets `sourceType` to `page_variant`.
+
+**Do not retry:** Inferring provenance from the top-level `conditions` or `groups` keys alone.
+
+---
+
+### PHPUnit baseline and `composer test:all`
+
+**Symptoms:** `vendor/bin/phpunit -c phpunit.xml.dist` reports 9 errors in `RWGC_ContextAttributionTest` and 7 failures in `RWGCTargetingAssistantUiRegressionTest`. `composer test:all` runs `@test` first and stops on that failure, so the later CLI scripts do not run. CI (`.github/workflows/test.yml`) skips the test job body on `cursor/*` pull requests.
+
+**Tried:** These counts are the recorded baseline on the 1.9.0 and 1.9.1 passes (`cursor-output.md`). Individual `composer test:*` scripts other than `test` / `test:all` passed on those passes.
+
+**Likely causes:** Pre-existing attribution and Targeting Assistant UI failures. Composer stops a script array on the first non-zero exit. The workflow still treats `cursor/*` as a branch to skip.
+
+**Do not retry:** Reading a green `test:all` as required before review, or reading a skipped CI check on a `cursor/*` pull request as a passing suite. Staging browser QA is the release check (see `current-task.md`).
+
+---
+
+### Security and leak pull requests
+
+**Symptoms:** Open draft `cursor/*` pull requests still need triage. **#63** (visitor-path experiments always assign control) blocks Gate E.
+
+**Tried:** Not triaged in the 2026-10-13 docs pass. Confirmed still open: #63, #58, #59, #60, #61, #65, #66, #67, #43.
+
+**Likely causes:** Separate investigations. #58 Cloud variants through geo-hidden Experience Slots. #59 re-pair serves another site's cached manifest. #60 re-pair flushes another site's event queue. #61 a cloned site mutates the original Cloud workspace. #65 Gutenberg post-level geo content on REST, feeds, and loops. #66 Elementor document geo content on REST, feeds, and loops. #67 geo-restricted products in WooCommerce Blocks and the Store API. #43 unauthorized Insights AI report access.
+
+**Do not retry:** Starting Gate E live attribution while #63 is open. Merging any of these without a review.
+
+---
+
+### Older `cursor/*` draft pull requests (#1–#67)
+
+**Symptoms:** 63 open draft pull requests numbered #1–#67, all on `cursor/*` branches, still need triage. Four numbers in that range are closed. #79 and #80 are newer and are the 1.9.2 candidates (`current-task.md`).
+
+**Tried:** Counted with `gh pr list` on 2026-10-13 (63 open drafts with number ≤ 67).
+
+**Likely causes:** Cursor Cloud drafts from before releases moved to reviewed `cursor/*` pull requests. Some may already be fixed on `main`.
+
+**Do not retry:** Merging the set in bulk. Triage each one against current `main`.

@@ -1,8 +1,8 @@
 # ReactWoo commercial and subscription model
 
-**Status:** Canonical commercial plan. Local/code complete. Operator catalogue SQL, license package SQL, and production `REACTWOO_CLOUD_BRIDGE_ENABLED` are done (verified 2026-08-21). Remaining: paste/merge `rwcc_settings` product IDs if still empty, production checkout E2E, identity Sign in, then Gate E.  
+**Status:** Canonical commercial plan. Local/code complete. Operator catalogue SQL, license package SQL, and production `REACTWOO_CLOUD_BRIDGE_ENABLED` are done (verified 2026-08-21). Geo Core on `main` is **1.9.1** (annotated tag `v1.9.1`, 2026-10-10). Remaining before Gate E, in order: Cloud Commerce product IDs if `rwcc_settings` is still empty, private-window sign-in at `https://decision.reactwoo.com`, a paid checkout E2E, API Manager **2.1.13** on ReactWoo.com if production is still on `2.1.12`, then live attribution.  
 **Authority:** This document supersedes any previous wording that Decision Cloud and covered individual-plugin subscriptions should normally run as separately billed subscriptions.  
-**Last updated:** 2026-08-21  
+**Last updated:** 2026-10-13  
 **Parent architecture:** [reactwoo-cloud-v1-architecture-and-delivery-plan.md](./reactwoo-cloud-v1-architecture-and-delivery-plan.md)  
 **Store/onboarding sequence:** [commerce-and-onboarding.md](./commerce-and-onboarding.md)  
 **Billing ownership:** [billing-providers.md](./billing-providers.md)  
@@ -570,11 +570,26 @@ Sprints 1–6 in [commerce-and-onboarding.md](./commerce-and-onboarding.md) buil
 | 9. Geo Core entitlement resolution | **Done.** |
 | 10. My Account and Decision Cloud UX | **Done** for shipped copy. My Account shows included-in-Cloud, downgrade selection, and product-page copy for Decision Cloud. Portal billing lists included SKUs and hands cancel/downgrade to ReactWoo.com. |
 | 11. Figma flows | **Done** for visual screens. Page **09 Decision Cloud commerce** ([327:2](https://www.figma.com/design/BZFmgpDMSm0OMtnC19lNQ4/Reactwoo?node-id=327-2)) keeps the 18 copy wireframes and adds **Visual — PLAN §16 desktop** using Cloud Dashboard Button components and Inter. |
-| 12. End-to-end tests and CI | **Done** for Local. Unit/smoke tests cover coverage, credit, handover, licence reuse, overlap quote, currency mismatch, scheduled subs, superseded ZIP hiding, Cloud on-hold downloads. Store e2e fixture includes the §17 handover/overlap matrix. Live Local WooCommerce Subscriptions E2E (no payment): `reactwoo-api-manager/scripts/live_local_woo_e2e.php` passed 2026-08-20 (catalogue bind, credit quote, supersession, pending materialize, cancel). Production reactwoo.com checkout E2E is the remaining paid-path operator run. |
+| 12. End-to-end tests and CI | **Done** for Local. Unit/smoke tests cover coverage, credit, handover, licence reuse, overlap quote, currency mismatch, scheduled subs, superseded ZIP hiding, Cloud on-hold downloads. Store e2e fixture includes the §17 handover/overlap matrix. Live Local WooCommerce Subscriptions E2E (no payment): `reactwoo-api-manager/scripts/live_local_woo_e2e.php` passed 2026-08-20 (catalogue bind, credit quote, supersession, pending materialize, cancel). Production reactwoo.com checkout E2E is still an operator paid-path run (§21). |
 | 13. Staging migrations | **Done.** Local validate OK 2026-08-20. Operator production SQL run 2026-08-21: store `bind_production_cloud_catalogue.sql` (parent 3166, variations 3172–3177 purchasable at PLAN prices) and license `add_reactwoo_decision_cloud_package.sql` (`packages.slug` `reactwoo-decision-cloud`, id **2271**, `is_active=1`). |
 | 14. Production feature flags | **Done** 2026-08-21. `REACTWOO_CLOUD_BRIDGE_ENABLED` is on: public product page renders `rwcc-cloud-product-copy`. Decision Cloud `https://decision.reactwoo.com/health` is `0.17.9`. Sign-in URL remains `https://reactwoo.com/my-account/?rwcc_open_cloud=1`. |
 
 Do not treat the production flag as a substitute for filled `rwcc_settings` product IDs or a paid checkout E2E.
+
+Geo Core product releases since the 2026-08-21 commerce snapshot are tagged on `main`. They do not close the operator steps in §21.
+
+| Release | When | What shipped |
+|---------|------|----------------|
+| **1.8.168** | tag 2026-10-07 (changelog 2026-10-06) | Five fixes. A deleted or missing rule never matches: “show only if” content stays hidden, “hide if” content stays visible, and variants fall back to the default. |
+| **1.8.169** | 2026-10-07 | QUIC.cloud visitor IP when PHP is behind a local reverse proxy. |
+| **1.8.170** | 2026-10-08 | Editor warning when a block or element still references a deleted or unpublished rule. |
+| **1.8.171** | 2026-10-09 | That warning attaches in Elementor 4.x, stale ids stay selected, and the picker lists published rules only. |
+| **1.9.0** | 2026-10-09 | WordPress.org build (`python scripts/package_zip.py --target wporg`). Directory slug `reactwoo-geo-core`. Plugin URI `https://reactwoo.com/geo-core/`. Telemetry is private until an administrator opts in. The MaxMind license-key notice shows only when there is no usable database. Text domain remains `reactwoo-geocore`. |
+| **1.9.1** | tag 2026-10-10 (changelog 2026-10-09) | Geo Content: rule-controls config key, InnerBlocks with backward compatibility, the rule builder mounts when the block is selected, and the library picker lists published rules only. |
+
+Open for **1.9.2**: [PR #80](https://github.com/reactwoo/reactwoo-geocore/pull/80) (a stored telemetry `0` is read as opted in) and [PR #79](https://github.com/reactwoo/reactwoo-geocore/pull/79) (empty Geo Content country list on WordPress 6.2–6.4).
+
+Releases ship from reviewed `cursor/*` pull requests after real-browser QA on the staging site. `main` is fast-forwarded or merged, then an annotated `v*` tag triggers `publish-update.yml`. That workflow publishes the ReactWoo channel (R2 and `api.reactwoo.com`). WordPress.org SVN is a separate upload. Tags need the owner's explicit approval.
 
 ---
 
@@ -599,10 +614,10 @@ These were open during implementation. The following are the **shipped conservat
 
 | Area | Remaining |
 |------|-----------|
-| Store companion | Production flag on; catalogue meta/prices live. If `rwcc_settings` product IDs are still empty, paste them in wp-admin or run `merge_production_cloud_settings.php` (empty keys only; secrets untouched). Paid production checkout E2E remains an operator run. ISO start-date conversion for pending individuals is in local API Manager `2.1.13` (`132e7fe`) — deploy that to ReactWoo.com if production is still on `2.1.12`. |
-| Decision Cloud | Portal billing lists included SKUs and store downgrade handoff (`rw_action=downgrade`). Upgrade JSON credits the store (`credit_owner: store`). Charging stays on the store. Production `0.17.9`. Identity Sign in (private window) still unverified. |
-| Geo Core | Done for grant OR. Gate D live Local loop passed 2026-08-20. Next architecture gate: **Gate E**. |
-| Licence / updates | **Done** for the package row. `reactwoo-decision-cloud` is active on license.reactwoo.com (id 2271). Code grants covered plugin slugs and passes `plan_code`. |
+| Store companion | Production flag on; catalogue meta/prices live. Operator order before live attribution: (1) if `rwcc_settings` product IDs are still empty, paste them in wp-admin or run `merge_production_cloud_settings.php` (empty keys only; secrets untouched); (2) private-window sign-in at `https://decision.reactwoo.com`; (3) paid production checkout E2E; (4) deploy API Manager `2.1.13` (`132e7fe`) to ReactWoo.com if production is still on `2.1.12` — that build converts ISO start dates for pending individuals. |
+| Decision Cloud | Portal billing lists included SKUs and store downgrade handoff (`rw_action=downgrade`). Upgrade JSON credits the store (`credit_owner: store`). Charging stays on the store. Production `0.17.9`. Private-window sign-in at `https://decision.reactwoo.com` is still unverified. |
+| Geo Core | Done for grant OR. Gate D live Local loop passed 2026-08-20. Tagged through **1.9.1** (§19). In progress for **1.9.2**: PR #80 and PR #79. Backlog, tracked in `ai-handoff/known-issues.md`: Elementor `_elementor_element_cache` keeps serving geo-gated widget HTML after a rule changes, because the widgets are not marked dynamic; `infer_provenance_from_rule_set()` ignores `rules[]`, so page-version rules are not marked as page variants; PHPUnit baseline is 9 errors in `RWGC_ContextAttributionTest` and 7 failures in `RWGCTargetingAssistantUiRegressionTest` (`composer test:all` stops on that first failure; CI skips `cursor/*` branches). Security and leak drafts #63, #58–#61, #65–#67, and #43 need triage. **#63 blocks Gate E.** Sixty-three older `cursor/*` drafts (#1–#67) also need triage. Next architecture gate: **Gate E**. |
+| Licence / updates | **Done** for the package row. `reactwoo-decision-cloud` is active on license.reactwoo.com (id 2271). Code grants covered plugin slugs and passes `plan_code`. ReactWoo channel publish is the annotated `v*` tag (`publish-update.yml`: R2 and `api.reactwoo.com`). WordPress.org SVN is a separate upload. |
 | Figma | §16 copy frames plus visual desktop screens on [09 Decision Cloud commerce](https://www.figma.com/design/BZFmgpDMSm0OMtnC19lNQ4/Reactwoo?node-id=327-2). |
 
 ---
