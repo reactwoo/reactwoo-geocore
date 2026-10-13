@@ -3,6 +3,19 @@
 ## Status
 done
 
+Geo Core 1.9.2 release branch merges PR #80 (telemetry opt-out) and PR #79 (Geo Content country list on WordPress 6.2–6.4). The only merge conflict was `ai-handoff/cursor-output.md`; both sections are kept. PR #81 is not included.
+
+## Files changed
+- Version 1.9.2 in the plugin header, `RWGC_VERSION`, readme stable tag, changelog, and the Geo Content asset file.
+- `tests/test-rwgc-cloud-events.php` — `'no'`, `'off'`, `false`, and `''` stay opted out.
+
+## Not changed
+- Telemetry still opts in only for `true`, `1`, or `"1"`. The country-list handle fix is unchanged from #79.
+- PR #81 is not in this release.
+
+## Status
+done
+
 Anonymous Cloud telemetry stays off when the saved opt-in is `0`. No version bump, no tag.
 
 ## Root cause

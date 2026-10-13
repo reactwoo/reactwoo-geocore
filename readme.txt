@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.1
+Stable tag: 1.9.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -167,6 +167,10 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.2 =
+* Anonymous Cloud telemetry stays off for any stored value other than an explicit opt-in. That includes 0, no, off, false, and an empty value.
+* The Geo Content country list loads on WordPress 6.2, 6.3, and 6.4.
+
 = 1.9.1 =
 * Geo Content: visibility-rule controls show when advanced targeting is enabled. The editor accepts either advancedTargeting or advanced_targeting.
 * Geo Content can hold inner blocks. Blocks saved before this still validate.
@@ -230,6 +234,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.2 =
+Anonymous Cloud telemetry stays off unless the stored choice is an explicit opt-in. The Geo Content country list loads on WordPress 6.2–6.4.
 
 = 1.9.1 =
 Geo Content: rule controls, inner blocks, the rule builder after reload, and published-only library rules.

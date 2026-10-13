@@ -248,6 +248,11 @@ rwgc_events_assert( 'stored string 0 stays opted out', ! RWGC_Cloud_Telemetry::i
 rwgc_events_assert( 'checkbox follows stored string 0', ! RWGC_Cloud_Telemetry::option_is_enabled() );
 $GLOBALS['rwgc_test_options'][ RWGC_Cloud_Telemetry::OPT_IN_OPTION ] = 0;
 rwgc_events_assert( 'stored int 0 stays opted out', ! RWGC_Cloud_Telemetry::is_opted_in() );
+foreach ( array( 'no', 'off', '', false ) as $stored_off ) {
+	$GLOBALS['rwgc_test_options'][ RWGC_Cloud_Telemetry::OPT_IN_OPTION ] = $stored_off;
+	rwgc_events_assert( 'non opt-in stored value stays opted out', ! RWGC_Cloud_Telemetry::is_opted_in() );
+	rwgc_events_assert( 'checkbox follows non opt-in stored value', ! RWGC_Cloud_Telemetry::option_is_enabled() );
+}
 $GLOBALS['rwgc_test_options'][ RWGC_Cloud_Telemetry::OPT_IN_OPTION ] = '1';
 rwgc_events_assert( 'stored string 1 is opted in', RWGC_Cloud_Telemetry::is_opted_in() );
 $GLOBALS['rwgc_test_options'][ RWGC_Cloud_Telemetry::OPT_IN_OPTION ] = 1;

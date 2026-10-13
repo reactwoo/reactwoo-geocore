@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.2] - 2026-10-13
+
 ### Fixed
-- Saving anonymous Cloud telemetry as off stays off. WordPress returns the stored `0` as the string `"0"`, which the opt-in check treated as consent, so the checkbox came back on and visitor events resumed.
+- Anonymous Cloud telemetry stays off for any stored value other than an explicit opt-in (`true`, `1`, or `"1"`). That covers `'0'`, `'no'`, `'off'`, `false`, and `''`. WordPress returns a saved `0` as the string `"0"`, which a boolean cast treated as consent.
+- The Geo Content country list loads on WordPress 6.2–6.4. Those versions register a different editor-script handle, so the country options are now attached to the handle WordPress actually enqueued.
 
 ## [1.9.1] - 2026-10-09
 
