@@ -187,24 +187,33 @@ final class RWGC_Cloud_Telemetry {
 	}
 
 	/**
+	 * Whether the saved opt-in is on.
+	 *
+	 * WordPress stores a scalar option as a string. `(bool) "0"` is true, so an
+	 * explicit save of off must not be treated as consent.
+	 *
 	 * @return bool
 	 */
+	public static function option_is_enabled() {
+		if ( ! function_exists( 'get_option' ) ) {
+			return false;
+		}
+		$stored = get_option( self::OPT_IN_OPTION, false );
+		return true === $stored || 1 === $stored || '1' === $stored;
+	}
+
 	/**
 	 * Whether an administrator has opted in. The filter default is that option, which is off.
 	 *
 	 * @return bool
 	 */
 	public static function is_opted_in() {
-		$opted = false;
-		if ( function_exists( 'get_option' ) ) {
-			$opted = (bool) get_option( self::OPT_IN_OPTION, false );
-		}
 		/**
 		 * Consent gate for Cloud telemetry. Default is the stored opt-in, which is off.
 		 *
 		 * @param bool $allowed Allowed.
 		 */
-		return (bool) apply_filters( 'rwgc_cloud_telemetry_allowed', $opted );
+		return (bool) apply_filters( 'rwgc_cloud_telemetry_allowed', self::option_is_enabled() );
 	}
 
 	/**

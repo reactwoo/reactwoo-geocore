@@ -158,7 +158,7 @@ final class RWGC_Cloud_Admin {
 	 * @return void
 	 */
 	private static function render_telemetry_opt_in() {
-		$opted = class_exists( 'RWGC_Cloud_Telemetry', false ) && (bool) get_option( RWGC_Cloud_Telemetry::OPT_IN_OPTION, false );
+		$opted = class_exists( 'RWGC_Cloud_Telemetry', false ) && RWGC_Cloud_Telemetry::option_is_enabled();
 		?>
 		<h2><?php esc_html_e( 'Anonymous experience events', 'reactwoo-geocore' ); ?></h2>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">

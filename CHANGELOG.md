@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Saving anonymous Cloud telemetry as off stays off. WordPress returns the stored `0` as the string `"0"`, which the opt-in check treated as consent, so the checkbox came back on and visitor events resumed.
+
 ## [1.9.1] - 2026-10-09
 
 ### Fixed

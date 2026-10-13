@@ -41,6 +41,7 @@ rwgc_wporg_assert( 'helper detects wporg distribution', false !== strpos( $funct
 rwgc_wporg_assert( 'plugin skips updater on wporg', false !== strpos( $plugin, 'rwgc_is_wordpress_org_distribution()' ) );
 rwgc_wporg_assert( 'updater file still in the tree for the ReactWoo channel', is_file( $root . '/includes/class-rwgc-satellite-updater.php' ) );
 rwgc_wporg_assert( 'telemetry option defaults through get_option false', false !== strpos( $telemetry, "get_option( self::OPT_IN_OPTION, false )" ) );
+rwgc_wporg_assert( 'telemetry opt-in does not cast the stored zero', false !== strpos( $telemetry, "1 === \$stored || '1' === \$stored" ) );
 rwgc_wporg_assert( 'telemetry filter no longer defaults to true', false === strpos( $telemetry, "apply_filters( 'rwgc_cloud_telemetry_allowed', true )" ) );
 
 if ( preg_match( '/const FREE_CONDITION_TYPES = array\((.*?)\);/s', $schema, $free_match )
