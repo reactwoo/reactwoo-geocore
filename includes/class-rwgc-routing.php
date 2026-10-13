@@ -5,14 +5,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Page-level variant routing for Geo Core free tier.
+ * Page-level country routing stored in post meta.
  *
- * Routing decisions use **visitor country only** (not city/region). City-level rules and Elementor city routing
- * belong to Geo Elementor, not this class.
- *
- * Free scope:
- * - One default fallback page.
- * - One additional country mapping.
+ * Routing decisions use visitor country. There is no limit on how many country
+ * pages a master may have. Authoring is enabled only when Geo Core Pro is
+ * entitled. The WordPress.org build does not boot this redirect.
  */
 class RWGC_Routing {
 
@@ -235,8 +232,6 @@ class RWGC_Routing {
 
 			if ( $out['enabled'] && ( $out['master_page_id'] <= 0 || '' === $out['country_iso2'] ) ) {
 				$out['enabled'] = false;
-			} elseif ( $out['enabled'] && self::master_has_variant( $out['master_page_id'], $page_id ) ) {
-				$out['enabled'] = false;
 			} elseif ( $out['enabled'] && self::is_variant_country_taken( $out['master_page_id'], $out['country_iso2'], $page_id ) ) {
 				$out['enabled'] = false;
 			}
@@ -318,7 +313,7 @@ class RWGC_Routing {
 	}
 
 	/**
-	 * Free-tier guard: allow only one variant page per master.
+	 * Whether this master already has at least one linked variant page.
 	 *
 	 * @param int $master_page_id Master page ID.
 	 * @param int $exclude_page_id Excluded page ID.

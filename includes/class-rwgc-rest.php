@@ -732,6 +732,7 @@ class RWGC_REST {
 				'geo_event_filter' => 'rwgc_geo_event',
 				'route_resolved'   => 'rwgc_route_variant_resolved',
 			),
+			'page_variants'  => function_exists( 'rwgc_page_variants_available' ) && rwgc_page_variants_available(),
 			// ReactWoo Geo AI / Optimise / Commerce: ready only after each plugin’s load hook fired (deps satisfied).
 			'satellites'     => self::get_satellites_status(),
 			// Primary extension points for satellite plugins (not exhaustive); see get_capabilities_integration_contract().

@@ -277,9 +277,11 @@ class RWGC_Plugin {
 		RWGC_Targeting_Rule_Builder_Assets::init();
 		RWGC_Visibility_Rule_Tester_Assets::init();
 		RWGC_Integrations_Loader::init();
-		RWGC_Routing::init();
-		RWGC_Page_Version_Routing::init();
-		add_filter( 'rwgc_portable_targeting_editor_context', array( 'RWGC_Page_Version_Routing', 'filter_editor_context' ), 20 );
+		if ( ! function_exists( 'rwgc_is_wordpress_org_distribution' ) || ! rwgc_is_wordpress_org_distribution() ) {
+			RWGC_Routing::init();
+			RWGC_Page_Version_Routing::init();
+			add_filter( 'rwgc_portable_targeting_editor_context', array( 'RWGC_Page_Version_Routing', 'filter_editor_context' ), 20 );
+		}
 		RWGC_REST::init();
 		RWGC_Upsells::init();
 

@@ -121,7 +121,7 @@ class RWGC_Workflows {
 		switch ( $goal ) {
 			case 'variants':
 				$out['headline'] = __( 'Path: country-specific pages', 'reactwoo-geocore' );
-				$out['body']     = __( 'You need visitor country detection working, then you can add a linked “local version” of a page for one extra country (free tier). Use Create page version when you are ready — routing is configured for you.', 'reactwoo-geocore' );
+				$out['body']     = __( 'Country detection is part of Geo Core. Page versions are available when ReactWoo Geo Core Pro is active on this site.', 'reactwoo-geocore' );
 				break;
 			case 'ai':
 				$out['headline'] = __( 'Path: AI-assisted localisation', 'reactwoo-geocore' );

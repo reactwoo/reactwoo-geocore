@@ -172,6 +172,9 @@ class RWGC_Suite_Admin {
 		if ( ! current_user_can( 'edit_pages' ) ) {
 			wp_die( esc_html__( 'Forbidden.', 'reactwoo-geocore' ) );
 		}
+		if ( ! function_exists( 'rwgc_page_variants_available' ) || ! rwgc_page_variants_available() ) {
+			wp_die( esc_html__( 'Page versions are not available in this install.', 'reactwoo-geocore' ) );
+		}
 		check_admin_referer( 'rwgc_create_variant_workflow' );
 
 		$countries = isset( $_POST['rwgc_countries'] ) && is_array( $_POST['rwgc_countries'] )

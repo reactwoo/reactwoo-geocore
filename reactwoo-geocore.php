@@ -55,7 +55,11 @@ require_once RWGC_PATH . 'includes/class-rwgc-settings.php';
 require_once RWGC_PATH . 'includes/class-rwgc-maxmind.php';
 require_once RWGC_PATH . 'includes/targeting/class-rwgc-page-version.php';
 require_once RWGC_PATH . 'includes/targeting/class-rwgc-page-version-routing.php';
-RWGC_Page_Version_Routing::bootstrap_early();
+// Directory builds do not boot page-version rewrites. The ReactWoo channel still
+// resolves URLs already stored on the site until Pro takes that runtime over.
+if ( ! defined( 'RWGC_DISTRIBUTION' ) || 'wporg' !== RWGC_DISTRIBUTION ) {
+	RWGC_Page_Version_Routing::bootstrap_early();
+}
 require_once RWGC_PATH . 'includes/class-rwgc-plugin.php';
 require_once RWGC_PATH . 'includes/functions-rwgc.php';
 

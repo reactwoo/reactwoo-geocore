@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class RWGC_Variant_Manager {
 
 	/**
-	 * Create a country-specific variant page linked to a master page (free tier: one variant per master).
+	 * Create a country-specific page linked to a master page. No numeric cap.
 	 *
 	 * @param int    $master_page_id Master page ID.
 	 * @param string $country_iso2   ISO2 country code.
@@ -25,6 +25,9 @@ class RWGC_Variant_Manager {
 	public static function create_country_variant( $master_page_id, $country_iso2, $mode = 'duplicate' ) {
 		if ( ! current_user_can( 'edit_pages' ) ) {
 			return new \WP_Error( 'rwgc_vm_forbidden', __( 'You do not have permission to create pages.', 'reactwoo-geocore' ) );
+		}
+		if ( ! function_exists( 'rwgc_page_variants_available' ) || ! rwgc_page_variants_available() ) {
+			return new \WP_Error( 'rwgc_vm_unavailable', __( 'Page versions are not available in this install.', 'reactwoo-geocore' ) );
 		}
 
 		$master_page_id = absint( $master_page_id );
@@ -46,13 +49,6 @@ class RWGC_Variant_Manager {
 
 		if ( ! class_exists( 'RWGC_Routing', false ) ) {
 			return new \WP_Error( 'rwgc_vm_routing', __( 'Routing is not available.', 'reactwoo-geocore' ) );
-		}
-
-		if ( RWGC_Routing::master_has_variant( $master_page_id, 0 ) ) {
-			return new \WP_Error(
-				'rwgc_vm_limit',
-				__( 'This default page already has a country-specific version. Free Geo Core allows one linked version per page — upgrade to GeoElementor for more.', 'reactwoo-geocore' )
-			);
 		}
 
 		if ( RWGC_Routing::is_variant_country_taken( $master_page_id, $country_iso2, 0 ) ) {
@@ -167,6 +163,9 @@ class RWGC_Variant_Manager {
 		if ( ! current_user_can( 'edit_pages' ) ) {
 			return new \WP_Error( 'rwgc_vm_forbidden', __( 'You do not have permission to manage pages.', 'reactwoo-geocore' ) );
 		}
+		if ( ! function_exists( 'rwgc_page_variants_available' ) || ! rwgc_page_variants_available() ) {
+			return new \WP_Error( 'rwgc_vm_unavailable', __( 'Page versions are not available in this install.', 'reactwoo-geocore' ) );
+		}
 
 		$master_page_id  = absint( $master_page_id );
 		$variant_page_id = absint( $variant_page_id );
@@ -193,13 +192,6 @@ class RWGC_Variant_Manager {
 
 		if ( ! class_exists( 'RWGC_Routing', false ) ) {
 			return new \WP_Error( 'rwgc_vm_routing', __( 'Routing is not available.', 'reactwoo-geocore' ) );
-		}
-
-		if ( RWGC_Routing::master_has_variant( $master_page_id, $variant_page_id ) ) {
-			return new \WP_Error(
-				'rwgc_vm_limit',
-				__( 'This default page already has a linked local version. Free Geo Core allows one linked version per page.', 'reactwoo-geocore' )
-			);
 		}
 
 		$vcfg = RWGC_Routing::get_page_route_config( $variant_page_id );

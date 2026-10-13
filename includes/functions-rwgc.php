@@ -19,6 +19,20 @@ if ( ! function_exists( 'rwgc_is_wordpress_org_distribution' ) ) {
 	}
 }
 
+if ( ! function_exists( 'rwgc_page_variants_available' ) ) {
+	/**
+	 * Whether an entitled Geo Core Pro runtime can create and edit page versions.
+	 *
+	 * Core does not turn this on. Pro returns true for a valid standalone licence
+	 * or a Decision Cloud personalisation grant. There is no numeric cap.
+	 *
+	 * @return bool
+	 */
+	function rwgc_page_variants_available() {
+		return (bool) apply_filters( 'rwgc_page_variants_available', false );
+	}
+}
+
 if ( ! function_exists( 'rwgc_is_geo_core_active' ) ) {
 	/**
 	 * Whether ReactWoo Geo Core is loaded (for satellite plugin guards).

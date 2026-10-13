@@ -22,6 +22,7 @@ class RWGC_Admin {
 		add_action( 'admin_post_rwgc_save_maxmind_settings', array( __CLASS__, 'handle_save_maxmind_settings' ) );
 		add_action( 'add_meta_boxes_page', array( __CLASS__, 'register_page_meta_box' ) );
 		add_action( 'save_post_page', array( __CLASS__, 'save_page_meta_box' ) );
+		add_action( 'admin_notices', array( __CLASS__, 'maybe_show_page_version_notice' ) );
 	}
 
 	/**
@@ -116,6 +117,8 @@ class RWGC_Admin {
 			58
 		);
 
+		$page_variants = function_exists( 'rwgc_page_variants_available' ) && rwgc_page_variants_available();
+
 		if ( class_exists( 'RWGC_Suite_Admin', false ) ) {
 			self::register_app_route(
 				array(
@@ -137,27 +140,29 @@ class RWGC_Admin {
 					'callback'  => array( 'RWGC_Suite_Admin', 'render_suite_home' ),
 				)
 			);
-			self::register_app_route(
-				array(
-					'section'   => 'targeting',
-					'route'     => 'variants',
-					'menu_slug' => 'rwgc-suite-variants',
-					'label'     => __( 'Variants', 'reactwoo-geocore' ),
-					'order'     => 15,
-					'callback'  => array( 'RWGC_Suite_Admin', 'render_suite_variants' ),
-				)
-			);
-			self::register_app_route(
-				array(
-					'section'        => 'targeting',
-					'route'          => 'variant-wizard',
-					'menu_slug'      => 'rwgc-workflow-variant',
-					'label'          => __( 'Create variant', 'reactwoo-geocore' ),
-					'order'          => 90,
-					'is_section_nav' => false,
-					'callback'       => array( 'RWGC_Suite_Admin', 'render_workflow_variant' ),
-				)
-			);
+			if ( $page_variants ) {
+				self::register_app_route(
+					array(
+						'section'   => 'targeting',
+						'route'     => 'variants',
+						'menu_slug' => 'rwgc-suite-variants',
+						'label'     => __( 'Page versions', 'reactwoo-geocore' ),
+						'order'     => 15,
+						'callback'  => array( 'RWGC_Suite_Admin', 'render_suite_variants' ),
+					)
+				);
+				self::register_app_route(
+					array(
+						'section'        => 'targeting',
+						'route'          => 'variant-wizard',
+						'menu_slug'      => 'rwgc-workflow-variant',
+						'label'          => __( 'Create page version', 'reactwoo-geocore' ),
+						'order'          => 90,
+						'is_section_nav' => false,
+						'callback'       => array( 'RWGC_Suite_Admin', 'render_workflow_variant' ),
+					)
+				);
+			}
 		}
 
 		self::register_app_route(
@@ -1551,14 +1556,49 @@ class RWGC_Admin {
 	}
 
 	/**
+	 * Tell editors that stored page versions are untouched when Pro is not entitled.
+	 *
+	 * @return void
+	 */
+	public static function maybe_show_page_version_notice() {
+		if ( ! is_admin() || ! current_user_can( 'edit_pages' ) ) {
+			return;
+		}
+		if ( function_exists( 'rwgc_page_variants_available' ) && rwgc_page_variants_available() ) {
+			return;
+		}
+		if ( ! function_exists( 'get_current_screen' ) ) {
+			return;
+		}
+		$screen = get_current_screen();
+		if ( ! $screen || 'page' !== $screen->base && 'page' !== $screen->id ) {
+			return;
+		}
+		$post_id = isset( $_GET['post'] ) ? absint( wp_unslash( $_GET['post'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( $post_id <= 0 || '1' !== (string) get_post_meta( $post_id, '_rwgc_route_enabled', true ) ) {
+			return;
+		}
+
+		$wporg = function_exists( 'rwgc_is_wordpress_org_distribution' ) && rwgc_is_wordpress_org_distribution();
+		$message = $wporg
+			? __( 'This page still has country-routing settings stored. This plugin does not change or delete them. Install ReactWoo Geo Core Pro to keep sending matching visitors to the linked page.', 'reactwoo-geocore' )
+			: __( 'This page still has country-routing settings, and existing routes on this site keep running. Creating or editing page versions requires ReactWoo Geo Core Pro.', 'reactwoo-geocore' );
+
+		echo '<div class="notice notice-info"><p>' . esc_html( $message ) . '</p></div>';
+	}
+
+	/**
 	 * Register page-level variant routing meta box.
 	 *
 	 * @return void
 	 */
 	public static function register_page_meta_box() {
+		if ( ! function_exists( 'rwgc_page_variants_available' ) || ! rwgc_page_variants_available() ) {
+			return;
+		}
 		add_meta_box(
 			'rwgc-page-routing',
-			__( 'Geo Variant Routing (Free)', 'reactwoo-geocore' ),
+			__( 'Page versions', 'reactwoo-geocore' ),
 			array( __CLASS__, 'render_page_meta_box' ),
 			'page',
 			'side',
@@ -1586,7 +1626,7 @@ class RWGC_Admin {
 				<?php esc_html_e( 'Enable geo routing for this page', 'reactwoo-geocore' ); ?>
 			</label>
 		</p>
-		<p class="description"><?php esc_html_e( 'Free flow: set one page as Master (default), then create one Variant page per country linked to that Master.', 'reactwoo-geocore' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Set this page as the default, or as a country-specific version linked to a default page. A default page can have more than one country version.', 'reactwoo-geocore' ); ?></p>
 
 		<p><strong><?php esc_html_e( 'Page role', 'reactwoo-geocore' ); ?></strong></p>
 		<p>
@@ -1626,8 +1666,7 @@ class RWGC_Admin {
 			);
 			?>
 		</p>
-		<p class="description"><?php esc_html_e( 'Tip: leave this page as Master for your default audience. On secondary pages, set role to Secondary and select this master page + a country code.', 'reactwoo-geocore' ); ?></p>
-		<p class="description"><?php esc_html_e( 'Need multiple country variants per page? Use GeoElementor advanced routing.', 'reactwoo-geocore' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Leave this page as the default for visitors who do not match a country version. On a country version, choose Secondary and select the default page and country.', 'reactwoo-geocore' ); ?></p>
 		<?php
 	}
 
@@ -1638,6 +1677,10 @@ class RWGC_Admin {
 	 * @return void
 	 */
 	public static function save_page_meta_box( $post_id ) {
+		if ( ! function_exists( 'rwgc_page_variants_available' ) || ! rwgc_page_variants_available() ) {
+			return;
+		}
+
 		if ( ! current_user_can( 'edit_page', $post_id ) ) {
 			return;
 		}
@@ -1663,9 +1706,6 @@ class RWGC_Admin {
 		if ( ! empty( $config['enabled'] ) && 'variant' === $config['role'] ) {
 			if ( empty( $config['master_page_id'] ) || empty( $config['country_iso2'] ) ) {
 				add_settings_error( 'rwgc_tools', 'rwgc_variant_missing_fields', __( 'Secondary page requires both a master page and a country code.', 'reactwoo-geocore' ), 'error' );
-				$config['enabled'] = false;
-			} elseif ( RWGC_Routing::master_has_variant( (int) $config['master_page_id'], (int) $post_id ) ) {
-				add_settings_error( 'rwgc_tools', 'rwgc_variant_limit_reached', __( 'Free limit reached: this master page already has one variant. Upgrade to GeoElementor for multiple variants.', 'reactwoo-geocore' ), 'error' );
 				$config['enabled'] = false;
 			} elseif ( RWGC_Routing::is_variant_country_taken( (int) $config['master_page_id'], (string) $config['country_iso2'], (int) $post_id ) ) {
 				add_settings_error( 'rwgc_tools', 'rwgc_variant_duplicate_country', __( 'That country is already assigned to another variant for this master page.', 'reactwoo-geocore' ), 'error' );

@@ -59,7 +59,6 @@ final class RWGC_Platform_Capabilities_Bootstrap {
 			'traffic.medium'    => __( 'Traffic medium', 'reactwoo-geocore' ),
 			'page.type'         => __( 'Page type', 'reactwoo-geocore' ),
 			'page.request_uri'  => __( 'Request URI', 'reactwoo-geocore' ),
-			'page.version_url'  => __( 'Page version URL', 'reactwoo-geocore' ),
 		);
 
 		foreach ( $core as $id => $label ) {
@@ -69,6 +68,18 @@ final class RWGC_Platform_Capabilities_Bootstrap {
 				array(
 					'label'       => $label,
 					'description' => $label,
+					'provider'    => 'reactwoo-geocore',
+					'version'     => '1',
+				)
+			);
+		}
+
+		if ( function_exists( 'reactwoo_register_action' ) ) {
+			reactwoo_register_action(
+				'geo.country_visibility',
+				array(
+					'label'       => __( 'Country visibility', 'reactwoo-geocore' ),
+					'description' => __( 'Show or hide content by visitor country.', 'reactwoo-geocore' ),
 					'provider'    => 'reactwoo-geocore',
 					'version'     => '1',
 				)

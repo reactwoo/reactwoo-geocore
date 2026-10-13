@@ -137,18 +137,18 @@ class RWGC_Elementor {
 				)
 			);
 
-			$element->add_control(
-				'rwgc_enable_visibility_rules',
-				array(
-					'label'        => __( 'Enable visibility rules', 'reactwoo-geocore' ),
-					'type'         => \Elementor\Controls_Manager::SWITCHER,
-					'label_on'     => __( 'On', 'reactwoo-geocore' ),
-					'label_off'    => __( 'Off', 'reactwoo-geocore' ),
-					'return_value' => 'yes',
-					'default'      => '',
-					'description'  => __( 'Use saved or custom rules (page version URL, device, etc.). Independent of country targeting.', 'reactwoo-geocore' ),
-				)
-			);
+		$element->add_control(
+			'rwgc_enable_visibility_rules',
+			array(
+				'label'        => __( 'Enable visibility rules', 'reactwoo-geocore' ),
+				'type'         => \Elementor\Controls_Manager::SWITCHER,
+				'label_on'     => __( 'On', 'reactwoo-geocore' ),
+				'label_off'    => __( 'Off', 'reactwoo-geocore' ),
+				'return_value' => 'yes',
+				'default'      => '',
+				'description'  => __( 'Use saved or custom country rules. Independent of other targeting.', 'reactwoo-geocore' ),
+			)
+		);
 
 			$element->add_control(
 				'rwgc_visibility_rules_mode',
@@ -236,85 +236,74 @@ class RWGC_Elementor {
 			);
 		}
 
-		$element->add_control(
-			'rwgc_route_heading',
-			array(
-				'type'      => \Elementor\Controls_Manager::HEADING,
-				'label'     => __( 'Page Variant Routing (Free)', 'reactwoo-geocore' ),
-				'separator' => 'before',
-			)
-		);
+		if ( function_exists( 'rwgc_page_variants_available' ) && rwgc_page_variants_available() ) {
+			$element->add_control(
+				'rwgc_route_heading',
+				array(
+					'type'      => \Elementor\Controls_Manager::HEADING,
+					'label'     => __( 'Page versions', 'reactwoo-geocore' ),
+					'separator' => 'before',
+				)
+			);
 
-		$element->add_control(
-			'rwgc_route_enabled',
-			array(
-				'label'        => __( 'Enable Page Variant Routing', 'reactwoo-geocore' ),
-				'type'         => \Elementor\Controls_Manager::SWITCHER,
-				'label_on'     => __( 'On', 'reactwoo-geocore' ),
-				'label_off'    => __( 'Off', 'reactwoo-geocore' ),
-				'return_value' => 'yes',
-				'default'      => '',
-			)
-		);
+			$element->add_control(
+				'rwgc_route_enabled',
+				array(
+					'label'        => __( 'Enable page versions', 'reactwoo-geocore' ),
+					'type'         => \Elementor\Controls_Manager::SWITCHER,
+					'label_on'     => __( 'On', 'reactwoo-geocore' ),
+					'label_off'    => __( 'Off', 'reactwoo-geocore' ),
+					'return_value' => 'yes',
+					'default'      => '',
+				)
+			);
 
-		$element->add_control(
-			'rwgc_route_role',
-			array(
-				'label'     => __( 'Page role', 'reactwoo-geocore' ),
-				'type'      => \Elementor\Controls_Manager::SELECT,
-				'default'   => 'master',
-				'options'   => array(
-					'master'  => __( 'Master (default page)', 'reactwoo-geocore' ),
-					'variant' => __( 'Secondary (country-specific page)', 'reactwoo-geocore' ),
-				),
-				'condition' => array(
-					'rwgc_route_enabled' => 'yes',
-				),
-			)
-		);
+			$element->add_control(
+				'rwgc_route_role',
+				array(
+					'label'     => __( 'Page role', 'reactwoo-geocore' ),
+					'type'      => \Elementor\Controls_Manager::SELECT,
+					'default'   => 'master',
+					'options'   => array(
+						'master'  => __( 'Master (default page)', 'reactwoo-geocore' ),
+						'variant' => __( 'Secondary (country-specific page)', 'reactwoo-geocore' ),
+					),
+					'condition' => array(
+						'rwgc_route_enabled' => 'yes',
+					),
+				)
+			);
 
-		$element->add_control(
-			'rwgc_route_master_page_id',
-			array(
-				'label'       => __( 'Master page', 'reactwoo-geocore' ),
-				'type'        => \Elementor\Controls_Manager::SELECT2,
-				'multiple'    => false,
-				'label_block' => true,
-				'options'     => self::get_master_page_options(),
-				'condition'   => array(
-					'rwgc_route_enabled'       => 'yes',
-					'rwgc_route_role'          => 'variant',
-				),
-			)
-		);
+			$element->add_control(
+				'rwgc_route_master_page_id',
+				array(
+					'label'       => __( 'Master page', 'reactwoo-geocore' ),
+					'type'        => \Elementor\Controls_Manager::SELECT2,
+					'multiple'    => false,
+					'label_block' => true,
+					'options'     => self::get_master_page_options(),
+					'condition'   => array(
+						'rwgc_route_enabled' => 'yes',
+						'rwgc_route_role'    => 'variant',
+					),
+				)
+			);
 
-		$element->add_control(
-			'rwgc_route_country_iso2',
-			array(
-				'label'       => __( 'Variant country', 'reactwoo-geocore' ),
-				'type'        => \Elementor\Controls_Manager::SELECT2,
-				'multiple'    => false,
-				'label_block' => true,
-				'options'     => array(),
-				'condition'   => array(
-					'rwgc_route_enabled'       => 'yes',
-					'rwgc_route_role'          => 'variant',
-				),
-			)
-		);
-
-		$element->add_control(
-			'rwgc_route_free_note',
-			array(
-				'type'      => \Elementor\Controls_Manager::RAW_HTML,
-				'raw'       => '<div style="margin-top:8px;color:#6b7280;">'
-					. esc_html__( 'Free limit: one variant per master page. Use GeoCore Pro for multiple variants and advanced rules.', 'reactwoo-geocore' )
-					. '</div>',
-				'condition' => array(
-					'rwgc_route_enabled' => 'yes',
-				),
-			)
-		);
+			$element->add_control(
+				'rwgc_route_country_iso2',
+				array(
+					'label'       => __( 'Variant country', 'reactwoo-geocore' ),
+					'type'        => \Elementor\Controls_Manager::SELECT2,
+					'multiple'    => false,
+					'label_block' => true,
+					'options'     => array(),
+					'condition'   => array(
+						'rwgc_route_enabled' => 'yes',
+						'rwgc_route_role'    => 'variant',
+					),
+				)
+			);
+		}
 
 		$element->end_controls_section();
 	}
