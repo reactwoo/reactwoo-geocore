@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.5] - 2026-10-13
+
+### Removed
+- Customer-facing GeoElementor add-on cards, module label, and brand image.
+- Loading MaxMind from a GeoElementor install, copying its MaxMind key, and registering the old geo_rule post type.
+
 ## [1.9.4] - 2026-10-13
 
 ### Changed

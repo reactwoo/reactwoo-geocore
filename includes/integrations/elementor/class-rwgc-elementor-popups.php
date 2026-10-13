@@ -1,6 +1,6 @@
 <?php
 /**
- * Elementor Pro popup geo targeting (legacy Geo Elementor data + geo_rule CPT).
+ * Elementor Pro popup geo targeting.
  *
  * @package ReactWoo_Geo_Core
  */

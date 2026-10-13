@@ -31,10 +31,6 @@ class RWGC_Migration {
 
 		$changed = false;
 
-		if ( self::has_legacy_geoelementor_settings() ) {
-			$changed = self::migrate_geoelementor_settings() || $changed;
-		}
-
 		if ( self::has_legacy_whmcs_settings() ) {
 			$changed = self::migrate_whmcs_settings() || $changed;
 		}
@@ -47,15 +43,6 @@ class RWGC_Migration {
 	}
 
 	/**
-	 * Detect legacy GeoElementor settings.
-	 *
-	 * @return bool
-	 */
-	public static function has_legacy_geoelementor_settings() {
-		return '' !== get_option( 'egp_maxmind_license_key', '' );
-	}
-
-	/**
 	 * Detect legacy WHMCS geo settings (placeholder for future).
 	 *
 	 * @return bool
@@ -63,22 +50,6 @@ class RWGC_Migration {
 	public static function has_legacy_whmcs_settings() {
 		// Currently no shared geo infrastructure in WHMCS Bridge to migrate.
 		return false;
-	}
-
-	/**
-	 * Migrate MaxMind license from GeoElementor.
-	 *
-	 * @return bool True if changed.
-	 */
-	public static function migrate_geoelementor_settings() {
-		$license = get_option( 'egp_maxmind_license_key', '' );
-		if ( '' === $license ) {
-			return false;
-		}
-		$settings                      = RWGC_Settings::get_settings();
-		$settings['maxmind_license_key'] = $settings['maxmind_license_key'] ? $settings['maxmind_license_key'] : $license;
-		RWGC_Settings::update( $settings );
-		return true;
 	}
 
 	/**

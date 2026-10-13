@@ -65,8 +65,6 @@ class RWGC_Plugin {
 		// Prefer GeoIP2 / MaxMind DB libraries bundled with Geo Core itself.
 		$autoload_candidates = array(
 			RWGC_PATH . 'vendor/autoload.php',
-			WP_PLUGIN_DIR . '/GeoElementor/vendor/autoload.php',
-			WP_PLUGIN_DIR . '/geo-elementor/vendor/autoload.php',
 		);
 
 		foreach ( $autoload_candidates as $autoload ) {
@@ -180,7 +178,6 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-rule-registry.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-surface-settings.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-targeting-surface-evaluator.php';
-		require_once RWGC_PATH . 'includes/compat/class-rwgc-legacy-geo-rule-cpt.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-context-snapshot-formatter.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-targeting-rule-set-evaluator.php';
 		require_once RWGC_PATH . 'includes/targeting/class-rwgc-target-availability.php';
@@ -229,7 +226,6 @@ class RWGC_Plugin {
 		RWGC_Visibility_Rule_CPT::init();
 		RWGC_Variant_Rule_Applications::init();
 		RWGC_Visibility_Rule_Editor_Status::init();
-		RWGC_Legacy_Geo_Rule_CPT::init();
 
 		RWGC_Platform_Capabilities_Bootstrap::init();
 		RWGC_WP_Abilities_Adapter::init();

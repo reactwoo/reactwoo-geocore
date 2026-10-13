@@ -654,12 +654,9 @@ class RWGC_GeoIP {
 			return $defaults;
 		}
 
-		// Try to load GeoIP2 reader from common locations (Geo Core vendor or GeoElementor).
 		if ( ! class_exists( '\GeoIp2\Database\Reader' ) ) {
 			$autoload_paths = array(
 				RWGC_PATH . 'vendor/autoload.php',
-				WP_PLUGIN_DIR . '/GeoElementor/vendor/autoload.php',
-				WP_PLUGIN_DIR . '/geo-elementor/vendor/autoload.php',
 			);
 			foreach ( $autoload_paths as $autoload ) {
 				if ( file_exists( $autoload ) ) {

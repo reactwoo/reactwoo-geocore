@@ -306,7 +306,7 @@ class RWGC_Admin_Platform {
 		if ( 0 === strpos( $page, 'rwgc-' ) ) {
 			return true;
 		}
-		$prefixes = array( 'rwgcm-', 'rwga-', 'rwgo-', 'rwgcp-', 'geo-elementor', 'elementor-geo-popup', 'geo-content', 'egp-', 'geo-templates' );
+		$prefixes = array( 'rwgcm-', 'rwga-', 'rwgo-', 'rwgcp-', 'geo-content' );
 		foreach ( $prefixes as $prefix ) {
 			if ( 0 === strpos( $page, $prefix ) ) {
 				return true;
@@ -539,15 +539,7 @@ class RWGC_Admin_Platform {
 		$slugs = array_keys( self::$collapsed_page_registry );
 
 		$defaults = array(
-			'elementor-geo-popup',
-			'geo-elementor-rules',
 			'geo-content',
-			'geo-elementor-variants',
-			'egp-addons',
-			'geo-elementor-license',
-			'geo-templates',
-			'egp-city-settings',
-			'egp-time-settings',
 			'rwgo-edit-test',
 			'rwgo-promote-winner',
 		);
@@ -604,7 +596,6 @@ class RWGC_Admin_Platform {
 		$core_slugs = apply_filters( 'rwgc_admin_core_submenu_order', $core_slugs );
 
 		$hub_slugs = array(
-			'geo-elementor',
 			'rwgcm-dashboard',
 			'rwgo-dashboard',
 			'rwga-dashboard',

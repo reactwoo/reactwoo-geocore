@@ -29,10 +29,8 @@ Geo Core must be active before any satellite or GeoCore Pro feature runs. Satell
 - Gutenberg **Geo Content** block and post-level geo visibility panel
 - Elementor document/element geo controls and popup targeting (free baseline)
 - Visibility rules library (`rwgc_visibility_rule` CPT) and shared rule builder
-- Page variant routing (master + one secondary country mapping per page; branded `/_gc/{version}` URLs)
 - `RWGC_Rule_Evaluator` portable targeting with fail-closed evaluation for archived/missing rules
 - ReactWoo Geo platform admin shell (Overview, Targeting, Commerce, Insights, Integrations, Settings)
-- Legacy Geo Elementor compatibility (deferred controls, popup guards, licence migration paths)
 - Satellite updater framework (`RWGC_Satellite_Updater`) and suite hooks — see `docs/GEO_SUITE_HOOKS.md`
 
 ### In Progress

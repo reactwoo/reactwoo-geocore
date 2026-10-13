@@ -3,6 +3,29 @@
 ## Status
 done
 
+Geo Core 1.9.5 removes customer-facing GeoElementor cards and the install, MaxMind, and geo_rule compatibility that only existed for that plugin. Geo Core Pro 0.1.55 no longer copies a GeoElementor licence. Elementor country controls still use the stored `egp_*` keys.
+
+## Files changed
+- Add-on card, suite card, module row, brand SVG, and the target-types quick action.
+- MaxMind autoload no longer looks in a GeoElementor folder. The legacy geo_rule post type is not registered.
+- Pro licence migration class and the legacy rules submenu are gone.
+
+## Not changed
+- Elementor visibility settings still use `egp_*` control keys. Those are Geo Core's saved Elementor data.
+- Licence-server aliases in react-license, reactwoo-api, and Decision Cloud were not changed.
+- MaxMind upload still uses `move_uploaded_file`.
+
+## Commands
+- `php tests/test-rwgc-page-variant-ownership.php`
+- `php -l` on the edited Core and Pro PHP files
+- `php tests/test-weather-facets.php` and `php tests/test-page-route-engine.php` (Geo Core Pro)
+
+## Remaining errors
+- On this Windows checkout, `.distignore` is CRLF, so three distignore regexes in `test-rwgc-wporg-build.php` fail locally. CI checks out LF.
+
+## Status
+done
+
 Geo Core 1.9.3 includes the 1.9.2 telemetry and Geo Content fixes plus page-version ownership. Geo Core Pro 0.1.53 turns page versions on for a standalone licence or Decision Cloud `cloud.personalisation`.
 
 ## Files changed

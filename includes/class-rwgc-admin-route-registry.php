@@ -608,9 +608,6 @@ class RWGC_Admin_Route_Registry {
 		if ( 0 === strpos( $slug, 'geo-content' ) ) {
 			return 'experiences';
 		}
-		if ( 0 === strpos( $slug, 'geo-elementor' ) || 0 === strpos( $slug, 'geo-templates' ) || 0 === strpos( $slug, 'elementor-geo-popup' ) || 0 === strpos( $slug, 'egp-' ) ) {
-			return 'integrations';
-		}
 		if ( 0 === strpos( $slug, 'rwgc-' ) ) {
 			return 'overview';
 		}
@@ -638,7 +635,7 @@ class RWGC_Admin_Route_Registry {
 		if ( 0 === strpos( $slug, 'rwgc-' ) ) {
 			return 'core';
 		}
-		if ( 0 === strpos( $slug, 'geo-elementor' ) || 0 === strpos( $slug, 'geo-content' ) || 0 === strpos( $slug, 'geo-templates' ) || 0 === strpos( $slug, 'elementor-geo-popup' ) || 0 === strpos( $slug, 'egp-' ) ) {
+		if ( 0 === strpos( $slug, 'geo-content' ) ) {
 			return 'elementor';
 		}
 		return 'core';

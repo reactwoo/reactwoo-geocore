@@ -54,6 +54,12 @@ rwgc_variant_assert( 'core does not boot page-version rewrites', false === strpo
 rwgc_variant_assert( 'core does not init the page router', false === strpos( $plugin, 'RWGC_Routing::init()' ) );
 rwgc_variant_assert( 'admin has no page-version meta box', false === strpos( $admin, 'function render_page_meta_box' ) );
 rwgc_variant_assert( 'admin no longer tells people to upgrade to GeoElementor for variants', false === strpos( $admin, 'Upgrade to GeoElementor' ) );
+$upsells = (string) file_get_contents( $root . '/includes/class-rwgc-upsells.php' );
+$admin_ui = (string) file_get_contents( $root . '/includes/class-rwgc-admin-ui.php' );
+rwgc_variant_assert( 'add-ons do not name GeoElementor', false === strpos( $upsells, 'GeoElementor' ) );
+rwgc_variant_assert( 'suite cards do not name GeoElementor', false === strpos( $admin_ui, 'GeoElementor' ) );
+rwgc_variant_assert( 'legacy geo_rule post type is not registered', ! is_file( $root . '/includes/compat/class-rwgc-legacy-geo-rule-cpt.php' ) );
+rwgc_variant_assert( 'geoelementor brand card is gone', ! is_file( $root . '/admin/assets/brands/geoelementor-card.svg' ) );
 rwgc_variant_assert( 'elementor has no page-version controls', false === strpos( $elementor, 'rwgc_route_enabled' ) );
 rwgc_variant_assert( 'elementor leaves a hook for Pro', false !== strpos( $elementor, 'rwgc_elementor_page_version_controls' ) );
 rwgc_variant_assert( 'capabilities payload reports page_variants', false !== strpos( $rest, "'page_variants'" ) );

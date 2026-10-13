@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.4
+Stable tag: 1.9.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -166,6 +166,9 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.5 =
+* GeoElementor is no longer listed as an add-on. Country visibility in Elementor stays in this plugin.
+
 = 1.9.4 =
 * Full-page country versions, including the redirect and the editor, are in ReactWoo Geo Core Pro. This plugin keeps existing pages and saved routing settings and does not run that redirect.
 
@@ -240,6 +243,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.5 =
+GeoElementor is no longer offered as an add-on. Elementor country visibility in this plugin is unchanged.
 
 = 1.9.4 =
 The page-version redirect now runs from Geo Core Pro. Existing pages and routing settings are not deleted.

@@ -25,14 +25,6 @@ class RWGC_Upsells {
 	 */
 	public static function get_addons() {
 		$addons = array(
-			'geoelementor'  => array(
-				'title'       => __( 'GeoElementor', 'reactwoo-geocore' ),
-				'summary'     => __( 'Premium Elementor geo targeting with popups, sections, widgets, and analytics powered by ReactWoo Geo Core.', 'reactwoo-geocore' ),
-				'plugin_file' => 'geo-elementor/elementor-geo-popup.php',
-				'alt_files'   => array( 'GeoElementor/elementor-geo-popup.php' ),
-				'cta_label'   => __( 'Learn more', 'reactwoo-geocore' ),
-				'cta_url'     => 'https://reactwoo.com/',
-			),
 			'whmcs_bridge'  => array(
 				'title'       => __( 'ReactWoo WHMCS Bridge', 'reactwoo-geocore' ),
 				'summary'     => __( 'Sync WHMCS products into WordPress with geo-driven pricing and CTAs that respect visitor country and currency.', 'reactwoo-geocore' ),

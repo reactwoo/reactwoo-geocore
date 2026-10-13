@@ -59,7 +59,7 @@ class RWGC_Integrations_Loader {
 	}
 
 	/**
-	 * Whether GeoCore owns Elementor element-level controls (Geo Elementor should defer).
+	 * Whether Geo Core owns Elementor element-level controls.
 	 *
 	 * @return bool
 	 */

@@ -363,9 +363,7 @@ if ( ! function_exists( 'rwgc_get_visitor_city' ) ) {
 	/**
 	 * Get visitor city string from the resolved geo payload (e.g. local MaxMind City DB or filtered API data).
 	 *
-	 * Geo Core does **not** use city for `RWGC_Routing` or other core routing decisions — those are **country**-based.
-	 * **City-based matching and Elementor routing** are implemented in **Geo Elementor** (City Targeting add-on), including
-	 * stacks where the authoritative city database is on the ReactWoo API rather than on-disk.
+	 * Geo Core uses country for visibility. City on the visitor payload is informational.
 	 *
 	 * @return string
 	 */
@@ -748,7 +746,7 @@ if ( ! function_exists( 'rwgc_is_builder_edit_request' ) ) {
 
 if ( ! function_exists( 'rwgc_is_builder_context' ) ) {
 	/**
-	 * Alias for builder/editor detection used by Geo Elementor and other integrations.
+	 * Alias for builder/editor detection used by other plugins.
 	 * Debug mode does not change the return value.
 	 *
 	 * @param int|null $post_id Optional document ID for capability checks.

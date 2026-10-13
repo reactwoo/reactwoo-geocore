@@ -2,7 +2,7 @@
 /**
  * Elementor element-level geo controls (GeoCore Free + Pro-gated portable rules).
  *
- * Uses legacy `egp_*` control keys so existing Elementor JSON and Geo Elementor data keep working.
+ * Elementor stores these visibility settings under the `egp_*` control keys.
  *
  * @package ReactWoo_Geo_Core
  */

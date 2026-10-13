@@ -32,7 +32,6 @@ class RWGC_Module_Registry {
 	const MODULE_GEO_AI      = 'geo_ai';
 	const MODULE_GEO_OPT     = 'geo_optimise';
 	const MODULE_GEO_COMM    = 'geo_commerce';
-	const MODULE_GEO_ELEM    = 'geoelementor';
 
 	/**
 	 * @return array<int, array<string, mixed>>
@@ -70,7 +69,6 @@ class RWGC_Module_Registry {
 				'rwgcm-dashboard',
 				array( 'reactwoo-geo-commerce/reactwoo-geo-commerce.php' )
 			),
-			self::build_geoelementor_module(),
 		);
 
 		/**
@@ -402,32 +400,6 @@ class RWGC_Module_Registry {
 			'admin_url'     => $url,
 			'plugin_files'  => $files,
 			'install_url'   => admin_url( 'plugin-install.php' ),
-		);
-	}
-
-	/**
-	 * @return array<string, mixed>
-	 */
-	private static function build_geoelementor_module() {
-		$defs = class_exists( 'RWGC_Admin_UI', false ) ? RWGC_Admin_UI::get_suite_satellite_definitions() : array();
-		$def  = null;
-		foreach ( $defs as $d ) {
-			if ( isset( $d['slug'] ) && 'geoelementor' === $d['slug'] ) {
-				$def = $d;
-				break;
-			}
-		}
-		$active = is_array( $def ) && class_exists( 'RWGC_Admin_UI', false )
-			? RWGC_Admin_UI::satellite_plugin_is_active( $def )
-			: false;
-		$url = ( is_array( $def ) && ! empty( $def['url'] ) ) ? (string) $def['url'] : admin_url( 'plugin-install.php' );
-		return array(
-			'id'          => self::MODULE_GEO_ELEM,
-			'label'       => __( 'GeoElementor', 'reactwoo-geocore' ),
-			'description' => __( 'Advanced Elementor geo targeting (optional).', 'reactwoo-geocore' ),
-			'category'    => 'optional',
-			'active'      => $active,
-			'admin_url'   => $active ? $url : admin_url( 'plugin-install.php' ),
 		);
 	}
 }

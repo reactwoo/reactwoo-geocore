@@ -28,7 +28,7 @@ class RWGC_Admin_UI {
 	}
 
 	/**
-	 * Whether a satellite plugin is active, trying `file` plus optional `alt_files` (e.g. Geo Elementor folder casing).
+	 * Whether a satellite plugin is active, trying `file` plus optional `alt_files`.
 	 *
 	 * @param array<string, mixed> $def Definition from get_suite_satellite_definitions().
 	 * @return bool
@@ -90,7 +90,6 @@ class RWGC_Admin_UI {
 			'geo_commerce'  => __( 'Geo Commerce', 'reactwoo-geocore' ),
 			'geo_ai'        => __( 'Geo AI', 'reactwoo-geocore' ),
 			'geo_optimise'  => __( 'Geo Optimise', 'reactwoo-geocore' ),
-			'geo_elementor' => __( 'Elementor integration', 'reactwoo-geocore' ),
 			'geocore_pro'   => __( 'GeoCore Pro', 'reactwoo-geocore' ),
 		);
 
@@ -777,15 +776,6 @@ class RWGC_Admin_UI {
 	 */
 	public static function get_suite_satellite_definitions() {
 		$defs = array(
-			array(
-				'slug'      => 'geoelementor',
-				'title'     => __( 'GeoElementor', 'reactwoo-geocore' ),
-				'summary'   => __( 'Elementor-native geo targeting, rules, and variant groups.', 'reactwoo-geocore' ),
-				'file'      => 'geo-elementor/elementor-geo-popup.php',
-				'alt_files' => array( 'GeoElementor/elementor-geo-popup.php' ),
-				'url'       => admin_url( 'admin.php?page=geo-elementor' ),
-				'dashicon'  => 'dashicons-location-alt',
-			),
 			array(
 				'slug'     => 'geo_ai',
 				'title'    => __( 'Geo AI', 'reactwoo-geocore' ),

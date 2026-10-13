@@ -24,7 +24,7 @@ class RWGC_Admin {
 	}
 
 	/**
-	 * Menu primitive cap (aligned with Geo Elementor: admins + WooCommerce shop managers).
+	 * Menu capability: administrators, and WooCommerce shop managers when they cannot manage options.
 	 *
 	 * @return string
 	 */

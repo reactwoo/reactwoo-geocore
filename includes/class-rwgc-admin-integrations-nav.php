@@ -129,10 +129,6 @@ class RWGC_Admin_Integrations_Nav {
 			'rwgc-cloud'                    => 'system_services',
 			'rwgc-integrations-gutenberg'   => 'content_builders',
 			'rwgc-integrations-woocommerce' => 'ecommerce',
-			'geo-elementor'          => 'content_builders',
-			'elementor-geo-popup'    => 'content_builders',
-			'egp-city-settings'      => 'content_builders',
-			'egp-time-settings'      => 'content_builders',
 		);
 
 		if ( isset( $map[ $slug ] ) ) {
@@ -162,7 +158,7 @@ class RWGC_Admin_Integrations_Nav {
 		if ( 'geo_commerce' === $provider || 0 === strpos( $slug, 'rwgcm-' ) ) {
 			return 'ecommerce';
 		}
-		if ( 'geo_elementor' === $provider || 'elementor' === ( $route['module'] ?? '' ) ) {
+		if ( 'elementor' === ( $route['module'] ?? '' ) ) {
 			return 'content_builders';
 		}
 		if ( 'geocore_pro' === $provider || 0 === strpos( $slug, 'rwgcp-' ) ) {

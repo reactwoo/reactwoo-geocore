@@ -24,12 +24,6 @@ $quick_actions = array(
 		'primary' => true,
 	),
 );
-if ( class_exists( 'EGP_Admin_Menu', false ) ) {
-	$quick_actions[] = array(
-		'url'   => admin_url( 'admin.php?page=geo-elementor' ),
-		'label' => __( 'Geo Elementor', 'reactwoo-geocore' ),
-	);
-}
 if ( defined( 'RWGO_VERSION' ) ) {
 	$quick_actions[] = array(
 		'url'   => admin_url( 'admin.php?page=rwgo-dashboard' ),

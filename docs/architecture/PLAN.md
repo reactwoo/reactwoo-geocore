@@ -153,7 +153,7 @@ These remain separately billed unless a later plan revision explicitly adds them
 | ReactWoo Flow | `reactwoo-flow` | Internal operations; not a customer Cloud SKU |
 | WHMCS Bridge | `reactwoo-whmcs-bridge` | Separate product line |
 
-Legacy licence aliases (`geo-elementor` → `reactwoo-geocore-pro`, `reactwoo-geo-ai` → `reactwoo-geo-optimise`) must be treated as the **canonical** SKU when detecting covered subscriptions.
+The `reactwoo-geo-ai` licence alias still maps to `reactwoo-geo-optimise` when detecting covered subscriptions. Geo Core and Geo Core Pro no longer read a GeoElementor licence, MaxMind key, or plugin install path.
 
 ### 3.3 Mapping rules
 

@@ -21,7 +21,6 @@ class RWGC_Admin_Experiences_Nav {
 	 */
 	public static function get_hub_slugs() {
 		$slugs = array(
-			'geo-elementor-rules',
 			'geo-content',
 			'rwgo-dashboard',
 			'rwgo-reports',
@@ -62,9 +61,6 @@ class RWGC_Admin_Experiences_Nav {
 			if ( '' === $slug || ! isset( $allowed[ $slug ] ) ) {
 				continue;
 			}
-			if ( 'geo-elementor-rules' === $slug ) {
-				$card['label'] = __( 'Dynamic content', 'reactwoo-geocore' );
-			}
 			if ( 'rwgo-dashboard' === $slug ) {
 				$card['label'] = __( 'Experiments', 'reactwoo-geocore' );
 			}
@@ -86,7 +82,6 @@ class RWGC_Admin_Experiences_Nav {
 		}
 
 		$labels = array(
-			'geo-elementor-rules' => __( 'Dynamic content', 'reactwoo-geocore' ),
 			'geo-content'         => __( 'Geo content', 'reactwoo-geocore' ),
 			'rwgo-dashboard'      => __( 'Experiments', 'reactwoo-geocore' ),
 			'rwgo-reports'        => __( 'Reports', 'reactwoo-geocore' ),

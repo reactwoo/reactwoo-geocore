@@ -294,7 +294,7 @@ class RWGC_Targeting_Rule_Builder_Assets {
 	}
 
 	/**
-	 * Geo Elementor and other plugins can call this on their admin screens.
+	 * Other plugins can call this on their admin screens.
 	 *
 	 * @return void
 	 */
