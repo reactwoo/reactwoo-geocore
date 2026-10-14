@@ -72,11 +72,11 @@ class RWGC_Admin {
 		if ( empty( $args['menu_title'] ) && ! empty( $args['label'] ) ) {
 			$args['menu_title'] = (string) $args['label'];
 		}
-		if ( function_exists( 'rw_geo_register_app_route' ) ) {
-			return rw_geo_register_app_route( $args );
+		if ( function_exists( 'rwgc_register_app_route' ) ) {
+			return rwgc_register_app_route( $args );
 		}
-		if ( function_exists( 'rw_geo_register_admin_submenu' ) ) {
-			return rw_geo_register_admin_submenu( $args );
+		if ( function_exists( 'rwgc_register_admin_submenu' ) ) {
+			return rwgc_register_admin_submenu( $args );
 		}
 		$parent = class_exists( 'RWGC_Admin_Platform', false ) ? RWGC_Admin_Platform::menu_parent() : 'rwgc-dashboard';
 		$slug   = isset( $args['menu_slug'] ) ? sanitize_key( (string) $args['menu_slug'] ) : '';
@@ -519,7 +519,7 @@ class RWGC_Admin {
 						'post_type'      => 'elementor_library',
 						'post_status'    => array( 'publish', 'draft', 'private' ),
 						'posts_per_page' => 80,
-						'meta_query'     => array(
+						'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- These rows are linked by post meta.
 							array(
 								'key'   => '_elementor_template_type',
 								'value' => 'popup',
@@ -952,6 +952,9 @@ class RWGC_Admin {
 		$status   = RWGC_MaxMind::get_status();
 		$data     = RWGC_API::get_visitor_data();
 
+		$rwgc_data = isset( $data ) ? $data : null;
+		$rwgc_settings = isset( $settings ) ? $settings : null;
+		$rwgc_status = isset( $status ) ? $status : null;
 		include RWGC_PATH . 'admin/views/dashboard-page.php';
 	}
 
@@ -965,6 +968,7 @@ class RWGC_Admin {
 			return;
 		}
 		$settings = RWGC_Settings::get_settings();
+		$rwgc_settings = isset( $settings ) ? $settings : null;
 		include RWGC_PATH . 'admin/views/settings-page.php';
 	}
 
@@ -1279,6 +1283,9 @@ class RWGC_Admin {
 		$settings = RWGC_Settings::get_settings();
 		$status   = RWGC_MaxMind::get_status();
 		$data     = RWGC_API::get_visitor_data();
+		$rwgc_data = isset( $data ) ? $data : null;
+		$rwgc_settings = isset( $settings ) ? $settings : null;
+		$rwgc_status = isset( $status ) ? $status : null;
 		include RWGC_PATH . 'admin/views/integrations-maxmind-page.php';
 	}
 
@@ -1294,13 +1301,13 @@ class RWGC_Admin {
 		check_admin_referer( 'rwgc_save_maxmind_settings' );
 
 		$settings = RWGC_Settings::get_settings();
-		if ( isset( $_POST['maxmind_account_id'] ) ) {
-			$settings['maxmind_account_id'] = sanitize_text_field( wp_unslash( $_POST['maxmind_account_id'] ) );
+		if ( isset( $_POST['maxmind_account_id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
+			$settings['maxmind_account_id'] = sanitize_text_field( wp_unslash( $_POST['maxmind_account_id'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
 		}
-		if ( isset( $_POST['maxmind_license_key'] ) ) {
-			$settings['maxmind_license_key'] = sanitize_text_field( wp_unslash( $_POST['maxmind_license_key'] ) );
+		if ( isset( $_POST['maxmind_license_key'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
+			$settings['maxmind_license_key'] = sanitize_text_field( wp_unslash( $_POST['maxmind_license_key'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
 		}
-		$settings['auto_update_db'] = isset( $_POST['auto_update_db'] ) ? 1 : 0;
+		$settings['auto_update_db'] = isset( $_POST['auto_update_db'] ) ? 1 : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
 		RWGC_Settings::update( $settings );
 
 		add_settings_error( 'rwgc_maxmind', 'rwgc_maxmind_saved', __( 'MaxMind credentials saved.', 'reactwoo-geocore' ), 'updated' );
@@ -1347,8 +1354,8 @@ class RWGC_Admin {
 		if ( isset( $_GET['rwgc_preview'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['rwgc_preview'] ) ) ) {
 			$keys = array( 'country', 'language', 'locale', 'device_type', 'time_of_day', 'day_of_week', 'currency', 'weather_facet' );
 			foreach ( $keys as $k ) {
-				if ( isset( $_GET[ 'rwgc_' . $k ] ) ) {
-					$overrides[ $k ] = sanitize_text_field( wp_unslash( (string) $_GET[ 'rwgc_' . $k ] ) );
+				if ( isset( $_GET[ 'rwgc_' . $k ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display parameter.
+					$overrides[ $k ] = sanitize_text_field( wp_unslash( (string) $_GET[ 'rwgc_' . $k ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display parameter.
 				}
 			}
 			if ( isset( $_GET['rwgc_weather_facet'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -1416,6 +1423,7 @@ class RWGC_Admin {
 			return;
 		}
 		$addons = RWGC_Upsells::get_addons();
+		$rwgc_addons = isset( $addons ) ? $addons : null;
 		include RWGC_PATH . 'admin/views/addons-page.php';
 	}
 

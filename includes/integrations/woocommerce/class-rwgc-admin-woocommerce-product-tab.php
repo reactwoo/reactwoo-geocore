@@ -56,7 +56,8 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 			__( 'Tag this product with the weather conditions it suits. GeoCore can use this for product boosts, recommendations, and weather-based merchandising.', 'reactwoo-geocore' )
 		);
 		self::render_weather_section( $post_id );
-		do_action( 'geocore_product_tab_after_weather', $post_id );
+		do_action( 'rwgc_product_tab_after_weather', $post_id );
+		do_action_deprecated( 'geocore_product_tab_after_weather', array( $post_id ), '1.9.6', 'rwgc_product_tab_after_weather' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		self::render_section_close();
 
 		self::render_section_open(
@@ -65,7 +66,8 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 			__( 'Override global GeoCore rules for this product. Country lists use ISO country codes; attach saved targeting rules from your GeoCore library.', 'reactwoo-geocore' )
 		);
 		self::render_targeting_fields( $post_id );
-		do_action( 'geocore_product_tab_after_targeting', $post_id );
+		do_action( 'rwgc_product_tab_after_targeting', $post_id );
+		do_action_deprecated( 'geocore_product_tab_after_targeting', array( $post_id ), '1.9.6', 'rwgc_product_tab_after_targeting' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		self::render_section_close();
 
 		self::render_section_open(
@@ -74,7 +76,8 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 			__( 'Control whether this product participates in weather-based catalog boosting. Inherit uses your Geo Commerce merchandising defaults.', 'reactwoo-geocore' )
 		);
 		self::render_boost_fields( $post_id );
-		do_action( 'geocore_product_tab_after_boost', $post_id );
+		do_action( 'rwgc_product_tab_after_boost', $post_id );
+		do_action_deprecated( 'geocore_product_tab_after_boost', array( $post_id ), '1.9.6', 'rwgc_product_tab_after_boost' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		self::render_section_close();
 
 		self::render_section_open(
@@ -83,7 +86,8 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 			__( 'Simulate visitor location and weather to see how this product would behave on the storefront.', 'reactwoo-geocore' )
 		);
 		self::render_preview_fields( $post_id );
-		do_action( 'geocore_product_tab_after_preview', $post_id );
+		do_action( 'rwgc_product_tab_after_preview', $post_id );
+		do_action_deprecated( 'geocore_product_tab_after_preview', array( $post_id ), '1.9.6', 'rwgc_product_tab_after_preview' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		self::render_section_close();
 
 		echo '</div>';
@@ -112,7 +116,8 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 		 *
 		 * @param int $post_id Product ID.
 		 */
-		do_action( 'geocore_product_tab_weather', $post_id );
+		do_action( 'rwgc_product_tab_weather', $post_id );
+		do_action_deprecated( 'geocore_product_tab_weather', array( $post_id ), '1.9.6', 'rwgc_product_tab_weather' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 	}
 
 	/**

@@ -132,6 +132,9 @@ class RWGC_Gutenberg {
 	 * @return string
 	 */
 	public static function render_geo_content_block( $attributes, $content ) {
+		if ( class_exists( 'RWGC_Components', false ) ) {
+			RWGC_Components::enqueue_stylesheet();
+		}
 		$attrs = is_array( $attributes ) ? $attributes : array();
 
 		if ( class_exists( 'RWGC_Surface_Settings', false ) && class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {

@@ -31,6 +31,7 @@ class RWGC_Admin_Section_Hubs {
 			return;
 		}
 		$cards = self::get_hub_cards( 'commerce', 'rwgc-commerce-hub' );
+		$rwgc_cards = isset( $cards ) ? $cards : null;
 		include RWGC_PATH . 'admin/views/commerce-hub-page.php';
 	}
 
@@ -68,6 +69,7 @@ class RWGC_Admin_Section_Hubs {
 			return;
 		}
 		$cards = self::get_hub_cards( 'experiences', 'rwgc-experiences-hub' );
+		$rwgc_cards = isset( $cards ) ? $cards : null;
 		include RWGC_PATH . 'admin/views/experiences-hub-page.php';
 	}
 
@@ -81,6 +83,7 @@ class RWGC_Admin_Section_Hubs {
 			return;
 		}
 		$cards = self::get_hub_cards( 'integrations', 'rwgc-integrations-hub' );
+		$rwgc_cards = isset( $cards ) ? $cards : null;
 		include RWGC_PATH . 'admin/views/integrations-hub-page.php';
 	}
 
@@ -108,6 +111,7 @@ class RWGC_Admin_Section_Hubs {
 		$cards = class_exists( 'RWGC_Admin_Settings_Nav', false )
 			? RWGC_Admin_Settings_Nav::get_provider_hub_cards()
 			: self::get_hub_cards( 'settings', 'rwgc-settings-hub' );
+		$rwgc_cards = isset( $cards ) ? $cards : null;
 		include RWGC_PATH . 'admin/views/settings-hub-page.php';
 	}
 

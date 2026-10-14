@@ -166,6 +166,7 @@ Off by default. An administrator must enable “Share anonymous experience event
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
 = 1.9.6 =
+* Admin styles and the component stylesheet load on Geo Core screens and on pages that render a Geo Core block, shortcode, or widget.
 * Admin and front-end snippets are added with the WordPress script and style queue.
 * Form nonces and request values are unslashed and sanitized before use. Country database uploads use the WordPress upload handler.
 * The WordPress.org package includes composer.json and leaves out directory icons, the unused CA certificate bundle, and page-version routing.

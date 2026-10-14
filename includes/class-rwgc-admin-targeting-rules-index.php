@@ -114,7 +114,7 @@ class RWGC_Admin_Targeting_Rules_Index {
 				'posts_per_page' => 100,
 				'orderby'        => 'modified',
 				'order'          => 'DESC',
-				'meta_query'     => array(
+				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- These rows are linked by post meta.
 					'relation' => 'OR',
 					array(
 						'key'   => '_rwgc_post_country_enabled',

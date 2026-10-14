@@ -133,8 +133,8 @@ class RWGC_Visibility_Rule_Repository {
 			return '';
 		}
 		$base = admin_url( 'admin.php?page=rwgc-visibility-rules' );
-		if ( function_exists( 'rw_geo_app_url' ) ) {
-			$app = rw_geo_app_url( 'targeting', 'rwgc-visibility-rules' );
+		if ( function_exists( 'rwgc_app_url' ) ) {
+			$app = rwgc_app_url( 'targeting', 'rwgc-visibility-rules' );
 			if ( is_string( $app ) && '' !== $app ) {
 				$base = $app;
 			}

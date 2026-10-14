@@ -120,11 +120,11 @@ class RWGC_Insights {
 			$status = 'no_data';
 		}
 
-		$maxmind_url = function_exists( 'rw_geo_app_url' )
-			? rw_geo_app_url( 'integrations', 'rwgc-maxmind' )
+		$maxmind_url = function_exists( 'rwgc_app_url' )
+			? rwgc_app_url( 'integrations', 'rwgc-maxmind' )
 			: admin_url( 'admin.php?page=rwgc-maxmind' );
-		$rules_url = function_exists( 'rw_geo_app_url' )
-			? rw_geo_app_url( 'targeting', 'rwgc-targeting-rules' )
+		$rules_url = function_exists( 'rwgc_app_url' )
+			? rwgc_app_url( 'targeting', 'rwgc-targeting-rules' )
 			: admin_url( 'admin.php?page=rwgc-targeting-rules' );
 
 		return self::normalize_provider(
@@ -368,8 +368,8 @@ class RWGC_Insights {
 	 */
 	public static function get_provider_details_url( $provider_id ) {
 		$provider_id = sanitize_key( (string) $provider_id );
-		if ( function_exists( 'rw_geo_app_url' ) ) {
-			return add_query_arg( 'provider', $provider_id, rw_geo_app_url( 'insights', 'rwgc-insights-provider-detail' ) );
+		if ( function_exists( 'rwgc_app_url' ) ) {
+			return add_query_arg( 'provider', $provider_id, rwgc_app_url( 'insights', 'rwgc-insights-provider-detail' ) );
 		}
 		return add_query_arg(
 			array(
@@ -626,7 +626,7 @@ class RWGC_Insights {
 			array(
 				'label' => __( 'MaxMind configured', 'reactwoo-geocore' ),
 				'done'  => ! empty( $maxmind['exists'] ),
-				'url'   => function_exists( 'rw_geo_app_url' ) ? rw_geo_app_url( 'integrations', 'rwgc-maxmind' ) : admin_url( 'admin.php?page=rwgc-maxmind' ),
+				'url'   => function_exists( 'rwgc_app_url' ) ? rwgc_app_url( 'integrations', 'rwgc-maxmind' ) : admin_url( 'admin.php?page=rwgc-maxmind' ),
 			),
 			array(
 				'label' => sprintf(
@@ -635,7 +635,7 @@ class RWGC_Insights {
 					$rules
 				),
 				'done'  => $rules > 0,
-				'url'   => function_exists( 'rw_geo_app_url' ) ? rw_geo_app_url( 'targeting', 'rwgc-targeting-rules' ) : admin_url( 'admin.php?page=rwgc-targeting-rules' ),
+				'url'   => function_exists( 'rwgc_app_url' ) ? rwgc_app_url( 'targeting', 'rwgc-targeting-rules' ) : admin_url( 'admin.php?page=rwgc-targeting-rules' ),
 			),
 			array(
 				'label' => class_exists( 'WooCommerce', false )
@@ -767,6 +767,9 @@ class RWGC_Insights {
 		$recommendations = self::get_recommendations( 3 );
 		$activity        = class_exists( 'RWGC_Onboarding', false ) ? RWGC_Onboarding::get_activity() : array();
 
+		$rwgc_health = isset( $health ) ? $health : null;
+		$rwgc_providers = isset( $providers ) ? $providers : null;
+		$rwgc_recommendations = isset( $recommendations ) ? $recommendations : null;
 		include RWGC_PATH . 'admin/views/insights-capability-page.php';
 	}
 
@@ -783,6 +786,8 @@ class RWGC_Insights {
 		$readiness = self::get_data_readiness();
 		$providers = self::get_providers();
 
+		$rwgc_providers = isset( $providers ) ? $providers : null;
+		$rwgc_readiness = isset( $readiness ) ? $readiness : null;
 		include RWGC_PATH . 'admin/views/insights-readiness-page.php';
 	}
 
@@ -816,6 +821,7 @@ class RWGC_Insights {
 		$provider_id = isset( $_GET['provider'] ) ? sanitize_key( wp_unslash( $_GET['provider'] ) ) : '';
 		$provider    = '' !== $provider_id ? self::get_provider_by_id( $provider_id ) : null;
 
+		$rwgc_provider = isset( $provider ) ? $provider : null;
 		include RWGC_PATH . 'admin/views/insights-provider-detail-page.php';
 	}
 }

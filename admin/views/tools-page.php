@@ -5,19 +5,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Handle simple actions via query args + nonce.
 if ( isset( $_GET['rwgc_action'], $_GET['_wpnonce'] ) && current_user_can( 'manage_options' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$action = sanitize_key( wp_unslash( $_GET['rwgc_action'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	if ( in_array( $action, array( 'ai_health', 'ai_usage' ), true ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'rwgc_tools_action_' . $action ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( 'ai_health' === $action ) {
-			$result = RWGC_AI_Orchestrator::ai_health();
-			if ( is_wp_error( $result ) ) {
-				add_settings_error( 'rwgc_tools', 'rwgc_ai_health_err', $result->get_error_message(), 'error' );
+	$rwgc_action = sanitize_key( wp_unslash( $_GET['rwgc_action'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	if ( in_array( $rwgc_action, array( 'ai_health', 'ai_usage' ), true ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'rwgc_tools_action_' . $rwgc_action ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( 'ai_health' === $rwgc_action ) {
+			$rwgc_result = RWGC_AI_Orchestrator::ai_health();
+			if ( is_wp_error( $rwgc_result ) ) {
+				add_settings_error( 'rwgc_tools', 'rwgc_ai_health_err', $rwgc_result->get_error_message(), 'error' );
 			} else {
-				$code = isset( $result['code'] ) ? (int) $result['code'] : 0;
-				$snippet = '';
-				if ( isset( $result['data'] ) && is_array( $result['data'] ) ) {
-					$snippet = wp_json_encode( $result['data'] );
-					if ( is_string( $snippet ) && strlen( $snippet ) > 280 ) {
-						$snippet = substr( $snippet, 0, 280 ) . '…';
+				$rwgc_code = isset( $rwgc_result['code'] ) ? (int) $rwgc_result['code'] : 0;
+				$rwgc_snippet = '';
+				if ( isset( $rwgc_result['data'] ) && is_array( $rwgc_result['data'] ) ) {
+					$rwgc_snippet = wp_json_encode( $rwgc_result['data'] );
+					if ( is_string( $rwgc_snippet ) && strlen( $rwgc_snippet ) > 280 ) {
+						$rwgc_snippet = substr( $rwgc_snippet, 0, 280 ) . '…';
 					}
 				}
 				add_settings_error(
@@ -26,22 +26,22 @@ if ( isset( $_GET['rwgc_action'], $_GET['_wpnonce'] ) && current_user_can( 'mana
 					sprintf(
 						/* translators: 1: HTTP status code, 2: response JSON or note */
 						__( 'AI service reachability: HTTP %1$s. %2$s', 'reactwoo-geocore' ),
-						(string) $code,
-						$snippet ? $snippet : __( '(empty body)', 'reactwoo-geocore' )
+						(string) $rwgc_code,
+						$rwgc_snippet ? $rwgc_snippet : __( '(empty body)', 'reactwoo-geocore' )
 					),
 					'updated'
 				);
 			}
-		} elseif ( 'ai_usage' === $action ) {
-			$result = RWGC_AI_Orchestrator::get_usage();
-			if ( is_wp_error( $result ) ) {
-				add_settings_error( 'rwgc_tools', 'rwgc_ai_usage_err', $result->get_error_message(), 'error' );
+		} elseif ( 'ai_usage' === $rwgc_action ) {
+			$rwgc_result = RWGC_AI_Orchestrator::get_usage();
+			if ( is_wp_error( $rwgc_result ) ) {
+				add_settings_error( 'rwgc_tools', 'rwgc_ai_usage_err', $rwgc_result->get_error_message(), 'error' );
 			} else {
-				$http = isset( $result['http_code'] ) ? (int) $result['http_code'] : 0;
-				$body = isset( $result['body'] ) ? $result['body'] : null;
-				$snippet = is_array( $body ) ? wp_json_encode( $body ) : '';
-				if ( is_string( $snippet ) && strlen( $snippet ) > 280 ) {
-					$snippet = substr( $snippet, 0, 280 ) . '…';
+				$rwgc_http = isset( $rwgc_result['http_code'] ) ? (int) $rwgc_result['http_code'] : 0;
+				$rwgc_body = isset( $rwgc_result['body'] ) ? $rwgc_result['body'] : null;
+				$rwgc_snippet = is_array( $rwgc_body ) ? wp_json_encode( $rwgc_body ) : '';
+				if ( is_string( $rwgc_snippet ) && strlen( $rwgc_snippet ) > 280 ) {
+					$rwgc_snippet = substr( $rwgc_snippet, 0, 280 ) . '…';
 				}
 				add_settings_error(
 					'rwgc_tools',
@@ -49,8 +49,8 @@ if ( isset( $_GET['rwgc_action'], $_GET['_wpnonce'] ) && current_user_can( 'mana
 					sprintf(
 						/* translators: 1: HTTP status code, 2: API JSON or note */
 						__( 'ReactWoo API (authenticated) assistant usage: HTTP %1$s. %2$s', 'reactwoo-geocore' ),
-						(string) $http,
-						$snippet ? $snippet : __( '(empty body)', 'reactwoo-geocore' )
+						(string) $rwgc_http,
+						$rwgc_snippet ? $rwgc_snippet : __( '(empty body)', 'reactwoo-geocore' )
 					),
 					'updated'
 				);

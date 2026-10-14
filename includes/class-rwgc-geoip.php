@@ -644,9 +644,6 @@ class RWGC_GeoIP {
 		$db_path = RWGC_MaxMind::get_db_path();
 		$db_path = apply_filters( 'rwgc_db_path', $db_path );
 		if ( ! $db_path || ! file_exists( $db_path ) ) {
-			if ( RWGC_Settings::get( 'debug_mode', 0 ) && function_exists( 'error_log' ) ) {
-				error_log( 'RWGC GeoIP: DB path missing or unreadable: ' . var_export( $db_path, true ) );
-			}
 			$defaults['country_code'] = $fallback_country;
 			$defaults['country_name'] = self::get_country_name( $fallback_country );
 			$defaults['currency']     = $fallback_currency;
@@ -713,9 +710,6 @@ class RWGC_GeoIP {
 				'cached'       => false,
 			);
 		} catch ( \Throwable $e ) {
-			if ( RWGC_Settings::get( 'debug_mode', 0 ) && function_exists( 'error_log' ) ) {
-				error_log( 'RWGC GeoIP error: ' . $e->getMessage() );
-			}
 			$defaults['country_code'] = $fallback_country;
 			$defaults['country_name'] = self::get_country_name( $fallback_country );
 			$defaults['currency']     = $fallback_currency;

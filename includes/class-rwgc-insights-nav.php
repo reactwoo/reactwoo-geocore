@@ -72,7 +72,7 @@ class RWGC_Insights_Nav {
 	 * @return bool
 	 */
 	private static function commerce_attribution_available() {
-		if ( function_exists( 'rw_geo_app_url' ) ) {
+		if ( function_exists( 'rwgc_app_url' ) ) {
 			return true;
 		}
 		if ( ! function_exists( 'is_plugin_active' ) ) {
@@ -92,7 +92,7 @@ class RWGC_Insights_Nav {
 		if ( '' === $slug ) {
 			return admin_url( 'admin.php?page=rwgc-insights-hub' );
 		}
-		if ( function_exists( 'rw_geo_app_url' ) ) {
+		if ( function_exists( 'rwgc_app_url' ) ) {
 			$map = array(
 				'rwgc-insights-hub'         => array( 'insights', 'rwgc-insights-hub' ),
 				'rwgc-insights-readiness'   => array( 'insights', 'rwgc-insights-readiness' ),
@@ -103,7 +103,7 @@ class RWGC_Insights_Nav {
 				'rwgcm-attribution'         => array( 'insights', 'rwgcm-attribution' ),
 			);
 			if ( isset( $map[ $slug ] ) ) {
-				return rw_geo_app_url( $map[ $slug ][0], $map[ $slug ][1] );
+				return rwgc_app_url( $map[ $slug ][0], $map[ $slug ][1] );
 			}
 		}
 		return admin_url( 'admin.php?page=' . $slug );

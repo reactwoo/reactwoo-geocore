@@ -7,6 +7,16 @@
 
 define( 'ABSPATH', dirname( __DIR__ ) . '/' );
 
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+	/**
+	 * @param mixed $str Value.
+	 * @return string
+	 */
+	function sanitize_text_field( $str ) {
+		return is_scalar( $str ) ? (string) $str : '';
+	}
+}
+
 if ( ! function_exists( 'wp_unslash' ) ) {
 	/**
 	 * @param mixed $value Value.

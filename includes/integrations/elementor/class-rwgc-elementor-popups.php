@@ -847,7 +847,7 @@ class RWGC_Elementor_Popups {
 				'posts_per_page'         => -1,
 				'no_found_rows'          => true,
 				'update_post_term_cache' => false,
-				'meta_query'             => array(
+				'meta_query'             => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- These rows are linked by post meta.
 					array(
 						'key'   => self::META_PREFIX . 'target_type',
 						'value' => 'popup',
@@ -1159,7 +1159,7 @@ JS;
 					'posts_per_page'         => 1,
 					'no_found_rows'          => true,
 					'update_post_term_cache' => false,
-					'meta_query'             => array(
+					'meta_query'             => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- These rows are linked by post meta.
 						'relation' => 'AND',
 						array(
 							'key'   => self::META_PREFIX . 'target_type',
@@ -1326,7 +1326,7 @@ JS;
 				'posts_per_page'         => -1,
 				'no_found_rows'          => true,
 				'update_post_term_cache' => false,
-				'meta_query'             => array(
+				'meta_query'             => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- These rows are linked by post meta.
 					array(
 						'key'   => '_elementor_template_type',
 						'value' => 'popup',

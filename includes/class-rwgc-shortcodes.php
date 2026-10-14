@@ -24,23 +24,37 @@ class RWGC_Shortcodes {
 	}
 
 	public static function render_country() {
+		self::enqueue_styles();
 		return esc_html( rwgc_get_visitor_country_name() );
 	}
 
 	public static function render_country_code() {
+		self::enqueue_styles();
 		return esc_html( rwgc_get_visitor_country() );
 	}
 
 	public static function render_currency() {
+		self::enqueue_styles();
 		return esc_html( rwgc_get_visitor_currency() );
 	}
 
 	public static function render_city() {
+		self::enqueue_styles();
 		return esc_html( rwgc_get_visitor_city() );
 	}
 
 	public static function render_region() {
+		self::enqueue_styles();
 		return esc_html( rwgc_get_visitor_region() );
+	}
+
+	/**
+	 * @return void
+	 */
+	private static function enqueue_styles() {
+		if ( class_exists( 'RWGC_Components', false ) ) {
+			RWGC_Components::enqueue_stylesheet();
+		}
 	}
 
 	/**
@@ -68,6 +82,7 @@ class RWGC_Shortcodes {
 	 * @return string
 	 */
 	public static function render_conditional( $atts, $content = null ) {
+		self::enqueue_styles();
 		$atts = shortcode_atts(
 			array(
 				'country'          => '',

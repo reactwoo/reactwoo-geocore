@@ -3,6 +3,35 @@
 ## Status
 done
 
+Plugin Check warning cleanup is on local branch `wporg-plugin-check-warnings`, based on `main` at `0a63aa6` (PR #84). Version stays **1.9.6** because `v1.9.6` is not on origin. Nothing was committed, tagged, pushed, or submitted to WordPress.org.
+
+WordPress.org zip sha256: `1e344983952c5c6032ba204247cef6fbbc0a78db582e7114606ae4d4e4e18474`
+
+## Files changed
+- Admin view variables are prefixed `rwgc_`, with aliases in the including methods.
+- `rw_geo_*` helpers are now `rwgc_*`, and the old names call `_deprecated_function`.
+- Product-tab hooks are `rwgc_product_tab_*`. The old `geocore_product_tab_*` hooks still fire through `do_action_deprecated`. LiteSpeed's `litespeed_vary_add` is unchanged, with a phpcs ignore.
+- `assets/css/rw-components.css` loads on Geo Core admin screens and on the front only when a Geo Core block, shortcode, widget, or component render needs it.
+- Removed the four unignored `error_log` / `var_export` debug lines in GeoIP and MaxMind.
+- Read-only `$_GET` uses and the 13 `meta_query` lookups have justified phpcs ignores. MaxMind and wizard `$_POST` reads sit after `check_admin_referer()`.
+- `scripts/package_zip.py` reads the finished zip before asserting it, so Python 3.13 can open the archive.
+
+## Not changed
+- No `post__not_in` query exists in this tree, so none was rewritten.
+- PHPUnit was not run. `vendor/phpunit` does not contain `PHPUnit\TextUI\Command`.
+- Plugin Check 2.1.0 was not run locally. WordPress 6.2 and current wp-admin were not activated in a browser.
+
+## Commands
+- `php tests/test-rwgc-geoip-ip.php` — passed
+- `php tests/test-rwgc-components.php` — passed
+- `php tests/test-rwgc-page-variant-ownership.php` — passed
+- `php tests/test-rwgc-wporg-build.php` — the four known Windows `.distignore` CRLF failures only
+- `python tests/test-rwgc-wporg-upload-precheck.py` — 44 checks, 0 failed
+- `python scripts/package_zip.py --target wporg` — `reactwoo-geocore-wporg.zip`
+
+## Status
+done
+
 Geo Core 1.9.6 addresses the remaining WordPress.org review items on branch `cursor/wporg-review-fixes-b7ed`. Nothing was merged, tagged, pushed to `main`, or submitted to WordPress.org.
 
 ## Files changed

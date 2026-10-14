@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$cards = isset( $cards ) && is_array( $cards ) ? $cards : array();
+$rwgc_cards = isset( $rwgc_cards ) && is_array( $rwgc_cards ) ? $rwgc_cards : array();
 $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
 ?>
 <div class="wrap rwgc-wrap rwgc-suite">
@@ -31,14 +31,14 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 
 	<?php
 	if ( class_exists( 'RWGC_Admin_UI', false ) ) {
-		$hub_args = array(
+		$rwgc_hub_args = array(
 			'empty_title' => __( 'No insight reports yet', 'reactwoo-geocore' ),
 			'empty_body'  => __( 'Install Geo AI or Geo Optimise to add analysis and experiment reporting tabs here.', 'reactwoo-geocore' ),
 		);
 		if ( $rwgc_platform_shell ) {
-			RWGC_Admin_UI::render_section_hub_cards_grouped( $cards, $hub_args );
+			RWGC_Admin_UI::render_section_hub_cards_grouped( $rwgc_cards, $rwgc_hub_args );
 		} else {
-			RWGC_Admin_UI::render_section_hub_cards( $cards, $hub_args );
+			RWGC_Admin_UI::render_section_hub_cards( $rwgc_cards, $rwgc_hub_args );
 		}
 	}
 	?>

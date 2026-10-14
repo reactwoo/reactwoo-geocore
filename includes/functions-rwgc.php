@@ -379,8 +379,8 @@ if ( ! function_exists( 'rwgc_get_maxmind_admin_url' ) ) {
 	 */
 	function rwgc_get_maxmind_admin_url() {
 		$slug = 'rwgc-integrations-maxmind';
-		if ( function_exists( 'rw_geo_app_url' ) && function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell() ) {
-			return rw_geo_app_url( 'integrations', $slug );
+		if ( function_exists( 'rwgc_app_url' ) && function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell() ) {
+			return rwgc_app_url( 'integrations', $slug );
 		}
 		return admin_url( 'admin.php?page=' . rawurlencode( $slug ) );
 	}
@@ -718,27 +718,27 @@ if ( ! function_exists( 'rwgc_get_suite_handoff_request_context' ) ) {
 		$out['active'] = true;
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['rwgc_from'] ) ) {
-			$out['from'] = sanitize_key( wp_unslash( (string) $_GET['rwgc_from'] ) );
+			$out['from'] = sanitize_key( wp_unslash( (string) $_GET['rwgc_from'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display parameter.
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['rwgc_launcher'] ) ) {
-			$out['launcher'] = sanitize_key( wp_unslash( (string) $_GET['rwgc_launcher'] ) );
+			$out['launcher'] = sanitize_key( wp_unslash( (string) $_GET['rwgc_launcher'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display parameter.
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['rwgc_variant_page_id'] ) ) {
-			$out['variant_page_id'] = absint( wp_unslash( $_GET['rwgc_variant_page_id'] ) );
+			$out['variant_page_id'] = absint( wp_unslash( $_GET['rwgc_variant_page_id'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display parameter.
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['rwgc_master_page_id'] ) ) {
-			$out['master_page_id'] = absint( wp_unslash( $_GET['rwgc_master_page_id'] ) );
+			$out['master_page_id'] = absint( wp_unslash( $_GET['rwgc_master_page_id'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display parameter.
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['rwga_geo_target'] ) ) {
-			$out['geo_target'] = strtoupper( substr( sanitize_text_field( wp_unslash( (string) $_GET['rwga_geo_target'] ) ), 0, 2 ) );
+			$out['geo_target'] = strtoupper( substr( sanitize_text_field( wp_unslash( (string) $_GET['rwga_geo_target'] ) ), 0, 2 ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display parameter.
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['rwgc_visibility_rule_id'] ) ) {
-			$out['visibility_rule_id'] = absint( wp_unslash( $_GET['rwgc_visibility_rule_id'] ) );
+			$out['visibility_rule_id'] = absint( wp_unslash( $_GET['rwgc_visibility_rule_id'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display parameter.
 		}
 		if ( $out['visibility_rule_id'] > 0 && function_exists( 'rwgc_get_visibility_rule_copy_context' ) ) {
 			$tc = rwgc_get_visibility_rule_copy_context( $out['visibility_rule_id'] );
@@ -941,14 +941,14 @@ if ( ! function_exists( 'rwgc_is_target_available' ) ) {
 	}
 }
 
-if ( ! function_exists( 'rw_geo_register_module' ) ) {
+if ( ! function_exists( 'rwgc_register_module' ) ) {
 	/**
 	 * Register or replace a Geo Suite module row (alias for rwgc_register_modules).
 	 *
 	 * @param array<string, mixed> $module Module row: id, label, description, optional active, admin_url, install_url, is_active_callback, plugin_files.
 	 * @return void
 	 */
-	function rw_geo_register_module( array $module ) {
+	function rwgc_register_module( array $module ) {
 		if ( empty( $module['id'] ) || ! is_string( $module['id'] ) ) {
 			return;
 		}
@@ -976,28 +976,28 @@ if ( ! function_exists( 'rw_geo_register_module' ) ) {
 	}
 }
 
-if ( ! function_exists( 'rw_geo_register_dashboard_card' ) ) {
+if ( ! function_exists( 'rwgc_register_dashboard_card' ) ) {
 	/**
 	 * Register a Geo Core dashboard summary card (fires on rwgc_dashboard_satellite_panels).
 	 *
 	 * @param callable $callback Echoes card markup (same pattern as satellite summary cards).
 	 * @return void
 	 */
-	function rw_geo_register_dashboard_card( $callback ) {
+	function rwgc_register_dashboard_card( $callback ) {
 		if ( is_callable( $callback ) ) {
 			add_action( 'rwgc_dashboard_satellite_panels', $callback, 10, 0 );
 		}
 	}
 }
 
-if ( ! function_exists( 'rw_geo_register_app_route' ) ) {
+if ( ! function_exists( 'rwgc_register_app_route' ) ) {
 	/**
 	 * Register an in-app route (app shell section nav; wp-admin submenu optional).
 	 *
 	 * @param array<string, mixed> $args section, route, menu_slug, label, callback; optional register_wp_submenu (default false), show_in_wp_sidebar (legacy alias).
 	 * @return string|false Hook suffix.
 	 */
-	function rw_geo_register_app_route( array $args ) {
+	function rwgc_register_app_route( array $args ) {
 		if ( empty( $args['callback'] ) || ! is_callable( $args['callback'] ) ) {
 			return false;
 		}
@@ -1031,7 +1031,7 @@ if ( ! function_exists( 'rw_geo_register_app_route' ) ) {
 		);
 
 		if ( $register_wp_submenu ) {
-			return rw_geo_register_admin_submenu( $merged );
+			return rwgc_register_admin_submenu( $merged );
 		}
 
 		$parent_slug = function_exists( 'rwgc_admin_menu_parent' ) ? rwgc_admin_menu_parent() : 'rwgc-dashboard';
@@ -1043,11 +1043,11 @@ if ( ! function_exists( 'rw_geo_register_app_route' ) ) {
 			return RWGC_Admin_Platform::register_shell_only_page( $merged );
 		}
 
-		return rw_geo_register_admin_submenu( $merged );
+		return rwgc_register_admin_submenu( $merged );
 	}
 }
 
-if ( ! function_exists( 'rw_geo_app_url' ) ) {
+if ( ! function_exists( 'rwgc_app_url' ) ) {
 	/**
 	 * Admin URL for a goal section route in the ReactWoo Geo app shell.
 	 *
@@ -1055,7 +1055,7 @@ if ( ! function_exists( 'rw_geo_app_url' ) ) {
 	 * @param string $menu_slug  Optional menu slug.
 	 * @return string
 	 */
-	function rw_geo_app_url( $section_id, $menu_slug = '' ) {
+	function rwgc_app_url( $section_id, $menu_slug = '' ) {
 		if ( class_exists( 'RWGC_Admin_Route_Registry', false ) ) {
 			return RWGC_Admin_Route_Registry::get_url( $section_id, $menu_slug );
 		}
@@ -1067,14 +1067,14 @@ if ( ! function_exists( 'rw_geo_app_url' ) ) {
 	}
 }
 
-if ( ! function_exists( 'rw_geo_register_admin_submenu' ) ) {
+if ( ! function_exists( 'rwgc_register_admin_submenu' ) ) {
 	/**
 	 * Register a wp-admin submenu under the ReactWoo Geo hub (hidden from sidebar by default).
 	 *
 	 * @param array<string, mixed> $args page_title, menu_title, capability, menu_slug, callback; optional position.
 	 * @return string|false Hook suffix from add_submenu_page.
 	 */
-	function rw_geo_register_admin_submenu( array $args ) {
+	function rwgc_register_admin_submenu( array $args ) {
 		$default_cap = 'manage_options';
 		if ( class_exists( 'RWGC_Admin', false ) ) {
 			$default_cap = RWGC_Admin::required_capability();
@@ -1144,7 +1144,7 @@ if ( ! function_exists( 'rwgc_admin_menu_parent' ) ) {
 	}
 }
 
-if ( ! function_exists( 'rw_geo_render_inner_nav' ) ) {
+if ( ! function_exists( 'rwgc_render_inner_nav' ) ) {
 	/**
 	 * Render horizontal section nav (shared Geo Core / satellite shell).
 	 *
@@ -1153,14 +1153,14 @@ if ( ! function_exists( 'rw_geo_render_inner_nav' ) ) {
 	 * @param array<string, mixed>                                      $args    Optional: filter, aria_label, show_hub_breadcrumb, hub_extension_label.
 	 * @return void
 	 */
-	function rw_geo_render_inner_nav( array $items, $current, $args = array() ) {
+	function rwgc_render_inner_nav( array $items, $current, $args = array() ) {
 		if ( class_exists( 'RWGC_Admin_UI', false ) ) {
 			RWGC_Admin_UI::render_inner_nav( $items, (string) $current, $args );
 			return;
 		}
 		$filter = isset( $args['filter'] ) ? (string) $args['filter'] : '';
 		if ( '' !== $filter ) {
-			$items = apply_filters( $filter, $items, $current );
+			$items = apply_filters( $filter, $items, $current ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- Hook name is passed in by the caller.
 		}
 		$aria = isset( $args['aria_label'] ) ? (string) $args['aria_label'] : __( 'Section navigation', 'reactwoo-geocore' );
 		echo '<nav class="rwgc-inner-nav" aria-label="' . esc_attr( $aria ) . '">';
@@ -1175,6 +1175,87 @@ if ( ! function_exists( 'rw_geo_render_inner_nav' ) ) {
 			echo '<a class="' . esc_attr( $class ) . '" href="' . esc_url( admin_url( 'admin.php?page=' . $slug ) ) . '">' . esc_html( (string) $label ) . '</a>';
 		}
 		echo '</nav>';
+	}
+}
+
+if ( ! function_exists( 'rw_geo_register_module' ) ) {
+	/**
+	 * Deprecated alias of rwgc_register_module().
+	 *
+	 * @param array<string, mixed> $module Module row.
+	 * @return void
+	 */
+	function rw_geo_register_module( array $module ) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
+		_deprecated_function( __FUNCTION__, '1.9.6', 'rwgc_register_module' );
+		rwgc_register_module( $module );
+	}
+}
+
+if ( ! function_exists( 'rw_geo_register_dashboard_card' ) ) {
+	/**
+	 * Deprecated alias of rwgc_register_dashboard_card().
+	 *
+	 * @param callable $callback Card renderer.
+	 * @return void
+	 */
+	function rw_geo_register_dashboard_card( $callback ) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
+		_deprecated_function( __FUNCTION__, '1.9.6', 'rwgc_register_dashboard_card' );
+		rwgc_register_dashboard_card( $callback );
+	}
+}
+
+if ( ! function_exists( 'rw_geo_register_app_route' ) ) {
+	/**
+	 * Deprecated alias of rwgc_register_app_route().
+	 *
+	 * @param array<string, mixed> $args Route arguments.
+	 * @return string|false
+	 */
+	function rw_geo_register_app_route( array $args ) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
+		_deprecated_function( __FUNCTION__, '1.9.6', 'rwgc_register_app_route' );
+		return rwgc_register_app_route( $args );
+	}
+}
+
+if ( ! function_exists( 'rw_geo_app_url' ) ) {
+	/**
+	 * Deprecated alias of rwgc_app_url().
+	 *
+	 * @param string $section_id Goal section id.
+	 * @param string $menu_slug  Optional menu slug.
+	 * @return string
+	 */
+	function rw_geo_app_url( $section_id, $menu_slug = '' ) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
+		_deprecated_function( __FUNCTION__, '1.9.6', 'rwgc_app_url' );
+		return rwgc_app_url( $section_id, $menu_slug );
+	}
+}
+
+if ( ! function_exists( 'rw_geo_register_admin_submenu' ) ) {
+	/**
+	 * Deprecated alias of rwgc_register_admin_submenu().
+	 *
+	 * @param array<string, mixed> $args Submenu arguments.
+	 * @return string|false
+	 */
+	function rw_geo_register_admin_submenu( array $args ) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
+		_deprecated_function( __FUNCTION__, '1.9.6', 'rwgc_register_admin_submenu' );
+		return rwgc_register_admin_submenu( $args );
+	}
+}
+
+if ( ! function_exists( 'rw_geo_render_inner_nav' ) ) {
+	/**
+	 * Deprecated alias of rwgc_render_inner_nav().
+	 *
+	 * @param array<string, string|array{label:string,url?:string}> $items   Nav items.
+	 * @param string                                                  $current Active slug.
+	 * @param array<string, mixed>                                    $args    Optional args.
+	 * @return void
+	 */
+	function rw_geo_render_inner_nav( array $items, $current, $args = array() ) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound
+		_deprecated_function( __FUNCTION__, '1.9.6', 'rwgc_render_inner_nav' );
+		rwgc_render_inner_nav( $items, $current, $args );
 	}
 }
 

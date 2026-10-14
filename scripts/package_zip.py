@@ -326,10 +326,9 @@ def main() -> None:
             else:
                 zf.write(filepath, arcname=arcname)
 
+    with zipfile.ZipFile(out, "r") as zf:
         if target == "wporg":
             _assert_wporg_zip(zf, root_folder)
-
-    with zipfile.ZipFile(out, "r") as zf:
         names = zf.namelist()
         bad_backslashes = [n for n in names if "\\" in n]
         nested = [n for n in names if n.startswith(f"{root_folder}/{root_folder}/")]

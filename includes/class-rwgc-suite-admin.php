@@ -71,6 +71,10 @@ class RWGC_Suite_Admin {
 		$launchers = RWGC_Workflows::get_launchers();
 		$goal      = isset( $state['goal'] ) ? (string) $state['goal'] : '';
 		$readiness = RWGC_Module_Registry::get_readiness_rows( $goal );
+		$rwgc_activity = isset( $activity ) ? $activity : null;
+		$rwgc_launchers = isset( $launchers ) ? $launchers : null;
+		$rwgc_readiness = isset( $readiness ) ? $readiness : null;
+		$rwgc_state = isset( $state ) ? $state : null;
 		include RWGC_PATH . 'admin/views/suite-home.php';
 	}
 
@@ -88,6 +92,12 @@ class RWGC_Suite_Admin {
 		$readiness     = RWGC_Module_Registry::get_readiness_rows( $goal );
 		$launchers     = RWGC_Workflows::order_launchers_for_goal( RWGC_Workflows::get_launchers(), $goal );
 		$guidance      = RWGC_Workflows::get_goal_guidance( $goal );
+		$rwgc_guidance = isset( $guidance ) ? $guidance : null;
+		$rwgc_launchers = isset( $launchers ) ? $launchers : null;
+		$rwgc_readiness = isset( $readiness ) ? $readiness : null;
+		$rwgc_state = isset( $state ) ? $state : null;
+		$rwgc_visitor_data = isset( $visitor_data ) ? $visitor_data : null;
+		$rwgc_wizard_step = isset( $wizard_step ) ? $wizard_step : null;
 		include RWGC_PATH . 'admin/views/getting-started.php';
 	}
 
@@ -100,11 +110,11 @@ class RWGC_Suite_Admin {
 		}
 		check_admin_referer( 'rwgc_save_wizard' );
 
-		$action = isset( $_POST['rwgc_wizard_action'] ) ? sanitize_key( wp_unslash( $_POST['rwgc_wizard_action'] ) ) : 'goal';
+		$action = isset( $_POST['rwgc_wizard_action'] ) ? sanitize_key( wp_unslash( $_POST['rwgc_wizard_action'] ) ) : 'goal'; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
 		$prev   = RWGC_Onboarding::get_state();
-		$goal   = isset( $_POST['rwgc_wizard_goal'] ) ? sanitize_key( wp_unslash( $_POST['rwgc_wizard_goal'] ) ) : ( isset( $prev['goal'] ) ? (string) $prev['goal'] : '' );
+		$goal   = isset( $_POST['rwgc_wizard_goal'] ) ? sanitize_key( wp_unslash( $_POST['rwgc_wizard_goal'] ) ) : ( isset( $prev['goal'] ) ? (string) $prev['goal'] : '' ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
 
-		$data = isset( $_POST['rwgc_wizard'] ) ? map_deep( wp_unslash( $_POST['rwgc_wizard'] ), 'sanitize_text_field' ) : array();
+		$data = isset( $_POST['rwgc_wizard'] ) ? map_deep( wp_unslash( $_POST['rwgc_wizard'] ), 'sanitize_text_field' ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
 		if ( ! is_array( $data ) ) {
 			$data = array();
 		}

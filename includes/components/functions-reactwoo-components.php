@@ -27,6 +27,9 @@ if ( ! function_exists( 'reactwoo_render_component' ) ) {
 	 * @return string
 	 */
 	function reactwoo_render_component( $type, array $props = array(), array $context = array() ) {
+		if ( class_exists( 'RWGC_Components', false ) ) {
+			RWGC_Components::enqueue_stylesheet();
+		}
 		return RWGC_Component_Registry::render( $type, $props, $context );
 	}
 }

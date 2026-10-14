@@ -9,20 +9,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$variant_wizard_url = admin_url( 'admin.php?page=rwgc-workflow-variant' );
-$rules_create_url   = function_exists( 'rw_geo_app_url' )
-	? rw_geo_app_url( 'targeting', 'rwgc-visibility-rules' ) . '&rwgc_edit=new'
+$rwgc_variant_wizard_url = admin_url( 'admin.php?page=rwgc-workflow-variant' );
+$rwgc_rules_create_url   = function_exists( 'rwgc_app_url' )
+	? rwgc_app_url( 'targeting', 'rwgc-visibility-rules' ) . '&rwgc_edit=new'
 	: admin_url( 'admin.php?page=rwgc-visibility-rules&rwgc_edit=new' );
-$experiences_url    = class_exists( 'RWGO_Admin', false )
+$rwgc_experiences_url    = class_exists( 'RWGO_Admin', false )
 	? admin_url( 'admin.php?page=rwgo-dashboard' )
 	: admin_url( 'admin.php?page=rwgc-experiences-hub' );
-$exp_status         = class_exists( 'RWGC_Capability_Registry', false )
+$rwgc_exp_status         = class_exists( 'RWGC_Capability_Registry', false )
 	? RWGC_Capability_Registry::get_status( 'experiences' )
 	: array( 'state' => 'not_installed' );
-$ai_suggestion      = class_exists( 'RWGC_Geo_AI_Suggestions', false )
+$rwgc_ai_suggestion      = class_exists( 'RWGC_Geo_AI_Suggestions', false )
 	? RWGC_Geo_AI_Suggestions::get_for_context( 'targeting' )
 	: null;
-$platform_shell     = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
+$rwgc_platform_shell     = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
 ?>
 <div class="wrap rwgc-wrap rwgc-suite rwgc-targeting-assistant-wrap">
 	<?php
@@ -32,24 +32,24 @@ $platform_shell     = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses
 	);
 	?>
 	<?php
-	if ( ! $platform_shell && class_exists( 'RWGC_Admin_Targeting_Nav', false ) ) {
+	if ( ! $rwgc_platform_shell && class_exists( 'RWGC_Admin_Targeting_Nav', false ) ) {
 		RWGC_Admin_Targeting_Nav::render_tabs( 'rwgc-targeting-hub' );
 	}
 	?>
 
 	<?php
 	if ( class_exists( 'RWGC_Geo_AI_Suggestions', false ) ) {
-		RWGC_Geo_AI_Suggestions::render_inline( $ai_suggestion );
+		RWGC_Geo_AI_Suggestions::render_inline( $rwgc_ai_suggestion );
 	}
 	?>
 
 	<div
 		class="rwgc-targeting-assistant rwgc-targeting-workspace"
 		id="rwgc-targeting-assistant"
-		data-variant-url="<?php echo esc_url( $variant_wizard_url ); ?>"
-		data-rules-url="<?php echo esc_url( $rules_create_url ); ?>"
-		data-experiences-url="<?php echo esc_url( $experiences_url ); ?>"
-		data-exp-state="<?php echo esc_attr( (string) ( $exp_status['state'] ?? '' ) ); ?>"
+		data-variant-url="<?php echo esc_url( $rwgc_variant_wizard_url ); ?>"
+		data-rules-url="<?php echo esc_url( $rwgc_rules_create_url ); ?>"
+		data-experiences-url="<?php echo esc_url( $rwgc_experiences_url ); ?>"
+		data-exp-state="<?php echo esc_attr( (string) ( $rwgc_exp_status['state'] ?? '' ) ); ?>"
 	>
 		<div class="rwgc-targeting-assistant__main rwgc-targeting-main">
 			<div class="rwgc-targeting-assistant__chat">

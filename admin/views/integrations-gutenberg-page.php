@@ -9,12 +9,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$has_block = class_exists( 'RWGC_Gutenberg', false );
+$rwgc_has_block = class_exists( 'RWGC_Gutenberg', false );
 ?>
 <div class="wrap rwgc-wrap rwgc-suite">
 	<?php RWGC_Admin_UI::render_page_header( __( 'Gutenberg', 'reactwoo-geocore' ), __( 'Block editor integration for Geo Content and targeting-aware blocks.', 'reactwoo-geocore' ) ); ?>
 	<div class="rwgc-card">
-		<?php if ( $has_block ) : ?>
+		<?php if ( $rwgc_has_block ) : ?>
 			<p class="description">
 				<?php esc_html_e( 'Geo Core registers the Geo Content block and portable targeting context in the block editor. Create posts or pages and add geo-aware blocks from the inserter.', 'reactwoo-geocore' ); ?>
 			</p>

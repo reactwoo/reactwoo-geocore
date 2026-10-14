@@ -25,6 +25,9 @@ final class RWGC_Experience_Slot_Renderer {
 	 * @return string HTML
 	 */
 	public static function render( $slot_id, $default_content, $decision = null ) {
+		if ( class_exists( 'RWGC_Components', false ) ) {
+			RWGC_Components::enqueue_stylesheet();
+		}
 		$default_html = self::resolve_default( $default_content );
 
 		try {

@@ -336,7 +336,7 @@ class RWGC_AI_Snapshot_Builder {
 				'posts_per_page' => 100,
 				'orderby'        => 'modified',
 				'order'          => 'DESC',
-				'meta_query'     => array(
+				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- These rows are linked by post meta.
 					array(
 						'key'   => RWGC_Routing::META_ENABLED,
 						'value' => '1',
@@ -378,7 +378,7 @@ class RWGC_AI_Snapshot_Builder {
 				'post_type'      => 'elementor_library',
 				'post_status'    => array( 'publish', 'draft', 'private' ),
 				'posts_per_page' => 100,
-				'meta_query'     => array(
+				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- These rows are linked by post meta.
 					array(
 						'key'   => '_elementor_template_type',
 						'value' => 'popup',
@@ -447,7 +447,7 @@ class RWGC_AI_Snapshot_Builder {
 				'post_type'      => array( 'page', 'post', 'elementor_library' ),
 				'post_status'    => array( 'publish', 'draft' ),
 				'posts_per_page' => 30,
-				'meta_query'     => array(
+				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- These rows are linked by post meta.
 					array(
 						'key'     => '_elementor_data',
 						'value'   => '"widgetType":"form"',

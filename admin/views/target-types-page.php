@@ -13,26 +13,26 @@ $rwgc_portable_ctx  = isset( $rwgc_portable_ctx ) && is_array( $rwgc_portable_ct
 	'ui_surfaces' => array(),
 );
 $rwgc_use_platform_shell = ! empty( $rwgc_use_platform_shell );
-$audiences               = isset( $rwgc_portable_ctx['audiences'] ) && is_array( $rwgc_portable_ctx['audiences'] ) ? $rwgc_portable_ctx['audiences'] : array();
-$campaigns               = isset( $rwgc_portable_ctx['campaigns'] ) && is_array( $rwgc_portable_ctx['campaigns'] ) ? $rwgc_portable_ctx['campaigns'] : array();
-$help                    = isset( $rwgc_portable_ctx['help_urls'] ) && is_array( $rwgc_portable_ctx['help_urls'] ) ? $rwgc_portable_ctx['help_urls'] : array();
+$rwgc_audiences               = isset( $rwgc_portable_ctx['audiences'] ) && is_array( $rwgc_portable_ctx['audiences'] ) ? $rwgc_portable_ctx['audiences'] : array();
+$rwgc_campaigns               = isset( $rwgc_portable_ctx['campaigns'] ) && is_array( $rwgc_portable_ctx['campaigns'] ) ? $rwgc_portable_ctx['campaigns'] : array();
+$rwgc_help                    = isset( $rwgc_portable_ctx['help_urls'] ) && is_array( $rwgc_portable_ctx['help_urls'] ) ? $rwgc_portable_ctx['help_urls'] : array();
 
-$quick_actions = array(
+$rwgc_quick_actions = array(
 	array(
-		'url'     => function_exists( 'rw_geo_app_url' ) ? rw_geo_app_url( 'targeting', 'rwgc-suite-variants' ) : admin_url( 'admin.php?page=rwgc-suite-variants' ),
+		'url'     => function_exists( 'rwgc_app_url' ) ? rwgc_app_url( 'targeting', 'rwgc-suite-variants' ) : admin_url( 'admin.php?page=rwgc-suite-variants' ),
 		'label'   => __( 'Variants', 'reactwoo-geocore' ),
 		'primary' => true,
 	),
 );
 if ( defined( 'RWGO_VERSION' ) ) {
-	$quick_actions[] = array(
+	$rwgc_quick_actions[] = array(
 		'url'   => admin_url( 'admin.php?page=rwgo-dashboard' ),
 		'label' => __( 'Geo Optimise experiments', 'reactwoo-geocore' ),
 	);
 }
-if ( $rwgc_pro_enabled && ! empty( $help['integrations_ga'] ) ) {
-	$quick_actions[] = array(
-		'url'   => (string) $help['integrations_ga'],
+if ( $rwgc_pro_enabled && ! empty( $rwgc_help['integrations_ga'] ) ) {
+	$rwgc_quick_actions[] = array(
+		'url'   => (string) $rwgc_help['integrations_ga'],
 		'label' => __( 'Integrations', 'reactwoo-geocore' ),
 	);
 }
@@ -68,7 +68,7 @@ if ( $rwgc_pro_enabled && ! empty( $help['integrations_ga'] ) ) {
 	<?php endif; ?>
 
 	<?php if ( class_exists( 'RWGC_Admin_UI', false ) ) : ?>
-		<?php RWGC_Admin_UI::render_quick_actions( $quick_actions ); ?>
+		<?php RWGC_Admin_UI::render_quick_actions( $rwgc_quick_actions ); ?>
 	<?php endif; ?>
 
 	<div class="rwgc-grid">
@@ -90,12 +90,12 @@ if ( $rwgc_pro_enabled && ! empty( $help['integrations_ga'] ) ) {
 				<span class="rwgc-rb__pill rwgc-rb__pill--ga4"><?php esc_html_e( 'GA4', 'reactwoo-geocore' ); ?></span>
 				<p class="description">
 					<?php
-					if ( count( $audiences ) > 0 ) {
+					if ( count( $rwgc_audiences ) > 0 ) {
 						echo esc_html(
 							sprintf(
 								/* translators: %d: number of GA4 audiences. */
-								_n( '%d audience available', '%d audiences available', count( $audiences ), 'reactwoo-geocore' ),
-								count( $audiences )
+								_n( '%d audience available', '%d audiences available', count( $rwgc_audiences ), 'reactwoo-geocore' ),
+								count( $rwgc_audiences )
 							)
 						);
 					} elseif ( $rwgc_pro_enabled ) {
@@ -111,12 +111,12 @@ if ( $rwgc_pro_enabled && ! empty( $help['integrations_ga'] ) ) {
 				<span class="rwgc-rb__pill rwgc-rb__pill--ads"><?php esc_html_e( 'Google Ads', 'reactwoo-geocore' ); ?></span>
 				<p class="description">
 					<?php
-					if ( count( $campaigns ) > 0 ) {
+					if ( count( $rwgc_campaigns ) > 0 ) {
 						echo esc_html(
 							sprintf(
 								/* translators: %d: number of Google Ads campaigns. */
-								_n( '%d campaign available', '%d campaigns available', count( $campaigns ), 'reactwoo-geocore' ),
-								count( $campaigns )
+								_n( '%d campaign available', '%d campaigns available', count( $rwgc_campaigns ), 'reactwoo-geocore' ),
+								count( $rwgc_campaigns )
 							)
 						);
 					} elseif ( $rwgc_pro_enabled ) {
@@ -139,9 +139,9 @@ if ( $rwgc_pro_enabled && ! empty( $help['integrations_ga'] ) ) {
 				'geocore_pro'
 			);
 			?>
-		<?php elseif ( ( empty( $audiences ) || empty( $campaigns ) ) && ! empty( $help['integrations_ga'] ) ) : ?>
+		<?php elseif ( ( empty( $rwgc_audiences ) || empty( $rwgc_campaigns ) ) && ! empty( $rwgc_help['integrations_ga'] ) ) : ?>
 			<p>
-				<a class="button button-secondary" href="<?php echo esc_url( (string) $help['integrations_ga'] ); ?>"><?php esc_html_e( 'Open GeoCore Pro integrations', 'reactwoo-geocore' ); ?></a>
+				<a class="button button-secondary" href="<?php echo esc_url( (string) $rwgc_help['integrations_ga'] ); ?>"><?php esc_html_e( 'Open GeoCore Pro integrations', 'reactwoo-geocore' ); ?></a>
 			</p>
 		<?php endif; ?>
 
@@ -175,11 +175,11 @@ if ( $rwgc_pro_enabled && ! empty( $help['integrations_ga'] ) ) {
 					</tr>
 				</thead>
 				<tbody>
-				<?php foreach ( $rwgc_provider_rows as $row ) : ?>
+				<?php foreach ( $rwgc_provider_rows as $rwgc_row ) : ?>
 					<tr>
-						<td><?php echo esc_html( isset( $row['label'] ) ? (string) $row['label'] : '' ); ?></td>
-						<td><?php echo esc_html( isset( $row['state'] ) ? (string) $row['state'] : '' ); ?></td>
-						<td><?php echo esc_html( isset( $row['detail'] ) ? (string) $row['detail'] : '' ); ?></td>
+						<td><?php echo esc_html( isset( $rwgc_row['label'] ) ? (string) $rwgc_row['label'] : '' ); ?></td>
+						<td><?php echo esc_html( isset( $rwgc_row['state'] ) ? (string) $rwgc_row['state'] : '' ); ?></td>
+						<td><?php echo esc_html( isset( $rwgc_row['detail'] ) ? (string) $rwgc_row['detail'] : '' ); ?></td>
 					</tr>
 				<?php endforeach; ?>
 				</tbody>

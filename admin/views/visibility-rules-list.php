@@ -3,14 +3,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$rules                    = isset( $rules ) && is_array( $rules ) ? $rules : array();
-$index_rows               = class_exists( 'RWGC_Admin_Targeting_Rules_Index', false )
+$rwgc_rules                    = isset( $rwgc_rules ) && is_array( $rwgc_rules ) ? $rwgc_rules : array();
+$rwgc_index_rows               = class_exists( 'RWGC_Admin_Targeting_Rules_Index', false )
 	? RWGC_Admin_Targeting_Rules_Index::get_rows()
 	: array();
 $rwgc_use_platform_shell  = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
-$new_url                  = admin_url( 'admin.php?page=rwgc-visibility-rules&rwgc_edit=new' );
-$rule_builder_url         = admin_url( 'admin.php?page=rwgc-target-types' );
-$orphaned_variant_rules   = isset( $orphaned_variant_rules ) && is_array( $orphaned_variant_rules ) ? $orphaned_variant_rules : array();
+$rwgc_new_url                  = admin_url( 'admin.php?page=rwgc-visibility-rules&rwgc_edit=new' );
+$rwgc_rule_builder_url         = admin_url( 'admin.php?page=rwgc-target-types' );
+$rwgc_orphaned_variant_rules   = isset( $rwgc_orphaned_variant_rules ) && is_array( $rwgc_orphaned_variant_rules ) ? $rwgc_orphaned_variant_rules : array();
 
 /**
  * Render compact condition chips for a portable rule row.
@@ -18,24 +18,24 @@ $orphaned_variant_rules   = isset( $orphaned_variant_rules ) && is_array( $orpha
  * @param array<string, array<int, string>> $chips Chip groups from editor presenter.
  * @return void
  */
-$rwgc_render_rule_chips = static function ( array $chips ) {
-	$printed = false;
-	foreach ( array( 'include', 'exclude', 'device', 'page', 'traffic' ) as $group ) {
-		$list = isset( $chips[ $group ] ) && is_array( $chips[ $group ] ) ? $chips[ $group ] : array();
-		foreach ( $list as $label ) {
-			$printed = true;
-			$class   = 'rwgc-rule-chip';
-			if ( 'include' === $group ) {
-				$class .= ' rwgc-rule-chip--include';
-			} elseif ( 'exclude' === $group ) {
-				$class .= ' rwgc-rule-chip--exclude';
-			} elseif ( 'traffic' === $group ) {
-				$class .= ' rwgc-rule-chip--traffic';
+$rwgc_render_rule_chips = static function ( array $rwgc_chips ) {
+	$rwgc_printed = false;
+	foreach ( array( 'include', 'exclude', 'device', 'page', 'traffic' ) as $rwgc_group ) {
+		$rwgc_list = isset( $rwgc_chips[ $rwgc_group ] ) && is_array( $rwgc_chips[ $rwgc_group ] ) ? $rwgc_chips[ $rwgc_group ] : array();
+		foreach ( $rwgc_list as $rwgc_label ) {
+			$rwgc_printed = true;
+			$rwgc_class   = 'rwgc-rule-chip';
+			if ( 'include' === $rwgc_group ) {
+				$rwgc_class .= ' rwgc-rule-chip--include';
+			} elseif ( 'exclude' === $rwgc_group ) {
+				$rwgc_class .= ' rwgc-rule-chip--exclude';
+			} elseif ( 'traffic' === $rwgc_group ) {
+				$rwgc_class .= ' rwgc-rule-chip--traffic';
 			}
-			echo '<span class="' . esc_attr( $class ) . '">' . esc_html( (string) $label ) . '</span>';
+			echo '<span class="' . esc_attr( $rwgc_class ) . '">' . esc_html( (string) $rwgc_label ) . '</span>';
 		}
 	}
-	if ( ! $printed ) {
+	if ( ! $rwgc_printed ) {
 		echo '<span class="description">' . esc_html__( 'No conditions yet', 'reactwoo-geocore' ) . '</span>';
 	}
 };
@@ -61,19 +61,19 @@ $rwgc_render_rule_chips = static function ( array $chips ) {
 			<?php endif; ?>
 		</div>
 		<div class="rwgc-rules-header__actions">
-			<a class="rwgc-btn rwgc-btn--primary" href="<?php echo esc_url( $new_url ); ?>"><?php esc_html_e( 'Add portable rule', 'reactwoo-geocore' ); ?></a>
+			<a class="rwgc-btn rwgc-btn--primary" href="<?php echo esc_url( $rwgc_new_url ); ?>"><?php esc_html_e( 'Add portable rule', 'reactwoo-geocore' ); ?></a>
 			<button type="button" class="rwgc-btn rwgc-btn--secondary" data-rwgc-open-rule-tester><?php esc_html_e( 'Test rule', 'reactwoo-geocore' ); ?></button>
 		</div>
 	</div>
 
-	<?php if ( ! empty( $orphaned_variant_rules ) ) : ?>
+	<?php if ( ! empty( $rwgc_orphaned_variant_rules ) ) : ?>
 		<div class="notice notice-warning">
 			<p>
 				<?php
 				printf(
 					/* translators: %d: orphan count */
-					esc_html( _n( '%d orphaned variant rule found.', '%d orphaned variant rules found.', count( $orphaned_variant_rules ), 'reactwoo-geocore' ) ),
-					count( $orphaned_variant_rules )
+					esc_html( _n( '%d orphaned variant rule found.', '%d orphaned variant rules found.', count( $rwgc_orphaned_variant_rules ), 'reactwoo-geocore' ) ),
+					count( $rwgc_orphaned_variant_rules )
 				);
 				?>
 				<a href="#rwgc-orphan-variant-rules"><?php esc_html_e( 'Review', 'reactwoo-geocore' ); ?></a>
@@ -102,12 +102,12 @@ $rwgc_render_rule_chips = static function ( array $chips ) {
 					<?php esc_html_e( 'A draft, trashed, or deleted rule never matches. Editors that still point at it show a warning and keep the reference until you pick another rule or clear it.', 'reactwoo-geocore' ); ?>
 				</p>
 			</div>
-			<?php if ( ! empty( $rules ) ) : ?>
-				<a class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" href="<?php echo esc_url( $new_url ); ?>"><?php esc_html_e( 'Add portable rule', 'reactwoo-geocore' ); ?></a>
+			<?php if ( ! empty( $rwgc_rules ) ) : ?>
+				<a class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" href="<?php echo esc_url( $rwgc_new_url ); ?>"><?php esc_html_e( 'Add portable rule', 'reactwoo-geocore' ); ?></a>
 			<?php endif; ?>
 		</div>
 
-		<?php if ( ! empty( $rules ) ) : ?>
+		<?php if ( ! empty( $rwgc_rules ) ) : ?>
 			<div class="rwgc-rules-table-wrap">
 				<table class="rwgc-rules-table">
 					<thead>
@@ -121,66 +121,66 @@ $rwgc_render_rule_chips = static function ( array $chips ) {
 						</tr>
 					</thead>
 					<tbody>
-						<?php foreach ( $rules as $rule_post ) : ?>
+						<?php foreach ( $rwgc_rules as $rwgc_rule_post ) : ?>
 							<?php
-							if ( ! $rule_post instanceof WP_Post ) {
+							if ( ! $rwgc_rule_post instanceof WP_Post ) {
 								continue;
 							}
-							$rule_id      = (int) $rule_post->ID;
-							$edit_url     = admin_url( 'admin.php?page=rwgc-visibility-rules&rwgc_edit=' . $rule_id );
-							$del_url      = wp_nonce_url(
-								admin_url( 'admin-post.php?action=rwgc_delete_visibility_rule&rule_id=' . $rule_id ),
-								'rwgc_delete_visibility_rule_' . $rule_id
+							$rwgc_rule_id      = (int) $rwgc_rule_post->ID;
+							$rwgc_edit_url     = admin_url( 'admin.php?page=rwgc-visibility-rules&rwgc_edit=' . $rwgc_rule_id );
+							$rwgc_del_url      = wp_nonce_url(
+								admin_url( 'admin-post.php?action=rwgc_delete_visibility_rule&rule_id=' . $rwgc_rule_id ),
+								'rwgc_delete_visibility_rule_' . $rwgc_rule_id
 							);
-							$dup_url      = wp_nonce_url(
-								admin_url( 'admin-post.php?action=rwgc_duplicate_visibility_rule&rule_id=' . $rule_id ),
-								'rwgc_duplicate_visibility_rule_' . $rule_id
+							$rwgc_dup_url      = wp_nonce_url(
+								admin_url( 'admin-post.php?action=rwgc_duplicate_visibility_rule&rule_id=' . $rwgc_rule_id ),
+								'rwgc_duplicate_visibility_rule_' . $rwgc_rule_id
 							);
-							$is_published = 'publish' === $rule_post->post_status;
-							$status_class = $is_published ? 'rwgc-rule-status-pill--published' : 'rwgc-rule-status-pill--draft';
-							$status_label = $is_published
+							$rwgc_is_published = 'publish' === $rwgc_rule_post->post_status;
+							$rwgc_status_class = $rwgc_is_published ? 'rwgc-rule-status-pill--published' : 'rwgc-rule-status-pill--draft';
+							$rwgc_status_label = $rwgc_is_published
 								? __( 'Published', 'reactwoo-geocore' )
 								: __( 'Draft', 'reactwoo-geocore' );
-							$portable_raw = (string) get_post_meta( $rule_id, RWGC_Visibility_Rule_CPT::META_PORTABLE, true );
-							$presenter    = class_exists( 'RWGC_Visibility_Rule_Editor_Presenter', false )
-								? RWGC_Visibility_Rule_Editor_Presenter::build( $rule_id, $rule_post->post_title, $rule_post->post_status, $portable_raw )
+							$rwgc_portable_raw = (string) get_post_meta( $rwgc_rule_id, RWGC_Visibility_Rule_CPT::META_PORTABLE, true );
+							$rwgc_presenter    = class_exists( 'RWGC_Visibility_Rule_Editor_Presenter', false )
+								? RWGC_Visibility_Rule_Editor_Presenter::build( $rwgc_rule_id, $rwgc_rule_post->post_title, $rwgc_rule_post->post_status, $rwgc_portable_raw )
 								: array( 'target_label' => '', 'chips' => array() );
-							$target_label = (string) ( $presenter['target_label'] ?? '' );
-							$chips        = isset( $presenter['chips'] ) && is_array( $presenter['chips'] ) ? $presenter['chips'] : array();
+							$rwgc_target_label = (string) ( $rwgc_presenter['target_label'] ?? '' );
+							$rwgc_chips        = isset( $rwgc_presenter['chips'] ) && is_array( $rwgc_presenter['chips'] ) ? $rwgc_presenter['chips'] : array();
 							?>
 							<tr class="rwgc-rule-row">
 								<td>
-									<span class="rwgc-rule-row__title"><?php echo esc_html( $rule_post->post_title ); ?></span>
+									<span class="rwgc-rule-row__title"><?php echo esc_html( $rwgc_rule_post->post_title ); ?></span>
 									<div class="rwgc-rule-row__meta">
 										<span class="rwgc-rule-source-pill rwgc-rule-source-pill--geocore"><?php esc_html_e( 'Geo Core', 'reactwoo-geocore' ); ?></span>
 										<span class="rwgc-rule-chip"><?php esc_html_e( 'Portable', 'reactwoo-geocore' ); ?></span>
 									</div>
 								</td>
 								<td>
-									<?php if ( '' !== $target_label ) : ?>
-										<?php echo esc_html( $target_label ); ?>
+									<?php if ( '' !== $rwgc_target_label ) : ?>
+										<?php echo esc_html( $rwgc_target_label ); ?>
 									<?php else : ?>
 										<span class="rwgc-rule-row__target"><?php esc_html_e( 'Reusable library rule', 'reactwoo-geocore' ); ?></span>
 									<?php endif; ?>
 								</td>
 								<td>
 									<div class="rwgc-rule-row__chips">
-										<?php $rwgc_render_rule_chips( $chips ); ?>
+										<?php $rwgc_render_rule_chips( $rwgc_chips ); ?>
 									</div>
 								</td>
 								<td>
-									<span class="rwgc-rule-status-pill <?php echo esc_attr( $status_class ); ?>"><?php echo esc_html( $status_label ); ?></span>
+									<span class="rwgc-rule-status-pill <?php echo esc_attr( $rwgc_status_class ); ?>"><?php echo esc_html( $rwgc_status_label ); ?></span>
 								</td>
-								<td><?php echo esc_html( get_the_modified_date( '', $rule_post ) ); ?></td>
+								<td><?php echo esc_html( get_the_modified_date( '', $rwgc_rule_post ) ); ?></td>
 								<td>
 									<div class="rwgc-rule-row__actions">
-										<a class="rwgc-btn rwgc-btn--primary rwgc-btn--sm" href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit rule', 'reactwoo-geocore' ); ?></a>
-										<button type="button" class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" data-rwgc-open-rule-tester data-rule-id="<?php echo esc_attr( (string) $rule_id ); ?>"><?php esc_html_e( 'Test', 'reactwoo-geocore' ); ?></button>
+										<a class="rwgc-btn rwgc-btn--primary rwgc-btn--sm" href="<?php echo esc_url( $rwgc_edit_url ); ?>"><?php esc_html_e( 'Edit rule', 'reactwoo-geocore' ); ?></a>
+										<button type="button" class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" data-rwgc-open-rule-tester data-rule-id="<?php echo esc_attr( (string) $rwgc_rule_id ); ?>"><?php esc_html_e( 'Test', 'reactwoo-geocore' ); ?></button>
 										<?php if ( function_exists( 'rwgc_can_link_ux_opportunity_review' ) && rwgc_can_link_ux_opportunity_review() ) : ?>
-											<a class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" href="<?php echo esc_url( rwgc_ux_opportunity_review_admin_url( array( 'rule_id' => (string) $rule_id, 'source' => 'rules' ) ) ); ?>"><?php esc_html_e( 'Review this rule with AI', 'reactwoo-geocore' ); ?></a>
+											<a class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" href="<?php echo esc_url( rwgc_ux_opportunity_review_admin_url( array( 'rule_id' => (string) $rwgc_rule_id, 'source' => 'rules' ) ) ); ?>"><?php esc_html_e( 'Review this rule with AI', 'reactwoo-geocore' ); ?></a>
 										<?php endif; ?>
-										<a class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" href="<?php echo esc_url( $dup_url ); ?>"><?php esc_html_e( 'Duplicate', 'reactwoo-geocore' ); ?></a>
-										<a class="rwgc-btn rwgc-btn--danger rwgc-btn--sm" href="<?php echo esc_url( $del_url ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Move this rule to trash?', 'reactwoo-geocore' ) ); ?>');"><?php esc_html_e( 'Trash', 'reactwoo-geocore' ); ?></a>
+										<a class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" href="<?php echo esc_url( $rwgc_dup_url ); ?>"><?php esc_html_e( 'Duplicate', 'reactwoo-geocore' ); ?></a>
+										<a class="rwgc-btn rwgc-btn--danger rwgc-btn--sm" href="<?php echo esc_url( $rwgc_del_url ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Move this rule to trash?', 'reactwoo-geocore' ) ); ?>');"><?php esc_html_e( 'Trash', 'reactwoo-geocore' ); ?></a>
 									</div>
 								</td>
 							</tr>
@@ -192,7 +192,7 @@ $rwgc_render_rule_chips = static function ( array $chips ) {
 			<div class="rwgc-rules-empty">
 				<p class="rwgc-rules-empty__title"><?php esc_html_e( 'No portable rules yet', 'reactwoo-geocore' ); ?></p>
 				<p class="rwgc-rules-empty__text"><?php esc_html_e( 'Create a reusable rule set to attach the same conditions across Elementor, blocks, and commerce.', 'reactwoo-geocore' ); ?></p>
-				<a class="rwgc-btn rwgc-btn--primary" href="<?php echo esc_url( $new_url ); ?>"><?php esc_html_e( 'Add portable rule', 'reactwoo-geocore' ); ?></a>
+				<a class="rwgc-btn rwgc-btn--primary" href="<?php echo esc_url( $rwgc_new_url ); ?>"><?php esc_html_e( 'Add portable rule', 'reactwoo-geocore' ); ?></a>
 			</div>
 		<?php endif; ?>
 	</section>
@@ -203,12 +203,12 @@ $rwgc_render_rule_chips = static function ( array $chips ) {
 				<h2 id="rwgc-targeting-rules-heading"><?php esc_html_e( 'Targeting rules', 'reactwoo-geocore' ); ?></h2>
 				<p class="description">
 					<?php esc_html_e( 'Rules created inside builders and product screens — attached to a page, popup, element, route, or store context. They are edited where they were created, not in the portable library above.', 'reactwoo-geocore' ); ?>
-					<a href="<?php echo esc_url( $rule_builder_url ); ?>"><?php esc_html_e( 'Condition reference', 'reactwoo-geocore' ); ?></a>
+					<a href="<?php echo esc_url( $rwgc_rule_builder_url ); ?>"><?php esc_html_e( 'Condition reference', 'reactwoo-geocore' ); ?></a>
 				</p>
 			</div>
 		</div>
 
-		<?php if ( ! empty( $index_rows ) ) : ?>
+		<?php if ( ! empty( $rwgc_index_rows ) ) : ?>
 			<div class="rwgc-rules-table-wrap">
 				<table class="rwgc-rules-table">
 					<thead>
@@ -223,48 +223,48 @@ $rwgc_render_rule_chips = static function ( array $chips ) {
 						</tr>
 					</thead>
 					<tbody>
-						<?php foreach ( $index_rows as $row ) : ?>
+						<?php foreach ( $rwgc_index_rows as $rwgc_row ) : ?>
 							<?php
-							$source_key   = isset( $row['source_key'] ) ? sanitize_key( (string) $row['source_key'] ) : '';
-							$status_text  = (string) ( $row['status'] ?? '' );
-							$is_active    = __( 'Active', 'reactwoo-geocore' ) === $status_text;
-							$status_class = $is_active ? 'rwgc-rule-status-pill--active' : 'rwgc-rule-status-pill--draft';
-							$source_class = '' !== $source_key ? ' rwgc-rule-source-pill--' . $source_key : '';
-							$edit_external = ! empty( $row['edit_url'] ) && 0 === strpos( (string) $row['edit_url'], 'http' ) && false === strpos( (string) $row['edit_url'], admin_url() );
+							$rwgc_source_key   = isset( $rwgc_row['source_key'] ) ? sanitize_key( (string) $rwgc_row['source_key'] ) : '';
+							$rwgc_status_text  = (string) ( $rwgc_row['status'] ?? '' );
+							$rwgc_is_active    = __( 'Active', 'reactwoo-geocore' ) === $rwgc_status_text;
+							$rwgc_status_class = $rwgc_is_active ? 'rwgc-rule-status-pill--active' : 'rwgc-rule-status-pill--draft';
+							$rwgc_source_class = '' !== $rwgc_source_key ? ' rwgc-rule-source-pill--' . $rwgc_source_key : '';
+							$rwgc_edit_external = ! empty( $rwgc_row['edit_url'] ) && 0 === strpos( (string) $rwgc_row['edit_url'], 'http' ) && false === strpos( (string) $rwgc_row['edit_url'], admin_url() );
 							?>
 							<tr class="rwgc-rule-row">
 								<td>
-									<span class="rwgc-rule-row__title"><?php echo esc_html( (string) ( $row['name'] ?? '' ) ); ?></span>
+									<span class="rwgc-rule-row__title"><?php echo esc_html( (string) ( $rwgc_row['name'] ?? '' ) ); ?></span>
 									<div class="rwgc-rule-row__meta">
-										<span class="rwgc-rule-chip"><?php echo esc_html( (string) ( $row['rule_scope'] ?? __( 'Builder', 'reactwoo-geocore' ) ) ); ?></span>
+										<span class="rwgc-rule-chip"><?php echo esc_html( (string) ( $rwgc_row['rule_scope'] ?? __( 'Builder', 'reactwoo-geocore' ) ) ); ?></span>
 									</div>
 								</td>
 								<td>
-									<?php if ( '' !== $source_key ) : ?>
-										<span class="rwgc-rule-source-pill<?php echo esc_attr( $source_class ); ?>"><?php echo esc_html( (string) ( $row['source'] ?? '' ) ); ?></span>
+									<?php if ( '' !== $rwgc_source_key ) : ?>
+										<span class="rwgc-rule-source-pill<?php echo esc_attr( $rwgc_source_class ); ?>"><?php echo esc_html( (string) ( $rwgc_row['source'] ?? '' ) ); ?></span>
 									<?php else : ?>
-										<?php echo esc_html( (string) ( $row['source'] ?? '' ) ); ?>
+										<?php echo esc_html( (string) ( $rwgc_row['source'] ?? '' ) ); ?>
 									<?php endif; ?>
 								</td>
-								<td><?php echo esc_html( (string) ( $row['location'] ?? '' ) ); ?></td>
+								<td><?php echo esc_html( (string) ( $rwgc_row['location'] ?? '' ) ); ?></td>
 								<td>
 									<div class="rwgc-rule-row__chips">
-										<span class="rwgc-rule-chip"><?php echo esc_html( (string) ( $row['targeting'] ?? '' ) ); ?></span>
+										<span class="rwgc-rule-chip"><?php echo esc_html( (string) ( $rwgc_row['targeting'] ?? '' ) ); ?></span>
 									</div>
 								</td>
 								<td>
-									<span class="rwgc-rule-status-pill <?php echo esc_attr( $status_class ); ?>"><?php echo esc_html( $status_text ); ?></span>
+									<span class="rwgc-rule-status-pill <?php echo esc_attr( $rwgc_status_class ); ?>"><?php echo esc_html( $rwgc_status_text ); ?></span>
 								</td>
-								<td><?php echo esc_html( (string) ( $row['updated'] ?? '—' ) ); ?></td>
+								<td><?php echo esc_html( (string) ( $rwgc_row['updated'] ?? '—' ) ); ?></td>
 								<td>
-									<?php if ( ! empty( $row['edit_url'] ) ) : ?>
+									<?php if ( ! empty( $rwgc_row['edit_url'] ) ) : ?>
 										<div class="rwgc-rule-row__actions">
-											<a class="rwgc-btn rwgc-btn--primary rwgc-btn--sm" href="<?php echo esc_url( (string) $row['edit_url'] ); ?>"<?php echo $edit_external ? ' target="_blank" rel="noopener noreferrer"' : ''; ?>>
-												<?php echo esc_html( (string) ( $row['edit_label'] ?? __( 'Open', 'reactwoo-geocore' ) ) ); ?>
+											<a class="rwgc-btn rwgc-btn--primary rwgc-btn--sm" href="<?php echo esc_url( (string) $rwgc_row['edit_url'] ); ?>"<?php echo $rwgc_edit_external ? ' target="_blank" rel="noopener noreferrer"' : ''; ?>>
+												<?php echo esc_html( (string) ( $rwgc_row['edit_label'] ?? __( 'Open', 'reactwoo-geocore' ) ) ); ?>
 											</a>
 										</div>
-										<?php if ( ! empty( $row['action_note'] ) ) : ?>
-											<p class="rwgc-rule-row__note"><?php echo esc_html( (string) $row['action_note'] ); ?></p>
+										<?php if ( ! empty( $rwgc_row['action_note'] ) ) : ?>
+											<p class="rwgc-rule-row__note"><?php echo esc_html( (string) $rwgc_row['action_note'] ); ?></p>
 										<?php endif; ?>
 									<?php else : ?>
 										<span class="description"><?php esc_html_e( 'Edit in the builder where this rule was created.', 'reactwoo-geocore' ); ?></span>
@@ -283,7 +283,7 @@ $rwgc_render_rule_chips = static function ( array $chips ) {
 		<?php endif; ?>
 	</section>
 
-	<?php if ( ! empty( $orphaned_variant_rules ) ) : ?>
+	<?php if ( ! empty( $rwgc_orphaned_variant_rules ) ) : ?>
 		<section class="rwgc-rules-card" id="rwgc-orphan-variant-rules" aria-labelledby="rwgc-orphan-rules-heading">
 			<div class="rwgc-rules-card__head">
 				<div>
@@ -302,14 +302,14 @@ $rwgc_render_rule_chips = static function ( array $chips ) {
 						</tr>
 					</thead>
 					<tbody>
-						<?php foreach ( $orphaned_variant_rules as $orphan ) : ?>
+						<?php foreach ( $rwgc_orphaned_variant_rules as $rwgc_orphan ) : ?>
 							<tr class="rwgc-rule-row">
-								<td><span class="rwgc-rule-row__title"><?php echo esc_html( (string) ( $orphan['title'] ?? '' ) ); ?></span></td>
-								<td><?php echo esc_html( (string) ( $orphan['variant'] ?? '' ) ); ?></td>
-								<td><span class="rwgc-rule-status-pill rwgc-rule-status-pill--draft"><?php echo esc_html( (string) ( $orphan['lifecycle'] ?? __( 'inactive', 'reactwoo-geocore' ) ) ); ?></span></td>
+								<td><span class="rwgc-rule-row__title"><?php echo esc_html( (string) ( $rwgc_orphan['title'] ?? '' ) ); ?></span></td>
+								<td><?php echo esc_html( (string) ( $rwgc_orphan['variant'] ?? '' ) ); ?></td>
+								<td><span class="rwgc-rule-status-pill rwgc-rule-status-pill--draft"><?php echo esc_html( (string) ( $rwgc_orphan['lifecycle'] ?? __( 'inactive', 'reactwoo-geocore' ) ) ); ?></span></td>
 								<td>
-									<?php if ( ! empty( $orphan['edit_url'] ) ) : ?>
-										<a class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" href="<?php echo esc_url( (string) $orphan['edit_url'] ); ?>"><?php esc_html_e( 'Review', 'reactwoo-geocore' ); ?></a>
+									<?php if ( ! empty( $rwgc_orphan['edit_url'] ) ) : ?>
+										<a class="rwgc-btn rwgc-btn--secondary rwgc-btn--sm" href="<?php echo esc_url( (string) $rwgc_orphan['edit_url'] ); ?>"><?php esc_html_e( 'Review', 'reactwoo-geocore' ); ?></a>
 									<?php endif; ?>
 								</td>
 							</tr>

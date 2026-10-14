@@ -23,11 +23,11 @@ $rwgc_provider_rows = isset( $rwgc_provider_rows ) && is_array( $rwgc_provider_r
 		<?php if ( empty( $rwgc_provider_rows ) ) : ?>
 			<tr><td colspan="3"><?php esc_html_e( 'No providers loaded.', 'reactwoo-geocore' ); ?></td></tr>
 		<?php else : ?>
-			<?php foreach ( $rwgc_provider_rows as $row ) : ?>
+			<?php foreach ( $rwgc_provider_rows as $rwgc_row ) : ?>
 				<tr>
-					<td><strong><?php echo esc_html( isset( $row['label'] ) ? (string) $row['label'] : '' ); ?></strong><br /><code><?php echo esc_html( isset( $row['key'] ) ? (string) $row['key'] : '' ); ?></code></td>
-					<td><?php echo esc_html( isset( $row['state'] ) ? (string) $row['state'] : '' ); ?></td>
-					<td><?php echo esc_html( isset( $row['detail'] ) ? (string) $row['detail'] : '' ); ?></td>
+					<td><strong><?php echo esc_html( isset( $rwgc_row['label'] ) ? (string) $rwgc_row['label'] : '' ); ?></strong><br /><code><?php echo esc_html( isset( $rwgc_row['key'] ) ? (string) $rwgc_row['key'] : '' ); ?></code></td>
+					<td><?php echo esc_html( isset( $rwgc_row['state'] ) ? (string) $rwgc_row['state'] : '' ); ?></td>
+					<td><?php echo esc_html( isset( $rwgc_row['detail'] ) ? (string) $rwgc_row['detail'] : '' ); ?></td>
 				</tr>
 			<?php endforeach; ?>
 		<?php endif; ?>

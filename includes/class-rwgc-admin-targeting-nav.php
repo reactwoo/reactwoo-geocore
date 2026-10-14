@@ -136,8 +136,8 @@ class RWGC_Admin_Targeting_Nav {
 		}
 		$items = array();
 		foreach ( $routes as $slug => $route ) {
-			$url = function_exists( 'rw_geo_app_url' )
-				? rw_geo_app_url( 'targeting', $slug )
+			$url = function_exists( 'rwgc_app_url' )
+				? rwgc_app_url( 'targeting', $slug )
 				: admin_url( 'admin.php?page=' . $slug );
 			$items[ $slug ] = array(
 				'label' => (string) ( $route['label'] ?? $slug ),

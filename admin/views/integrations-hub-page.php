@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$cards                 = isset( $cards ) && is_array( $cards ) ? $cards : array();
+$rwgc_cards                 = isset( $rwgc_cards ) && is_array( $rwgc_cards ) ? $rwgc_cards : array();
 $rwgc_platform_shell   = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
 $rwgc_sync_snapshot    = class_exists( 'RWGC_Platform_Sync_Status', false ) ? RWGC_Platform_Sync_Status::get_snapshot() : array();
 $rwgc_integrations     = class_exists( 'RWGC_Platform_Integrations', false ) ? RWGC_Platform_Integrations::get_items() : array();
@@ -35,10 +35,10 @@ $rwgc_integrations     = class_exists( 'RWGC_Platform_Integrations', false ) ? R
 		<?php RWGC_Admin_UI::render_sync_status_card( $rwgc_sync_snapshot ); ?>
 	<?php endif; ?>
 
-	<?php if ( ! empty( $cards ) && class_exists( 'RWGC_Admin_UI', false ) ) : ?>
+	<?php if ( ! empty( $rwgc_cards ) && class_exists( 'RWGC_Admin_UI', false ) ) : ?>
 		<?php
 		RWGC_Admin_UI::render_section_hub_cards(
-			$cards,
+			$rwgc_cards,
 			array(
 				'empty_title' => __( 'No integration categories', 'reactwoo-geocore' ),
 				'empty_body'  => __( 'Install GeoCore Pro or a builder plugin to add integrations.', 'reactwoo-geocore' ),

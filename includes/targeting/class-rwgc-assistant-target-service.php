@@ -36,7 +36,7 @@ class RWGC_Assistant_Target_Service {
 			'order'                  => 'DESC',
 			'no_found_rows'          => true,
 			'update_post_meta_cache' => false,
-			'meta_query'             => array(
+			'meta_query'             => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- These rows are linked by post meta.
 				array(
 					'key'   => '_elementor_template_type',
 					'value' => 'popup',

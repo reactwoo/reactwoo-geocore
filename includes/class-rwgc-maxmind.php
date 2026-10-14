@@ -330,7 +330,7 @@ class RWGC_MaxMind {
 	}
 
 	/**
-	 * Record last DB error and log when debug mode is enabled.
+	 * Record the last database error for the MaxMind status screen.
 	 *
 	 * @param \WP_Error $error Error object.
 	 * @return void
@@ -342,10 +342,6 @@ class RWGC_MaxMind {
 		$settings                  = RWGC_Settings::get_settings();
 		$settings['db_last_error'] = $error->get_error_message();
 		RWGC_Settings::update( $settings );
-
-		if ( RWGC_Settings::get( 'debug_mode', 0 ) && function_exists( 'error_log' ) ) {
-			error_log( sprintf( 'ReactWoo Geo Core MaxMind error [%s]: %s', $error->get_error_code(), $error->get_error_message() ) );
-		}
 	}
 }
 

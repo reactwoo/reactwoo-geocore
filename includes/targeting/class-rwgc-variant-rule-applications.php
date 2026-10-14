@@ -217,7 +217,7 @@ class RWGC_Variant_Rule_Applications {
 				'post_type'      => 'elementor_library',
 				'post_status'    => 'publish',
 				'posts_per_page' => -1,
-				'meta_query'     => array(
+				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- These rows are linked by post meta.
 					array(
 						'key'   => '_elementor_template_type',
 						'value' => 'popup',
@@ -302,7 +302,7 @@ class RWGC_Variant_Rule_Applications {
 				'post_type'      => RWGC_Visibility_Rule_CPT::POST_TYPE,
 				'post_status'    => array( 'publish', 'draft' ),
 				'posts_per_page' => -1,
-				'meta_query'     => array(
+				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- These rows are linked by post meta.
 					array(
 						'key'   => self::META_SOURCE_PAGE_ID,
 						'value' => (string) $page_id,
@@ -558,7 +558,7 @@ class RWGC_Variant_Rule_Applications {
 				'post_type'      => RWGC_Visibility_Rule_CPT::POST_TYPE,
 				'post_status'    => array( 'publish', 'draft' ),
 				'posts_per_page' => -1,
-				'meta_query'     => array(
+				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- These rows are linked by post meta.
 					array(
 						'key'     => self::META_SOURCE_TYPE,
 						'value'   => 'page_variant',

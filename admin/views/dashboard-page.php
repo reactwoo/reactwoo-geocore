@@ -3,52 +3,52 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$settings = isset( $settings ) && is_array( $settings ) ? $settings : array();
-$status   = isset( $status ) && is_array( $status ) ? $status : array();
-$data     = isset( $data ) && is_array( $data ) ? $data : array();
+$rwgc_settings = isset( $rwgc_settings ) && is_array( $rwgc_settings ) ? $rwgc_settings : array();
+$rwgc_status   = isset( $rwgc_status ) && is_array( $rwgc_status ) ? $rwgc_status : array();
+$rwgc_data     = isset( $rwgc_data ) && is_array( $rwgc_data ) ? $rwgc_data : array();
 
-$geo_enabled   = (bool) RWGC_Settings::get( 'enabled', 1 );
-$maxmind_ok    = ! empty( $settings['maxmind_license_key'] );
-$db_ready      = ! empty( $status['exists'] );
-$rest_enabled  = (bool) RWGC_Settings::get( 'rest_enabled', 1 );
-$overview_rows = class_exists( 'RWGC_Variant_Manager', false ) ? RWGC_Variant_Manager::get_routing_overview_rows() : array();
+$rwgc_geo_enabled   = (bool) RWGC_Settings::get( 'enabled', 1 );
+$rwgc_maxmind_ok    = ! empty( $rwgc_settings['maxmind_license_key'] );
+$rwgc_db_ready      = ! empty( $rwgc_status['exists'] );
+$rwgc_rest_enabled  = (bool) RWGC_Settings::get( 'rest_enabled', 1 );
+$rwgc_overview_rows = class_exists( 'RWGC_Variant_Manager', false ) ? RWGC_Variant_Manager::get_routing_overview_rows() : array();
 
-$stat_geo   = $geo_enabled ? __( 'Active', 'reactwoo-geocore' ) : __( 'Needs setup', 'reactwoo-geocore' );
-$stat_geo_t = __( 'Visitor country detection is running.', 'reactwoo-geocore' );
+$rwgc_stat_geo   = $rwgc_geo_enabled ? __( 'Active', 'reactwoo-geocore' ) : __( 'Needs setup', 'reactwoo-geocore' );
+$rwgc_stat_geo_t = __( 'Visitor country detection is running.', 'reactwoo-geocore' );
 
-$stat_mm   = $db_ready ? __( 'Ready', 'reactwoo-geocore' ) : __( 'Missing', 'reactwoo-geocore' );
-$stat_mm_t = __( 'MaxMind country database status.', 'reactwoo-geocore' );
+$rwgc_stat_mm   = $rwgc_db_ready ? __( 'Ready', 'reactwoo-geocore' ) : __( 'Missing', 'reactwoo-geocore' );
+$rwgc_stat_mm_t = __( 'MaxMind country database status.', 'reactwoo-geocore' );
 
-$stat_db   = isset( $status['is_stale'] ) && $status['is_stale'] ? __( 'Stale', 'reactwoo-geocore' ) : ( $db_ready ? __( 'Ready', 'reactwoo-geocore' ) : __( 'Missing', 'reactwoo-geocore' ) );
-$stat_db_t = __( 'MaxMind country database status.', 'reactwoo-geocore' );
+$rwgc_stat_db   = isset( $rwgc_status['is_stale'] ) && $rwgc_status['is_stale'] ? __( 'Stale', 'reactwoo-geocore' ) : ( $rwgc_db_ready ? __( 'Ready', 'reactwoo-geocore' ) : __( 'Missing', 'reactwoo-geocore' ) );
+$rwgc_stat_db_t = __( 'MaxMind country database status.', 'reactwoo-geocore' );
 
-$active_rules_count = is_array( $overview_rows ) ? count( $overview_rows ) : 0;
+$rwgc_active_rules_count = is_array( $rwgc_overview_rows ) ? count( $rwgc_overview_rows ) : 0;
 /**
  * Filter dashboard active rule count so add-ons can contribute popup/section rules.
  *
  * @param int                      $active_rules_count Default count from Geo Core page-version routing rules.
  * @param array<int, array<string, mixed>> $overview_rows      Routing overview rows used for the default count.
  */
-$active_rules_count = (int) apply_filters( 'rwgc_dashboard_active_rules_count', $active_rules_count, $overview_rows );
+$rwgc_active_rules_count = (int) apply_filters( 'rwgc_dashboard_active_rules_count', $rwgc_active_rules_count, $rwgc_overview_rows );
 
 /**
  * Filter dashboard rule match count so runtime/reporting integrations can supply real totals.
  *
  * @param int $matches_count Default 0 when no reporting source is connected.
  */
-$rule_matches_count = (int) apply_filters( 'rwgc_dashboard_rule_matches_count', 0 );
-$stat_rest          = (string) max( 0, $rule_matches_count );
-$stat_rest_t        = __( 'Times Geo Core matched visitor conditions.', 'reactwoo-geocore' );
+$rwgc_rule_matches_count = (int) apply_filters( 'rwgc_dashboard_rule_matches_count', 0 );
+$rwgc_stat_rest          = (string) max( 0, $rwgc_rule_matches_count );
+$rwgc_stat_rest_t        = __( 'Times Geo Core matched visitor conditions.', 'reactwoo-geocore' );
 
-$tone_geo   = $geo_enabled ? 'success' : 'warning';
-$tone_mm    = $maxmind_ok ? 'success' : 'warning';
-$tone_db    = $db_ready ? 'success' : 'warning';
-$tone_rest  = $rule_matches_count > 0 ? 'success' : 'neutral';
+$rwgc_tone_geo   = $rwgc_geo_enabled ? 'success' : 'warning';
+$rwgc_tone_mm    = $rwgc_maxmind_ok ? 'success' : 'warning';
+$rwgc_tone_db    = $rwgc_db_ready ? 'success' : 'warning';
+$rwgc_tone_rest  = $rwgc_rule_matches_count > 0 ? 'success' : 'neutral';
 
 $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
 
 if ( $rwgc_platform_shell ) {
-	$quick_actions = array(
+	$rwgc_quick_actions = array(
 		array(
 			'url'     => admin_url( 'admin.php?page=rwgc-getting-started' ),
 			'label'   => __( 'Setup wizard', 'reactwoo-geocore' ),
@@ -66,7 +66,7 @@ if ( $rwgc_platform_shell ) {
 		),
 	);
 } else {
-	$quick_actions = array(
+	$rwgc_quick_actions = array(
 		array(
 			'url'     => admin_url( 'admin.php?page=rwgc-settings' ),
 			'label'   => __( 'Configure Detection', 'reactwoo-geocore' ),
@@ -86,7 +86,7 @@ if ( $rwgc_platform_shell ) {
 }
 
 if ( class_exists( 'RWGC_Module_Registry', false ) ) {
-	$quick_actions = RWGC_Module_Registry::append_satellite_quick_actions( $quick_actions );
+	$rwgc_quick_actions = RWGC_Module_Registry::append_satellite_quick_actions( $rwgc_quick_actions );
 }
 
 /**
@@ -94,7 +94,7 @@ if ( class_exists( 'RWGC_Module_Registry', false ) ) {
  *
  * @param array<int, array<string, mixed>> $quick_actions Each item: url, label, primary (bool).
  */
-$quick_actions = apply_filters( 'rwgc_dashboard_quick_actions', $quick_actions );
+$rwgc_quick_actions = apply_filters( 'rwgc_dashboard_quick_actions', $rwgc_quick_actions );
 
 $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 	? RWGC_Onboarding::get_setup_progress()
@@ -134,10 +134,10 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 	<?php if ( ! $rwgc_platform_shell ) : ?>
 	<?php
 	RWGC_Admin_UI::render_stat_grid_open();
-	RWGC_Admin_UI::render_stat_card( __( 'Location Detection', 'reactwoo-geocore' ), $stat_geo, array( 'hint' => $stat_geo_t, 'tone' => $tone_geo ) );
-	RWGC_Admin_UI::render_stat_card( __( 'Geo Database', 'reactwoo-geocore' ), $stat_db, array( 'hint' => $stat_db_t, 'tone' => $tone_db ) );
-	RWGC_Admin_UI::render_stat_card( __( 'Active Rules', 'reactwoo-geocore' ), (string) max( 0, $active_rules_count ), array( 'hint' => __( 'Rules currently controlling content or routing.', 'reactwoo-geocore' ), 'tone' => $tone_mm ) );
-	RWGC_Admin_UI::render_stat_card( __( 'Rule Matches', 'reactwoo-geocore' ), $stat_rest, array( 'hint' => $stat_rest_t, 'tone' => $tone_rest ) );
+	RWGC_Admin_UI::render_stat_card( __( 'Location Detection', 'reactwoo-geocore' ), $rwgc_stat_geo, array( 'hint' => $rwgc_stat_geo_t, 'tone' => $rwgc_tone_geo ) );
+	RWGC_Admin_UI::render_stat_card( __( 'Geo Database', 'reactwoo-geocore' ), $rwgc_stat_db, array( 'hint' => $rwgc_stat_db_t, 'tone' => $rwgc_tone_db ) );
+	RWGC_Admin_UI::render_stat_card( __( 'Active Rules', 'reactwoo-geocore' ), (string) max( 0, $rwgc_active_rules_count ), array( 'hint' => __( 'Rules currently controlling content or routing.', 'reactwoo-geocore' ), 'tone' => $rwgc_tone_mm ) );
+	RWGC_Admin_UI::render_stat_card( __( 'Rule Matches', 'reactwoo-geocore' ), $rwgc_stat_rest, array( 'hint' => $rwgc_stat_rest_t, 'tone' => $rwgc_tone_rest ) );
 	RWGC_Admin_UI::render_stat_grid_close();
 	?>
 
@@ -146,13 +146,13 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 		<ul class="rwgc-suite-checklist">
 			<?php
 			RWGC_Admin_UI::render_checklist_row(
-				$maxmind_ok,
+				$rwgc_maxmind_ok,
 				__( 'Save MaxMind (GeoLite2) credentials under Integrations.', 'reactwoo-geocore' ),
 				function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ),
 				__( 'Open MaxMind integration', 'reactwoo-geocore' )
 			);
 			RWGC_Admin_UI::render_checklist_row(
-				$db_ready,
+				$rwgc_db_ready,
 				__( 'Download or upload the country database.', 'reactwoo-geocore' ),
 				function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ),
 				__( 'Open MaxMind integration', 'reactwoo-geocore' )
@@ -163,7 +163,7 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 	<?php endif; ?>
 
 	<h2 class="screen-reader-text"><?php esc_html_e( 'Quick actions', 'reactwoo-geocore' ); ?></h2>
-	<?php RWGC_Admin_UI::render_quick_actions( $quick_actions ); ?>
+	<?php RWGC_Admin_UI::render_quick_actions( $rwgc_quick_actions ); ?>
 
 	<section class="rwgc-dashboard-satellites">
 		<h2><?php esc_html_e( 'Installed add-ons', 'reactwoo-geocore' ); ?></h2>
@@ -190,19 +190,19 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 				<h3><?php esc_html_e( 'Current visitor (admin preview)', 'reactwoo-geocore' ); ?></h3>
 			</div>
 		</div>
-		<?php if ( ! empty( $data ) ) : ?>
+		<?php if ( ! empty( $rwgc_data ) ) : ?>
 			<div class="rwgc-visitor-stats">
 				<div class="rwgc-visitor-stat">
 					<span class="rwgc-visitor-stat__label"><?php esc_html_e( 'Country', 'reactwoo-geocore' ); ?></span>
-					<strong class="rwgc-visitor-stat__value"><?php echo esc_html( $data['country_code'] . ' – ' . $data['country_name'] ); ?></strong>
+					<strong class="rwgc-visitor-stat__value"><?php echo esc_html( $rwgc_data['country_code'] . ' – ' . $rwgc_data['country_name'] ); ?></strong>
 				</div>
 				<div class="rwgc-visitor-stat">
 					<span class="rwgc-visitor-stat__label"><?php esc_html_e( 'Currency', 'reactwoo-geocore' ); ?></span>
-					<strong class="rwgc-visitor-stat__value"><?php echo esc_html( $data['currency'] ); ?></strong>
+					<strong class="rwgc-visitor-stat__value"><?php echo esc_html( $rwgc_data['currency'] ); ?></strong>
 				</div>
 				<div class="rwgc-visitor-stat">
 					<span class="rwgc-visitor-stat__label"><?php esc_html_e( 'Source', 'reactwoo-geocore' ); ?></span>
-					<strong class="rwgc-visitor-stat__value"><?php echo esc_html( $data['source'] ); ?></strong>
+					<strong class="rwgc-visitor-stat__value"><?php echo esc_html( $rwgc_data['source'] ); ?></strong>
 				</div>
 			</div>
 		<?php else : ?>

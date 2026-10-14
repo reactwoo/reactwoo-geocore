@@ -2,7 +2,7 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-$option_key = RWGC_Settings::OPTION_KEY;
+$rwgc_option_key = RWGC_Settings::OPTION_KEY;
 $rwgc_wporg = function_exists( 'rwgc_is_wordpress_org_distribution' ) && rwgc_is_wordpress_org_distribution();
 ?>
 <div class="wrap rwgc-wrap">
@@ -19,7 +19,7 @@ $rwgc_wporg = function_exists( 'rwgc_is_wordpress_org_distribution' ) && rwgc_is
 				<th scope="row"><?php esc_html_e( 'Enable geolocation', 'reactwoo-geocore' ); ?></th>
 				<td>
 					<label>
-						<input type="checkbox" name="<?php echo esc_attr( $option_key ); ?>[enabled]" value="1" <?php checked( $settings['enabled'], 1 ); ?> />
+						<input type="checkbox" name="<?php echo esc_attr( $rwgc_option_key ); ?>[enabled]" value="1" <?php checked( $rwgc_settings['enabled'], 1 ); ?> />
 						<?php esc_html_e( 'Resolve visitor location and expose helper functions.', 'reactwoo-geocore' ); ?>
 					</label>
 				</td>
@@ -28,7 +28,7 @@ $rwgc_wporg = function_exists( 'rwgc_is_wordpress_org_distribution' ) && rwgc_is
 				<th scope="row"><?php esc_html_e( 'QUIC.cloud', 'reactwoo-geocore' ); ?></th>
 				<td>
 					<label>
-						<input type="checkbox" name="<?php echo esc_attr( $option_key ); ?>[quic_cloud_cdn]" value="1" <?php checked( (int) $settings['quic_cloud_cdn'], 1 ); ?> />
+						<input type="checkbox" name="<?php echo esc_attr( $rwgc_option_key ); ?>[quic_cloud_cdn]" value="1" <?php checked( (int) $rwgc_settings['quic_cloud_cdn'], 1 ); ?> />
 						<?php esc_html_e( 'My site uses QUIC.cloud CDN', 'reactwoo-geocore' ); ?>
 					</label>
 					<p class="description">
@@ -40,13 +40,13 @@ $rwgc_wporg = function_exists( 'rwgc_is_wordpress_org_distribution' ) && rwgc_is
 				<th scope="row"><?php esc_html_e( 'Cache results', 'reactwoo-geocore' ); ?></th>
 				<td>
 					<label>
-						<input type="checkbox" name="<?php echo esc_attr( $option_key ); ?>[cache_enabled]" value="1" <?php checked( $settings['cache_enabled'], 1 ); ?> />
+						<input type="checkbox" name="<?php echo esc_attr( $rwgc_option_key ); ?>[cache_enabled]" value="1" <?php checked( $rwgc_settings['cache_enabled'], 1 ); ?> />
 						<?php esc_html_e( 'Cache geo lookups per IP to improve performance.', 'reactwoo-geocore' ); ?>
 					</label>
 					<p class="description">
 						<label>
 							<?php esc_html_e( 'Cache TTL (seconds)', 'reactwoo-geocore' ); ?>
-							<input type="number" name="<?php echo esc_attr( $option_key ); ?>[cache_ttl]" value="<?php echo esc_attr( (int) $settings['cache_ttl'] ); ?>" min="60" step="60" />
+							<input type="number" name="<?php echo esc_attr( $rwgc_option_key ); ?>[cache_ttl]" value="<?php echo esc_attr( (int) $rwgc_settings['cache_ttl'] ); ?>" min="60" step="60" />
 						</label>
 					</p>
 				</td>
@@ -72,8 +72,8 @@ $rwgc_wporg = function_exists( 'rwgc_is_wordpress_org_distribution' ) && rwgc_is
 						<label for="rwgc_fallback_country"><?php esc_html_e( 'Fallback country', 'reactwoo-geocore' ); ?></label><br />
 						<?php
 						RWGC_Admin::render_country_select(
-							$option_key . '[fallback_country]',
-							isset( $settings['fallback_country'] ) ? (string) $settings['fallback_country'] : 'US',
+							$rwgc_option_key . '[fallback_country]',
+							isset( $rwgc_settings['fallback_country'] ) ? (string) $rwgc_settings['fallback_country'] : 'US',
 							array(
 								'id'               => 'rwgc_fallback_country',
 								'class'            => 'rwgc-select-country regular-text',
@@ -86,8 +86,8 @@ $rwgc_wporg = function_exists( 'rwgc_is_wordpress_org_distribution' ) && rwgc_is
 						<label for="rwgc_fallback_currency"><?php esc_html_e( 'Fallback currency', 'reactwoo-geocore' ); ?></label><br />
 						<?php
 						RWGC_Admin::render_currency_select(
-							$option_key . '[fallback_currency]',
-							isset( $settings['fallback_currency'] ) ? (string) $settings['fallback_currency'] : 'USD',
+							$rwgc_option_key . '[fallback_currency]',
+							isset( $rwgc_settings['fallback_currency'] ) ? (string) $rwgc_settings['fallback_currency'] : 'USD',
 							array(
 								'id'    => 'rwgc_fallback_currency',
 								'class' => 'rwgc-select-currency regular-text',
@@ -103,7 +103,7 @@ $rwgc_wporg = function_exists( 'rwgc_is_wordpress_org_distribution' ) && rwgc_is
 				<th scope="row"><?php esc_html_e( 'REST API', 'reactwoo-geocore' ); ?></th>
 				<td>
 					<label>
-						<input type="checkbox" name="<?php echo esc_attr( $option_key ); ?>[rest_enabled]" value="1" <?php checked( $settings['rest_enabled'], 1 ); ?> />
+						<input type="checkbox" name="<?php echo esc_attr( $rwgc_option_key ); ?>[rest_enabled]" value="1" <?php checked( $rwgc_settings['rest_enabled'], 1 ); ?> />
 						<?php esc_html_e( 'Expose REST routes: /location, /capabilities (discovery, no PII), and authenticated AI draft endpoints.', 'reactwoo-geocore' ); ?>
 					</label>
 					<p class="description">
@@ -119,7 +119,7 @@ $rwgc_wporg = function_exists( 'rwgc_is_wordpress_org_distribution' ) && rwgc_is
 					<th scope="row"><?php esc_html_e( 'Debug mode', 'reactwoo-geocore' ); ?></th>
 					<td>
 						<label>
-							<input type="checkbox" name="<?php echo esc_attr( $option_key ); ?>[debug_mode]" value="1" <?php checked( $settings['debug_mode'], 1 ); ?> />
+							<input type="checkbox" name="<?php echo esc_attr( $rwgc_option_key ); ?>[debug_mode]" value="1" <?php checked( $rwgc_settings['debug_mode'], 1 ); ?> />
 							<?php
 							if ( $rwgc_wporg ) {
 								esc_html_e( 'Log geo diagnostics to debug.log.', 'reactwoo-geocore' );

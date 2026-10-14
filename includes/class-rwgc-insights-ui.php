@@ -137,7 +137,7 @@ class RWGC_Insights_UI {
 		$id = isset( $provider['id'] ) ? (string) $provider['id'] : '';
 		if ( 'geo-core' === $id ) {
 			return array(
-				'url'     => function_exists( 'rw_geo_app_url' ) ? rw_geo_app_url( 'targeting', 'rwgc-targeting-hub' ) : admin_url( 'admin.php?page=rwgc-targeting-hub' ),
+				'url'     => function_exists( 'rwgc_app_url' ) ? rwgc_app_url( 'targeting', 'rwgc-targeting-hub' ) : admin_url( 'admin.php?page=rwgc-targeting-hub' ),
 				'label'   => __( 'Manage', 'reactwoo-geocore' ),
 				'primary' => true,
 			);

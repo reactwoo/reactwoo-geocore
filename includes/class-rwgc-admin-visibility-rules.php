@@ -236,6 +236,17 @@ class RWGC_Admin_Visibility_Rules {
 			}
 		}
 
+		$rwgc_editor_presenter = isset( $editor_presenter ) ? $editor_presenter : null;
+		$rwgc_is_new = isset( $is_new ) ? $is_new : null;
+		$rwgc_list_url = isset( $list_url ) ? $list_url : null;
+		$rwgc_portable_raw = isset( $portable_raw ) ? $portable_raw : null;
+		$rwgc_post_id = isset( $post_id ) ? $post_id : null;
+		$rwgc_return_url = isset( $return_url ) ? $return_url : null;
+		$rwgc_status = isset( $status ) ? $status : null;
+		$rwgc_title = isset( $title ) ? $title : null;
+		$rwgc_variant_provenance = isset( $variant_provenance ) ? $variant_provenance : null;
+		$rwgc_variant_references = isset( $variant_references ) ? $variant_references : null;
+		$rwgc_variant_sync_url = isset( $variant_sync_url ) ? $variant_sync_url : null;
 		include RWGC_PATH . 'admin/views/visibility-rules-edit.php';
 	}
 
@@ -247,6 +258,8 @@ class RWGC_Admin_Visibility_Rules {
 		$orphaned_variant_rules = class_exists( 'RWGC_Variant_Rule_Applications', false )
 			? RWGC_Variant_Rule_Applications::find_orphaned_rules()
 			: array();
+		$rwgc_orphaned_variant_rules = isset( $orphaned_variant_rules ) ? $orphaned_variant_rules : null;
+		$rwgc_rules = isset( $rules ) ? $rules : null;
 		include RWGC_PATH . 'admin/views/visibility-rules-list.php';
 	}
 }

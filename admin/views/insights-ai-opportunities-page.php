@@ -9,24 +9,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
-$geo_ai_active  = function_exists( 'rwgc_is_geo_ai_active' ) && rwgc_is_geo_ai_active();
+$rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
+$rwgc_geo_ai_active  = function_exists( 'rwgc_is_geo_ai_active' ) && rwgc_is_geo_ai_active();
 ?>
 <div class="wrap rwgc-wrap rwgc-suite rwgc-insights-dashboard rwgc-insights-ai-reviewer">
 	<?php
-	if ( ! $platform_shell && class_exists( 'RWGC_Insights_Nav', false ) ) {
+	if ( ! $rwgc_platform_shell && class_exists( 'RWGC_Insights_Nav', false ) ) {
 		RWGC_Insights_Nav::render( 'rwgc-insights-ai' );
 	}
 	?>
 
-	<?php if ( $geo_ai_active && class_exists( 'RWGA_UX_Reviewer_UI', false ) ) : ?>
+	<?php if ( $rwgc_geo_ai_active && class_exists( 'RWGA_UX_Reviewer_UI', false ) ) : ?>
 		<?php
-		$uid = get_current_user_id();
-		$cards = array();
-		if ( $uid > 0 ) {
-			$cached = get_transient( 'rwga_ux_review_' . $uid );
-			if ( is_array( $cached ) ) {
-				$cards = $cached;
+		$rwgc_uid = get_current_user_id();
+		$rwgc_cards = array();
+		if ( $rwgc_uid > 0 ) {
+			$rwgc_cached = get_transient( 'rwga_ux_review_' . $rwgc_uid );
+			if ( is_array( $rwgc_cached ) ) {
+				$rwgc_cards = $rwgc_cached;
 			}
 		}
 		RWGA_UX_Reviewer_UI::render_workspace(
@@ -39,7 +39,7 @@ $geo_ai_active  = function_exists( 'rwgc_is_geo_ai_active' ) && rwgc_is_geo_ai_a
 				'engine_source'   => isset( $_GET['rwga_engine'] ) ? sanitize_key( wp_unslash( (string) $_GET['rwga_engine'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				'action_count'    => isset( $_GET['rwga_actions'] ) ? absint( wp_unslash( $_GET['rwga_actions'] ) ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				'capabilities'    => function_exists( 'rwgc_get_suite_capability_map' ) ? rwgc_get_suite_capability_map() : array(),
-				'cards'           => $cards,
+				'cards'           => $rwgc_cards,
 				'show_inner_nav'  => false,
 				'embed'           => true,
 				'wrap_class'      => 'rwga-ux-reviewer--insights-embed',

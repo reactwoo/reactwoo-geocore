@@ -171,9 +171,9 @@ class RWGC_Cache_Compat {
 	public static function litespeed_vary_groups() {
 		$country_group = self::country_vary_group( self::resolve_country_vary_key() );
 		if ( '' !== $country_group ) {
-			do_action( 'litespeed_vary_add', $country_group );
+			do_action( 'litespeed_vary_add', $country_group ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- LiteSpeed Cache public vary API.
 		}
 
-		do_action( 'litespeed_vary_add', self::page_version_vary_group( self::resolve_page_version_vary_key() ) );
+		do_action( 'litespeed_vary_add', self::page_version_vary_group( self::resolve_page_version_vary_key() ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- LiteSpeed Cache public vary API.
 	}
 }

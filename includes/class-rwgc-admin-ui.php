@@ -175,27 +175,27 @@ class RWGC_Admin_UI {
 		$section_links = array(
 			array(
 				'label' => __( 'Targeting', 'reactwoo-geocore' ),
-				'url'   => function_exists( 'rw_geo_app_url' ) ? rw_geo_app_url( 'targeting', 'rwgc-targeting-hub' ) : admin_url( 'admin.php?page=rwgc-targeting-hub' ),
+				'url'   => function_exists( 'rwgc_app_url' ) ? rwgc_app_url( 'targeting', 'rwgc-targeting-hub' ) : admin_url( 'admin.php?page=rwgc-targeting-hub' ),
 				'icon'  => 'dashicons-admin-site-alt3',
 			),
 			array(
 				'label' => __( 'Commerce', 'reactwoo-geocore' ),
-				'url'   => function_exists( 'rw_geo_app_url' ) ? rw_geo_app_url( 'commerce', 'rwgc-commerce-hub' ) : admin_url( 'admin.php?page=rwgc-commerce-hub' ),
+				'url'   => function_exists( 'rwgc_app_url' ) ? rwgc_app_url( 'commerce', 'rwgc-commerce-hub' ) : admin_url( 'admin.php?page=rwgc-commerce-hub' ),
 				'icon'  => 'dashicons-cart',
 			),
 			array(
 				'label' => __( 'Integrations', 'reactwoo-geocore' ),
-				'url'   => function_exists( 'rw_geo_app_url' ) ? rw_geo_app_url( 'integrations', 'rwgc-integrations-hub' ) : admin_url( 'admin.php?page=rwgc-integrations-hub' ),
+				'url'   => function_exists( 'rwgc_app_url' ) ? rwgc_app_url( 'integrations', 'rwgc-integrations-hub' ) : admin_url( 'admin.php?page=rwgc-integrations-hub' ),
 				'icon'  => 'dashicons-admin-plugins',
 			),
 			array(
 				'label' => __( 'Insights', 'reactwoo-geocore' ),
-				'url'   => function_exists( 'rw_geo_app_url' ) ? rw_geo_app_url( 'insights', 'rwgc-insights-hub' ) : admin_url( 'admin.php?page=rwgc-insights-hub' ),
+				'url'   => function_exists( 'rwgc_app_url' ) ? rwgc_app_url( 'insights', 'rwgc-insights-hub' ) : admin_url( 'admin.php?page=rwgc-insights-hub' ),
 				'icon'  => 'dashicons-chart-bar',
 			),
 			array(
 				'label' => __( 'Settings', 'reactwoo-geocore' ),
-				'url'   => function_exists( 'rw_geo_app_url' ) ? rw_geo_app_url( 'settings', 'rwgc-settings-hub' ) : admin_url( 'admin.php?page=rwgc-settings-hub' ),
+				'url'   => function_exists( 'rwgc_app_url' ) ? rwgc_app_url( 'settings', 'rwgc-settings-hub' ) : admin_url( 'admin.php?page=rwgc-settings-hub' ),
 				'icon'  => 'dashicons-admin-generic',
 			),
 		);
@@ -890,7 +890,7 @@ class RWGC_Admin_UI {
 			 * @param array<string, string|array{label:string,url?:string}> $items   Nav entries.
 			 * @param string                                                  $current Current page slug.
 			 */
-			$items = apply_filters( $args['filter'], $items, $current );
+			$items = apply_filters( $args['filter'], $items, $current ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- Hook name is passed in by the caller.
 		}
 
 		if ( ! is_array( $items ) || array() === $items ) {

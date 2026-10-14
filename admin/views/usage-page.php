@@ -15,12 +15,12 @@ if ( 'audience' === $rwgc_insights_mode ) {
 	$rwgc_insights_sub   = __( 'Campaign performance, attribution, and targeting linked to ads or UTM data.', 'reactwoo-geocore' );
 }
 
-$has_pro     = function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled();
-$ads_count   = 0;
-$sync_meta   = array();
-if ( $has_pro && class_exists( 'RWGCP_Google_Integration', false ) ) {
-	$sync_meta = RWGCP_Google_Integration::get_sync_meta();
-	$ads_count = isset( $sync_meta['ads_count'] ) ? (int) $sync_meta['ads_count'] : 0;
+$rwgc_has_pro     = function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled();
+$rwgc_ads_count   = 0;
+$rwgc_sync_meta   = array();
+if ( $rwgc_has_pro && class_exists( 'RWGCP_Google_Integration', false ) ) {
+	$rwgc_sync_meta = RWGCP_Google_Integration::get_sync_meta();
+	$rwgc_ads_count = isset( $rwgc_sync_meta['ads_count'] ) ? (int) $rwgc_sync_meta['ads_count'] : 0;
 }
 ?>
 <div class="wrap rwgc-wrap rwgc-suite">
@@ -50,15 +50,15 @@ if ( $has_pro && class_exists( 'RWGCP_Google_Integration', false ) ) {
 
 	<?php if ( 'campaign' === $rwgc_insights_mode ) : ?>
 		<div class="rwgc-card rwgc-card--full">
-			<?php if ( $has_pro && $ads_count > 0 ) : ?>
+			<?php if ( $rwgc_has_pro && $rwgc_ads_count > 0 ) : ?>
 				<h2><?php esc_html_e( 'Campaign performance', 'reactwoo-geocore' ); ?></h2>
 				<p class="description">
 					<?php
 					echo esc_html(
 						sprintf(
 							/* translators: %d synced campaign count */
-							_n( '%d Google Ads campaign is synced for targeting and reporting.', '%d Google Ads campaigns are synced for targeting and reporting.', $ads_count, 'reactwoo-geocore' ),
-							$ads_count
+							_n( '%d Google Ads campaign is synced for targeting and reporting.', '%d Google Ads campaigns are synced for targeting and reporting.', $rwgc_ads_count, 'reactwoo-geocore' ),
+							$rwgc_ads_count
 						)
 					);
 					?>
@@ -72,7 +72,7 @@ if ( $has_pro && class_exists( 'RWGCP_Google_Integration', false ) ) {
 				<h2><?php esc_html_e( 'No campaign data yet', 'reactwoo-geocore' ); ?></h2>
 				<p><?php esc_html_e( 'Campaign insights need synced Google Ads campaigns or UTM campaign rules. Connect advertising integrations to see performance and attribution here.', 'reactwoo-geocore' ); ?></p>
 				<p>
-					<?php if ( $has_pro ) : ?>
+					<?php if ( $rwgc_has_pro ) : ?>
 						<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgcp-google-ads' ) ); ?>"><?php esc_html_e( 'Connect Google Ads', 'reactwoo-geocore' ); ?></a>
 					<?php else : ?>
 						<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ); ?>"><?php esc_html_e( 'View GeoCore Pro', 'reactwoo-geocore' ); ?></a>
@@ -85,7 +85,7 @@ if ( $has_pro && class_exists( 'RWGCP_Google_Integration', false ) ) {
 	<?php elseif ( 'audience' === $rwgc_insights_mode ) : ?>
 		<div class="rwgc-card rwgc-card--full">
 			<h2><?php esc_html_e( 'Audience performance', 'reactwoo-geocore' ); ?></h2>
-			<?php if ( $has_pro ) : ?>
+			<?php if ( $rwgc_has_pro ) : ?>
 				<p class="description"><?php esc_html_e( 'Review synced GA4 audiences and experience profile matches. Audience-level charts will expand in a future release.', 'reactwoo-geocore' ); ?></p>
 				<p>
 					<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgcp-google-analytics' ) ); ?>"><?php esc_html_e( 'View synced audiences', 'reactwoo-geocore' ); ?></a>
@@ -119,7 +119,7 @@ if ( $has_pro && class_exists( 'RWGCP_Google_Integration', false ) ) {
 			<p class="description"><?php esc_html_e( 'Recent visitor matches will appear here as this site records rule activity.', 'reactwoo-geocore' ); ?></p>
 		</div>
 
-		<?php if ( $has_pro ) : ?>
+		<?php if ( $rwgc_has_pro ) : ?>
 			<div class="rwgc-card rwgc-card--full">
 				<h2><?php esc_html_e( 'Attribution signals', 'reactwoo-geocore' ); ?></h2>
 				<p class="description"><?php esc_html_e( 'UTM and campaign attribution are managed in GeoCore Pro.', 'reactwoo-geocore' ); ?></p>
