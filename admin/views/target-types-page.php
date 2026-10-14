@@ -44,7 +44,7 @@ if ( $rwgc_pro_enabled && ! empty( $help['integrations_ga'] ) ) {
 			$rwgc_use_platform_shell
 				? __( 'Rule builder', 'reactwoo-geocore' )
 				: __( 'Experience targeting', 'reactwoo-geocore' ),
-			__( 'Build who sees what using one rule engine — page versions, Elementor, blocks, and experiments share the same conditions.', 'reactwoo-geocore' )
+			__( 'Build who sees what using one rule engine. Elementor, blocks, and shortcodes share the same conditions.', 'reactwoo-geocore' )
 		);
 		?>
 	<?php else : ?>

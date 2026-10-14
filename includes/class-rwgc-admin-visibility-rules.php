@@ -21,6 +21,33 @@ class RWGC_Admin_Visibility_Rules {
 		add_action( 'admin_post_rwgc_save_visibility_rule', array( __CLASS__, 'handle_save' ) );
 		add_action( 'admin_post_rwgc_delete_visibility_rule', array( __CLASS__, 'handle_delete' ) );
 		add_action( 'admin_post_rwgc_duplicate_visibility_rule', array( __CLASS__, 'handle_duplicate' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_edit_screen_assets' ) );
+	}
+
+	/**
+	 * Duplicate and delete controls on an existing rule.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_edit_screen_assets() {
+		if ( ! is_admin() || ! class_exists( 'RWGC_Admin', false ) || ! RWGC_Admin::can_manage() ) {
+			return;
+		}
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( (string) $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( 'rwgc-visibility-rules' !== $page ) {
+			return;
+		}
+		$edit = isset( $_GET['rwgc_edit'] ) ? sanitize_text_field( wp_unslash( (string) $_GET['rwgc_edit'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! is_numeric( $edit ) || (int) $edit <= 0 ) {
+			return;
+		}
+		wp_enqueue_script(
+			'rwgc-visibility-rule-duplicate',
+			RWGC_URL . 'assets/js/rwgc-visibility-rule-duplicate.js',
+			array(),
+			defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.0.0',
+			true
+		);
 	}
 
 	/**
@@ -36,7 +63,7 @@ class RWGC_Admin_Visibility_Rules {
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$edit = isset( $_GET['rwgc_edit'] ) ? wp_unslash( $_GET['rwgc_edit'] ) : '';
+		$edit = isset( $_GET['rwgc_edit'] ) ? sanitize_text_field( wp_unslash( $_GET['rwgc_edit'] ) ) : '';
 
 		if ( 'new' === $edit ) {
 			self::render_edit( null );
@@ -66,9 +93,9 @@ class RWGC_Admin_Visibility_Rules {
 
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
 		$post_id = isset( $_POST['rwgc_rule_id'] ) ? absint( wp_unslash( $_POST['rwgc_rule_id'] ) ) : 0;
-		$title   = isset( $_POST['rwgc_rule_title'] ) ? wp_unslash( (string) $_POST['rwgc_rule_title'] ) : '';
-		$status  = isset( $_POST['rwgc_rule_status'] ) ? wp_unslash( (string) $_POST['rwgc_rule_status'] ) : 'draft';
-		$json    = isset( $_POST['rwgc_portable_targeting'] ) ? wp_unslash( (string) $_POST['rwgc_portable_targeting'] ) : '';
+		$title   = isset( $_POST['rwgc_rule_title'] ) ? sanitize_text_field( wp_unslash( $_POST['rwgc_rule_title'] ) ) : '';
+		$status  = isset( $_POST['rwgc_rule_status'] ) ? sanitize_key( wp_unslash( $_POST['rwgc_rule_status'] ) ) : 'draft';
+		$json    = isset( $_POST['rwgc_portable_targeting'] ) ? sanitize_textarea_field( wp_unslash( $_POST['rwgc_portable_targeting'] ) ) : '';
 		$return  = isset( $_POST['rwgc_return'] ) ? esc_url_raw( wp_unslash( (string) $_POST['rwgc_return'] ) ) : '';
 		// phpcs:enable
 

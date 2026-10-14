@@ -78,10 +78,13 @@ class RWGC_Preview {
 	 * @return string Uppercase ISO2 or empty string.
 	 */
 	public static function get_requested_iso2() {
-		if ( empty( $_GET[ self::QUERY_VAR ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_GET[ self::QUERY_VAR ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return '';
 		}
 		$raw = sanitize_text_field( wp_unslash( $_GET[ self::QUERY_VAR ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( '' === $raw ) {
+			return '';
+		}
 		$iso = strtoupper( substr( $raw, 0, 2 ) );
 		return preg_match( '/^[A-Z]{2}$/', $iso ) ? $iso : '';
 	}

@@ -41,8 +41,8 @@ vendor/**/.svn
 vendor/**/.hg
 vendor/**/.bzr
 
-# Project manifests. Runtime uses vendor/autoload.php, not these files.
-composer.json
+# Project manifests. The WordPress.org zip includes composer.json (Plugin Check
+# warns when vendor/ is present without it). composer.lock stays out.
 composer.lock
 package.json
 package-lock.json
@@ -76,6 +76,17 @@ phpcs.xml.dist.example
 *.tar
 *.rar
 *.7z
+
+# Directory icons already live in .wordpress-org/. Copies under assets/ are not plugin runtime files.
+assets/icon-128x128.png
+assets/icon-256x256.png
+
+# Composer CA bundle fallback. Geo Core looks up countries in the local GeoLite2
+# database and downloads that file with the WordPress HTTP API. Nothing in this
+# plugin constructs GeoIp2\WebService\Client, which is the only caller of
+# Composer\CaBundle. The bundled cacert.pem is therefore unused and is left out
+# of the directory zip. The class file stays so Composer autoload remains valid.
+vendor/composer/ca-bundle/res/cacert.pem
 
 # Guideline 8: the WordPress.org build must not contain the api.reactwoo.com updater.
 # Pro add-ons ship their own updater. The ReactWoo channel zip still includes this file.

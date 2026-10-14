@@ -3,6 +3,35 @@
 ## Status
 done
 
+Geo Core 1.9.6 addresses the remaining WordPress.org review items on branch `cursor/wporg-review-fixes-b7ed`. Nothing was merged, tagged, pushed to `main`, or submitted to WordPress.org.
+
+## Files changed
+- Inline script and style output now uses `wp_enqueue_*` plus `wp_add_inline_script` / `wp_add_inline_style` (visibility rule editor, collapsed admin menu, Elementor popup antiflash).
+- Nonces, superglobals, and rendered HTML are sanitized or escaped. MaxMind upload uses `wp_handle_upload`.
+- The directory zip includes `composer.json` and excludes `assets/icon-*.png`, `cacert.pem`, and page-version routing. Stored `page_version_url` conditions are preserved and are not offered unless Pro is active.
+- Version 1.9.6 in the plugin header, `RWGC_VERSION`, readme stable tag, and changelog. Readme External services still links ReactWoo Terms and Privacy.
+
+## Not changed
+- `vendor/composer/ca-bundle` class file stays so Composer autoload remains valid. Only `res/cacert.pem` is omitted from the directory zip.
+- Page-version routing classes stay out of this repo. Evaluation still returns false until Geo Core Pro loads `RWGC_Page_Version`.
+- PHPUnit baseline is unchanged: 9 errors in `RWGC_ContextAttributionTest` (headers already sent) and 7 failures in `RWGCTargetingAssistantUiRegressionTest`.
+
+## Commands
+- `php tests/test-rwgc-rule-evaluator.php`, `php tests/test-rwgc-wporg-build.php`, `php tests/test-rwgc-page-variant-ownership.php`, `php tests/test-rwgc-returning-visitor.php`
+- `python3 tests/test-rwgc-wporg-zip-guard.py`
+- `php /tmp/phpunit.phar -c phpunit.xml.dist` → Tests: 102, Errors: 9, Failures: 7
+- `python3 scripts/package_zip.py --target wporg`
+- `python3 tests/test-rwgc-wporg-upload-precheck.py --require-zip` → 44 checks, 0 failed
+- Plugin Check 2.1.0 on WordPress 7.1.3, slug `reactwoo-geocore` → 0 errors, 299 warnings
+- Activated the built zip on WordPress 6.2 and 7.1.3. Dashboard, visibility rules, MaxMind, setup, settings, add-ons, insights, and tools returned HTTP 200 with no fatal error.
+
+## Remaining errors
+- Plugin Check warnings that remain: unprefixed view variables, nonce-recommended on read-only query args, `meta_query` slow-query notes, `error_log` debug lines, and `assets/css/rw-components.css` loaded in all contexts (`EnqueuedStylesScope`). None are errors.
+- `cacert.pem` is excluded, not deleted from the git tree.
+
+## Status
+done
+
 Geo Core 1.9.5 removes customer-facing GeoElementor cards and the install, MaxMind, and geo_rule compatibility that only existed for that plugin. Geo Core Pro 0.1.55 no longer copies a GeoElementor licence. Elementor country controls still use the stored `egp_*` keys.
 
 ## Files changed

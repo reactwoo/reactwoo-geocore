@@ -1020,6 +1020,77 @@ class RWGC_Admin {
 	}
 
 	/**
+	 * Allow a .mmdb upload through wp_handle_upload().
+	 *
+	 * @param array<string, string> $mimes Mime map.
+	 * @return array<string, string>
+	 */
+	public static function allow_mmdb_upload_mime( $mimes ) {
+		$mimes['mmdb'] = 'application/octet-stream';
+		return $mimes;
+	}
+
+	/**
+	 * WordPress rejects unknown binary types even when the mime is allow-listed.
+	 *
+	 * @param array<string, string> $data     File type data.
+	 * @param string                $file     Path.
+	 * @param string                $filename Name.
+	 * @param array<string, string> $mimes    Mimes.
+	 * @param string|false          $real_mime Detected mime.
+	 * @return array<string, string>
+	 */
+	public static function allow_mmdb_filetype( $data, $file, $filename, $mimes, $real_mime = false ) {
+		unset( $file, $mimes, $real_mime );
+		$ext = strtolower( pathinfo( (string) $filename, PATHINFO_EXTENSION ) );
+		if ( 'mmdb' === $ext ) {
+			$data['ext']             = 'mmdb';
+			$data['type']            = 'application/octet-stream';
+			$data['proper_filename'] = sanitize_file_name( (string) $filename );
+		}
+		return $data;
+	}
+
+	/**
+	 * MaxMind DB files end with a metadata marker.
+	 *
+	 * @param string $path File path.
+	 * @return bool
+	 */
+	private static function is_maxmind_database_file( $path ) {
+		if ( ! is_readable( $path ) ) {
+			return false;
+		}
+		$size = filesize( $path );
+		if ( false === $size || $size < 128 ) {
+			return false;
+		}
+		$tail  = (int) min( $size, 131072 );
+		$chunk = file_get_contents( $path, false, null, $size - $tail, $tail ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local upload validation, not a remote request.
+		return is_string( $chunk ) && false !== strpos( $chunk, 'MaxMind.com' );
+	}
+
+	/**
+	 * Copy a handled upload into the MaxMind storage directory.
+	 *
+	 * @param string $source Source path.
+	 * @param string $dest   Destination path.
+	 * @return bool
+	 */
+	private static function copy_uploaded_database( $source, $dest ) {
+		global $wp_filesystem;
+		if ( ! function_exists( 'WP_Filesystem' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+		if ( WP_Filesystem() && $wp_filesystem ) {
+			return (bool) $wp_filesystem->copy( $source, $dest, true );
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- Fallback when the WP filesystem is unavailable.
+		$copied = copy( $source, $dest );
+		return (bool) $copied;
+	}
+
+	/**
 	 * Handle manual .mmdb upload from Integrations → MaxMind.
 	 *
 	 * @return void
@@ -1030,19 +1101,53 @@ class RWGC_Admin {
 		}
 		check_admin_referer( 'rwgc_upload_mmdb' );
 
-		if ( empty( $_FILES['rwgc_mmdb']['tmp_name'] ) || ! is_uploaded_file( $_FILES['rwgc_mmdb']['tmp_name'] ) ) {
+		if ( ! isset( $_FILES['rwgc_mmdb']['name'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
 			add_settings_error( 'rwgc_maxmind', 'rwgc_upload_missing', __( 'No file uploaded or upload failed.', 'reactwoo-geocore' ), 'error' );
 			set_transient( 'settings_errors', get_settings_errors(), 30 );
 			wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
 			exit;
 		}
 
-		$file     = $_FILES['rwgc_mmdb'];
-		$filename = isset( $file['name'] ) ? (string) $file['name'] : '';
+		$file     = $_FILES['rwgc_mmdb']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- wp_handle_upload() validates the upload.
+		$filename = isset( $file['name'] ) ? sanitize_file_name( wp_unslash( (string) $file['name'] ) ) : '';
 		$ext      = strtolower( pathinfo( $filename, PATHINFO_EXTENSION ) );
+		$size     = isset( $file['size'] ) ? absint( $file['size'] ) : 0;
+		$max_size = 100 * MB_IN_BYTES;
 
-		if ( 'mmdb' !== $ext ) {
-			add_settings_error( 'rwgc_maxmind', 'rwgc_upload_ext', __( 'Invalid file type. Please upload a .mmdb MaxMind database file.', 'reactwoo-geocore' ), 'error' );
+		if ( 'mmdb' !== $ext || $size <= 0 || $size > $max_size ) {
+			add_settings_error( 'rwgc_maxmind', 'rwgc_upload_ext', __( 'Invalid file. Upload a GeoLite2 Country .mmdb database (100 MB or smaller).', 'reactwoo-geocore' ), 'error' );
+			set_transient( 'settings_errors', get_settings_errors(), 30 );
+			wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
+			exit;
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		add_filter( 'upload_mimes', array( __CLASS__, 'allow_mmdb_upload_mime' ) );
+		add_filter( 'wp_check_filetype_and_ext', array( __CLASS__, 'allow_mmdb_filetype' ), 10, 5 );
+		$upload = wp_handle_upload(
+			$file,
+			array(
+				'test_form' => false,
+				'mimes'     => array(
+					'mmdb' => 'application/octet-stream',
+				),
+			)
+		);
+		remove_filter( 'upload_mimes', array( __CLASS__, 'allow_mmdb_upload_mime' ) );
+		remove_filter( 'wp_check_filetype_and_ext', array( __CLASS__, 'allow_mmdb_filetype' ), 10 );
+
+		if ( ! is_array( $upload ) || ! empty( $upload['error'] ) || empty( $upload['file'] ) ) {
+			$message = ( is_array( $upload ) && ! empty( $upload['error'] ) ) ? (string) $upload['error'] : __( 'Failed to store the uploaded database.', 'reactwoo-geocore' );
+			add_settings_error( 'rwgc_maxmind', 'rwgc_upload_move', $message, 'error' );
+			set_transient( 'settings_errors', get_settings_errors(), 30 );
+			wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
+			exit;
+		}
+
+		$uploaded_path = $upload['file'];
+		if ( ! self::is_maxmind_database_file( $uploaded_path ) ) {
+			wp_delete_file( $uploaded_path );
+			add_settings_error( 'rwgc_maxmind', 'rwgc_upload_ext', __( 'That file is not a MaxMind database.', 'reactwoo-geocore' ), 'error' );
 			set_transient( 'settings_errors', get_settings_errors(), 30 );
 			wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
 			exit;
@@ -1051,13 +1156,15 @@ class RWGC_Admin {
 		RWGC_MaxMind::ensure_storage_dir();
 		$dest_dir  = RWGC_MaxMind::get_storage_dir();
 		$dest_path = trailingslashit( $dest_dir ) . 'GeoLite2-Country.mmdb';
-
-		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Detected, Generic.PHP.ForbiddenFunctions.Found -- Nonce, capability, is_uploaded_file(), and a fixed GeoLite2-Country.mmdb path are already checked. move_uploaded_file() is required for PHP uploads; wp_handle_upload() would reject this binary and store it outside the MaxMind directory.
-		if ( ! @move_uploaded_file( $file['tmp_name'], $dest_path ) ) {
-			add_settings_error( 'rwgc_maxmind', 'rwgc_upload_move', __( 'Failed to move uploaded file into storage directory.', 'reactwoo-geocore' ), 'error' );
+		if ( ! self::copy_uploaded_database( $uploaded_path, $dest_path ) ) {
+			wp_delete_file( $uploaded_path );
+			add_settings_error( 'rwgc_maxmind', 'rwgc_upload_move', __( 'Failed to store the uploaded database.', 'reactwoo-geocore' ), 'error' );
 			set_transient( 'settings_errors', get_settings_errors(), 30 );
 			wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
 			exit;
+		}
+		if ( $uploaded_path !== $dest_path ) {
+			wp_delete_file( $uploaded_path );
 		}
 
 		$settings                    = RWGC_Settings::get_settings();
@@ -1193,7 +1300,7 @@ class RWGC_Admin {
 		if ( isset( $_POST['maxmind_license_key'] ) ) {
 			$settings['maxmind_license_key'] = sanitize_text_field( wp_unslash( $_POST['maxmind_license_key'] ) );
 		}
-		$settings['auto_update_db'] = ! empty( $_POST['auto_update_db'] ) ? 1 : 0;
+		$settings['auto_update_db'] = isset( $_POST['auto_update_db'] ) ? 1 : 0;
 		RWGC_Settings::update( $settings );
 
 		add_settings_error( 'rwgc_maxmind', 'rwgc_maxmind_saved', __( 'MaxMind credentials saved.', 'reactwoo-geocore' ), 'updated' );
@@ -1237,20 +1344,16 @@ class RWGC_Admin {
 		}
 		$overrides = array();
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only preview fields.
-		if ( ! empty( $_GET['rwgc_preview'] ) && '1' === (string) wp_unslash( $_GET['rwgc_preview'] ) ) {
+		if ( isset( $_GET['rwgc_preview'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['rwgc_preview'] ) ) ) {
 			$keys = array( 'country', 'language', 'locale', 'device_type', 'time_of_day', 'day_of_week', 'currency', 'weather_facet' );
 			foreach ( $keys as $k ) {
 				if ( isset( $_GET[ 'rwgc_' . $k ] ) ) {
 					$overrides[ $k ] = sanitize_text_field( wp_unslash( (string) $_GET[ 'rwgc_' . $k ] ) );
 				}
 			}
-			if ( isset( $_GET['rwgc_weather_facet'] ) && is_array( $_GET['rwgc_weather_facet'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				$parts = array_map(
-					static function ( $item ) {
-						return sanitize_key( (string) wp_unslash( $item ) );
-					},
-					wp_unslash( $_GET['rwgc_weather_facet'] ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				);
+			if ( isset( $_GET['rwgc_weather_facet'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				$facet_raw = map_deep( wp_unslash( $_GET['rwgc_weather_facet'] ), 'sanitize_text_field' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				$parts     = array_map( 'sanitize_key', (array) $facet_raw );
 				$overrides['weather_facet'] = implode( ',', array_filter( $parts ) );
 			}
 		}
@@ -1372,15 +1475,14 @@ class RWGC_Admin {
 		 */
 		$custom = apply_filters( 'rwgc_geocore_pro_status_card_html', '', $current );
 		if ( is_string( $custom ) && '' !== $custom ) {
-			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Filter authors own escaping policy.
-			echo $custom;
+			echo wp_kses_post( $custom );
 			return;
 		}
 
 		$pro_main_file = trailingslashit( WP_PLUGIN_DIR ) . 'reactwoo-geocore-pro/reactwoo-geocore-pro.php';
 		$pro_installed = is_readable( $pro_main_file );
 		$pro_on        = function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled();
-		$show_upsell   = in_array( $current, array( 'rwgc-dashboard', 'rwgc-settings' ), true );
+		unset( $current );
 
 		if ( $pro_on ) {
 			$license_key = (string) get_option( 'rwgcp_license_key', '' );
@@ -1415,7 +1517,7 @@ class RWGC_Admin {
 			echo '<span class="rwgc-pro-status__badge">' . esc_html__( 'Active', 'reactwoo-geocore' ) . '</span>';
 			echo '</div>';
 			echo '<ul class="rwgc-pro-status__list">';
-			echo '<li>' . esc_html__( 'Unlocks campaign, attribution, and experience profile targeting inside Geo Core.', 'reactwoo-geocore' ) . '</li>';
+			echo '<li>' . esc_html__( 'Campaign, attribution, and experience profile targeting from the active GeoCore Pro plugin.', 'reactwoo-geocore' ) . '</li>';
 			echo '<li><strong>' . esc_html__( 'License key', 'reactwoo-geocore' ) . ':</strong> ';
 			if ( '' !== $license_key ) {
 				echo '<code>' . esc_html( $masked ) . '</code>';
@@ -1444,7 +1546,7 @@ class RWGC_Admin {
 		if ( $pro_installed ) {
 			echo '<div class="rwgc-pro-status rwgc-pro-status--inactive" role="region" aria-label="' . esc_attr__( 'GeoCore Pro status', 'reactwoo-geocore' ) . '">';
 			echo '<p><strong>' . esc_html__( 'GeoCore Pro is installed but not active', 'reactwoo-geocore' ) . '</strong> ';
-			echo esc_html__( 'Activate it to enable premium runtime features.', 'reactwoo-geocore' ) . '</p>';
+			echo esc_html__( 'Activate it on the Plugins screen to load its features.', 'reactwoo-geocore' ) . '</p>';
 			if ( current_user_can( 'activate_plugins' ) ) {
 				$url = admin_url( 'plugins.php' );
 				echo '<p><a class="button" href="' . esc_url( $url ) . '">' . esc_html__( 'Open Plugins', 'reactwoo-geocore' ) . '</a></p>';
@@ -1453,16 +1555,6 @@ class RWGC_Admin {
 			return;
 		}
 
-		if ( $show_upsell ) {
-			echo '<div class="rwgc-pro-status rwgc-pro-status--upsell" role="region" aria-label="' . esc_attr__( 'GeoCore Pro', 'reactwoo-geocore' ) . '">';
-			echo '<p><strong>' . esc_html__( 'GeoCore Pro', 'reactwoo-geocore' ) . '</strong> ';
-			echo esc_html__( 'unlocks campaign, attribution, and profile-based targeting.', 'reactwoo-geocore' );
-			echo ' ';
-			echo esc_html__( 'Install and connect GeoCore Pro to enable advanced targeting signals.', 'reactwoo-geocore' );
-			echo '</p>';
-			echo '<p><a class="button" href="' . esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ) . '">' . esc_html__( 'Browse add-ons', 'reactwoo-geocore' ) . '</a></p>';
-			echo '</div>';
-		}
 	}
 
 	/**
@@ -1552,7 +1644,7 @@ class RWGC_Admin {
 			return;
 		}
 
-		$message = __( 'This page still has country-routing settings stored. This plugin does not change or delete them. ReactWoo Geo Core Pro sends matching visitors to the linked page.', 'reactwoo-geocore' );
+		$message = __( 'This page still has country-routing settings stored. This plugin does not change, delete, or apply them.', 'reactwoo-geocore' );
 
 		echo '<div class="notice notice-info"><p>' . esc_html( $message ) . '</p></div>';
 	}

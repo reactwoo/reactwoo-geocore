@@ -229,13 +229,19 @@ def _assert_wporg_zip(zf: zipfile.ZipFile, root_folder: str) -> None:
         )
     banned_fragments = (
         "class-rwgc-satellite-updater.php",
+        "class-rwgc-page-version.php",
+        "class-rwgc-page-version-routing.php",
+        "class-rwgc-routing.php",
+        "class-rwgc-variant-manager.php",
         "/docs/",
         "/tests/",
         "/ai-handoff/",
         "/.github/",
         "/scripts/",
-        "composer.json",
         "composer.lock",
+        "cacert.pem",
+        "assets/icon-128x128.png",
+        "assets/icon-256x256.png",
         "phpunit",
         "threat-model",
     )
@@ -243,8 +249,13 @@ def _assert_wporg_zip(zf: zipfile.ZipFile, root_folder: str) -> None:
     if bad:
         raise RuntimeError("WordPress.org zip contains excluded paths:\n" + "\n".join(bad[:30]))
     main = f"{root_folder}/reactwoo-geocore.php"
+    composer_manifest = f"{root_folder}/composer.json"
     if main not in names:
         raise RuntimeError(f"WordPress.org zip is missing {main}")
+    if composer_manifest not in names:
+        raise RuntimeError(
+            "WordPress.org zip is missing composer.json. Plugin Check warns when vendor/ is shipped without it."
+        )
     main_text = zf.read(main).decode("utf-8")
     if _DISTRIBUTION_WPORG not in main_text:
         raise RuntimeError("WordPress.org zip did not set RWGC_DISTRIBUTION to wporg.")

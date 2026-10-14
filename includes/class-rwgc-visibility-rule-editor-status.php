@@ -182,7 +182,7 @@ class RWGC_Visibility_Rule_Editor_Status {
 
 		$raw = array();
 		if ( isset( $_REQUEST['ids'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$incoming = wp_unslash( $_REQUEST['ids'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$incoming = map_deep( wp_unslash( $_REQUEST['ids'] ), 'sanitize_text_field' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			if ( is_array( $incoming ) ) {
 				$raw = $incoming;
 			} else {

@@ -78,7 +78,7 @@ class RWGC_Elementor_Popups {
 		add_action( 'wp_footer', array( __CLASS__, 'force_print_missing_allowed_popups' ), 11 );
 		add_action( 'wp_footer', array( __CLASS__, 'force_print_missing_allowed_popups' ), 999 );
 		add_action( 'wp_footer', array( __CLASS__, 'print_popup_show_patch_script' ), 5 );
-		add_action( 'wp_footer', array( __CLASS__, 'print_popup_dom_guard_script' ), 99 );
+		add_action( 'wp_footer', array( __CLASS__, 'print_popup_dom_guard_script' ), 5 );
 	}
 
 	/**
@@ -299,7 +299,7 @@ class RWGC_Elementor_Popups {
 			$bytes = strlen( trim( $html ) );
 
 			if ( $bytes > 0 ) {
-				echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Elementor document output.
+				echo rwgc_kses_rendered_html( $html ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rwgc_kses_rendered_html() escapes the Elementor document.
 				self::$force_emitted_popup_bytes[ $popup_id ] = $bytes;
 				if ( ! $elementor_marked_printed ) {
 					$locations_manager->set_is_printed( 'popup', $popup_id );
@@ -576,6 +576,42 @@ class RWGC_Elementor_Popups {
 	}
 
 	/**
+	 * Attach dynamic CSS to the shared inline stylesheet handle.
+	 *
+	 * @param string $handle Handle.
+	 * @param string $css    CSS rules, without a style tag.
+	 * @return void
+	 */
+	private static function enqueue_inline_style( $handle, $css ) {
+		$ver = defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.0.0';
+		if ( ! wp_style_is( $handle, 'registered' ) ) {
+			wp_register_style( $handle, RWGC_URL . 'assets/css/rwgc-inline.css', array(), $ver );
+		}
+		wp_enqueue_style( $handle );
+		wp_add_inline_style( $handle, $css );
+	}
+
+	/**
+	 * Attach dynamic JavaScript to the shared inline script handle.
+	 *
+	 * Called from wp_head before wp_print_scripts, or from wp_footer before
+	 * wp_print_footer_scripts, so the inline code prints with the queue.
+	 *
+	 * @param string $handle    Handle.
+	 * @param string $js        JavaScript, without a script tag.
+	 * @param bool   $in_footer Whether to print in the footer.
+	 * @return void
+	 */
+	private static function enqueue_inline_script( $handle, $js, $in_footer ) {
+		$ver = defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.0.0';
+		if ( ! wp_script_is( $handle, 'registered' ) ) {
+			wp_register_script( $handle, RWGC_URL . 'assets/js/rwgc-inline.js', array(), $ver, (bool) $in_footer );
+		}
+		wp_enqueue_script( $handle );
+		wp_add_inline_script( $handle, $js );
+	}
+
+	/**
 	 * Hide popups that will not display before Elementor opens them (reduces flash).
 	 *
 	 * @return void
@@ -602,11 +638,13 @@ class RWGC_Elementor_Popups {
 		}
 
 		if ( '' !== $css ) {
-			echo '<style id="rwgc-popup-antiflash">' . $css . '</style>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			self::enqueue_inline_style( 'rwgc-popup-antiflash', $css );
 		}
 
-		wp_print_inline_script_tag(
-			'window.rwgcPopupGeoBlocked=' . wp_json_encode( array_values( $blocked ) ) . ';'
+		self::enqueue_inline_script(
+			'rwgc-popup-antiflash-ids',
+			'window.rwgcPopupGeoBlocked=' . wp_json_encode( array_values( $blocked ) ) . ';',
+			false
 		);
 	}
 
@@ -728,8 +766,10 @@ class RWGC_Elementor_Popups {
 
 		$printed = true;
 
-		wp_print_inline_script_tag(
-			self::build_popup_runtime_script( $config_map, $visitor, $blocked )
+		self::enqueue_inline_script(
+			'rwgc-popup-show-patch',
+			self::build_popup_runtime_script( $config_map, $visitor, $blocked ),
+			! doing_action( 'wp_head' )
 		);
 	}
 
@@ -760,7 +800,8 @@ class RWGC_Elementor_Popups {
 		}
 
 		$blocked_json = wp_json_encode( $blocked );
-		wp_print_inline_script_tag(
+		self::enqueue_inline_script(
+			'rwgc-popup-dom-guard',
 			"(function(){\n"
 			. 'var blocked=' . $blocked_json . ";\n"
 			. "function hidePopups(){\n"
@@ -780,7 +821,8 @@ class RWGC_Elementor_Popups {
 			. "  hidePopups();\n"
 			. "}\n"
 			. "var tick=0;var iv=setInterval(function(){hidePopups();tick++;if(tick>12){clearInterval(iv);}},100);\n"
-			. "})();"
+			. "})();",
+			true
 		);
 	}
 
@@ -968,7 +1010,7 @@ JS;
 
 		$page_id = function_exists( 'get_queried_object_id' ) ? (int) get_queried_object_id() : 0;
 		$version = RWGC_Page_Version_Routing::get_active_version();
-		$url     = function_exists( 'home_url' ) ? (string) wp_unslash( isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '' ) : '';
+		$url     = function_exists( 'home_url' ) && isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
 
 		$ctx['active']  = true;
 		$ctx['page_id'] = $page_id;
@@ -1438,7 +1480,7 @@ JS;
 			'popup_id'                 => (int) $popup_id,
 			'popup_title'              => get_the_title( $popup_id ),
 			'assigned_page'            => $canonical_page_id,
-			'current_url'              => function_exists( 'home_url' ) ? (string) wp_unslash( isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '' ) : '',
+			'current_url'              => function_exists( 'home_url' ) && isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '',
 			'canonical_page_id'        => $canonical_page_id,
 			'detected_variant_key'     => $snapshot ? (string) $snapshot->get( 'page_version', '' ) : '',
 			'detected_variant_page_id' => $snapshot ? (int) $snapshot->get( 'page_version_page_id', 0 ) : 0,

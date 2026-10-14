@@ -38,7 +38,7 @@ class RWGC_Rule_Tester_Frontend_Preview {
 			return;
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( empty( $_GET[ self::QUERY_FLAG ] ) || '1' !== (string) wp_unslash( $_GET[ self::QUERY_FLAG ] ) ) {
+		if ( ! isset( $_GET[ self::QUERY_FLAG ] ) || '1' !== sanitize_text_field( wp_unslash( $_GET[ self::QUERY_FLAG ] ) ) ) {
 			return;
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended

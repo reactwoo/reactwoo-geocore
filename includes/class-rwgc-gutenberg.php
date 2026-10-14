@@ -107,7 +107,7 @@ class RWGC_Gutenberg {
 		if ( class_exists( 'RWGC_Visibility_Rule_Editor_Status', false ) ) {
 			$post_id = 0;
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			if ( isset( $_GET['post'] ) && is_numeric( $_GET['post'] ) ) {
+			if ( isset( $_GET['post'] ) ) {
 				$post_id = absint( wp_unslash( $_GET['post'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			}
 			$bootstrap = RWGC_Visibility_Rule_Editor_Status::editor_bootstrap(
@@ -137,13 +137,13 @@ class RWGC_Gutenberg {
 		if ( class_exists( 'RWGC_Surface_Settings', false ) && class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
 			$settings = RWGC_Surface_Settings::from_block_attributes( $attrs );
 			if ( ! RWGC_Targeting_Surface_Evaluator::is_surface_active( $settings ) ) {
-				return '<div class="rwgc-geo-content">' . do_shortcode( $content ) . '</div>';
+				return '<div class="rwgc-geo-content">' . rwgc_kses_post_html( do_shortcode( (string) $content ) ) . '</div>';
 			}
 			$result = RWGC_Targeting_Surface_Evaluator::evaluate( $settings );
 			if ( empty( $result['should_render'] ) ) {
 				return '';
 			}
-			return '<div class="rwgc-geo-content">' . do_shortcode( $content ) . '</div>';
+			return '<div class="rwgc-geo-content">' . rwgc_kses_post_html( do_shortcode( (string) $content ) ) . '</div>';
 		}
 
 		return '';

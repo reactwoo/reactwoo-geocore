@@ -211,5 +211,52 @@ if ( ! is_array( $sanitized ) || 'returning_visitor' !== $sanitized['rules'][0][
 	rwgc_test_fail( 'Sanitize should keep returning_visitor when Pro is off.' );
 }
 
+if ( class_exists( 'RWGC_Page_Version', false ) ) {
+	rwgc_test_fail( 'Page version class must stay out of Geo Core.' );
+}
+
+$page_version_set = array(
+	'enabled' => true,
+	'mode'    => 'show',
+	'match'   => 'all',
+	'rules'   => array(
+		array(
+			'id'         => 'pv',
+			'match'      => 'all',
+			'conditions' => array(
+				array(
+					'type'     => 'page_version_url',
+					'operator' => 'equals',
+					'value'    => array(
+						'page_id' => 42,
+						'version' => 'fr',
+					),
+				),
+			),
+		),
+	),
+);
+$san_pv = RWGC_Targeting_Rule_Set_Schema::sanitize( $page_version_set );
+if ( ! is_array( $san_pv ) || 'page_version_url' !== ( $san_pv['rules'][0]['conditions'][0]['type'] ?? '' ) ) {
+	rwgc_test_fail( 'Sanitize should keep page_version_url when the page-version class is absent.' );
+} else {
+	$pv_val = $san_pv['rules'][0]['conditions'][0]['value'];
+	if ( ! is_array( $pv_val ) || 42 !== (int) $pv_val['page_id'] || 'fr' !== $pv_val['version'] ) {
+		rwgc_test_fail( 'Sanitize should keep the stored page id and version slug.' );
+	}
+}
+if ( RWGC_Rule_Evaluator::matches( $page_version_set, $snap ) ) {
+	rwgc_test_fail( 'page_version_url must not match while the page-version class is absent.' );
+}
+
+$bad_page_version = $page_version_set;
+$bad_page_version['rules'][0]['conditions'][0]['value'] = array(
+	'page_id' => 0,
+	'version' => '../x',
+);
+if ( null !== RWGC_Targeting_Rule_Set_Schema::sanitize( $bad_page_version ) ) {
+	rwgc_test_fail( 'Sanitize should drop an invalid page version condition.' );
+}
+
 fwrite( STDOUT, "OK: RWGC_Rule_Evaluator CLI tests passed.\n" );
 exit( 0 );

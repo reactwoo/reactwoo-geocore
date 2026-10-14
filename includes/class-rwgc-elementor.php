@@ -362,7 +362,7 @@ class RWGC_Elementor {
 		if ( (bool) apply_filters( 'rwgc_pro_enabled', false ) ) {
 			return __( 'Pick countries, GA4 audiences, campaigns, and traffic signals with the rule builder, or apply a saved rule from Targeting → Visibility rules. GeoCore Pro supplies synced Google lists after you connect in Integrations.', 'reactwoo-geocore' );
 		}
-		return __( 'Pick countries and built-in visitor signals with the rule builder, or apply a saved visibility rule from the library. GeoCore Pro unlocks synced GA4 audiences and Google Ads campaigns.', 'reactwoo-geocore' );
+		return __( 'Pick countries and built-in visitor signals with the rule builder, or apply a saved visibility rule from the library.', 'reactwoo-geocore' );
 	}
 
 	/**

@@ -199,7 +199,7 @@ class RWGC_Elementor_Geo_Controls {
 				'label_off'    => __( 'Off', 'reactwoo-geocore' ),
 				'return_value' => 'yes',
 				'default'      => '',
-				'description'  => __( 'Use saved or custom rules (page version URL, device, etc.). Independent of country targeting.', 'reactwoo-geocore' ),
+				'description'  => __( 'Use a saved visibility rule or the conditions included with this plugin. Independent of the country list.', 'reactwoo-geocore' ),
 			)
 		);
 

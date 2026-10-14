@@ -16,12 +16,12 @@ $guidance      = isset( $guidance ) && is_array( $guidance ) ? $guidance : array
 $visitor_data  = isset( $visitor_data ) && is_array( $visitor_data ) ? $visitor_data : array();
 $wizard_step   = isset( $wizard_step ) ? (int) $wizard_step : 1;
 $goal          = isset( $state['goal'] ) ? (string) $state['goal'] : '';
-$saved         = isset( $_GET['rwgc_saved'] ) && '1' === $_GET['rwgc_saved']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-$welcome       = isset( $_GET['rwgc_welcome'] ) && '1' === $_GET['rwgc_welcome']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+$saved         = isset( $_GET['rwgc_saved'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['rwgc_saved'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+$welcome       = isset( $_GET['rwgc_welcome'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['rwgc_welcome'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 $goal_labels = array(
 	'variants'    => __( 'Show different page content by country', 'reactwoo-geocore' ),
-	'ai'          => __( 'Create localised page versions with AI', 'reactwoo-geocore' ),
+	'ai'          => __( 'Draft localised copy with a separate AI plugin', 'reactwoo-geocore' ),
 	'tests'       => __( 'Run a geo split test', 'reactwoo-geocore' ),
 	'commerce'    => __( 'Personalise WooCommerce pricing or offers', 'reactwoo-geocore' ),
 	'foundation'  => __( 'Just set up geolocation first', 'reactwoo-geocore' ),
@@ -42,7 +42,7 @@ $goal_label    = isset( $goal_labels[ $goal ] ) ? $goal_labels[ $goal ] : '';
 	<?php endif; ?>
 
 	<?php if ( $welcome ) : ?>
-		<div class="notice notice-info"><p><?php esc_html_e( 'Welcome. Complete setup, then use Dashboard and Rules / Page Versions for daily work.', 'reactwoo-geocore' ); ?></p></div>
+		<div class="notice notice-info"><p><?php esc_html_e( 'Welcome. Complete setup, then use Dashboard and visibility rules for daily work.', 'reactwoo-geocore' ); ?></p></div>
 	<?php endif; ?>
 
 	<section class="rwgc-card rwgc-suite-stepper-card" aria-labelledby="rwgc-stepper-heading">
@@ -211,6 +211,6 @@ $goal_label    = isset( $goal_labels[ $goal ] ) ? $goal_labels[ $goal ] : '';
 
 	<p class="rwgc-suite-wizard-footer rwgc-actions">
 		<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-dashboard' ) ); ?>" class="rwgc-btn rwgc-btn--secondary"><?php esc_html_e( 'Dashboard', 'reactwoo-geocore' ); ?></a>
-		<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-suite-variants' ) ); ?>" class="rwgc-btn rwgc-btn--secondary"><?php esc_html_e( 'Rules / Page Versions', 'reactwoo-geocore' ); ?></a>
+		<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-visibility-rules' ) ); ?>" class="rwgc-btn rwgc-btn--secondary"><?php esc_html_e( 'Visibility rules', 'reactwoo-geocore' ); ?></a>
 	</p>
 </div>

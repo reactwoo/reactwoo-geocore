@@ -196,7 +196,7 @@ class RWGC_Capability_Registry {
 					)
 					: sprintf(
 						/* translators: %s: product name */
-						__( 'Install %s to unlock this.', 'reactwoo-geocore' ),
+						__( 'Install %s to use this.', 'reactwoo-geocore' ),
 						(string) ( $def['product'] ?? '' )
 					),
 				'learn_url'     => admin_url( 'admin.php?page=rwgc-addons' ),

@@ -30,7 +30,7 @@ if ( $has_pro && class_exists( 'RWGCP_Google_Integration', false ) ) {
 	} else {
 		?>
 		<h1><?php esc_html_e( 'Reports', 'reactwoo-geocore' ); ?></h1>
-		<p class="description"><?php esc_html_e( 'See simple proof that your geo rules and page versions are being used.', 'reactwoo-geocore' ); ?></p>
+		<p class="description"><?php esc_html_e( 'See simple proof that your geo rules are being used.', 'reactwoo-geocore' ); ?></p>
 		<?php
 	}
 	?>
@@ -117,11 +117,6 @@ if ( $has_pro && class_exists( 'RWGCP_Google_Integration', false ) ) {
 		<div class="rwgc-card rwgc-card--full">
 			<h2><?php esc_html_e( 'Recent matches', 'reactwoo-geocore' ); ?></h2>
 			<p class="description"><?php esc_html_e( 'Recent visitor matches will appear here as this site records rule activity.', 'reactwoo-geocore' ); ?></p>
-		</div>
-
-		<div class="rwgc-card rwgc-card--full">
-			<h2><?php esc_html_e( 'Page version routes', 'reactwoo-geocore' ); ?></h2>
-			<p class="description"><?php esc_html_e( 'Track how often visitors are routed to a page version from your rules.', 'reactwoo-geocore' ); ?></p>
 		</div>
 
 		<?php if ( $has_pro ) : ?>

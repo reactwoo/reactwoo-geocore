@@ -118,9 +118,7 @@ class RWGC_Cache_Compat {
 			return;
 		}
 
-		$existing = isset( $_COOKIE[ self::COUNTRY_COOKIE ] )
-			? strtoupper( substr( sanitize_text_field( (string) wp_unslash( $_COOKIE[ self::COUNTRY_COOKIE ] ) ), 0, 2 ) )
-			: '';
+		$existing = isset( $_COOKIE[ self::COUNTRY_COOKIE ] ) ? strtoupper( substr( sanitize_text_field( (string) wp_unslash( $_COOKIE[ self::COUNTRY_COOKIE ] ) ), 0, 2 ) ) : '';
 		if ( $existing === $country ) {
 			return;
 		}
@@ -140,9 +138,7 @@ class RWGC_Cache_Compat {
 
 		$version_key = self::resolve_page_version_vary_key();
 
-		$existing = isset( $_COOKIE[ self::VERSION_COOKIE ] )
-			? sanitize_key( (string) wp_unslash( $_COOKIE[ self::VERSION_COOKIE ] ) )
-			: '';
+		$existing = isset( $_COOKIE[ self::VERSION_COOKIE ] ) ? sanitize_key( (string) wp_unslash( $_COOKIE[ self::VERSION_COOKIE ] ) ) : '';
 		if ( $existing === $version_key ) {
 			return;
 		}

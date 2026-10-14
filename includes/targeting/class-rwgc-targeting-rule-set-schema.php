@@ -140,7 +140,8 @@ class RWGC_Targeting_Rule_Set_Schema {
 			'page_version_url' => array(
 				'label'       => __( 'Page Version URL', 'reactwoo-geocore' ),
 				'pro'         => false,
-				'description' => __( 'Show content only on a branded page version URL (`/page/_gc/version-name`).', 'reactwoo-geocore' ),
+				'hidden'      => ! ( function_exists( 'rwgc_page_variants_available' ) && rwgc_page_variants_available() ),
+				'description' => __( 'Match a stored page and version slug. Hidden unless page versions are available on this site.', 'reactwoo-geocore' ),
 			),
 			'page_type'        => array(
 				'label'       => __( 'Page type', 'reactwoo-geocore' ),
@@ -319,10 +320,7 @@ class RWGC_Targeting_Rule_Set_Schema {
 				if ( ! in_array( $op, array( 'equals', 'is', 'is_not' ), true ) ) {
 					$op = 'equals';
 				}
-				if ( ! class_exists( 'RWGC_Page_Version', false ) ) {
-					continue;
-				}
-				$pv_val = RWGC_Page_Version::sanitize_condition_value( isset( $c['value'] ) ? $c['value'] : array() );
+				$pv_val = self::sanitize_page_version_condition_value( isset( $c['value'] ) ? $c['value'] : array() );
 				if ( null === $pv_val ) {
 					continue;
 				}
@@ -364,6 +362,42 @@ class RWGC_Targeting_Rule_Set_Schema {
 			'label'      => $label,
 			'match'      => self::sanitize_rule_match( isset( $rule['match'] ) ? $rule['match'] : 'all' ),
 			'conditions' => $conditions_out,
+		);
+	}
+
+	/**
+	 * Keep a stored Page Version URL condition.
+	 *
+	 * Geo Core Pro owns RWGC_Page_Version and applies the stricter post check.
+	 * When that class is not loaded, dropping the condition here deletes it from
+	 * the visibility-rule library and from post meta on the next save.
+	 * Evaluation still returns false until the class is loaded.
+	 *
+	 * @param mixed $raw Raw value from JSON.
+	 * @return array{page_id:int,version:string}|null
+	 */
+	private static function sanitize_page_version_condition_value( $raw ) {
+		if ( class_exists( 'RWGC_Page_Version', false ) ) {
+			$sanitized = RWGC_Page_Version::sanitize_condition_value( $raw );
+			return is_array( $sanitized ) ? $sanitized : null;
+		}
+		if ( ! is_array( $raw ) ) {
+			return null;
+		}
+
+		$page_raw = $raw['page_id'] ?? 0;
+		if ( is_array( $page_raw ) || is_object( $page_raw ) ) {
+			return null;
+		}
+		$page_id = abs( (int) $page_raw );
+		$version = isset( $raw['version'] ) ? sanitize_text_field( (string) $raw['version'] ) : '';
+		if ( $page_id <= 0 || ! preg_match( '/^[a-zA-Z0-9_-]{1,80}$/', $version ) ) {
+			return null;
+		}
+
+		return array(
+			'page_id' => $page_id,
+			'version' => $version,
 		);
 	}
 
@@ -477,6 +511,7 @@ class RWGC_Targeting_Rule_Set_Schema {
 
 		$base = array(
 			'pro'                  => self::is_pro_active(),
+			'page_versions'        => function_exists( 'rwgc_page_variants_available' ) && rwgc_page_variants_available(),
 			'weather_connected'    => $weather_connected,
 			'weather_facets'       => array(),
 			'site_url'             => home_url( '/' ),
@@ -491,7 +526,6 @@ class RWGC_Targeting_Rule_Set_Schema {
 			),
 			'rule_target_types'   => self::get_rule_target_type_definitions(),
 			'rule_condition_choices' => is_array( $choices ) ? $choices : array(),
-			'upgrade_message'     => __( 'Advanced targeting is available in GeoCore Pro.', 'reactwoo-geocore' ),
 			'ui_surfaces'         => array(
 				'elementor' => __( 'Elementor → page or popup → Advanced → Geo Visibility → enable geo → turn on “Use advanced visibility rules”.', 'reactwoo-geocore' ),
 				'block'     => __( 'Block editor → Geo Content block → sidebar → Advanced visibility rules.', 'reactwoo-geocore' ),

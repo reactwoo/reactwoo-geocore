@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.5
+Stable tag: 1.9.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,8 +45,7 @@ After setup, you can use Geo Core in multiple ways:
 * **PHP helpers**: `rwgc_get_visitor_country()`, `rwgc_get_visitor_currency()`, `rwgc_get_visitor_data()`
 * **REST endpoints** (when enabled in settings): `/wp-json/reactwoo-geocore/v1/location` (visitor geo), `/wp-json/reactwoo-geocore/v1/capabilities` (plugin discovery: event types and hooks; no visitor PII)
 * **Gutenberg**: Use the **Geo Content** block to show/hide content by country
-* **Elementor (free baseline)**: Use Page/Popup document settings for basic show/hide by country. Classic widgets/sections use **Advanced → Geo Visibility**; Elementor Atomic (V4) widgets use a sibling **Geo Visibility** Settings section (ISO country codes + Pro saved rules).
-* **Page Variant Routing (free)**: Edit any page and use "Geo Variant Routing (Free)" to set page role (Master/Secondary) with server-side redirect mapping (1 secondary country mapping per master)
+* **Elementor (free baseline)**: Use Page/Popup document settings for basic show/hide by country. Classic widgets/sections use **Advanced → Geo Visibility**; Elementor Atomic (V4) widgets use a sibling **Geo Visibility** Settings section (ISO country codes and saved visibility rules).
 
 For an in-dashboard guide, open **Geo Core → Usage** in wp-admin.
 
@@ -166,6 +165,12 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.6 =
+* Admin and front-end snippets are added with the WordPress script and style queue.
+* Form nonces and request values are unslashed and sanitized before use. Country database uploads use the WordPress upload handler.
+* The WordPress.org package includes composer.json and leaves out directory icons, the unused CA certificate bundle, and page-version routing.
+* Stored page-version conditions are kept when Geo Core Pro is not active, and they are not offered in the rule builder. Turning anonymous Cloud telemetry off stays off. See External services for ReactWoo Cloud terms and privacy.
+
 = 1.9.5 =
 * GeoElementor is no longer listed as an add-on. Country visibility in Elementor stays in this plugin.
 
@@ -243,6 +248,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.6 =
+Directory review fixes. Country detection, shortcodes, the Geo Content block, and visibility rules are unchanged. Anonymous Cloud telemetry stays off unless an administrator opts in.
 
 = 1.9.5 =
 GeoElementor is no longer offered as an add-on. Elementor country visibility in this plugin is unchanged.

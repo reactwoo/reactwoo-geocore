@@ -273,8 +273,9 @@ final class RWGC_Cloud_Telemetry {
 	 * @return string
 	 */
 	private static function visitor_id() {
-		if ( isset( $_COOKIE[ self::COOKIE ] ) && is_string( $_COOKIE[ self::COOKIE ] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-			$existing = preg_replace( '/[^a-zA-Z0-9._:-]/', '', (string) wp_unslash( $_COOKIE[ self::COOKIE ] ) );
+		if ( isset( $_COOKIE[ self::COOKIE ] ) ) {
+			$existing = sanitize_text_field( wp_unslash( $_COOKIE[ self::COOKIE ] ) );
+			$existing = is_string( $existing ) ? preg_replace( '/[^a-zA-Z0-9._:-]/', '', $existing ) : '';
 			if ( is_string( $existing ) && strlen( $existing ) >= 8 && strlen( $existing ) <= 64 ) {
 				return $existing;
 			}

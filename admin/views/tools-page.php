@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Handle simple actions via query args + nonce.
 if ( isset( $_GET['rwgc_action'], $_GET['_wpnonce'] ) && current_user_can( 'manage_options' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	$action = sanitize_key( wp_unslash( $_GET['rwgc_action'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	if ( in_array( $action, array( 'ai_health', 'ai_usage' ), true ) && wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'rwgc_tools_action_' . $action ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	if ( in_array( $action, array( 'ai_health', 'ai_usage' ), true ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'rwgc_tools_action_' . $action ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( 'ai_health' === $action ) {
 			$result = RWGC_AI_Orchestrator::ai_health();
 			if ( is_wp_error( $result ) ) {

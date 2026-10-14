@@ -319,7 +319,7 @@ final class RWGC_Decision_Runtime {
 	 * @return bool
 	 */
 	public static function is_debug_request() {
-		if ( empty( $_GET['rwgc_decision_debug'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_GET['rwgc_decision_debug'] ) || '1' !== sanitize_text_field( wp_unslash( $_GET['rwgc_decision_debug'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return false;
 		}
 		if ( function_exists( 'current_user_can' ) ) {

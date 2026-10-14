@@ -131,7 +131,7 @@ class RWGC_Shortcodes {
 			return '';
 		}
 
-		return do_shortcode( (string) $content );
+		return rwgc_kses_post_html( do_shortcode( (string) $content ) );
 	}
 
 	/**
@@ -187,7 +187,7 @@ class RWGC_Shortcodes {
 			return '';
 		}
 
-		return do_shortcode( (string) $content );
+		return rwgc_kses_post_html( do_shortcode( (string) $content ) );
 	}
 
 	/**
@@ -221,7 +221,7 @@ class RWGC_Shortcodes {
 			return '';
 		}
 
-		return do_shortcode( (string) $content );
+		return rwgc_kses_post_html( do_shortcode( (string) $content ) );
 	}
 
 	/**

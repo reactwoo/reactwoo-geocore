@@ -347,11 +347,11 @@ class RWGC_Admin_WooCommerce_Product_Tab {
 		RWGC_Product_Meta::save_from_request(
 			(int) $post_id,
 			array(
-				'geo_mode'         => isset( $_POST['_geocore_product_geo_mode'] ) ? wp_unslash( $_POST['_geocore_product_geo_mode'] ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
-				'countries'        => isset( $_POST['_geocore_product_countries'] ) ? wp_unslash( $_POST['_geocore_product_countries'] ) : array(), // phpcs:ignore WordPress.Security.NonceVerification.Missing
-				'rule_id'          => isset( $_POST['_geocore_product_rule_id'] ) ? wp_unslash( $_POST['_geocore_product_rule_id'] ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Missing
-				'visibility_mode'  => isset( $_POST['_geocore_product_visibility_mode'] ) ? wp_unslash( $_POST['_geocore_product_visibility_mode'] ) : 'show_if', // phpcs:ignore WordPress.Security.NonceVerification.Missing
-				'boost_enabled'    => isset( $_POST['_geocore_product_boost_enabled'] ) ? wp_unslash( $_POST['_geocore_product_boost_enabled'] ) : RWGC_Product_Meta::BOOST_INHERIT, // phpcs:ignore WordPress.Security.NonceVerification.Missing
+				'geo_mode'         => isset( $_POST['_geocore_product_geo_mode'] ) ? sanitize_key( wp_unslash( $_POST['_geocore_product_geo_mode'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing
+				'countries'        => isset( $_POST['_geocore_product_countries'] ) ? map_deep( wp_unslash( $_POST['_geocore_product_countries'] ), 'sanitize_text_field' ) : array(), // phpcs:ignore WordPress.Security.NonceVerification.Missing
+				'rule_id'          => isset( $_POST['_geocore_product_rule_id'] ) ? absint( wp_unslash( $_POST['_geocore_product_rule_id'] ) ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Missing
+				'visibility_mode'  => isset( $_POST['_geocore_product_visibility_mode'] ) ? sanitize_key( wp_unslash( $_POST['_geocore_product_visibility_mode'] ) ) : 'show_if', // phpcs:ignore WordPress.Security.NonceVerification.Missing
+				'boost_enabled'    => isset( $_POST['_geocore_product_boost_enabled'] ) ? sanitize_text_field( wp_unslash( $_POST['_geocore_product_boost_enabled'] ) ) : RWGC_Product_Meta::BOOST_INHERIT, // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			)
 		);
 	}

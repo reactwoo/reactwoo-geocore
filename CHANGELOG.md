@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.6] - 2026-10-14
+
+### Fixed
+- Inline admin and front-end CSS and JavaScript are registered with `wp_enqueue_script`, `wp_enqueue_style`, `wp_add_inline_script`, and `wp_add_inline_style`.
+- Nonces are passed through `sanitize_text_field( wp_unslash() )` before `wp_verify_nonce`.
+- `$_GET`, `$_POST`, `$_REQUEST`, `$_COOKIE`, and `$_SERVER` reads are unslashed and sanitized.
+- Block, shortcode, and Elementor markup is escaped before it is returned or printed.
+- MaxMind database uploads use `wp_handle_upload`, then a type, size, and MaxMind marker check.
+
+### Changed
+- The WordPress.org package includes `composer.json`. Directory icons under `assets/` and `vendor/composer/ca-bundle/res/cacert.pem` are left out. The certificate file is only a fallback for the MaxMind web-service client, which Geo Core does not construct. Country lookup uses the local database, and downloads use the WordPress HTTP API.
+- Page-version routing stays out of this plugin. A stored `page_version_url` condition is preserved on save and is not shown in the rule builder unless Geo Core Pro is active. It does not match until that class is loaded.
+- Anonymous Cloud telemetry treats only `true`, `1`, and `"1"` as consent. A checkbox that is not exactly `1` stores `0` and clears `rwgc_vid`.
+
 ## [1.9.5] - 2026-10-13
 
 ### Removed

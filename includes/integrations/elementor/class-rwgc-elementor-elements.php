@@ -172,8 +172,8 @@ class RWGC_Elementor_Elements {
 	public static function get_editor_document_context() {
 		$post_id = 0;
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( isset( $_GET['post'] ) && is_numeric( $_GET['post'] ) ) {
-			$post_id = absint( $_GET['post'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['post'] ) ) {
+			$post_id = absint( wp_unslash( $_GET['post'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		}
 		if ( $post_id <= 0 && class_exists( '\Elementor\Plugin' ) ) {
 			$plugin = \Elementor\Plugin::$instance;

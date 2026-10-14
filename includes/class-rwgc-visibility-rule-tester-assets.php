@@ -104,8 +104,8 @@ class RWGC_Visibility_Rule_Tester_Assets {
 
 		$current_rule_id = 0;
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( isset( $_GET['rwgc_edit'] ) && is_numeric( $_GET['rwgc_edit'] ) ) {
-			$current_rule_id = absint( $_GET['rwgc_edit'] );
+		if ( isset( $_GET['rwgc_edit'] ) ) {
+			$current_rule_id = absint( wp_unslash( $_GET['rwgc_edit'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		}
 
 		wp_localize_script(
