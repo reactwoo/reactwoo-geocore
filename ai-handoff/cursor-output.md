@@ -1,29 +1,31 @@
 # Cursor output
 
 ## Status
-done
+needs-review
 
-Free-feature cleanup for 1.9.7 is on branch `wporg-free-features-1.9.7`, checked out from `main` at `f9f6f5e` (`v1.9.6`). Pushed to origin without a tag. `main` is unchanged. Not submitted to WordPress.org.
+Country-only ownership is on local branch `country-only-free`. It is not merged, tagged, pushed, or submitted. Do not merge `wporg-free-features-1.9.7`.
 
-WordPress.org zip sha256: `893fe466c2f0d9d89170bd5d2e56fe6a36de192a3575893d16e8212cac2e14f5` (695966 bytes).
+Geo Core evaluates country and country-group rules. Geo Core Pro 0.1.56 on local branch `advanced-targeting-ownership` registers the other resolvers only when `RWGCP_Bootstrap::is_licensed()` is true (standalone licence or Decision Cloud `cloud.personalisation`).
 
 ## Files changed
-- Included condition types show in the rule builder and Elementor. `rwgc_advanced_targeting_enabled()` defaults to true.
-- Pro-only conditions stay out of the picker. A save keeps them and they do not match until a resolver exists.
-- Audience, campaign, experiment, AI, and add-on screens are registered only when that plugin is active. Locked and upgrade cards are gone.
-- `blocks/experience-slot/editor.asset.php` added. Version is 1.9.7.
+- Core free condition list and `RWGC_Rule_Evaluator::default_resolvers()` are country and country group. Premium eval methods moved to `RWGCP_Advanced_Conditions`.
+- Target registry and admin provider lists default to the geo provider. Pro appends language, time, device, weather, analytics, and commerce providers when entitled.
+- Platform capability bootstrap registers `geo.country` and `geo.country_group`. Pro registers the advanced capability IDs when entitled.
+- Rule builder `FIELD_DEFS` is country and country group. Pro adds `extra_fields` on `rwgc_portable_targeting_editor_context`.
+- Saves still keep stored advanced conditions. They do not match until Pro is entitled.
 
 ## Not changed
-- Text domain stays `reactwoo-geocore`.
-- `scripts/release_commit_tag.py` is still untracked and was not committed.
+- Visitor context collection still fills language, device, UTM, and related snapshot fields for satellites and Decision Cloud.
+- Page-version storage and Geo Optimise experience slots are unchanged.
+- Text domain stays `reactwoo-geocore`. Nothing was published.
 
 ## Commands
 - `php tests/test-rwgc-rule-evaluator.php` — passed
-- `php vendor/phpunit/phpunit/phpunit -c phpunit.xml.dist` — 102 tests, 9 errors, 7 failures (same baseline)
-- `php tests/test-rwgc-wporg-build.php` — four known Windows `.distignore` CRLF failures
-- `python tests/test-rwgc-wporg-upload-precheck.py --require-zip` — 44 checks, 0 failed
-- Plugin Check 2.1.0 on the installed zip, header text domain — 0 errors, 6 warnings
-- Activate with `WP_DEBUG` on WordPress 6.2 and 7.1.3 — no plugin notices and no `register_block_script_handle` notice
+- `php tests/test-rwgc-wporg-build.php` — ownership assertions passed; four known Windows `.distignore` CRLF failures
+- `php -l` on the Pro ownership files — no syntax errors
+
+## Previous 1.9.7 note
+The rejected branch `wporg-free-features-1.9.7` was pushed without a tag. Its tip exposed premium conditions as free. This pass corrects that.
 
 ## Status
 done

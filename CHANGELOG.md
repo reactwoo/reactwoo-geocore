@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.9.7] - 2026-10-14
 
 ### Changed
-- Included visibility conditions (country, language, device, time, visitors, pages, and request parameters) are shown in the rule builder and Elementor without another plugin.
+- Geo Core evaluates country and country-group visibility rules. Device, language, schedule, campaign, visitor, and page conditions are owned by Geo Core Pro.
+- The rule builder offers country targeting on its own. Geo Core Pro adds its conditions to the same builder when it is entitled.
 - Screens for audiences, campaigns, experiments, AI review, and add-ons are registered only when the plugin that provides them is active.
 - Saving a rule keeps conditions owned by another plugin. They do not match until that plugin registers a resolver.
 

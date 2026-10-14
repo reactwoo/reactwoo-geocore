@@ -280,9 +280,7 @@ class RWGC_AI_Snapshot_Builder {
 		}
 
 		if ( class_exists( 'RWGC_Targeting_Rule_Set_Schema', false ) ) {
-			$free = RWGC_Targeting_Rule_Set_Schema::FREE_CONDITION_TYPES;
-			$pro  = RWGC_Targeting_Rule_Set_Schema::PRO_CONDITION_TYPES;
-			foreach ( array_merge( $free, $pro ) as $builtin ) {
+			foreach ( RWGC_Targeting_Rule_Set_Schema::FREE_CONDITION_TYPES as $builtin ) {
 				if ( ! isset( $types[ $builtin ] ) ) {
 					$types[ $builtin ] = array(
 						'type'    => $builtin,

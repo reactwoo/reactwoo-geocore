@@ -114,8 +114,8 @@ final class RWGCVisibilityRulePreviewTest extends TestCase {
 		return ! empty( $result['matches'] );
 	}
 
-	public function test_free_delivery_case_1_google_ads_match(): void {
-		$this->assertTrue(
+	public function test_free_delivery_case_1_advanced_conditions_do_not_match_in_core(): void {
+		$this->assertFalse(
 			$this->evaluate_scenario(
 				array(
 					'country'     => 'IE',
@@ -129,8 +129,8 @@ final class RWGCVisibilityRulePreviewTest extends TestCase {
 		);
 	}
 
-	public function test_free_delivery_case_2_winter_sale_url_match(): void {
-		$this->assertTrue(
+	public function test_free_delivery_case_2_url_condition_does_not_match_in_core(): void {
+		$this->assertFalse(
 			$this->evaluate_scenario(
 				array(
 					'country'     => 'GB',

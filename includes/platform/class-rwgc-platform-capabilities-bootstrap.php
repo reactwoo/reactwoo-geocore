@@ -40,25 +40,6 @@ final class RWGC_Platform_Capabilities_Bootstrap {
 		$core = array(
 			'geo.country'       => __( 'Country', 'reactwoo-geocore' ),
 			'geo.country_group' => __( 'Country group', 'reactwoo-geocore' ),
-			'geo.region'        => __( 'Region', 'reactwoo-geocore' ),
-			'geo.city'          => __( 'City', 'reactwoo-geocore' ),
-			'visitor.language'  => __( 'Language', 'reactwoo-geocore' ),
-			'visitor.locale'    => __( 'Locale', 'reactwoo-geocore' ),
-			'visitor.device'    => __( 'Device', 'reactwoo-geocore' ),
-			'visitor.logged_in'  => __( 'Logged in', 'reactwoo-geocore' ),
-			'visitor.returning'  => __( 'Returning visitor', 'reactwoo-geocore' ),
-			'time.of_day'       => __( 'Time of day', 'reactwoo-geocore' ),
-			'time.day_of_week'  => __( 'Day of week', 'reactwoo-geocore' ),
-			'time.local'        => __( 'Local time', 'reactwoo-geocore' ),
-			'time.day'          => __( 'Day', 'reactwoo-geocore' ),
-			'time.date'         => __( 'Date', 'reactwoo-geocore' ),
-			'traffic.utm_source'   => __( 'UTM source', 'reactwoo-geocore' ),
-			'traffic.utm_medium'   => __( 'UTM medium', 'reactwoo-geocore' ),
-			'traffic.utm_campaign' => __( 'UTM campaign', 'reactwoo-geocore' ),
-			'traffic.source'    => __( 'Traffic source', 'reactwoo-geocore' ),
-			'traffic.medium'    => __( 'Traffic medium', 'reactwoo-geocore' ),
-			'page.type'         => __( 'Page type', 'reactwoo-geocore' ),
-			'page.request_uri'  => __( 'Request URI', 'reactwoo-geocore' ),
 		);
 
 		foreach ( $core as $id => $label ) {

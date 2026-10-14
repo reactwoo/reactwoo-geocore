@@ -22,10 +22,10 @@ Included:
 * A conditional shortcode for showing content to selected countries
 * A REST location endpoint for front-end code, and a capabilities endpoint for discovery
 * The Geo Content block for the block editor
-* Visibility rules for country, country group, language, locale, device, time of day, day of week, logged-in state, new and returning visitors, page type, URL, and request parameters (`utm_source`, `utm_medium`, `utm_campaign`, `source`, `medium`, `campaign`, `content`, `term`, `gclid`)
+* Visibility rules for country and country groups, in Elementor, the block editor, and reusable rules
 * PHP helpers for themes and other plugins
 
-Optional add-ons are separate plugins. Geo Core keeps working when they are not installed. Geo Core Pro adds full-page country versions, audience, weather, and visitor-profile conditions. Geo Commerce and WHMCS Bridge can use this plugin as their country source. Those products update themselves.
+Optional add-ons are separate plugins. Geo Core keeps working when they are not installed. Geo Core Pro adds device, language, schedule, campaign, visitor, page, weather, audience, and full-page version targeting. Geo Commerce and WHMCS Bridge can use this plugin as their country source. Those products update themselves.
 
 == Installation ==
 
@@ -166,9 +166,9 @@ Off by default. An administrator must enable “Share anonymous experience event
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
 = 1.9.7 =
-* Visibility rules for country, language, device, time, visitors, pages, and request parameters are included. The rule builder and Elementor controls show those conditions without another plugin.
-* Audience, weather, profile, and full-page routing screens stay out of this plugin until the plugin that provides them is active.
-* A save keeps stored conditions from another plugin. Those conditions do not match until that plugin is active.
+* Country and country-group visibility rules are the conditions this plugin evaluates. Device, language, schedule, campaign, visitor, and page conditions are evaluated by Geo Core Pro when that plugin is entitled.
+* The rule builder offers country targeting on its own. Additional conditions appear in the same builder when Geo Core Pro is entitled.
+* A save keeps stored conditions from another plugin. Those conditions do not match until that plugin is active and entitled.
 * The Experience Slot block includes its editor asset file so WordPress 6.2 does not log a block script notice.
 
 = 1.9.6 =
@@ -257,7 +257,7 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 == Upgrade Notice ==
 
 = 1.9.7 =
-Included visibility conditions are available in the rule builder and Elementor. Screens for other plugins appear only when those plugins are active.
+Country and country-group rules stay in this plugin. Advanced targeting is evaluated by Geo Core Pro when that plugin is entitled. Stored rules from other plugins are kept.
 
 = 1.9.6 =
 Directory review fixes. Country detection, shortcodes, the Geo Content block, and visibility rules are unchanged. Anonymous Cloud telemetry stays off unless an administrator opts in.

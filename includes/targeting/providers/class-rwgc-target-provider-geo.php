@@ -32,21 +32,18 @@ class RWGC_Target_Provider_Geo implements RWGC_Target_Provider_Interface {
 	 * @inheritDoc
 	 */
 	public function register_targets( RWGC_Target_Registry $registry ) {
-		$ops = array( 'is', 'is_not', 'in', 'not_in' );
-		foreach ( array( 'country', 'region', 'city', 'currency' ) as $key ) {
-			$registry->register_target_type(
-				array(
-					'key'           => $key,
-					'label'         => $this->label_for( $key ),
-					'group'         => 'geography',
-					'description'   => __( 'Resolved from Geo Core visitor geo payload.', 'reactwoo-geocore' ),
-					'operators'     => $ops,
-					'value_mode'    => 'single',
-					'provider'      => $this->get_provider_key(),
-					'supports_simulation' => true,
-				)
-			);
-		}
+		$registry->register_target_type(
+			array(
+				'key'                 => 'country',
+				'label'               => $this->label_for( 'country' ),
+				'group'               => 'geography',
+				'description'         => __( 'ISO country code from the visitor geo payload.', 'reactwoo-geocore' ),
+				'operators'           => array( 'is', 'is_not', 'in', 'not_in' ),
+				'value_mode'          => 'single',
+				'provider'            => $this->get_provider_key(),
+				'supports_simulation' => true,
+			)
+		);
 	}
 
 	/**

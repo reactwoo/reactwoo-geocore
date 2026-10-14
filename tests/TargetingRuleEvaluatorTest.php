@@ -63,15 +63,22 @@ class TargetingRuleEvaluatorTest extends TestCase {
 		);
 	}
 
-	public function test_uk_evening_matches_show_mode() {
+	public function test_country_rule_matches_and_time_of_day_does_not() {
+		$combined = $this->uk_evening_rule_set();
+		$this->assertFalse(
+			RWGC_Rule_Evaluator::matches( $combined, $this->uk_evening_snapshot() )
+		);
+		$country = $combined;
+		$country['rules'][0]['conditions'] = array( $combined['rules'][0]['conditions'][0] );
 		$this->assertTrue(
-			RWGC_Rule_Evaluator::matches( $this->uk_evening_rule_set(), $this->uk_evening_snapshot() )
+			RWGC_Rule_Evaluator::matches( $country, $this->uk_evening_snapshot() )
 		);
 	}
 
-	public function test_hide_mode_suppresses_when_rule_matches() {
-		$set          = $this->uk_evening_rule_set();
-		$set['mode']  = 'hide';
+	public function test_hide_mode_suppresses_when_country_rule_matches() {
+		$set         = $this->uk_evening_rule_set();
+		$set['mode'] = 'hide';
+		$set['rules'][0]['conditions'] = array( $set['rules'][0]['conditions'][0] );
 		$this->assertFalse(
 			RWGC_Rule_Evaluator::should_render_content( $set, $this->uk_evening_snapshot() )
 		);
@@ -121,7 +128,7 @@ class TargetingRuleEvaluatorTest extends TestCase {
 		);
 		$returning = new RWGC_Context_Snapshot( array( 'returning_visitor' => true, 'new_visitor' => false ) );
 		$fresh     = new RWGC_Context_Snapshot( array( 'returning_visitor' => false, 'new_visitor' => true ) );
-		$this->assertTrue( RWGC_Rule_Evaluator::matches( $set, $returning ) );
+		$this->assertFalse( RWGC_Rule_Evaluator::matches( $set, $returning ) );
 		$this->assertFalse( RWGC_Rule_Evaluator::matches( $set, $fresh ) );
 	}
 
@@ -147,7 +154,7 @@ class TargetingRuleEvaluatorTest extends TestCase {
 		);
 		$fresh     = new RWGC_Context_Snapshot( array( 'returning_visitor' => false ) );
 		$returning = new RWGC_Context_Snapshot( array( 'returning_visitor' => true, 'new_visitor' => false ) );
-		$this->assertTrue( RWGC_Rule_Evaluator::matches( $set, $fresh ) );
+		$this->assertFalse( RWGC_Rule_Evaluator::matches( $set, $fresh ) );
 		$this->assertFalse( RWGC_Rule_Evaluator::matches( $set, $returning ) );
 	}
 

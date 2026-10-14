@@ -88,14 +88,20 @@ $set_show = array(
 	),
 );
 
-if ( ! RWGC_Rule_Evaluator::matches( $set_show, $snap ) ) {
-	rwgc_test_fail( 'Expected UK + evening to match.' );
+if ( RWGC_Rule_Evaluator::matches( $set_show, $snap ) ) {
+	rwgc_test_fail( 'Core must not match a rule that also requires time of day.' );
 }
 
-$set_hide = $set_show;
+$country_only = $set_show;
+$country_only['rules'][0]['conditions'] = array( $set_show['rules'][0]['conditions'][0] );
+if ( ! RWGC_Rule_Evaluator::matches( $country_only, $snap ) ) {
+	rwgc_test_fail( 'A country rule for the United Kingdom should match.' );
+}
+
+$set_hide = $country_only;
 $set_hide['mode'] = 'hide';
 if ( RWGC_Rule_Evaluator::should_render_content( $set_hide, $snap ) ) {
-	rwgc_test_fail( 'Hide mode should suppress when rule matches.' );
+	rwgc_test_fail( 'Hide mode should suppress when a country rule matches.' );
 }
 
 $set_top_all = array(
@@ -174,11 +180,11 @@ $returning_set = array(
 );
 $returning_snap = new RWGC_Context_Snapshot( array( 'returning_visitor' => true, 'new_visitor' => false ) );
 $fresh_snap     = new RWGC_Context_Snapshot( array( 'returning_visitor' => false, 'new_visitor' => true ) );
-if ( ! RWGC_Rule_Evaluator::matches( $returning_set, $returning_snap ) ) {
-	rwgc_test_fail( 'Returning visitor should match when snapshot flag is true.' );
+if ( RWGC_Rule_Evaluator::matches( $returning_set, $returning_snap ) ) {
+	rwgc_test_fail( 'Core must not match a returning-visitor rule.' );
 }
 if ( RWGC_Rule_Evaluator::matches( $returning_set, $fresh_snap ) ) {
-	rwgc_test_fail( 'Returning visitor should not match a first visit.' );
+	rwgc_test_fail( 'Core must not match a returning-visitor rule on a first visit.' );
 }
 
 $new_set = array(
@@ -199,11 +205,11 @@ $new_set = array(
 		),
 	),
 );
-if ( ! RWGC_Rule_Evaluator::matches( $new_set, $fresh_snap ) ) {
-	rwgc_test_fail( 'New visitor should match a first visit.' );
+if ( RWGC_Rule_Evaluator::matches( $new_set, $fresh_snap ) ) {
+	rwgc_test_fail( 'Core must not match a new-visitor rule.' );
 }
 if ( RWGC_Rule_Evaluator::matches( $new_set, $returning_snap ) ) {
-	rwgc_test_fail( 'New visitor should not match a returning snapshot.' );
+	rwgc_test_fail( 'Core must not match a new-visitor rule on a returning snapshot.' );
 }
 
 $sanitized = RWGC_Targeting_Rule_Set_Schema::sanitize( $returning_set );
@@ -254,8 +260,9 @@ $bad_page_version['rules'][0]['conditions'][0]['value'] = array(
 	'page_id' => 0,
 	'version' => '../x',
 );
-if ( null !== RWGC_Targeting_Rule_Set_Schema::sanitize( $bad_page_version ) ) {
-	rwgc_test_fail( 'Sanitize should drop an invalid page version condition.' );
+$san_bad = RWGC_Targeting_Rule_Set_Schema::sanitize( $bad_page_version );
+if ( ! is_array( $san_bad ) || 'page_version_url' !== ( $san_bad['rules'][0]['conditions'][0]['type'] ?? '' ) ) {
+	rwgc_test_fail( 'Sanitize should keep a stored page version condition even when the slug is not currently valid.' );
 }
 
 $audience_set = array(

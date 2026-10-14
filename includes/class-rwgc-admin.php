@@ -1215,12 +1215,6 @@ class RWGC_Admin {
 			'rwgc_target_provider_classes',
 			array(
 				'RWGC_Target_Provider_Geo',
-				'RWGC_Target_Provider_Language',
-				'RWGC_Target_Provider_Time',
-				'RWGC_Target_Provider_Device',
-				'RWGC_Target_Provider_Weather',
-				'RWGC_Target_Provider_Analytics',
-				'RWGC_Target_Provider_Commerce',
 			)
 		);
 		foreach ( $classes as $class ) {
@@ -1401,12 +1395,6 @@ class RWGC_Admin {
 			'rwgc_target_provider_classes',
 			array(
 				'RWGC_Target_Provider_Geo',
-				'RWGC_Target_Provider_Language',
-				'RWGC_Target_Provider_Time',
-				'RWGC_Target_Provider_Device',
-				'RWGC_Target_Provider_Weather',
-				'RWGC_Target_Provider_Analytics',
-				'RWGC_Target_Provider_Commerce',
 			)
 		);
 		foreach ( $classes as $class ) {

@@ -44,19 +44,19 @@ rwgc_wporg_assert( 'telemetry option defaults through get_option false', false !
 rwgc_wporg_assert( 'telemetry opt-in does not cast the stored zero', false !== strpos( $telemetry, "1 === \$stored || '1' === \$stored" ) );
 rwgc_wporg_assert( 'telemetry filter no longer defaults to true', false === strpos( $telemetry, "apply_filters( 'rwgc_cloud_telemetry_allowed', true )" ) );
 
-if ( preg_match( '/const FREE_CONDITION_TYPES = array\((.*?)\);/s', $schema, $free_match )
-	&& preg_match( '/const PRO_CONDITION_TYPES = array\((.*?)\);/s', $schema, $pro_match ) ) {
+if ( preg_match( '/const FREE_CONDITION_TYPES = array\((.*?)\);/s', $schema, $free_match ) ) {
 	$free = $free_match[1];
-	$pro  = $pro_match[1];
-	foreach ( array( 'utm_source', 'utm_medium', 'utm_campaign', 'gclid', 'campaign' ) as $type ) {
-		rwgc_wporg_assert( $type . ' is a free condition', false !== strpos( $free, "'" . $type . "'" ) );
-		rwgc_wporg_assert( $type . ' is not pro-gated', false === strpos( $pro, "'" . $type . "'" ) );
+	rwgc_wporg_assert( 'country is a free condition', false !== strpos( $free, "'country'" ) );
+	rwgc_wporg_assert( 'country group is a free condition', false !== strpos( $free, "'country_group'" ) );
+	foreach ( array( 'utm_source', 'device', 'language', 'time_of_day', 'logged_in', 'audience', 'weather_facet', 'page_type' ) as $type ) {
+		rwgc_wporg_assert( $type . ' is not evaluated by Core', false === strpos( $free, "'" . $type . "'" ) );
 	}
-	rwgc_wporg_assert( 'audience stays a pro add-on condition', false !== strpos( $pro, "'audience'" ) );
-	rwgc_wporg_assert( 'weather stays a pro add-on condition', false !== strpos( $pro, "'weather_facet'" ) );
 } else {
-	rwgc_wporg_assert( 'condition type lists found', false );
+	rwgc_wporg_assert( 'free condition list found', false );
 }
+$evaluator = (string) file_get_contents( $root . '/includes/targeting/class-rwgc-rule-evaluator.php' );
+rwgc_wporg_assert( 'core evaluator does not define device matching', false === strpos( $evaluator, 'function eval_device_type' ) );
+rwgc_wporg_assert( 'core evaluator does not define utm matching', false === strpos( $evaluator, 'function eval_utm_source' ) );
 
 rwgc_wporg_assert( 'readme external services', false !== strpos( $readme, '== External services ==' ) );
 rwgc_wporg_assert( 'readme tested up to 7.1', false !== strpos( $readme, 'Tested up to: 7.1' ) );

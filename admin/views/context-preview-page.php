@@ -37,6 +37,7 @@ $rwgc_preview_weather_facets = isset( $rwgc_preview_snapshot['weather']['facets'
 				<td><input name="rwgc_currency" id="rwgc_currency" type="text" class="regular-text" maxlength="8" value="<?php echo isset( $_GET['rwgc_currency'] ) ? esc_attr( sanitize_text_field( wp_unslash( (string) $_GET['rwgc_currency'] ) ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display parameter.
 ?>" /></td>
 			</tr>
+			<?php if ( function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled() ) : ?>
 			<tr>
 				<th scope="row"><label for="rwgc_language"><?php esc_html_e( 'Language', 'reactwoo-geocore' ); ?></label></th>
 				<td><input name="rwgc_language" id="rwgc_language" type="text" class="regular-text" value="<?php echo isset( $_GET['rwgc_language'] ) ? esc_attr( sanitize_text_field( wp_unslash( (string) $_GET['rwgc_language'] ) ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display parameter.
@@ -88,6 +89,7 @@ $rwgc_preview_weather_facets = isset( $rwgc_preview_snapshot['weather']['facets'
 				<td><input name="rwgc_day_of_week" id="rwgc_day_of_week" type="text" class="regular-text" placeholder="monday" value="<?php echo isset( $_GET['rwgc_day_of_week'] ) ? esc_attr( sanitize_text_field( wp_unslash( (string) $_GET['rwgc_day_of_week'] ) ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display parameter.
 ?>" /></td>
 			</tr>
+			<?php endif; ?>
 			<?php if ( $rwgc_weather_connected && ! empty( $rwgc_weather_facet_defs ) ) : ?>
 			<tr>
 				<th scope="row"><?php esc_html_e( 'Shopping weather', 'reactwoo-geocore' ); ?></th>
@@ -117,8 +119,10 @@ $rwgc_preview_weather_facets = isset( $rwgc_preview_snapshot['weather']['facets'
 
 	<h2><?php esc_html_e( 'Friendly result', 'reactwoo-geocore' ); ?></h2>
 	<p><strong><?php esc_html_e( 'Country', 'reactwoo-geocore' ); ?>:</strong> <?php echo esc_html( isset( $rwgc_preview_snapshot['country'] ) ? (string) $rwgc_preview_snapshot['country'] : '' ); ?></p>
+	<?php if ( function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled() ) : ?>
 	<p><strong><?php esc_html_e( 'Language', 'reactwoo-geocore' ); ?>:</strong> <?php echo esc_html( isset( $rwgc_preview_snapshot['language'] ) ? (string) $rwgc_preview_snapshot['language'] : '' ); ?></p>
 	<p><strong><?php esc_html_e( 'Device', 'reactwoo-geocore' ); ?>:</strong> <?php echo esc_html( isset( $rwgc_preview_snapshot['device_type'] ) ? (string) $rwgc_preview_snapshot['device_type'] : '' ); ?></p>
+	<?php endif; ?>
 	<?php if ( $rwgc_weather_connected ) : ?>
 		<p><strong><?php esc_html_e( 'Shopping weather', 'reactwoo-geocore' ); ?>:</strong> <?php echo esc_html( $rwgc_preview_weather_facets ? $rwgc_preview_weather_facets : __( '(none)', 'reactwoo-geocore' ) ); ?></p>
 	<?php endif; ?>

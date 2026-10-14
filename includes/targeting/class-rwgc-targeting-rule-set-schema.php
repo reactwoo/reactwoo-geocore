@@ -17,56 +17,13 @@ class RWGC_Targeting_Rule_Set_Schema {
 	const VERSION = 2;
 
 	/**
-	 * Condition types available without GeoCore Pro (engine-level; UI may still emphasise country-only).
+	 * Condition types Geo Core evaluates itself. Everything else is registered by an extension.
 	 *
 	 * @var string[]
 	 */
 	const FREE_CONDITION_TYPES = array(
 		'country',
 		'country_group',
-		'language',
-		'locale',
-		'device',
-		'device_type',
-		'time_of_day',
-		'day_of_week',
-		'logged_in',
-		'returning_visitor',
-		'new_visitor',
-		'visitor.returning',
-		'page_version_url',
-		'page_type',
-		'request_uri',
-		'condition_group',
-		'utm_source',
-		'utm_medium',
-		'utm_campaign',
-		'source',
-		'medium',
-		'campaign',
-		'content',
-		'term',
-		'gclid',
-	);
-
-	/**
-	 * Types whose working implementation is a separate plugin (GeoCore Pro or another add-on).
-	 * Request UTM and click-id fields are free: Geo Core already reads and evaluates them.
-	 *
-	 * @var string[]
-	 */
-	const PRO_CONDITION_TYPES = array(
-		'audience',
-		'time',
-		'day',
-		'date',
-		'weather_facet',
-		'weather_condition',
-		'temperature',
-		'precipitation_probability',
-		'wind_speed',
-		'humidity',
-		'profile_id',
 	);
 
 	/**
@@ -96,7 +53,10 @@ class RWGC_Targeting_Rule_Set_Schema {
 	}
 
 	/**
-	 * Types only available when Pro is active (includes `reactwoo:` audience tokens).
+	 * Whether another plugin owns this condition type.
+	 *
+	 * Core evaluates country and country group only. Other types are kept on save
+	 * and do not match until the owning plugin registers a resolver.
 	 *
 	 * @param string $type Sanitized condition type.
 	 * @return bool
@@ -105,18 +65,10 @@ class RWGC_Targeting_Rule_Set_Schema {
 		if ( in_array( $type, self::FREE_CONDITION_TYPES, true ) ) {
 			return false;
 		}
-		if ( in_array( $type, self::PRO_CONDITION_TYPES, true ) ) {
-			return true;
-		}
-		if ( 0 === strpos( $type, 'reactwoo:' ) ) {
-			return true;
-		}
 		/**
 		 * Whether a condition type is owned by another plugin.
 		 *
-		 * Gated types are kept on save and do not match until a resolver is registered.
-		 *
-		 * @param bool   $gated Default true for unknown extension types unless opted-in via filter.
+		 * @param bool   $gated Default true for every type Core does not evaluate.
 		 * @param string $type  Sanitized type slug.
 		 */
 		return (bool) apply_filters( 'rwgc_rule_condition_requires_pro', true, $type );
@@ -138,64 +90,6 @@ class RWGC_Targeting_Rule_Set_Schema {
 				'label'       => __( 'Country group', 'reactwoo-geocore' ),
 				'pro'         => false,
 				'description' => __( 'Named country lists. Leave empty to match all visitors.', 'reactwoo-geocore' ),
-			),
-			'page_version_url' => array(
-				'label'       => __( 'Page Version URL', 'reactwoo-geocore' ),
-				'pro'         => false,
-				'hidden'      => ! ( function_exists( 'rwgc_page_variants_available' ) && rwgc_page_variants_available() ),
-				'description' => __( 'Match a stored page and version slug. Hidden unless page versions are available on this site.', 'reactwoo-geocore' ),
-			),
-			'page_type'        => array(
-				'label'       => __( 'Page type', 'reactwoo-geocore' ),
-				'pro'         => false,
-				'description' => __( 'WooCommerce / site page context such as product or category pages.', 'reactwoo-geocore' ),
-			),
-			'request_uri'      => array(
-				'label'       => __( 'Request URL', 'reactwoo-geocore' ),
-				'pro'         => false,
-				'description' => __( 'Match the current request path or URL fragment.', 'reactwoo-geocore' ),
-			),
-			'returning_visitor' => array(
-				'label'       => __( 'Returning visitor', 'reactwoo-geocore' ),
-				'pro'         => false,
-				'description' => __( 'True when a previous visit left a Geo Core cookie. The first browsing session is new, including later pages and AJAX on that visit.', 'reactwoo-geocore' ),
-			),
-			'new_visitor'       => array(
-				'label'       => __( 'New visitor', 'reactwoo-geocore' ),
-				'pro'         => false,
-				'description' => __( 'Inverse of returning visitor. First visit in this browser, or cookies cleared.', 'reactwoo-geocore' ),
-			),
-			'condition_group'  => array(
-				'label'       => __( 'Condition group', 'reactwoo-geocore' ),
-				'pro'         => false,
-				'description' => __( 'Nested match-all / match-any branches (for example Google Ads OR URL contains).', 'reactwoo-geocore' ),
-				'hidden'      => true,
-			),
-			'campaign'      => array(
-				'label'       => __( 'Campaign', 'reactwoo-geocore' ),
-				'pro'         => false,
-				'description' => __( 'Campaign name from the request (utm_campaign). Empty means all campaigns.', 'reactwoo-geocore' ),
-			),
-			'audience'      => array(
-				'label'       => __( 'Audience', 'reactwoo-geocore' ),
-				'pro'         => true,
-				'description' => __( 'Analytics audiences. Empty means all audiences.', 'reactwoo-geocore' ),
-			),
-			'time'          => array(
-				'label'       => __( 'Time window', 'reactwoo-geocore' ),
-				'pro'         => true,
-				'description' => __( 'Clock-based windows using your selected timezone strategy.', 'reactwoo-geocore' ),
-			),
-			'weather_facet' => array(
-				'label'       => __( 'Shopping weather', 'reactwoo-geocore' ),
-				'pro'         => true,
-				'description' => __( 'Wet, dry, hot, cold, windy, sunny — derived from the configured weather provider.', 'reactwoo-geocore' ),
-			),
-			'weather_condition' => array(
-				'label'       => __( 'Weather (legacy)', 'reactwoo-geocore' ),
-				'pro'         => true,
-				'description' => __( 'Deprecated technical condition slug; prefer Shopping weather.', 'reactwoo-geocore' ),
-				'hidden'      => true,
 			),
 		);
 

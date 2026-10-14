@@ -84,12 +84,6 @@ class RWGC_Target_Registry {
 	private static function default_providers() {
 		return array(
 			'RWGC_Target_Provider_Geo',
-			'RWGC_Target_Provider_Language',
-			'RWGC_Target_Provider_Time',
-			'RWGC_Target_Provider_Device',
-			'RWGC_Target_Provider_Weather',
-			'RWGC_Target_Provider_Analytics',
-			'RWGC_Target_Provider_Commerce',
 		);
 	}
 
