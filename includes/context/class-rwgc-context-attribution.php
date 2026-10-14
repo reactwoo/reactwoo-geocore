@@ -152,7 +152,7 @@ class RWGC_Context_Attribution {
 			return self::empty_touch();
 		}
 
-		$raw = wp_unslash( (string) $_COOKIE[ $cookie_key ] );
+		$raw = sanitize_text_field( wp_unslash( (string) $_COOKIE[ $cookie_key ] ) );
 		$raw = rawurldecode( $raw );
 		$val = json_decode( $raw, true );
 		if ( ! is_array( $val ) ) {
@@ -203,7 +203,8 @@ class RWGC_Context_Attribution {
 		$cookie_domain = defined( 'COOKIE_DOMAIN' ) ? COOKIE_DOMAIN : '';
 		$secure       = function_exists( 'is_ssl' ) ? (bool) is_ssl() : false;
 		setcookie( $cookie_key, rawurlencode( $json ), $expire, $cookie_path, $cookie_domain, $secure, true );
-		$_COOKIE[ $cookie_key ] = rawurlencode( $json );
+		// PHP presents cookie values already decoded. Keep that shape for this request.
+		$_COOKIE[ $cookie_key ] = $json;
 	}
 
 	/**
@@ -315,9 +316,10 @@ class RWGC_Context_Attribution {
 	 * @return void
 	 */
 	private static function persist_returning_cookie() {
-		$existing = ( isset( $_COOKIE['rwgc_returning'] ) && self::has_returning_cookie() )
-			? sanitize_text_field( wp_unslash( (string) $_COOKIE['rwgc_returning'] ) )
-			: '';
+		$existing = '';
+		if ( isset( $_COOKIE['rwgc_returning'] ) && self::has_returning_cookie() ) {
+			$existing = sanitize_text_field( wp_unslash( (string) $_COOKIE['rwgc_returning'] ) );
+		}
 		$value = '' !== $existing ? $existing : (string) time();
 		$ttl   = defined( 'YEAR_IN_SECONDS' ) ? (int) YEAR_IN_SECONDS : 31536000;
 		/**

@@ -112,12 +112,12 @@ class RWGC_Workflows {
 
 		switch ( $goal ) {
 			case 'variants':
-				$out['headline'] = __( 'Path: country-specific pages', 'reactwoo-geocore' );
-				$out['body']     = __( 'Country detection is part of Geo Core. Page versions are available when ReactWoo Geo Core Pro is active on this site.', 'reactwoo-geocore' );
+				$out['headline'] = __( 'Path: country-specific content', 'reactwoo-geocore' );
+				$out['body']     = __( 'Use a visibility rule, the Geo Content block, or the conditional shortcode to show content for selected countries.', 'reactwoo-geocore' );
 				break;
 			case 'ai':
 				$out['headline'] = __( 'Path: AI-assisted localisation', 'reactwoo-geocore' );
-				$out['body']     = __( 'Geo AI needs REST enabled in Geo Core and an active Geo AI license for API usage. Create or open a page variant, then use Geo AI to draft localised copy.', 'reactwoo-geocore' );
+				$out['body']     = __( 'A separate Geo AI plugin can draft copy after Geo Core has detected the visitor country. Geo Core does not call that service while a page is rendering.', 'reactwoo-geocore' );
 				break;
 			case 'tests':
 				$out['headline'] = __( 'Path: split tests', 'reactwoo-geocore' );

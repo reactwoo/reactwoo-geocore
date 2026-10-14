@@ -12,14 +12,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="rwgc-card rwgc-card--full rwgc-addons-intro rwgc-addons-intro--focus">
 			<h2><?php esc_html_e( 'Core and extensions', 'reactwoo-geocore' ); ?></h2>
 			<p class="description">
-				<?php esc_html_e( 'Geo Core handles location detection and page version routing.', 'reactwoo-geocore' ); ?>
-			</p>
-			<p class="description">
-				<?php esc_html_e( 'GeoCore Pro unlocks campaign, attribution, and experience-profile targeting inside Geo Core.', 'reactwoo-geocore' ); ?>
+				<?php esc_html_e( 'Geo Core detects the visitor country and applies the visibility rules included with this plugin.', 'reactwoo-geocore' ); ?>
 			</p>
 			<p>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-suite-variants' ) ); ?>" class="button"><?php esc_html_e( 'Open Rules / Page Versions', 'reactwoo-geocore' ); ?></a>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgcp-geocore-pro' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Open GeoCore Pro', 'reactwoo-geocore' ); ?></a>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-visibility-rules' ) ); ?>" class="button"><?php esc_html_e( 'Open visibility rules', 'reactwoo-geocore' ); ?></a>
 			</p>
 		</div>
 

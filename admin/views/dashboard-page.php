@@ -108,7 +108,7 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 			: __( 'Geo Core', 'reactwoo-geocore' ),
 		$rwgc_platform_shell
 			? __( 'Health, setup progress, and shortcuts across ReactWoo Geo.', 'reactwoo-geocore' )
-			: __( 'Control content and page versions by visitor location.', 'reactwoo-geocore' )
+			: __( 'Show or hide content by visitor country.', 'reactwoo-geocore' )
 	);
 	?>
 	<?php RWGC_Admin::render_inner_nav( 'rwgc-dashboard' ); ?>
@@ -122,9 +122,9 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 	<?php if ( ! $rwgc_platform_shell ) : ?>
 	<section class="rwgc-suite-hero" aria-labelledby="rwgc-suite-hero-title">
 		<h2 id="rwgc-suite-hero-title"><?php esc_html_e( 'Ready to create visitor rules?', 'reactwoo-geocore' ); ?></h2>
-		<p><?php esc_html_e( 'Start with simple rules to show, hide, redirect, or route page versions by visitor conditions.', 'reactwoo-geocore' ); ?></p>
+		<p><?php esc_html_e( 'Start with a visibility rule that shows or hides content for selected countries.', 'reactwoo-geocore' ); ?></p>
 		<div class="rwgc-suite-hero__actions">
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-suite-variants' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Create Geo Rule', 'reactwoo-geocore' ); ?></a>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-visibility-rules' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Create Geo Rule', 'reactwoo-geocore' ); ?></a>
 			<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-settings' ) ); ?>" class="button"><?php esc_html_e( 'Configure Detection', 'reactwoo-geocore' ); ?></a>
 			<a href="<?php echo esc_url( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) ); ?>" class="button"><?php esc_html_e( 'Test Visitor Context', 'reactwoo-geocore' ); ?></a>
 		</div>
@@ -156,24 +156,6 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 				__( 'Download or upload the country database.', 'reactwoo-geocore' ),
 				function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ),
 				__( 'Open MaxMind integration', 'reactwoo-geocore' )
-			);
-			RWGC_Admin_UI::render_checklist_row(
-				true,
-				__( 'Country visibility is included. Full-page versions are in Geo Core Pro when that plugin is entitled.', 'reactwoo-geocore' )
-			);
-			$addons = class_exists( 'RWGC_Upsells', false ) ? RWGC_Upsells::get_addons() : array();
-			$any_addon_active = false;
-			foreach ( $addons as $ad ) {
-				if ( isset( $ad['status'] ) && 'active' === $ad['status'] ) {
-					$any_addon_active = true;
-					break;
-				}
-			}
-			RWGC_Admin_UI::render_checklist_row(
-				$any_addon_active,
-				__( 'Install ReactWoo add-ons (Geo Core Pro, bridges, …) from Add-ons when you need them.', 'reactwoo-geocore' ),
-				admin_url( 'admin.php?page=rwgc-addons' ),
-				__( 'View add-ons', 'reactwoo-geocore' )
 			);
 			?>
 		</ul>
@@ -231,36 +213,6 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 	<details class="rwgc-tech-ref-details">
 		<summary class="rwgc-tech-ref-details__summary"><?php esc_html_e( 'Technical reference and developer tools', 'reactwoo-geocore' ); ?></summary>
 
-		<div class="rwgc-card rwgc-card--full rwgc-tech-ref-details__inner">
-			<h2><?php esc_html_e( 'Feature split', 'reactwoo-geocore' ); ?></h2>
-			<table class="rwui-matrix">
-				<thead>
-					<tr>
-						<th><?php esc_html_e( 'Capability', 'reactwoo-geocore' ); ?></th>
-						<th><?php esc_html_e( 'Geo Core (free baseline)', 'reactwoo-geocore' ); ?></th>
-						<th><?php esc_html_e( 'Geo Core Pro', 'reactwoo-geocore' ); ?></th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td><?php esc_html_e( 'Shared geo engine and MaxMind management', 'reactwoo-geocore' ); ?></td>
-						<td><?php esc_html_e( 'Yes', 'reactwoo-geocore' ); ?></td>
-						<td><?php esc_html_e( 'Uses Geo Core', 'reactwoo-geocore' ); ?></td>
-					</tr>
-					<tr>
-						<td><?php esc_html_e( 'Page-level server-side routing', 'reactwoo-geocore' ); ?></td>
-						<td><?php esc_html_e( 'No', 'reactwoo-geocore' ); ?></td>
-						<td><?php esc_html_e( 'Yes, with no numeric cap', 'reactwoo-geocore' ); ?></td>
-					</tr>
-					<tr>
-						<td><?php esc_html_e( 'Variant groups / advanced mappings', 'reactwoo-geocore' ); ?></td>
-						<td><?php esc_html_e( 'No', 'reactwoo-geocore' ); ?></td>
-						<td><?php esc_html_e( 'Yes', 'reactwoo-geocore' ); ?></td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
-
 		<div class="rwgc-card">
 			<h2><?php esc_html_e( 'Preview & conditional content', 'reactwoo-geocore' ); ?></h2>
 			<p class="description"><?php esc_html_e( 'Administrators can simulate another country on the front end:', 'reactwoo-geocore' ); ?> <code>?rwgc_preview_country=GB</code></p>
@@ -272,9 +224,5 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 			<p class="description"><a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-usage' ) ); ?>"><?php esc_html_e( 'Full reference in Usage', 'reactwoo-geocore' ); ?></a></p>
 		</div>
 
-		<div class="rwgc-card">
-			<h2><?php esc_html_e( 'Page versions', 'reactwoo-geocore' ); ?></h2>
-			<p><?php esc_html_e( 'Country show and hide is included here. Full-page country versions are provided by ReactWoo Geo Core Pro, with no limit on how many a page can have.', 'reactwoo-geocore' ); ?></p>
-		</div>
 	</details>
 </div>

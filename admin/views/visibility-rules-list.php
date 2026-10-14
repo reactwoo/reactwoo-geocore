@@ -81,15 +81,15 @@ $rwgc_render_rule_chips = static function ( array $chips ) {
 		</div>
 	<?php endif; ?>
 
-	<?php if ( isset( $_GET['updated'] ) && '1' === $_GET['updated'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+	<?php if ( isset( $_GET['updated'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['updated'] ) ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 		<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Rule saved.', 'reactwoo-geocore' ); ?></p></div>
 	<?php endif; ?>
-	<?php if ( isset( $_GET['deleted'] ) && '1' === $_GET['deleted'] ) : ?>
+	<?php if ( isset( $_GET['deleted'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['deleted'] ) ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 		<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Rule moved to trash.', 'reactwoo-geocore' ); ?></p></div>
 	<?php endif; ?>
-	<?php if ( isset( $_GET['rwgc_error'] ) && 'notfound' === $_GET['rwgc_error'] ) : ?>
+	<?php if ( isset( $_GET['rwgc_error'] ) && 'notfound' === sanitize_key( wp_unslash( $_GET['rwgc_error'] ) ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 		<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'Rule not found.', 'reactwoo-geocore' ); ?></p></div>
-	<?php elseif ( ! empty( $_GET['rwgc_error'] ) ) : ?>
+	<?php elseif ( isset( $_GET['rwgc_error'] ) && '' !== sanitize_key( wp_unslash( $_GET['rwgc_error'] ) ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 		<div class="notice notice-error is-dismissible"><p><?php esc_html_e( 'Something went wrong.', 'reactwoo-geocore' ); ?></p></div>
 	<?php endif; ?>
 

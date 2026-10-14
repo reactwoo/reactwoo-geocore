@@ -249,7 +249,7 @@ class RWGC_Elementor_Profiler {
 		if ( ! isset( $_REQUEST['actions'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return $action;
 		}
-		$raw = wp_unslash( $_REQUEST['actions'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$raw = map_deep( wp_unslash( $_REQUEST['actions'] ), 'sanitize_text_field' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( is_array( $raw ) ) {
 			$raw = wp_json_encode( $raw );
 		}

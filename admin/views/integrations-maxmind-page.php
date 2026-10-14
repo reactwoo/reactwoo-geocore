@@ -19,7 +19,7 @@ $settings_url = admin_url( 'admin.php?page=rwgc-settings' );
 // Handle maintenance actions (update DB, clear cache).
 if ( isset( $_GET['rwgc_action'], $_GET['_wpnonce'] ) && current_user_can( 'manage_options' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	$action = sanitize_key( wp_unslash( $_GET['rwgc_action'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	if ( in_array( $action, array( 'clear_cache', 'update_db' ), true ) && wp_verify_nonce( wp_unslash( $_GET['_wpnonce'] ), 'rwgc_maxmind_action_' . $action ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	if ( in_array( $action, array( 'clear_cache', 'update_db' ), true ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'rwgc_maxmind_action_' . $action ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( 'clear_cache' === $action && class_exists( 'RWGC_Cache', false ) ) {
 			RWGC_Cache::clear_all();
 			add_settings_error( 'rwgc_maxmind', 'rwgc_cache_cleared', __( 'Geo cache cleared.', 'reactwoo-geocore' ), 'updated' );

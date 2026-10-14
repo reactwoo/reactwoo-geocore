@@ -98,6 +98,9 @@
 		if (fd.key === 'country') {
 			return true;
 		}
+		if (fd.key === 'page_version_url') {
+			return !!c.page_versions;
+		}
 		if (fd.pro && !c.pro) {
 			return false;
 		}
@@ -364,6 +367,15 @@
 			};
 		}
 		if (String(c.type) === 'page_version_url') {
+			if (!ctx().page_versions) {
+				return {
+					uid: uid(),
+					field: '',
+					uiOp: 'includes',
+					values: [],
+					unknown: { type: c.type, operator: String(c.operator || 'equals'), value: c.value },
+				};
+			}
 			var pv = c.value && typeof c.value === 'object' ? c.value : {};
 			return {
 				uid: uid(),

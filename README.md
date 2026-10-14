@@ -79,7 +79,7 @@ No `composer install`, SSH, or WP-CLI is required on customer sites.
 |---------|---------------------------|--------------------------|
 | Country detection & shortcodes | Yes | Yes |
 | Gutenberg / Elementor baseline targeting | Yes | Yes |
-| Page variant routing (1 secondary) | Yes | Yes |
+| Page variant routing | No. Stored conditions are kept and are not applied here. | Yes, in the separate Geo Core Pro plugin |
 | Visibility rules library | Yes | Yes |
 | Portable campaign/audience/time/weather conditions | No | Yes (via GeoCore Pro) |
 | Google Ads / GA4 sync | No | Yes (via GeoCore Pro + **react-cloud**) |

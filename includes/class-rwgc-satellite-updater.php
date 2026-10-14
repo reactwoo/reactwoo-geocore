@@ -175,7 +175,7 @@ class RWGC_Satellite_Updater {
 			return;
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( empty( $_GET['rwgc_force_plugin_updates'] ) ) {
+		if ( ! isset( $_GET['rwgc_force_plugin_updates'] ) || '' === sanitize_text_field( wp_unslash( $_GET['rwgc_force_plugin_updates'] ) ) ) {
 			return;
 		}
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended

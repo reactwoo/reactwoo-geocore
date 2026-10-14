@@ -104,7 +104,10 @@ class RWGC_Suite_Admin {
 		$prev   = RWGC_Onboarding::get_state();
 		$goal   = isset( $_POST['rwgc_wizard_goal'] ) ? sanitize_key( wp_unslash( $_POST['rwgc_wizard_goal'] ) ) : ( isset( $prev['goal'] ) ? (string) $prev['goal'] : '' );
 
-		$data = isset( $_POST['rwgc_wizard'] ) && is_array( $_POST['rwgc_wizard'] ) ? map_deep( wp_unslash( $_POST['rwgc_wizard'] ), 'sanitize_text_field' ) : array();
+		$data = isset( $_POST['rwgc_wizard'] ) ? map_deep( wp_unslash( $_POST['rwgc_wizard'] ), 'sanitize_text_field' ) : array();
+		if ( ! is_array( $data ) ) {
+			$data = array();
+		}
 
 		if ( 'advance_env' === $action ) {
 			RWGC_Onboarding::update_state(

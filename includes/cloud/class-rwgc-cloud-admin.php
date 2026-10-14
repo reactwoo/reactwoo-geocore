@@ -184,7 +184,7 @@ final class RWGC_Cloud_Admin {
 	 */
 	public static function handle_telemetry() {
 		self::guard( 'rwgc_cloud_telemetry' );
-		$enabled = ! empty( $_POST['rwgc_cloud_telemetry_opt_in'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- guard() verified the nonce.
+		$enabled = isset( $_POST['rwgc_cloud_telemetry_opt_in'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['rwgc_cloud_telemetry_opt_in'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- guard() verified the nonce.
 		update_option( RWGC_Cloud_Telemetry::OPT_IN_OPTION, $enabled ? 1 : 0, false );
 		if ( ! $enabled && class_exists( 'RWGC_Cloud_Telemetry', false ) ) {
 			RWGC_Cloud_Telemetry::clear_visitor_cookie();

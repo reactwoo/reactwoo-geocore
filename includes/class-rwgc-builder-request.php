@@ -75,12 +75,15 @@ class RWGC_Builder_Request {
 			return self::$memo_elementor_surface;
 		}
 
-		if ( ! empty( $_GET['elementor-preview'] ) || ! empty( $_GET['elementor_library'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$preview = isset( $_GET['elementor-preview'] ) ? sanitize_text_field( wp_unslash( $_GET['elementor-preview'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$library = isset( $_GET['elementor_library'] ) ? sanitize_text_field( wp_unslash( $_GET['elementor_library'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( '' !== $preview || '' !== $library ) {
 			self::$memo_elementor_surface = true;
 			return true;
 		}
 
-		if ( ! empty( $_GET['action'] ) && 'elementor' === $_GET['action'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( 'elementor' === $action ) {
 			self::$memo_elementor_surface = true;
 			return true;
 		}
@@ -126,17 +129,22 @@ class RWGC_Builder_Request {
 		if ( null !== $post_id && (int) $post_id > 0 ) {
 			return (int) $post_id;
 		}
-		if ( ! empty( $_GET['elementor-preview'] ) && is_numeric( $_GET['elementor-preview'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			return (int) $_GET['elementor-preview'];
+		$preview_id = isset( $_GET['elementor-preview'] ) ? absint( wp_unslash( $_GET['elementor-preview'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( $preview_id > 0 ) {
+			return $preview_id;
 		}
-		if ( ! empty( $_GET['p'] ) && isset( $_GET['action'] ) && 'elementor' === $_GET['action'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			return (int) $_GET['p'];
+		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$page_id = isset( $_GET['p'] ) ? absint( wp_unslash( $_GET['p'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( $page_id > 0 && 'elementor' === $action ) {
+			return $page_id;
 		}
-		if ( ! empty( $_REQUEST['post'] ) && is_numeric( $_REQUEST['post'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			return (int) $_REQUEST['post'];
+		$post_id = isset( $_REQUEST['post'] ) ? absint( wp_unslash( $_REQUEST['post'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( $post_id > 0 ) {
+			return $post_id;
 		}
-		if ( ! empty( $_REQUEST['editor_post_id'] ) && is_numeric( $_REQUEST['editor_post_id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			return (int) $_REQUEST['editor_post_id'];
+		$editor_post_id = isset( $_REQUEST['editor_post_id'] ) ? absint( wp_unslash( $_REQUEST['editor_post_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( $editor_post_id > 0 ) {
+			return $editor_post_id;
 		}
 		$queried = (int) get_queried_object_id();
 		return $queried > 0 ? $queried : 0;

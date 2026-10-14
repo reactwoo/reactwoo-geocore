@@ -32,12 +32,12 @@ $geo_ai_active  = function_exists( 'rwgc_is_geo_ai_active' ) && rwgc_is_geo_ai_a
 		RWGA_UX_Reviewer_UI::render_workspace(
 			array(
 				'source'          => 'insights',
-				'page_id'         => isset( $_GET['page_id'] ) ? (int) $_GET['page_id'] : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				'product_id'      => isset( $_GET['product_id'] ) ? (int) $_GET['product_id'] : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				'variant_page_id' => isset( $_GET['variant_page_id'] ) ? (int) $_GET['variant_page_id'] : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				'page_id'         => isset( $_GET['page_id'] ) ? absint( wp_unslash( $_GET['page_id'] ) ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				'product_id'      => isset( $_GET['product_id'] ) ? absint( wp_unslash( $_GET['product_id'] ) ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				'variant_page_id' => isset( $_GET['variant_page_id'] ) ? absint( wp_unslash( $_GET['variant_page_id'] ) ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				'rule_id'         => isset( $_GET['rule_id'] ) ? sanitize_text_field( wp_unslash( (string) $_GET['rule_id'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				'engine_source'   => isset( $_GET['rwga_engine'] ) ? sanitize_key( wp_unslash( (string) $_GET['rwga_engine'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				'action_count'    => isset( $_GET['rwga_actions'] ) ? (int) $_GET['rwga_actions'] : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				'action_count'    => isset( $_GET['rwga_actions'] ) ? absint( wp_unslash( $_GET['rwga_actions'] ) ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				'capabilities'    => function_exists( 'rwgc_get_suite_capability_map' ) ? rwgc_get_suite_capability_map() : array(),
 				'cards'           => $cards,
 				'show_inner_nav'  => false,

@@ -266,11 +266,6 @@ class RWGC_Onboarding {
 			}
 		}
 
-		$pro_on = function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled();
-		$sync   = class_exists( 'RWGC_Platform_Sync_Status', false )
-			? RWGC_Platform_Sync_Status::get_snapshot()
-			: array();
-
 		$setup_url = admin_url( 'admin.php?page=rwgc-getting-started' );
 		$steps     = array(
 			array(
@@ -300,22 +295,12 @@ class RWGC_Onboarding {
 				'hint'     => __( 'Verify country detection on the MaxMind integration screen.', 'reactwoo-geocore' ),
 			),
 			array(
-				'id'       => 'google_sync',
-				'label'    => __( 'Google audiences & campaigns synced', 'reactwoo-geocore' ),
-				'done'     => $pro_on && isset( $sync['variant'] ) && 'success' === $sync['variant'],
-				'url'      => admin_url( 'admin.php?page=rwgc-integrations-hub' ),
-				'optional' => ! $pro_on,
-				'hint'     => $pro_on
-					? __( 'GeoCore Pro → Integrations.', 'reactwoo-geocore' )
-					: __( 'Optional — requires GeoCore Pro.', 'reactwoo-geocore' ),
-			),
-			array(
 				'id'       => 'first_experience',
-				'label'    => __( 'Create first page version or rule', 'reactwoo-geocore' ),
+				'label'    => __( 'Create a visibility rule', 'reactwoo-geocore' ),
 				'done'     => $rules_count > 0 || $library_rules > 0,
-				'url'      => admin_url( 'admin.php?page=rwgc-targeting-hub' ),
+				'url'      => admin_url( 'admin.php?page=rwgc-visibility-rules' ),
 				'optional' => false,
-				'hint'     => __( 'Page versions or a saved visibility rule under Targeting.', 'reactwoo-geocore' ),
+				'hint'     => __( 'Save a visibility rule under Targeting.', 'reactwoo-geocore' ),
 			),
 			array(
 				'id'       => 'visibility_library',

@@ -60,16 +60,16 @@ $page_title            = $is_new ? __( 'Add visibility rule', 'reactwoo-geocore'
 		</div>
 	</div>
 
-	<?php if ( isset( $_GET['updated'] ) && '1' === $_GET['updated'] ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+	<?php if ( isset( $_GET['updated'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['updated'] ) ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 		<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Rule saved.', 'reactwoo-geocore' ); ?></p></div>
-		<?php if ( isset( $_GET['rwgc_synced'] ) && is_numeric( $_GET['rwgc_synced'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+		<?php if ( isset( $_GET['rwgc_synced'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
 			<div class="notice notice-success is-dismissible">
 				<p>
 					<?php
 					printf(
 						/* translators: %d: number of popups updated */
 						esc_html__( 'Synced this rule to %d referenced popup(s).', 'reactwoo-geocore' ),
-						(int) $_GET['rwgc_synced'] // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+						absint( wp_unslash( $_GET['rwgc_synced'] ) ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 					);
 					?>
 				</p>
@@ -245,7 +245,7 @@ $page_title            = $is_new ? __( 'Add visibility rule', 'reactwoo-geocore'
 							<button type="button" class="button" id="rwgc-duplicate-visibility-rule"><?php esc_html_e( 'Duplicate rule', 'reactwoo-geocore' ); ?></button>
 						<?php endif; ?>
 						<?php if ( '' !== $delete_url ) : ?>
-							<a class="button button-link-delete" href="<?php echo esc_url( $delete_url ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Delete this rule permanently?', 'reactwoo-geocore' ) ); ?>');">
+							<a class="button button-link-delete" href="<?php echo esc_url( $delete_url ); ?>" data-rwgc-confirm="<?php echo esc_attr( __( 'Delete this rule permanently?', 'reactwoo-geocore' ) ); ?>">
 								<?php esc_html_e( 'Delete rule', 'reactwoo-geocore' ); ?>
 							</a>
 						<?php endif; ?>
@@ -258,24 +258,6 @@ $page_title            = $is_new ? __( 'Add visibility rule', 'reactwoo-geocore'
 			<?php submit_button( $save_label, 'primary', 'submit', false ); ?>
 		</p>
 	</form>
-
-	<?php if ( $post_id > 0 ) : ?>
-		<script>
-		(function () {
-			var dup = document.getElementById('rwgc-duplicate-visibility-rule');
-			if (!dup) { return; }
-			dup.addEventListener('click', function () {
-				var idInput = document.querySelector('#rwgc-visibility-rule-form [name="rwgc_rule_id"]');
-				var titleInput = document.getElementById('rwgc_rule_title');
-				if (idInput) { idInput.value = '0'; }
-				if (titleInput && titleInput.value.indexOf('(copy)') === -1) {
-					titleInput.value = titleInput.value.trim() + ' (copy)';
-				}
-				document.getElementById('rwgc-visibility-rule-form').submit();
-			});
-		}());
-		</script>
-	<?php endif; ?>
 
 	<?php if ( $is_variant_rule ) : ?>
 		<div class="rwgc-rule-card rwgc-card--full" style="margin-top:1.5em;">

@@ -8,13 +8,8 @@ $preview_url           = admin_url( 'admin.php?page=rwgc-context-preview' );
 $weather_connected     = (bool) apply_filters( 'rwgc_weather_targets_configured', false );
 $weather_facet_defs    = class_exists( 'RWGCP_Weather_Facets', false ) ? RWGCP_Weather_Facets::get_definitions() : array();
 $selected_facets       = array();
-if ( isset( $_GET['rwgc_weather_facet'] ) && is_array( $_GET['rwgc_weather_facet'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$selected_facets = array_map(
-		static function ( $item ) {
-			return sanitize_key( (string) wp_unslash( $item ) );
-		},
-		wp_unslash( $_GET['rwgc_weather_facet'] ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	);
+if ( isset( $_GET['rwgc_weather_facet'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$selected_facets = array_map( 'sanitize_key', (array) map_deep( wp_unslash( $_GET['rwgc_weather_facet'] ), 'sanitize_text_field' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 } elseif ( ! empty( $rwgc_preview_snapshot['weather']['facets'] ) && is_array( $rwgc_preview_snapshot['weather']['facets'] ) ) {
 	$selected_facets = array_map( 'strval', $rwgc_preview_snapshot['weather']['facets'] );
 }

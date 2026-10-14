@@ -60,8 +60,14 @@ if ( preg_match( '/const FREE_CONDITION_TYPES = array\((.*?)\);/s', $schema, $fr
 
 rwgc_wporg_assert( 'readme external services', false !== strpos( $readme, '== External services ==' ) );
 rwgc_wporg_assert( 'readme tested up to 7.1', false !== strpos( $readme, 'Tested up to: 7.1' ) );
-rwgc_wporg_assert( 'readme stable tag matches header', false !== strpos( $readme, 'Stable tag: 1.9.5' ) && false !== strpos( $main, 'Version: 1.9.5' ) );
-rwgc_wporg_assert( 'version constant is 1.9.5', false !== strpos( $main, "define( 'RWGC_VERSION', '1.9.5' );" ) );
+rwgc_wporg_assert( 'readme stable tag matches header', false !== strpos( $readme, 'Stable tag: 1.9.6' ) && false !== strpos( $main, 'Version: 1.9.6' ) );
+rwgc_wporg_assert( 'version constant is 1.9.6', false !== strpos( $main, "define( 'RWGC_VERSION', '1.9.6' );" ) );
+rwgc_wporg_assert( 'readme does not advertise a free page-variant cap', false === strpos( $readme, 'Page Variant Routing (free)' ) && false === strpos( $readme, '1 secondary' ) );
+rwgc_wporg_assert( 'distignore keeps composer.json', ! (bool) preg_match( '/^composer\\.json$/m', $distignore ) );
+rwgc_wporg_assert( 'distignore drops composer.lock', (bool) preg_match( '/^composer\\.lock$/m', $distignore ) );
+rwgc_wporg_assert( 'distignore drops directory icons', false !== strpos( $distignore, 'assets/icon-128x128.png' ) && false !== strpos( $distignore, 'assets/icon-256x256.png' ) );
+rwgc_wporg_assert( 'distignore drops unused cacert.pem', false !== strpos( $distignore, 'vendor/composer/ca-bundle/res/cacert.pem' ) );
+rwgc_wporg_assert( 'packager requires composer.json', false !== strpos( $package, 'WordPress.org zip is missing composer.json' ) );
 rwgc_wporg_assert( 'readme upgrade notice', false !== strpos( $readme, '== Upgrade Notice ==' ) && false !== strpos( $readme, 'Requires PHP 8.1' ) );
 rwgc_wporg_assert( 'updater stub exists', is_file( $root . '/includes/class-rwgc-satellite-updater-stub.php' ) );
 rwgc_wporg_assert( 'wporg build loads the updater stub', false !== strpos( $plugin, 'class-rwgc-satellite-updater-stub.php' ) );

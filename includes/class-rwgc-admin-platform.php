@@ -50,7 +50,6 @@ class RWGC_Admin_Platform {
 		add_action( 'admin_menu', array( __CLASS__, 'ensure_collapsed_hub_page_access' ), 10000 );
 		add_filter( 'rwgc_app_route_register_wp_submenu', array( __CLASS__, 'filter_app_route_register_wp_submenu' ), 10, 2 );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_collapsed_menu_styles' ) );
-		add_action( 'admin_head', array( __CLASS__, 'print_collapsed_submenu_fallback_css' ), 99 );
 		add_filter( 'admin_body_class', array( __CLASS__, 'admin_body_class' ) );
 		add_filter( 'rwgc_admin_visible_submenu_slugs', array( __CLASS__, 'filter_visible_setup_wizard_slug' ), 10, 2 );
 	}
@@ -503,31 +502,17 @@ class RWGC_Admin_Platform {
 			array(),
 			defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.0.0'
 		);
-	}
-
-	/**
-	 * Extra CSS hide for satellite detail slugs (backup if a plugin re-adds submenu rows).
-	 *
-	 * @return void
-	 */
-	public static function print_collapsed_submenu_fallback_css() {
-		if ( ! is_admin() || ! self::is_sidebar_collapsed() ) {
-			return;
-		}
 
 		$hide_slugs = self::get_collapsed_submenu_hide_slugs();
 		if ( empty( $hide_slugs ) ) {
 			return;
 		}
 
-		echo '<style id="rwgc-collapsed-hub-submenu-fallback">';
+		$css = '';
 		foreach ( $hide_slugs as $slug ) {
-			printf(
-				'#toplevel_page_rwgc-dashboard .wp-submenu li a[href*="page=%1$s"]{display:none!important;}',
-				esc_attr( $slug )
-			);
+			$css .= '#toplevel_page_rwgc-dashboard .wp-submenu li a[href*="page=' . esc_attr( $slug ) . '"]{display:none!important;}';
 		}
-		echo '</style>';
+		wp_add_inline_style( 'rwgc-admin-menu', $css );
 	}
 
 	/**
