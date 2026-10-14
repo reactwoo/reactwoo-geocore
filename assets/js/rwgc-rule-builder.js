@@ -45,18 +45,48 @@
 
 	var PAGE_VERSION_PATTERN = /^[a-zA-Z0-9_-]{1,80}$/;
 
+	var TIME_OPTIONS = [
+		{ v: 'morning', l: 'Morning' },
+		{ v: 'afternoon', l: 'Afternoon' },
+		{ v: 'evening', l: 'Evening' },
+		{ v: 'night', l: 'Night' },
+	];
+
+	var DAY_OPTIONS = [
+		{ v: 'monday', l: 'Monday' },
+		{ v: 'tuesday', l: 'Tuesday' },
+		{ v: 'wednesday', l: 'Wednesday' },
+		{ v: 'thursday', l: 'Thursday' },
+		{ v: 'friday', l: 'Friday' },
+		{ v: 'saturday', l: 'Saturday' },
+		{ v: 'sunday', l: 'Sunday' },
+	];
+
 	var FIELD_DEFS = [
 		{ key: 'country', portableType: 'country', pro: false, multi: true },
+		{ key: 'country_group', portableType: 'country_group', pro: false, multi: false },
+		{ key: 'language', portableType: 'language', pro: false, multi: false },
+		{ key: 'locale', portableType: 'locale', pro: false, multi: false },
 		{ key: 'page_version_url', portableType: 'page_version_url', pro: false, multi: false },
 		{ key: 'ga4_audience', portableType: 'audience', pro: true, multi: true },
 		{ key: 'ads_campaign', portableType: 'campaign', pro: true, multi: true },
-		{ key: 'utm_campaign', portableType: 'utm_campaign', pro: true, multi: false },
-		{ key: 'utm_source', portableType: 'utm_source', pro: true, multi: false },
-		{ key: 'utm_medium', portableType: 'utm_medium', pro: true, multi: false },
+		{ key: 'campaign', portableType: 'campaign', pro: false, multi: false },
+		{ key: 'utm_campaign', portableType: 'utm_campaign', pro: false, multi: false },
+		{ key: 'utm_source', portableType: 'utm_source', pro: false, multi: false },
+		{ key: 'utm_medium', portableType: 'utm_medium', pro: false, multi: false },
+		{ key: 'source', portableType: 'source', pro: false, multi: false },
+		{ key: 'medium', portableType: 'medium', pro: false, multi: false },
+		{ key: 'content', portableType: 'content', pro: false, multi: false },
+		{ key: 'term', portableType: 'term', pro: false, multi: false },
+		{ key: 'gclid', portableType: 'gclid', pro: false, multi: false },
 		{ key: 'page_type', portableType: 'page_type', pro: false, multi: true },
 		{ key: 'request_uri', portableType: 'request_uri', pro: false, multi: false },
 		{ key: 'device_type', portableType: 'device_type', pro: false, multi: true },
-		{ key: 'logged_in', portableType: 'logged_in', pro: false, multi: false },
+		{ key: 'time_of_day', portableType: 'time_of_day', pro: false, multi: true, choices: TIME_OPTIONS },
+		{ key: 'day_of_week', portableType: 'day_of_week', pro: false, multi: true, choices: DAY_OPTIONS },
+		{ key: 'logged_in', portableType: 'logged_in', pro: false, multi: false, boolean: true },
+		{ key: 'returning_visitor', portableType: 'returning_visitor', pro: false, multi: false, boolean: true },
+		{ key: 'new_visitor', portableType: 'new_visitor', pro: false, multi: false, boolean: true },
 		{ key: 'weather_facet', portableType: 'weather_facet', pro: true, multi: true, requiresWeather: true },
 	];
 
@@ -88,12 +118,9 @@
 	 * Whether a condition type appears in the "When" picker.
 	 * Shopping weather is a baseline merchandising field when BYOK weather is connected.
 	 */
-	function fieldAllowedInPicker(fd, c, options) {
+	function fieldAllowedInPicker(fd, c) {
 		if (!fd) {
 			return false;
-		}
-		if (fd.requiresWeather) {
-			return !!c.weather_connected;
 		}
 		if (fd.key === 'country') {
 			return true;
@@ -104,7 +131,13 @@
 		if (fd.pro && !c.pro) {
 			return false;
 		}
-		if (!c.advanced_targeting && !options.isPlayground && !options.allowAllConditionTypes) {
+		if (fd.requiresWeather) {
+			return !!c.weather_connected;
+		}
+		if (fd.key === 'ads_campaign') {
+			return !!(c.campaigns && c.campaigns.length);
+		}
+		if (fd.key === 'campaign' && c.pro && c.campaigns && c.campaigns.length) {
 			return false;
 		}
 		return true;
@@ -122,12 +155,38 @@
 				return t('fieldGa4Audience');
 			case 'ads_campaign':
 				return t('fieldAdsCampaign');
+			case 'country_group':
+				return t('fieldCountryGroup');
+			case 'language':
+				return t('fieldLanguage');
+			case 'locale':
+				return t('fieldLocale');
+			case 'campaign':
+				return t('fieldCampaign');
 			case 'utm_campaign':
 				return t('fieldUtmCampaign');
 			case 'utm_source':
 				return t('fieldUtmSource');
 			case 'utm_medium':
 				return t('fieldUtmMedium');
+			case 'source':
+				return t('fieldSource');
+			case 'medium':
+				return t('fieldMedium');
+			case 'content':
+				return t('fieldContent');
+			case 'term':
+				return t('fieldTerm');
+			case 'gclid':
+				return t('fieldGclid');
+			case 'time_of_day':
+				return t('fieldTimeOfDay');
+			case 'day_of_week':
+				return t('fieldDayOfWeek');
+			case 'returning_visitor':
+				return t('fieldReturning');
+			case 'new_visitor':
+				return t('fieldNewVisitor');
 			case 'device_type':
 				return t('fieldDevice');
 			case 'page_type':
@@ -146,18 +205,39 @@
 	}
 
 	function portableTypeToField(pt) {
+		if (pt === 'campaign') {
+			var campaignCtx = ctx();
+			if (campaignCtx.pro && campaignCtx.campaigns && campaignCtx.campaigns.length) {
+				return 'ads_campaign';
+			}
+			return 'campaign';
+		}
+		if (pt === 'visitor.returning') {
+			return 'returning_visitor';
+		}
 		var map = {
 			country: 'country',
+			country_group: 'country_group',
+			language: 'language',
+			locale: 'locale',
 			audience: 'ga4_audience',
-			campaign: 'ads_campaign',
 			utm_campaign: 'utm_campaign',
 			utm_source: 'utm_source',
 			utm_medium: 'utm_medium',
+			source: 'source',
+			medium: 'medium',
+			content: 'content',
+			term: 'term',
+			gclid: 'gclid',
 			device: 'device_type',
 			device_type: 'device_type',
+			time_of_day: 'time_of_day',
+			day_of_week: 'day_of_week',
 			page_type: 'page_type',
 			request_uri: 'request_uri',
 			logged_in: 'logged_in',
+			returning_visitor: 'returning_visitor',
+			new_visitor: 'new_visitor',
 			page_version_url: 'page_version_url',
 			weather_facet: 'weather_facet',
 		};
@@ -400,7 +480,8 @@
 		if (op === 'empty' || op === 'not_empty') {
 			return [];
 		}
-		if (field === 'logged_in') {
+		var incomingMeta = fieldMeta(field);
+		if (field === 'logged_in' || (incomingMeta && incomingMeta.boolean)) {
 			var b = value === true || value === 1 || value === '1' || String(value).toLowerCase() === 'true';
 			return [b ? '1' : '0'];
 		}
@@ -454,7 +535,7 @@
 		var valOut;
 		if (op === 'empty' || op === 'not_empty') {
 			valOut = [];
-		} else if (row.field === 'logged_in') {
+		} else if (meta.boolean || row.field === 'logged_in') {
 			valOut = row.values[0] === '1' || row.values[0] === 'true';
 		} else if (meta.multi) {
 			valOut = row.values.slice();
@@ -1223,13 +1304,6 @@
 				root.appendChild(libPicker);
 			}
 
-			if (!c.advanced_targeting && !options.isPlayground && !options.allowAllConditionTypes && !c.weather_connected) {
-				var advNote = document.createElement('p');
-				advNote.className = 'description rwgc-rb__advanced-notice';
-				advNote.textContent = t('advancedTargetingNotice');
-				root.appendChild(advNote);
-			}
-
 			if (options.isPlayground) {
 				var intro = document.createElement('p');
 				intro.className = 'rwgc-rb__playground-intro description';
@@ -1968,7 +2042,36 @@
 				frag.appendChild(em);
 				return frag;
 			}
-			if (row.field === 'logged_in') {
+			var valueMeta = fieldMeta(row.field);
+			if (valueMeta && valueMeta.choices) {
+				var choiceBox = document.createElement('div');
+				choiceBox.className = 'rwgc-rb__multi';
+				valueMeta.choices.forEach(function (d) {
+					var choiceLab = document.createElement('label');
+					var choiceCb = document.createElement('input');
+					choiceCb.type = 'checkbox';
+					choiceCb.value = d.v;
+					choiceCb.checked = row.values.indexOf(d.v) !== -1;
+					choiceCb.addEventListener('change', function () {
+						if (choiceCb.checked) {
+							if (row.values.indexOf(d.v) === -1) {
+								row.values.push(d.v);
+							}
+						} else {
+							row.values = row.values.filter(function (x) {
+								return x !== d.v;
+							});
+						}
+						writeTextareaFromState();
+					});
+					choiceLab.appendChild(choiceCb);
+					choiceLab.appendChild(document.createTextNode(d.l));
+					choiceBox.appendChild(choiceLab);
+				});
+				frag.appendChild(choiceBox);
+				return frag;
+			}
+			if (row.field === 'logged_in' || (valueMeta && valueMeta.boolean)) {
 				var sel = document.createElement('select');
 				sel.innerHTML =
 					'<option value="">' +
@@ -1978,7 +2081,7 @@
 					'</option><option value="0">' +
 					escapeHtml(t('loggedInNo')) +
 					'</option>';
-				sel.value = row.values[0] === '0' ? '0' : row.values[0] === '1' ? '1' : '';
+				sel.value = row.values[0] === '0' || row.values[0] === 'false' ? '0' : row.values[0] === '1' || row.values[0] === 'true' ? '1' : '';
 				sel.addEventListener('change', function () {
 					row.values = sel.value ? [sel.value] : [];
 					writeTextareaFromState();
@@ -1991,6 +2094,16 @@
 				hint.textContent = t('booleanHint');
 				frag.appendChild(hint);
 				return frag;
+			}
+			if (valueMeta) {
+				var textIn = document.createElement('input');
+				textIn.type = 'text';
+				textIn.value = row.values[0] || '';
+				textIn.addEventListener('input', function () {
+					row.values = [textIn.value];
+					writeTextareaFromState();
+				});
+				frag.appendChild(textIn);
 			}
 			return frag;
 		}

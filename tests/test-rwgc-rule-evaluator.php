@@ -258,5 +258,38 @@ if ( null !== RWGC_Targeting_Rule_Set_Schema::sanitize( $bad_page_version ) ) {
 	rwgc_test_fail( 'Sanitize should drop an invalid page version condition.' );
 }
 
+$audience_set = array(
+	'enabled' => true,
+	'mode'    => 'show_if',
+	'match'   => 'all',
+	'rules'   => array(
+		array(
+			'id'         => 'aud',
+			'match'      => 'all',
+			'conditions' => array(
+				array(
+					'type'     => 'audience',
+					'operator' => 'in',
+					'value'    => array( 'ga4-1' ),
+				),
+				array(
+					'type'     => 'country',
+					'operator' => 'in',
+					'value'    => array( 'GB' ),
+				),
+			),
+		),
+	),
+);
+$san_aud = RWGC_Targeting_Rule_Set_Schema::sanitize( $audience_set );
+if ( ! is_array( $san_aud ) || 2 !== count( $san_aud['rules'][0]['conditions'] ) ) {
+	rwgc_test_fail( 'Sanitize should keep an audience condition when Pro is off.' );
+} elseif ( 'audience' !== $san_aud['rules'][0]['conditions'][0]['type'] ) {
+	rwgc_test_fail( 'Sanitize should keep the audience condition type.' );
+}
+if ( RWGC_Rule_Evaluator::matches( $san_aud, $snap ) ) {
+	rwgc_test_fail( 'An audience condition must not match while Pro is off.' );
+}
+
 fwrite( STDOUT, "OK: RWGC_Rule_Evaluator CLI tests passed.\n" );
 exit( 0 );

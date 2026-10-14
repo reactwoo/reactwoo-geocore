@@ -112,7 +112,9 @@ class RWGC_Targeting_Rule_Set_Schema {
 			return true;
 		}
 		/**
-		 * Whether a condition type requires GeoCore Pro to persist in sanitized rule JSON.
+		 * Whether a condition type is owned by another plugin.
+		 *
+		 * Gated types are kept on save and do not match until a resolver is registered.
 		 *
 		 * @param bool   $gated Default true for unknown extension types unless opted-in via filter.
 		 * @param string $type  Sanitized type slug.
@@ -172,7 +174,7 @@ class RWGC_Targeting_Rule_Set_Schema {
 			'campaign'      => array(
 				'label'       => __( 'Campaign', 'reactwoo-geocore' ),
 				'pro'         => false,
-				'description' => __( 'Campaign name from the request (utm_campaign). Empty means all campaigns. Synced Google Ads campaign lists need GeoCore Pro.', 'reactwoo-geocore' ),
+				'description' => __( 'Campaign name from the request (utm_campaign). Empty means all campaigns.', 'reactwoo-geocore' ),
 			),
 			'audience'      => array(
 				'label'       => __( 'Audience', 'reactwoo-geocore' ),
@@ -187,7 +189,7 @@ class RWGC_Targeting_Rule_Set_Schema {
 			'weather_facet' => array(
 				'label'       => __( 'Shopping weather', 'reactwoo-geocore' ),
 				'pro'         => true,
-				'description' => __( 'Wet, dry, hot, cold, windy, sunny — derived from your weather provider (GeoCore Pro).', 'reactwoo-geocore' ),
+				'description' => __( 'Wet, dry, hot, cold, windy, sunny — derived from the configured weather provider.', 'reactwoo-geocore' ),
 			),
 			'weather_condition' => array(
 				'label'       => __( 'Weather (legacy)', 'reactwoo-geocore' ),
@@ -223,7 +225,9 @@ class RWGC_Targeting_Rule_Set_Schema {
 	}
 
 	/**
-	 * Normalize and validate a rule set; drops unknown keys and Pro-only conditions when Pro is off.
+	 * Normalize and validate a rule set.
+	 *
+	 * Conditions that belong to another plugin are kept as stored data. They do not match until that plugin registers a resolver.
 	 *
 	 * @param mixed $raw Raw input.
 	 * @return array<string, mixed>|null Null when unusable (empty rules after sanitize).
@@ -313,6 +317,7 @@ class RWGC_Targeting_Rule_Set_Schema {
 				continue;
 			}
 			if ( ! $pro && self::is_pro_gated_condition_type( $type ) ) {
+				$conditions_out[] = self::preserve_inert_condition( $type, $c );
 				continue;
 			}
 			$op = isset( $c['operator'] ) ? sanitize_key( (string) $c['operator'] ) : 'in';
@@ -362,6 +367,27 @@ class RWGC_Targeting_Rule_Set_Schema {
 			'label'      => $label,
 			'match'      => self::sanitize_rule_match( isset( $rule['match'] ) ? $rule['match'] : 'all' ),
 			'conditions' => $conditions_out,
+		);
+	}
+
+	/**
+	 * Keep a condition whose resolver lives in another plugin.
+	 *
+	 * Evaluation returns false until that resolver is registered.
+	 *
+	 * @param string               $type Sanitized type.
+	 * @param array<string, mixed> $c    Raw condition.
+	 * @return array{type:string,operator:string,value:mixed}
+	 */
+	private static function preserve_inert_condition( $type, array $c ) {
+		$op = isset( $c['operator'] ) ? sanitize_key( (string) $c['operator'] ) : 'in';
+		if ( '' === $op ) {
+			$op = 'in';
+		}
+		return array(
+			'type'     => $type,
+			'operator' => $op,
+			'value'    => array_key_exists( 'value', $c ) ? $c['value'] : array(),
 		);
 	}
 
@@ -451,7 +477,11 @@ class RWGC_Targeting_Rule_Set_Schema {
 				continue;
 			}
 			$type = self::sanitize_condition_type_string( $c['type'] );
-			if ( '' === $type || ( ! $pro && self::is_pro_gated_condition_type( $type ) ) ) {
+			if ( '' === $type ) {
+				continue;
+			}
+			if ( ! $pro && self::is_pro_gated_condition_type( $type ) ) {
+				$out[] = self::preserve_inert_condition( $type, $c );
 				continue;
 			}
 			$op = isset( $c['operator'] ) ? sanitize_key( (string) $c['operator'] ) : 'in';

@@ -474,7 +474,26 @@ class RWGC_Admin_Route_Registry {
 			),
 		);
 
+		$rwgc_pro_on      = function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled();
+		$rwgc_optimise_on = class_exists( 'RWGO_Plugin', false );
+		$rwgc_ai_on       = function_exists( 'rwgc_is_geo_ai_active' ) && rwgc_is_geo_ai_active();
+		$rwgc_addons_on   = class_exists( 'RWGC_Upsells', false ) && RWGC_Upsells::get_addons();
+		$rwgc_pro_slugs   = array( 'rwgc-targeting-audiences', 'rwgc-targeting-campaigns', 'rwgc-usage-audience', 'rwgc-usage-campaign' );
+		$rwgc_opt_slugs   = array( 'rwgc-experiences-hub', 'rwgc-insights-experiments' );
 		foreach ( $core as $row ) {
+			$slug = isset( $row['menu_slug'] ) ? (string) $row['menu_slug'] : '';
+			if ( ! $rwgc_pro_on && in_array( $slug, $rwgc_pro_slugs, true ) ) {
+				continue;
+			}
+			if ( ! $rwgc_optimise_on && in_array( $slug, $rwgc_opt_slugs, true ) ) {
+				continue;
+			}
+			if ( ! $rwgc_ai_on && 'rwgc-insights-ai' === $slug ) {
+				continue;
+			}
+			if ( ! $rwgc_addons_on && 'rwgc-addons' === $slug ) {
+				continue;
+			}
 			$row['module'] = 'core';
 			self::register_route( $row );
 		}

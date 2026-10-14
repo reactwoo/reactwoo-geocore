@@ -182,16 +182,18 @@ class RWGC_Admin {
 			)
 		);
 
-		self::register_app_route(
-			array(
-				'section'   => 'experiences',
-				'route'     => 'experiences-home',
-				'menu_slug' => 'rwgc-experiences-hub',
-				'label'     => __( 'Overview', 'reactwoo-geocore' ),
-				'order'     => 5,
-				'callback'  => array( 'RWGC_Admin_Section_Hubs', 'render_experiences_hub' ),
-			)
-		);
+		if ( class_exists( 'RWGO_Plugin', false ) ) {
+			self::register_app_route(
+				array(
+					'section'   => 'experiences',
+					'route'     => 'experiences-home',
+					'menu_slug' => 'rwgc-experiences-hub',
+					'label'     => __( 'Overview', 'reactwoo-geocore' ),
+					'order'     => 5,
+					'callback'  => array( 'RWGC_Admin_Section_Hubs', 'render_experiences_hub' ),
+				)
+			);
+		}
 
 		self::register_app_route(
 			array(
@@ -214,26 +216,28 @@ class RWGC_Admin {
 				'callback'  => array( __CLASS__, 'render_target_types' ),
 			)
 		);
-		self::register_app_route(
-			array(
-				'section'   => 'targeting',
-				'route'     => 'audiences',
-				'menu_slug' => 'rwgc-targeting-audiences',
-				'label'     => __( 'Audiences', 'reactwoo-geocore' ),
-				'order'     => 20,
-				'callback'  => array( __CLASS__, 'render_targeting_audiences' ),
-			)
-		);
-		self::register_app_route(
-			array(
-				'section'   => 'targeting',
-				'route'     => 'campaigns',
-				'menu_slug' => 'rwgc-targeting-campaigns',
-				'label'     => __( 'Campaigns', 'reactwoo-geocore' ),
-				'order'     => 25,
-				'callback'  => array( __CLASS__, 'render_targeting_campaigns' ),
-			)
-		);
+		if ( function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled() ) {
+			self::register_app_route(
+				array(
+					'section'   => 'targeting',
+					'route'     => 'audiences',
+					'menu_slug' => 'rwgc-targeting-audiences',
+					'label'     => __( 'Audiences', 'reactwoo-geocore' ),
+					'order'     => 20,
+					'callback'  => array( __CLASS__, 'render_targeting_audiences' ),
+				)
+			);
+			self::register_app_route(
+				array(
+					'section'   => 'targeting',
+					'route'     => 'campaigns',
+					'menu_slug' => 'rwgc-targeting-campaigns',
+					'label'     => __( 'Campaigns', 'reactwoo-geocore' ),
+					'order'     => 25,
+					'callback'  => array( __CLASS__, 'render_targeting_campaigns' ),
+				)
+			);
+		}
 
 		self::register_app_route(
 			array(
@@ -257,16 +261,18 @@ class RWGC_Admin {
 			)
 		);
 
-		self::register_app_route(
-			array(
-				'section'   => 'insights',
-				'route'     => 'ai-opportunities',
-				'menu_slug' => 'rwgc-insights-ai',
-				'label'     => __( 'AI UX Reviewer', 'reactwoo-geocore' ),
-				'order'     => 10,
-				'callback'  => array( 'RWGC_Insights', 'render_ai_opportunities_page' ),
-			)
-		);
+		if ( function_exists( 'rwgc_is_geo_ai_active' ) && rwgc_is_geo_ai_active() ) {
+			self::register_app_route(
+				array(
+					'section'   => 'insights',
+					'route'     => 'ai-opportunities',
+					'menu_slug' => 'rwgc-insights-ai',
+					'label'     => __( 'AI UX Reviewer', 'reactwoo-geocore' ),
+					'order'     => 10,
+					'callback'  => array( 'RWGC_Insights', 'render_ai_opportunities_page' ),
+				)
+			);
+		}
 
 		self::register_app_route(
 			array(
@@ -289,36 +295,40 @@ class RWGC_Admin {
 				'callback'  => array( __CLASS__, 'render_usage' ),
 			)
 		);
-		self::register_app_route(
-			array(
-				'section'   => 'insights',
-				'route'     => 'audience-insights',
-				'menu_slug' => 'rwgc-usage-audience',
-				'label'     => __( 'Audience insights', 'reactwoo-geocore' ),
-				'order'     => 20,
-				'callback'  => array( __CLASS__, 'render_usage' ),
-			)
-		);
-		self::register_app_route(
-			array(
-				'section'   => 'insights',
-				'route'     => 'campaign-insights',
-				'menu_slug' => 'rwgc-usage-campaign',
-				'label'     => __( 'Campaign insights', 'reactwoo-geocore' ),
-				'order'     => 25,
-				'callback'  => array( __CLASS__, 'render_usage' ),
-			)
-		);
-		self::register_app_route(
-			array(
-				'section'   => 'insights',
-				'route'     => 'experience-performance',
-				'menu_slug' => 'rwgc-insights-experiments',
-				'label'     => __( 'Experience performance', 'reactwoo-geocore' ),
-				'order'     => 30,
-				'callback'  => array( __CLASS__, 'render_insights_experience_performance' ),
-			)
-		);
+		if ( function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled() ) {
+			self::register_app_route(
+				array(
+					'section'   => 'insights',
+					'route'     => 'audience-insights',
+					'menu_slug' => 'rwgc-usage-audience',
+					'label'     => __( 'Audience insights', 'reactwoo-geocore' ),
+					'order'     => 20,
+					'callback'  => array( __CLASS__, 'render_usage' ),
+				)
+			);
+			self::register_app_route(
+				array(
+					'section'   => 'insights',
+					'route'     => 'campaign-insights',
+					'menu_slug' => 'rwgc-usage-campaign',
+					'label'     => __( 'Campaign insights', 'reactwoo-geocore' ),
+					'order'     => 25,
+					'callback'  => array( __CLASS__, 'render_usage' ),
+				)
+			);
+		}
+		if ( class_exists( 'RWGO_Plugin', false ) ) {
+			self::register_app_route(
+				array(
+					'section'   => 'insights',
+					'route'     => 'experience-performance',
+					'menu_slug' => 'rwgc-insights-experiments',
+					'label'     => __( 'Experience performance', 'reactwoo-geocore' ),
+					'order'     => 30,
+					'callback'  => array( __CLASS__, 'render_insights_experience_performance' ),
+				)
+			);
+		}
 
 		self::register_app_route(
 			array(
@@ -421,16 +431,18 @@ class RWGC_Admin {
 			)
 		);
 
-		self::register_app_route(
-			array(
-				'section'   => 'settings',
-				'route'     => 'addons',
-				'menu_slug' => 'rwgc-addons',
-				'label'     => __( 'Add-ons', 'reactwoo-geocore' ),
-				'order'     => 30,
-				'callback'  => array( __CLASS__, 'render_addons' ),
-			)
-		);
+		if ( class_exists( 'RWGC_Upsells', false ) && RWGC_Upsells::get_addons() ) {
+			self::register_app_route(
+				array(
+					'section'   => 'settings',
+					'route'     => 'addons',
+					'menu_slug' => 'rwgc-addons',
+					'label'     => __( 'Add-ons', 'reactwoo-geocore' ),
+					'order'     => 30,
+					'callback'  => array( __CLASS__, 'render_addons' ),
+				)
+			);
+		}
 	}
 
 	/**

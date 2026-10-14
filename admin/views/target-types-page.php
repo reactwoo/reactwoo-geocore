@@ -76,14 +76,14 @@ if ( $rwgc_pro_enabled && ! empty( $rwgc_help['integrations_ga'] ) ) {
 		<div class="rwgc-card"><h2><?php esc_html_e( 'Language', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'Browser language and locale.', 'reactwoo-geocore' ); ?></p></div>
 		<div class="rwgc-card"><h2><?php esc_html_e( 'Device', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'Desktop, mobile, or tablet.', 'reactwoo-geocore' ); ?></p></div>
 		<div class="rwgc-card"><h2><?php esc_html_e( 'Time', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'Day and time windows.', 'reactwoo-geocore' ); ?></p></div>
-		<div class="rwgc-card"><h2><?php esc_html_e( 'Commerce', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'Commerce-related targeting signals.', 'reactwoo-geocore' ); ?></p></div>
-		<div class="rwgc-card"><h2><?php esc_html_e( 'Analytics', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'GA4 audiences and campaign signals with GeoCore Pro.', 'reactwoo-geocore' ); ?></p></div>
+		<div class="rwgc-card"><h2><?php esc_html_e( 'Request', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'UTM parameters and click IDs from the current request.', 'reactwoo-geocore' ); ?></p></div>
 	</div>
 
 	<div class="rwgc-card rwgc-card--full rwgc-rb-playground-card">
 		<h2><?php esc_html_e( 'Visibility rule builder', 'reactwoo-geocore' ); ?></h2>
 		<p class="description"><?php esc_html_e( 'Define who should see content with visual conditions (AND/OR). Raw JSON is available only under Advanced in Elementor, blocks, and geo rules — not the primary workflow.', 'reactwoo-geocore' ); ?></p>
 
+		<?php if ( $rwgc_pro_enabled ) : ?>
 		<div class="rwgc-rb-sync-status">
 			<div class="rwgc-rb-sync-status__item">
 				<strong><?php esc_html_e( 'GA4 audiences', 'reactwoo-geocore' ); ?></strong>
@@ -98,10 +98,8 @@ if ( $rwgc_pro_enabled && ! empty( $rwgc_help['integrations_ga'] ) ) {
 								count( $rwgc_audiences )
 							)
 						);
-					} elseif ( $rwgc_pro_enabled ) {
-						esc_html_e( 'No audiences synced yet.', 'reactwoo-geocore' );
 					} else {
-						esc_html_e( 'Requires GeoCore Pro.', 'reactwoo-geocore' );
+						esc_html_e( 'No audiences synced yet.', 'reactwoo-geocore' );
 					}
 					?>
 				</p>
@@ -119,30 +117,13 @@ if ( $rwgc_pro_enabled && ! empty( $rwgc_help['integrations_ga'] ) ) {
 								count( $rwgc_campaigns )
 							)
 						);
-					} elseif ( $rwgc_pro_enabled ) {
-						esc_html_e( 'No campaigns synced yet.', 'reactwoo-geocore' );
 					} else {
-						esc_html_e( 'Requires GeoCore Pro.', 'reactwoo-geocore' );
+						esc_html_e( 'No campaigns synced yet.', 'reactwoo-geocore' );
 					}
 					?>
 				</p>
 			</div>
 		</div>
-
-		<?php if ( ! $rwgc_pro_enabled && class_exists( 'RWGC_Admin_UI', false ) ) : ?>
-			<?php
-			RWGC_Admin_UI::render_upgrade_card(
-				__( 'Unlock GA4 audiences & Google Ads campaigns', 'reactwoo-geocore' ),
-				__( 'GeoCore Pro syncs Google lists into the rule builder across Elementor, blocks, and geo rules.', 'reactwoo-geocore' ),
-				admin_url( 'admin.php?page=rwgc-addons' ),
-				__( 'View GeoCore Pro', 'reactwoo-geocore' ),
-				'geocore_pro'
-			);
-			?>
-		<?php elseif ( ( empty( $rwgc_audiences ) || empty( $rwgc_campaigns ) ) && ! empty( $rwgc_help['integrations_ga'] ) ) : ?>
-			<p>
-				<a class="button button-secondary" href="<?php echo esc_url( (string) $rwgc_help['integrations_ga'] ); ?>"><?php esc_html_e( 'Open GeoCore Pro integrations', 'reactwoo-geocore' ); ?></a>
-			</p>
 		<?php endif; ?>
 
 		<p class="description"><?php esc_html_e( 'Where to use saved rules:', 'reactwoo-geocore' ); ?></p>

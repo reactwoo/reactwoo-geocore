@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.7] - 2026-10-14
+
+### Changed
+- Included visibility conditions (country, language, device, time, visitors, pages, and request parameters) are shown in the rule builder and Elementor without another plugin.
+- Screens for audiences, campaigns, experiments, AI review, and add-ons are registered only when the plugin that provides them is active.
+- Saving a rule keeps conditions owned by another plugin. They do not match until that plugin registers a resolver.
+
+### Fixed
+- The Experience Slot block ships `editor.asset.php` so WordPress 6.2 does not log `register_block_script_handle`.
+
 ## [1.9.6] - 2026-10-14
 
 ### Fixed

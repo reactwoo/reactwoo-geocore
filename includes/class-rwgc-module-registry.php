@@ -45,31 +45,37 @@ class RWGC_Module_Registry {
 			self::build_gutenberg_module(),
 			self::build_elementor_module(),
 			self::build_woocommerce_module(),
-			self::build_satellite_module(
+		);
+		if ( class_exists( 'RWGA_Plugin', false ) ) {
+			$modules[] = self::build_satellite_module(
 				self::MODULE_GEO_AI,
 				__( 'Geo AI', 'reactwoo-geocore' ),
 				__( 'AI-assisted page variants and drafts.', 'reactwoo-geocore' ),
-				class_exists( 'RWGA_Plugin', false ),
+				true,
 				'rwga-dashboard',
 				array( 'reactwoo-geo-ai/reactwoo-geo-ai.php' )
-			),
-			self::build_satellite_module(
+			);
+		}
+		if ( class_exists( 'RWGO_Plugin', false ) ) {
+			$modules[] = self::build_satellite_module(
 				self::MODULE_GEO_OPT,
 				__( 'Geo Optimise', 'reactwoo-geocore' ),
 				__( 'Page tests, variants, and reports — full workflow in wp-admin.', 'reactwoo-geocore' ),
-				class_exists( 'RWGO_Plugin', false ),
+				true,
 				'rwgo-dashboard',
 				array( 'reactwoo-geo-optimise/reactwoo-geo-optimise.php' )
-			),
-			self::build_satellite_module(
+			);
+		}
+		if ( class_exists( 'RWGCM_Plugin', false ) ) {
+			$modules[] = self::build_satellite_module(
 				self::MODULE_GEO_COMM,
 				__( 'Geo Commerce', 'reactwoo-geocore' ),
 				__( 'WooCommerce pricing, fees, and geo context.', 'reactwoo-geocore' ),
-				class_exists( 'RWGCM_Plugin', false ),
+				true,
 				'rwgcm-dashboard',
 				array( 'reactwoo-geo-commerce/reactwoo-geo-commerce.php' )
-			),
-		);
+			);
+		}
 
 		/**
 		 * Register or replace Geo Suite modules (readiness, labels, deep links).
@@ -275,14 +281,13 @@ class RWGC_Module_Registry {
 				} else {
 					$active = ! empty( $mod['active'] );
 				}
-				$install = isset( $mod['install_url'] ) ? (string) $mod['install_url'] : admin_url( 'plugin-install.php' );
-				$admin   = isset( $mod['admin_url'] ) ? (string) $mod['admin_url'] : '';
+				$admin = isset( $mod['admin_url'] ) ? (string) $mod['admin_url'] : '';
 				return array_merge(
 					$defaults,
 					array(
 						'status'        => $active ? 'ready' : 'missing',
-						'detail'        => $active ? ( isset( $mod['label'] ) ? (string) $mod['label'] : '' ) : __( 'Not installed or inactive.', 'reactwoo-geocore' ),
-						'configure_url' => $active ? $admin : $install,
+						'detail'        => $active ? ( isset( $mod['label'] ) ? (string) $mod['label'] : '' ) : '',
+						'configure_url' => $active ? $admin : '',
 					)
 				);
 		}

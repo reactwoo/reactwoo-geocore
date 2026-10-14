@@ -97,18 +97,20 @@ class RWGC_Target_Provider_Analytics implements RWGC_Target_Provider_Interface {
 				)
 			);
 		}
+		if ( function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled() ) {
 		$registry->register_target_type(
 			array(
 				'key'           => 'profile_id',
 				'label'         => __( 'Experience profile', 'reactwoo-geocore' ),
 				'group'         => 'analytics',
-				'description'   => __( 'Matched experience profile ID from GeoCore Pro runtime context.', 'reactwoo-geocore' ),
+				'description'   => __( 'Matched experience profile ID from the active runtime context.', 'reactwoo-geocore' ),
 				'operators'     => array( 'is', 'is_not', 'in', 'not_in', 'contains', 'not_contains' ),
 				'value_mode'    => 'text',
 				'provider'      => $this->get_provider_key(),
 				'supports_simulation' => true,
 			)
 		);
+		}
 		$registry->register_target_type(
 			array(
 				'key'           => 'returning_visitor',

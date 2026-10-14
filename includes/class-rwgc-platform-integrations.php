@@ -31,17 +31,6 @@ class RWGC_Platform_Integrations {
 	public static function get_items() {
 		$items = array();
 
-		if ( ! function_exists( 'rwgc_is_pro_enabled' ) || ! rwgc_is_pro_enabled() ) {
-			$items[] = array(
-				'id'          => 'geocore_pro',
-				'label'       => __( 'GeoCore Pro', 'reactwoo-geocore' ),
-				'status'      => 'neutral',
-				'description' => __( 'Unlock Google Ads, GA4 audiences, weather, and advanced targeting.', 'reactwoo-geocore' ),
-				'url'         => admin_url( 'admin.php?page=rwgc-addons' ),
-				'provider'    => 'geocore_pro',
-			);
-		}
-
 		/**
 		 * Register integration status rows for the Integrations hub.
 		 *

@@ -822,6 +822,9 @@ class RWGC_Admin_UI {
 		echo '<div class="rwgc-suite-satellite-grid" role="region" aria-label="' . esc_attr__( 'ReactWoo satellite plugins', 'reactwoo-geocore' ) . '">';
 		foreach ( $defs as $def ) {
 			$active   = self::satellite_plugin_is_active( $def );
+			if ( ! $active ) {
+				continue;
+			}
 			$dashicon = isset( $def['dashicon'] ) && is_string( $def['dashicon'] ) ? $def['dashicon'] : 'dashicons-admin-plugins';
 			echo '<div class="rwgc-addon-card rwgc-addon-card--satellite">';
 			echo '<div class="rwgc-addon-card__header">';
@@ -831,26 +834,14 @@ class RWGC_Admin_UI {
 			echo '<p>' . esc_html( $def['summary'] ) . '</p>';
 			echo '</div></div>';
 			echo '<div class="rwgc-addon-card__meta">';
-			if ( $active ) {
-				self::render_pill( __( 'Active', 'reactwoo-geocore' ), 'success' );
-			} else {
-				self::render_pill( __( 'Not installed', 'reactwoo-geocore' ), 'neutral' );
-			}
+			self::render_pill( __( 'Active', 'reactwoo-geocore' ), 'success' );
 			echo '</div>';
 			echo '<div class="rwgc-addon-card__actions">';
-			if ( $active ) {
-				printf(
-					'<a class="rwgc-btn rwgc-btn--primary" href="%1$s">%2$s</a>',
-					esc_url( $def['url'] ),
-					esc_html__( 'Open', 'reactwoo-geocore' )
-				);
-			} else {
-				printf(
-					'<a class="rwgc-btn rwgc-btn--secondary" href="%1$s">%2$s</a>',
-					esc_url( admin_url( 'plugin-install.php' ) ),
-					esc_html__( 'Install plugins', 'reactwoo-geocore' )
-				);
-			}
+			printf(
+				'<a class="rwgc-btn rwgc-btn--primary" href="%1$s">%2$s</a>',
+				esc_url( $def['url'] ),
+				esc_html__( 'Open', 'reactwoo-geocore' )
+			);
 			echo '</div></div>';
 		}
 		echo '</div>';

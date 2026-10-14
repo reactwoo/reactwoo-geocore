@@ -30,8 +30,6 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 					<?php esc_html_e( 'Open experiments', 'reactwoo-geocore' ); ?>
 				</a>
 			</p>
-		<?php else : ?>
-			<p class="description"><?php esc_html_e( 'Install Geo Optimise to measure which experience variants perform best.', 'reactwoo-geocore' ); ?></p>
 		<?php endif; ?>
 	</div>
 </div>

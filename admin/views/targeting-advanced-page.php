@@ -15,19 +15,19 @@ $rwgc_links = array(
 		'description' => __( 'Manual conditions, nested logic, and JSON playground.', 'reactwoo-geocore' ),
 		'url'         => function_exists( 'rwgc_app_url' ) ? rwgc_app_url( 'targeting', 'rwgc-target-types' ) : admin_url( 'admin.php?page=rwgc-target-types' ),
 	),
-	array(
-		'label'       => __( 'Audiences', 'reactwoo-geocore' ),
-		'description' => __( 'Saved visitor groups for Pro targeting.', 'reactwoo-geocore' ),
-		'url'         => function_exists( 'rwgc_app_url' ) ? rwgc_app_url( 'targeting', 'rwgc-targeting-audiences' ) : admin_url( 'admin.php?page=rwgc-targeting-audiences' ),
-		'capability'  => 'advanced_rules',
-	),
-	array(
-		'label'       => __( 'Campaigns', 'reactwoo-geocore' ),
-		'description' => __( 'Campaign references for Pro targeting.', 'reactwoo-geocore' ),
-		'url'         => function_exists( 'rwgc_app_url' ) ? rwgc_app_url( 'targeting', 'rwgc-targeting-campaigns' ) : admin_url( 'admin.php?page=rwgc-targeting-campaigns' ),
-		'capability'  => 'advanced_rules',
-	),
 );
+if ( function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled() ) {
+	$rwgc_links[] = array(
+		'label'       => __( 'Audiences', 'reactwoo-geocore' ),
+		'description' => __( 'Synced visitor groups used by visibility rules.', 'reactwoo-geocore' ),
+		'url'         => function_exists( 'rwgc_app_url' ) ? rwgc_app_url( 'targeting', 'rwgc-targeting-audiences' ) : admin_url( 'admin.php?page=rwgc-targeting-audiences' ),
+	);
+	$rwgc_links[] = array(
+		'label'       => __( 'Campaigns', 'reactwoo-geocore' ),
+		'description' => __( 'Synced campaign references used by visibility rules.', 'reactwoo-geocore' ),
+		'url'         => function_exists( 'rwgc_app_url' ) ? rwgc_app_url( 'targeting', 'rwgc-targeting-campaigns' ) : admin_url( 'admin.php?page=rwgc-targeting-campaigns' ),
+	);
+}
 $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_uses_platform_shell();
 ?>
 <div class="wrap rwgc-wrap rwgc-suite rwgc-targeting-advanced">

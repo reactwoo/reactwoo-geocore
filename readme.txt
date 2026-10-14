@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.6
+Stable tag: 1.9.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -165,6 +165,12 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.7 =
+* Visibility rules for country, language, device, time, visitors, pages, and request parameters are included. The rule builder and Elementor controls show those conditions without another plugin.
+* Audience, weather, profile, and full-page routing screens stay out of this plugin until the plugin that provides them is active.
+* A save keeps stored conditions from another plugin. Those conditions do not match until that plugin is active.
+* The Experience Slot block includes its editor asset file so WordPress 6.2 does not log a block script notice.
+
 = 1.9.6 =
 * Admin styles and the component stylesheet load on Geo Core screens and on pages that render a Geo Core block, shortcode, or widget.
 * Admin and front-end snippets are added with the WordPress script and style queue.
@@ -249,6 +255,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.7 =
+Included visibility conditions are available in the rule builder and Elementor. Screens for other plugins appear only when those plugins are active.
 
 = 1.9.6 =
 Directory review fixes. Country detection, shortcodes, the Geo Content block, and visibility rules are unchanged. Anonymous Cloud telemetry stays off unless an administrator opts in.

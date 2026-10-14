@@ -36,15 +36,10 @@ if ( isset( $rwgc_sync_meta['ads_count'] ) ) {
 				<a class="button button-primary" href="<?php echo esc_url( $rwgc_ads_url ); ?>"><?php esc_html_e( 'Manage Google Ads campaigns', 'reactwoo-geocore' ); ?></a>
 				<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-usage-campaign' ) ); ?>" style="margin-left:8px;"><?php esc_html_e( 'Campaign insights', 'reactwoo-geocore' ); ?></a>
 			</p>
-		<?php else : ?>
-			<p class="description"><?php esc_html_e( 'No campaigns have been synced yet. Connect Google Ads or add UTM campaign rules in GeoCore Pro attribution.', 'reactwoo-geocore' ); ?></p>
+		<?php elseif ( $rwgc_has_pro ) : ?>
+			<p class="description"><?php esc_html_e( 'No campaigns have been synced yet.', 'reactwoo-geocore' ); ?></p>
 			<p>
-				<?php if ( $rwgc_has_pro ) : ?>
-					<a class="button button-primary" href="<?php echo esc_url( $rwgc_ads_url ); ?>"><?php esc_html_e( 'Connect Google Ads', 'reactwoo-geocore' ); ?></a>
-				<?php else : ?>
-					<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ); ?>"><?php esc_html_e( 'View GeoCore Pro', 'reactwoo-geocore' ); ?></a>
-				<?php endif; ?>
-				<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgcp-geocore-pro&rwgcp_tab=campaign-attribution' ) ); ?>" style="margin-left:8px;"><?php esc_html_e( 'UTM campaign rules', 'reactwoo-geocore' ); ?></a>
+				<a class="button button-primary" href="<?php echo esc_url( $rwgc_ads_url ); ?>"><?php esc_html_e( 'Connect Google Ads', 'reactwoo-geocore' ); ?></a>
 			</p>
 		<?php endif; ?>
 	</div>

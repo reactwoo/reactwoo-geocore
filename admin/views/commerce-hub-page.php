@@ -34,8 +34,8 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 		RWGC_Admin_UI::render_section_hub_cards(
 			$rwgc_cards,
 			array(
-				'empty_title' => __( 'Geo Commerce not active', 'reactwoo-geocore' ),
-				'empty_body'  => __( 'Install and activate ReactWoo Geo Commerce to manage WooCommerce geo pricing and fees.', 'reactwoo-geocore' ),
+				'empty_title' => __( 'No commerce screens', 'reactwoo-geocore' ),
+				'empty_body'  => __( 'Commerce screens appear here when that plugin is active.', 'reactwoo-geocore' ),
 			)
 		);
 	}

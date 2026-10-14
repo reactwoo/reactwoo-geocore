@@ -229,14 +229,15 @@ if ( ! function_exists( 'rwgc_can_link_ux_opportunity_review' ) ) {
 
 if ( ! function_exists( 'rwgc_advanced_targeting_enabled' ) ) {
 	/**
-	 * Whether multi-condition portable targeting UI is available (GeoCore Pro).
+	 * Whether the included multi-condition rule builder is shown.
 	 *
-	 * GeoCore Free surfaces country-only in builders; GeoCore Pro enables the full selector set in Elementor, Gutenberg, and admin.
+	 * Country, language, device, time, visitor, page, and request-parameter
+	 * conditions are part of this plugin. The filter defaults to true.
 	 *
 	 * @return bool
 	 */
 	function rwgc_advanced_targeting_enabled() {
-		return (bool) apply_filters( 'rwgc_advanced_targeting_enabled', false );
+		return (bool) apply_filters( 'rwgc_advanced_targeting_enabled', true );
 	}
 }
 

@@ -50,13 +50,19 @@ class RWGC_Insights_Nav {
 	 */
 	public static function get_items() {
 		$items = array(
-			'rwgc-insights-hub'         => __( 'Capability map', 'reactwoo-geocore' ),
-			'rwgc-insights-readiness'   => __( 'Setup', 'reactwoo-geocore' ),
-			'rwgc-insights-ai'          => __( 'AI UX Reviewer', 'reactwoo-geocore' ),
-			'rwgc-usage-audience'       => __( 'Audience', 'reactwoo-geocore' ),
-			'rwgc-usage-campaign'       => __( 'Campaigns', 'reactwoo-geocore' ),
-			'rwgc-insights-experiments' => __( 'Experiences', 'reactwoo-geocore' ),
+			'rwgc-insights-hub'       => __( 'Capability map', 'reactwoo-geocore' ),
+			'rwgc-insights-readiness' => __( 'Setup', 'reactwoo-geocore' ),
 		);
+		if ( function_exists( 'rwgc_is_geo_ai_active' ) && rwgc_is_geo_ai_active() ) {
+			$items['rwgc-insights-ai'] = __( 'AI UX Reviewer', 'reactwoo-geocore' );
+		}
+		if ( function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled() ) {
+			$items['rwgc-usage-audience'] = __( 'Audience', 'reactwoo-geocore' );
+			$items['rwgc-usage-campaign'] = __( 'Campaigns', 'reactwoo-geocore' );
+		}
+		if ( class_exists( 'RWGO_Plugin', false ) ) {
+			$items['rwgc-insights-experiments'] = __( 'Experiences', 'reactwoo-geocore' );
+		}
 
 		if ( class_exists( 'WooCommerce', false ) && self::commerce_attribution_available() ) {
 			$items['rwgcm-attribution'] = __( 'Commerce', 'reactwoo-geocore' );

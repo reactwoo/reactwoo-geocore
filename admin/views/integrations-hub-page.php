@@ -41,7 +41,7 @@ $rwgc_integrations     = class_exists( 'RWGC_Platform_Integrations', false ) ? R
 			$rwgc_cards,
 			array(
 				'empty_title' => __( 'No integration categories', 'reactwoo-geocore' ),
-				'empty_body'  => __( 'Install GeoCore Pro or a builder plugin to add integrations.', 'reactwoo-geocore' ),
+				'empty_body'  => __( 'Connected integrations appear here.', 'reactwoo-geocore' ),
 			)
 		);
 		?>

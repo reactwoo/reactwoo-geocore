@@ -17,7 +17,7 @@ $rwgc_has_pro      = function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_ena
 	<?php RWGC_Admin_UI::render_page_header( __( 'Audiences', 'reactwoo-geocore' ), __( 'GA4 audiences, synced profiles, and audience conditions for targeting.', 'reactwoo-geocore' ) ); ?>
 	<div class="rwgc-card">
 		<p class="description">
-			<?php esc_html_e( 'Audiences combine synced GA4 segments, GeoCore Pro experience profiles, and portable targeting conditions used across Experiences and Commerce.', 'reactwoo-geocore' ); ?>
+			<?php esc_html_e( 'Synced GA4 audiences and experience profiles used by visibility rules.', 'reactwoo-geocore' ); ?>
 		</p>
 		<?php if ( $rwgc_has_pro ) : ?>
 			<p>
@@ -28,9 +28,6 @@ $rwgc_has_pro      = function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_ena
 			<p>
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-targeting-hub' ) ); ?>"><?php esc_html_e( 'Review audience rules', 'reactwoo-geocore' ); ?></a>
 			</p>
-		<?php else : ?>
-			<p><?php esc_html_e( 'Connect GeoCore Pro to sync GA4 audiences and manage experience profiles.', 'reactwoo-geocore' ); ?></p>
-			<p><a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ); ?>"><?php esc_html_e( 'View GeoCore Pro', 'reactwoo-geocore' ); ?></a></p>
 		<?php endif; ?>
 	</div>
 </div>

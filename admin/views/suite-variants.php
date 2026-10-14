@@ -72,7 +72,6 @@ $rwgc_variant_rows = apply_filters( 'rwgc_experience_variant_rows', $rwgc_varian
 				<?php if ( class_exists( 'RWGO_Admin', false ) ) : ?>
 					<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgo-create-test' ) ); ?>"><?php esc_html_e( 'Create experiment', 'reactwoo-geocore' ); ?></a>
 				<?php endif; ?>
-				<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgo-help' ) ); ?>" style="margin-left:8px;"><?php esc_html_e( 'Learn about variants', 'reactwoo-geocore' ); ?></a>
 			</p>
 		</div>
 	<?php else : ?>

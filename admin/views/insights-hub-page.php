@@ -33,7 +33,7 @@ $rwgc_platform_shell = function_exists( 'rwgc_uses_platform_shell' ) && rwgc_use
 	if ( class_exists( 'RWGC_Admin_UI', false ) ) {
 		$rwgc_hub_args = array(
 			'empty_title' => __( 'No insight reports yet', 'reactwoo-geocore' ),
-			'empty_body'  => __( 'Install Geo AI or Geo Optimise to add analysis and experiment reporting tabs here.', 'reactwoo-geocore' ),
+			'empty_body'  => __( 'Reports from active plugins appear here.', 'reactwoo-geocore' ),
 		);
 		if ( $rwgc_platform_shell ) {
 			RWGC_Admin_UI::render_section_hub_cards_grouped( $rwgc_cards, $rwgc_hub_args );

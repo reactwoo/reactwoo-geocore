@@ -18,37 +18,40 @@ class RWGC_Workflows {
 	 * @return array<int, array<string, mixed>>
 	 */
 	public static function get_launchers() {
-		$launchers = array(
-			array(
+		$launchers = array();
+		if ( class_exists( 'RWGA_Plugin', false ) ) {
+			$launchers[] = array(
 				'id'          => 'ai_draft',
 				'title'       => __( 'Generate a localised draft with AI', 'reactwoo-geocore' ),
 				'description' => __( 'Open Geo AI to adapt copy for a country or audience.', 'reactwoo-geocore' ),
-				'url'         => class_exists( 'RWGA_Plugin', false ) ? admin_url( 'admin.php?page=rwga-dashboard' ) : admin_url( 'admin.php?page=rwgc-addons' ),
+				'url'         => admin_url( 'admin.php?page=rwga-dashboard' ),
 				'primary'     => false,
 				'icon'        => 'dashicons-lightbulb',
 				'requires'    => 'geo_ai',
-			),
-			array(
+			);
+		}
+		if ( class_exists( 'RWGO_Plugin', false ) ) {
+			$launchers[] = array(
 				'id'          => 'experiment',
 				'title'       => __( 'Start a geo split test', 'reactwoo-geocore' ),
-				'description' => __( 'Create a page test in Geo Optimise: duplicate a variant, route traffic, and review assignments.', 'reactwoo-geocore' ),
-				'url'         => class_exists( 'RWGO_Plugin', false ) ? admin_url( 'admin.php?page=rwgo-create-test' ) : admin_url( 'admin.php?page=rwgc-addons' ),
+				'description' => __( 'Create a page test: duplicate a variant, route traffic, and review assignments.', 'reactwoo-geocore' ),
+				'url'         => admin_url( 'admin.php?page=rwgo-create-test' ),
 				'primary'     => false,
 				'icon'        => 'dashicons-chart-area',
 				'requires'    => 'geo_optimise',
-			),
-			array(
+			);
+		}
+		if ( function_exists( 'rwgc_is_woocommerce_active' ) && rwgc_is_woocommerce_active() && class_exists( 'RWGCM_Plugin', false ) ) {
+			$launchers[] = array(
 				'id'          => 'commerce_rule',
 				'title'       => __( 'Personalise WooCommerce by country', 'reactwoo-geocore' ),
 				'description' => __( 'Create pricing or fee rules tied to visitor location.', 'reactwoo-geocore' ),
-				'url'         => ( function_exists( 'rwgc_is_woocommerce_active' ) && rwgc_is_woocommerce_active() && class_exists( 'RWGCM_Plugin', false ) )
-					? admin_url( 'admin.php?page=rwgcm-pricing' )
-					: admin_url( 'admin.php?page=rwgc-addons' ),
+				'url'         => admin_url( 'admin.php?page=rwgcm-pricing' ),
 				'primary'     => false,
 				'icon'        => 'dashicons-cart',
 				'requires'    => 'geo_commerce',
-			),
-		);
+			);
+		}
 
 		/**
 		 * Register Geo Suite workflow launchers (cards on Suite Home / Getting Started).
@@ -121,7 +124,7 @@ class RWGC_Workflows {
 				break;
 			case 'tests':
 				$out['headline'] = __( 'Path: split tests', 'reactwoo-geocore' );
-				$out['body']     = __( 'Install Geo Optimise, then use Create Test: pick a page, publish a variant, and read reports — Geo Core supplies visitor context for routing and targeting.', 'reactwoo-geocore' );
+				$out['body']     = __( 'Use visibility rules and the Geo Content block to show different content. Geo Core supplies the visitor context those rules use.', 'reactwoo-geocore' );
 				break;
 			case 'commerce':
 				$out['headline'] = __( 'Path: WooCommerce by country', 'reactwoo-geocore' );

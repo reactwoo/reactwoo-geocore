@@ -3,6 +3,31 @@
 ## Status
 done
 
+Free-feature cleanup for 1.9.7 is on branch `wporg-free-features-1.9.7`, checked out from `main` at `f9f6f5e` (`v1.9.6`). Pushed to origin without a tag. `main` is unchanged. Not submitted to WordPress.org.
+
+WordPress.org zip sha256: `893fe466c2f0d9d89170bd5d2e56fe6a36de192a3575893d16e8212cac2e14f5` (695966 bytes).
+
+## Files changed
+- Included condition types show in the rule builder and Elementor. `rwgc_advanced_targeting_enabled()` defaults to true.
+- Pro-only conditions stay out of the picker. A save keeps them and they do not match until a resolver exists.
+- Audience, campaign, experiment, AI, and add-on screens are registered only when that plugin is active. Locked and upgrade cards are gone.
+- `blocks/experience-slot/editor.asset.php` added. Version is 1.9.7.
+
+## Not changed
+- Text domain stays `reactwoo-geocore`.
+- `scripts/release_commit_tag.py` is still untracked and was not committed.
+
+## Commands
+- `php tests/test-rwgc-rule-evaluator.php` — passed
+- `php vendor/phpunit/phpunit/phpunit -c phpunit.xml.dist` — 102 tests, 9 errors, 7 failures (same baseline)
+- `php tests/test-rwgc-wporg-build.php` — four known Windows `.distignore` CRLF failures
+- `python tests/test-rwgc-wporg-upload-precheck.py --require-zip` — 44 checks, 0 failed
+- Plugin Check 2.1.0 on the installed zip, header text domain — 0 errors, 6 warnings
+- Activate with `WP_DEBUG` on WordPress 6.2 and 7.1.3 — no plugin notices and no `register_block_script_handle` notice
+
+## Status
+done
+
 Plugin Check warning cleanup is on local branch `wporg-plugin-check-warnings`, based on `main` at `0a63aa6` (PR #84). Version stays **1.9.6** because `v1.9.6` is not on origin. Nothing was committed, tagged, pushed, or submitted to WordPress.org.
 
 WordPress.org zip sha256: `1e344983952c5c6032ba204247cef6fbbc0a78db582e7114606ae4d4e4e18474`

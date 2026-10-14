@@ -262,16 +262,13 @@ class RWGC_Elementor_Atomic_Geo {
 				->set_description( __( 'Search and pick countries. Leave empty for all countries.', 'reactwoo-geocore' ) ),
 		);
 
-		$pro_enabled = function_exists( 'rwgc_advanced_targeting_enabled' ) && rwgc_advanced_targeting_enabled();
-		if ( $pro_enabled ) {
-			$items = array_merge( $items, self::build_visibility_rules_items( $switch, $select ) );
-		}
+		$items = array_merge( $items, self::build_visibility_rules_items( $switch, $select ) );
 
 		return $items;
 	}
 
 	/**
-	 * Pro-gated library rule controls.
+	 * Saved visibility-rule controls.
 	 *
 	 * @param string $switch Switch control class.
 	 * @param string $select Select control class.

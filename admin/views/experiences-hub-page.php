@@ -29,16 +29,7 @@ $rwgc_ai_suggestion   = class_exists( 'RWGC_Geo_AI_Suggestions', false )
 	}
 	?>
 
-	<?php if ( ! $rwgc_optimise_active ) : ?>
-		<div class="rwgc-card rwgc-experiences-locked">
-			<h2><?php esc_html_e( 'Experiences require Geo Optimise', 'reactwoo-geocore' ); ?></h2>
-			<p class="description"><?php esc_html_e( 'Split traffic, measure conversions, and choose winning versions.', 'reactwoo-geocore' ); ?></p>
-			<p>
-				<a class="button button-primary rwgc-geo-btn" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ); ?>"><?php esc_html_e( 'Install', 'reactwoo-geocore' ); ?></a>
-				<a class="rwgc-geo-link" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ); ?>" style="margin-left:0.65rem;"><?php esc_html_e( 'Learn more', 'reactwoo-geocore' ); ?></a>
-			</p>
-		</div>
-	<?php else : ?>
+	<?php if ( $rwgc_optimise_active ) : ?>
 		<?php
 		if ( class_exists( 'RWGC_Admin_UI', false ) ) {
 			RWGC_Admin_UI::render_section_hub_cards(

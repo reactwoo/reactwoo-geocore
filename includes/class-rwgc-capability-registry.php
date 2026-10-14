@@ -1,6 +1,6 @@
 <?php
 /**
- * Central product capability registry for targeting, experiences, and upgrade UX.
+ * Central product capability registry for targeting included with Geo Core.
  *
  * @package ReactWooGeoCore
  */
@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Capability-aware gating for assistants, wizards, and admin cards.
+ * Capabilities included with this plugin. Other plugins add their own through rwgc_capability_definitions.
  */
 class RWGC_Capability_Registry {
 
@@ -19,85 +19,13 @@ class RWGC_Capability_Registry {
 	 */
 	public static function get_definitions() {
 		$defs = array(
-			'country_variants'       => array(
-				'label'       => __( 'Country variants', 'reactwoo-geocore' ),
-				'description' => __( 'Route matching visitors to a different full page by country.', 'reactwoo-geocore' ),
+			'country_rules' => array(
+				'label'       => __( 'Visibility rules', 'reactwoo-geocore' ),
+				'description' => __( 'Show or hide content by country, language, device, time, visitor, page, and request parameters.', 'reactwoo-geocore' ),
 				'product'     => __( 'Geo Core', 'reactwoo-geocore' ),
 				'area'        => 'targeting',
 				'badge'       => __( 'Included', 'reactwoo-geocore' ),
 				'available'   => true,
-			),
-			'advanced_variants'      => array(
-				'label'          => __( 'Advanced variants', 'reactwoo-geocore' ),
-				'description'    => __( 'GA4 audiences, shopping weather, and synced ads campaigns. Request UTM fields are included in Geo Core.', 'reactwoo-geocore' ),
-				'product'        => __( 'GeoCore Pro', 'reactwoo-geocore' ),
-				'area'           => 'targeting',
-				'badge'          => __( 'GeoCore Pro', 'reactwoo-geocore' ),
-				'requires_pro'   => true,
-				'upgrade_slug'   => 'reactwoo-geocore-pro',
-			),
-			'country_rules'          => array(
-				'label'       => __( 'Country rules', 'reactwoo-geocore' ),
-				'description' => __( 'Show, hide, or change content inside a page by country.', 'reactwoo-geocore' ),
-				'product'     => __( 'Geo Core', 'reactwoo-geocore' ),
-				'area'        => 'targeting',
-				'badge'       => __( 'Included', 'reactwoo-geocore' ),
-				'available'   => true,
-			),
-			'advanced_rules'         => array(
-				'label'        => __( 'Advanced rules', 'reactwoo-geocore' ),
-				'description'  => __( 'GA4 audiences, shopping weather, and synced ads campaigns. Request UTM fields are included in Geo Core.', 'reactwoo-geocore' ),
-				'product'      => __( 'GeoCore Pro', 'reactwoo-geocore' ),
-				'area'         => 'targeting',
-				'badge'        => __( 'GeoCore Pro', 'reactwoo-geocore' ),
-				'requires_pro' => true,
-				'upgrade_slug' => 'reactwoo-geocore-pro',
-			),
-			'experiences'            => array(
-				'label'           => __( 'Experiences', 'reactwoo-geocore' ),
-				'description'     => __( 'Split traffic, measure conversions, and choose a winner.', 'reactwoo-geocore' ),
-				'product'         => __( 'Geo Optimise', 'reactwoo-geocore' ),
-				'area'            => 'experiences',
-				'badge'           => __( 'Geo Optimise', 'reactwoo-geocore' ),
-				'requires_plugin' => 'reactwoo-geo-optimise/reactwoo-geo-optimise.php',
-				'admin_slug'      => 'rwgo-dashboard',
-			),
-			'commerce_rules'         => array(
-				'label'           => __( 'Commerce rules', 'reactwoo-geocore' ),
-				'description'     => __( 'Pricing, shipping, and coupon rules for WooCommerce.', 'reactwoo-geocore' ),
-				'product'         => __( 'Geo Commerce', 'reactwoo-geocore' ),
-				'area'            => 'targeting',
-				'badge'           => __( 'Geo Commerce', 'reactwoo-geocore' ),
-				'requires_plugin' => 'reactwoo-geo-commerce/reactwoo-geo-commerce.php',
-				'requires_wc'     => true,
-			),
-			'variant_type_audience'  => array(
-				'label'        => __( 'Audience', 'reactwoo-geocore' ),
-				'product'      => __( 'GeoCore Pro', 'reactwoo-geocore' ),
-				'badge'        => __( 'GeoCore Pro', 'reactwoo-geocore' ),
-				'requires_pro' => true,
-				'parent'       => 'advanced_variants',
-			),
-			'variant_type_campaign'  => array(
-				'label'        => __( 'Campaign', 'reactwoo-geocore' ),
-				'product'      => __( 'GeoCore Pro', 'reactwoo-geocore' ),
-				'badge'        => __( 'GeoCore Pro', 'reactwoo-geocore' ),
-				'requires_pro' => true,
-				'parent'       => 'advanced_variants',
-			),
-			'variant_type_weather'   => array(
-				'label'        => __( 'Weather', 'reactwoo-geocore' ),
-				'product'      => __( 'GeoCore Pro', 'reactwoo-geocore' ),
-				'badge'        => __( 'GeoCore Pro', 'reactwoo-geocore' ),
-				'requires_pro' => true,
-				'parent'       => 'advanced_variants',
-			),
-			'variant_type_time'      => array(
-				'label'        => __( 'Time', 'reactwoo-geocore' ),
-				'product'      => __( 'GeoCore Pro', 'reactwoo-geocore' ),
-				'badge'        => __( 'GeoCore Pro', 'reactwoo-geocore' ),
-				'requires_pro' => true,
-				'parent'       => 'advanced_variants',
 			),
 		);
 
@@ -152,56 +80,55 @@ class RWGC_Capability_Registry {
 
 		if ( ! empty( $def['requires_pro'] ) ) {
 			$pro_on = function_exists( 'rwgc_is_pro_enabled' ) && rwgc_is_pro_enabled();
+			if ( ! $pro_on ) {
+				return array(
+					'state'        => 'unavailable',
+					'label'        => '',
+					'badge'        => '',
+					'reason'       => '',
+					'learn_url'    => '',
+					'activate_url' => '',
+					'upgrade_url'  => '',
+				);
+			}
 			return array(
-				'state'         => $pro_on ? 'available' : 'locked',
-				'label'         => $label,
-				'badge'         => $badge,
-				'reason'        => $pro_on
-					? __( 'GeoCore Pro is active on this site.', 'reactwoo-geocore' )
-					: __( 'Requires GeoCore Pro licence.', 'reactwoo-geocore' ),
-				'learn_url'     => admin_url( 'admin.php?page=rwgc-addons' ),
-				'activate_url'  => admin_url( 'admin.php?page=rwgc-settings-hub' ),
-				'upgrade_url'   => admin_url( 'admin.php?page=rwgc-addons' ),
+				'state'        => 'available',
+				'label'        => $label,
+				'badge'        => $badge,
+				'reason'       => __( 'Available on this site.', 'reactwoo-geocore' ),
+				'learn_url'    => '',
+				'activate_url' => '',
+				'upgrade_url'  => '',
 			);
 		}
 
 		if ( ! empty( $def['requires_plugin'] ) ) {
 			$plugin = (string) $def['requires_plugin'];
-			$active = is_plugin_active( $plugin );
+			$active = function_exists( 'is_plugin_active' ) ? is_plugin_active( $plugin ) : false;
 			if ( ! $active && ! function_exists( 'is_plugin_active' ) ) {
 				require_once ABSPATH . 'wp-admin/includes/plugin.php';
 				$active = is_plugin_active( $plugin );
 			}
-			if ( ! empty( $def['requires_wc'] ) && ! class_exists( 'WooCommerce', false ) ) {
+			if ( ! $active || ( ! empty( $def['requires_wc'] ) && ! class_exists( 'WooCommerce', false ) ) ) {
 				return array(
-					'state'        => 'locked',
-					'label'        => $label,
-					'badge'        => __( 'Requires WooCommerce', 'reactwoo-geocore' ),
-					'reason'       => __( 'Install and activate WooCommerce first.', 'reactwoo-geocore' ),
-					'learn_url'    => admin_url( 'plugin-install.php?s=woocommerce&tab=search&type=term' ),
+					'state'        => 'unavailable',
+					'label'        => '',
+					'badge'        => '',
+					'reason'       => '',
+					'learn_url'    => '',
 					'activate_url' => '',
-					'upgrade_url'  => admin_url( 'admin.php?page=rwgc-addons' ),
+					'upgrade_url'  => '',
 				);
 			}
 			$slug = isset( $def['admin_slug'] ) ? (string) $def['admin_slug'] : '';
 			return array(
-				'state'         => $active ? 'available' : 'not_installed',
-				'label'         => $label,
-				'badge'         => $badge,
-				'reason'        => $active
-					? sprintf(
-						/* translators: %s: product name */
-						__( '%s is installed.', 'reactwoo-geocore' ),
-						(string) ( $def['product'] ?? '' )
-					)
-					: sprintf(
-						/* translators: %s: product name */
-						__( 'Install %s to use this.', 'reactwoo-geocore' ),
-						(string) ( $def['product'] ?? '' )
-					),
-				'learn_url'     => admin_url( 'admin.php?page=rwgc-addons' ),
-				'activate_url'  => $slug ? admin_url( 'admin.php?page=' . $slug ) : '',
-				'upgrade_url'   => admin_url( 'admin.php?page=rwgc-addons' ),
+				'state'        => 'available',
+				'label'        => $label,
+				'badge'        => $badge,
+				'reason'       => __( 'Available on this site.', 'reactwoo-geocore' ),
+				'learn_url'    => '',
+				'activate_url' => $slug ? admin_url( 'admin.php?page=' . $slug ) : '',
+				'upgrade_url'  => '',
 			);
 		}
 

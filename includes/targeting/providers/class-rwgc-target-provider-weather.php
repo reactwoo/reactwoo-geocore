@@ -25,7 +25,7 @@ class RWGC_Target_Provider_Weather implements RWGC_Target_Provider_Interface {
 	 * @inheritDoc
 	 */
 	public function is_available() {
-		return true;
+		return self::weather_configured( array() );
 	}
 
 	/**
@@ -37,7 +37,7 @@ class RWGC_Target_Provider_Weather implements RWGC_Target_Provider_Interface {
 				'key'                   => 'weather_facet',
 				'label'                 => __( 'Shopping weather', 'reactwoo-geocore' ),
 				'group'                 => 'weather',
-				'description'           => __( 'Wet, dry, hot, cold, windy, sunny — requires GeoCore Pro weather.', 'reactwoo-geocore' ),
+				'description'           => __( 'Wet, dry, hot, cold, windy, sunny.', 'reactwoo-geocore' ),
 				'operators'             => array( 'in', 'not_in', 'is', 'is_not' ),
 				'value_mode'            => 'multi',
 				'provider'              => $this->get_provider_key(),
@@ -90,7 +90,7 @@ class RWGC_Target_Provider_Weather implements RWGC_Target_Provider_Interface {
 			'state'  => $on ? 'ok' : 'warn',
 			'detail' => $on
 				? __( 'Shopping weather facets available for targeting rules.', 'reactwoo-geocore' )
-				: __( 'Configure GeoCore Pro weather to enable shopping-weather rules.', 'reactwoo-geocore' ),
+				: __( 'Weather is not configured.', 'reactwoo-geocore' ),
 		);
 	}
 }

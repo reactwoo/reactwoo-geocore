@@ -68,16 +68,11 @@ if ( $rwgc_has_pro && class_exists( 'RWGCP_Google_Integration', false ) ) {
 					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-targeting-campaigns' ) ); ?>" style="margin-left:8px;"><?php esc_html_e( 'Campaign targeting rules', 'reactwoo-geocore' ); ?></a>
 				</p>
 				<p class="description"><?php esc_html_e( 'Detailed campaign charts and attribution breakdowns will appear here as reporting expands.', 'reactwoo-geocore' ); ?></p>
-			<?php else : ?>
+			<?php elseif ( $rwgc_has_pro ) : ?>
 				<h2><?php esc_html_e( 'No campaign data yet', 'reactwoo-geocore' ); ?></h2>
-				<p><?php esc_html_e( 'Campaign insights need synced Google Ads campaigns or UTM campaign rules. Connect advertising integrations to see performance and attribution here.', 'reactwoo-geocore' ); ?></p>
+				<p><?php esc_html_e( 'No Google Ads campaigns are synced yet.', 'reactwoo-geocore' ); ?></p>
 				<p>
-					<?php if ( $rwgc_has_pro ) : ?>
-						<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgcp-google-ads' ) ); ?>"><?php esc_html_e( 'Connect Google Ads', 'reactwoo-geocore' ); ?></a>
-					<?php else : ?>
-						<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ); ?>"><?php esc_html_e( 'View GeoCore Pro', 'reactwoo-geocore' ); ?></a>
-					<?php endif; ?>
-					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgcp-geocore-pro&rwgcp_tab=campaign-attribution' ) ); ?>" style="margin-left:8px;"><?php esc_html_e( 'UTM campaign rules', 'reactwoo-geocore' ); ?></a>
+					<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgcp-google-ads' ) ); ?>"><?php esc_html_e( 'Connect Google Ads', 'reactwoo-geocore' ); ?></a>
 				</p>
 			<?php endif; ?>
 		</div>
@@ -91,9 +86,6 @@ if ( $rwgc_has_pro && class_exists( 'RWGCP_Google_Integration', false ) ) {
 					<a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgcp-google-analytics' ) ); ?>"><?php esc_html_e( 'View synced audiences', 'reactwoo-geocore' ); ?></a>
 					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-targeting-audiences' ) ); ?>" style="margin-left:8px;"><?php esc_html_e( 'Audience targeting', 'reactwoo-geocore' ); ?></a>
 				</p>
-			<?php else : ?>
-				<p><?php esc_html_e( 'Audience insights require GeoCore Pro for GA4 audience sync and experience profiles.', 'reactwoo-geocore' ); ?></p>
-				<p><a class="button button-primary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-addons' ) ); ?>"><?php esc_html_e( 'View GeoCore Pro', 'reactwoo-geocore' ); ?></a></p>
 			<?php endif; ?>
 		</div>
 
@@ -122,7 +114,7 @@ if ( $rwgc_has_pro && class_exists( 'RWGCP_Google_Integration', false ) ) {
 		<?php if ( $rwgc_has_pro ) : ?>
 			<div class="rwgc-card rwgc-card--full">
 				<h2><?php esc_html_e( 'Attribution signals', 'reactwoo-geocore' ); ?></h2>
-				<p class="description"><?php esc_html_e( 'UTM and campaign attribution are managed in GeoCore Pro.', 'reactwoo-geocore' ); ?></p>
+				<p class="description"><?php esc_html_e( 'Request UTM fields are included in visibility rules. Synced campaign attribution is available from the active add-on.', 'reactwoo-geocore' ); ?></p>
 				<p>
 					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgcp-geocore-pro&rwgcp_tab=campaign-attribution' ) ); ?>"><?php esc_html_e( 'Open attribution', 'reactwoo-geocore' ); ?></a>
 					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-usage-campaign' ) ); ?>" style="margin-left:8px;"><?php esc_html_e( 'Campaign insights', 'reactwoo-geocore' ); ?></a>

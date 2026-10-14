@@ -104,15 +104,6 @@ class RWGC_Insights {
 				'reason'   => __( 'Targeting decides who sees what — start with a country variant or rule.', 'reactwoo-geocore' ),
 			);
 		}
-		$variant_count = self::count_page_variants();
-		if ( $variant_count > 0 && ! class_exists( 'RWGO_Plugin', false ) ) {
-			$recommendations[] = array(
-				'label'    => __( 'Test which page performs better', 'reactwoo-geocore' ),
-				'priority' => 4,
-				'reason'   => __( 'You have country variants. Use Geo Optimise Experiences to split traffic and measure winners.', 'reactwoo-geocore' ),
-			);
-		}
-
 		$status = 'active';
 		if ( ! $detected ) {
 			$status = 'inactive';

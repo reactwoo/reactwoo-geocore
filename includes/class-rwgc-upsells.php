@@ -35,10 +35,16 @@ class RWGC_Upsells {
 		);
 
 		foreach ( $addons as $slug => &$addon ) {
-			$status                 = self::get_addon_status( $addon );
-			$addon['status']        = $status;
-			$addon['status_label']  = 'active' === $status ? __( 'Active', 'reactwoo-geocore' ) : ( 'installed' === $status ? __( 'Installed', 'reactwoo-geocore' ) : __( 'Not installed', 'reactwoo-geocore' ) );
-			$addon['image']         = self::resolve_addon_image( $slug, $addon );
+			$status = self::get_addon_status( $addon );
+			if ( 'active' !== $status ) {
+				unset( $addons[ $slug ] );
+				continue;
+			}
+			$addon['status']       = $status;
+			$addon['status_label'] = __( 'Active', 'reactwoo-geocore' );
+			$addon['image']        = self::resolve_addon_image( $slug, $addon );
+			$addon['cta_url']      = '';
+			$addon['cta_label']    = '';
 		}
 		unset( $addon );
 
