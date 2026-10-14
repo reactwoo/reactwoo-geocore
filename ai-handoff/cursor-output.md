@@ -3,6 +3,24 @@
 ## Status
 done
 
+Visitor HTML from Geo Content, conditional shortcodes, Experience Slots, and force-printed Elementor popups is no longer passed through post kses. WordPress post kses drops `iframe`, `form`, and `input`, so a matching geo block that contained a video embed or a signup form rendered the text and removed the embed or form. Version is unchanged. Not tagged.
+
+## Files changed
+- `includes/class-rwgc-gutenberg.php`, `includes/class-rwgc-shortcodes.php`, `includes/integrations/gutenberg/class-rwgc-gutenberg-experience-slot.php`, `includes/integrations/elementor/class-rwgc-elementor-popups.php`, `includes/integrations/elementor/class-rwgc-elementor-experience-slots.php` — return or echo the rendered HTML directly.
+- `includes/functions-rwgc.php` — removed `rwgc_kses_post_html()` and `rwgc_kses_rendered_html()`.
+- `tests/Integrations/RWGCGeoContentBlockTest.php` — embed and form markup survives, and those render files do not call kses.
+
+## Not changed
+- Admin notices and the privacy-policy suggestion still use `wp_kses_post`.
+- No version bump, no tag.
+
+## Commands
+- `php /tmp/phpunit.phar --bootstrap tests/bootstrap.php --stderr tests/Integrations/RWGCGeoContentBlockTest.php` — OK (10 tests, 40 assertions).
+- `php -l` on the edited PHP files — no syntax errors.
+
+## Status
+done
+
 Plugin Check warning cleanup is on local branch `wporg-plugin-check-warnings`, based on `main` at `0a63aa6` (PR #84). Version stays **1.9.6** because `v1.9.6` is not on origin. Nothing was committed, tagged, pushed, or submitted to WordPress.org.
 
 WordPress.org zip sha256: `1e344983952c5c6032ba204247cef6fbbc0a78db582e7114606ae4d4e4e18474`

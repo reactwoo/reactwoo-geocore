@@ -390,7 +390,8 @@ final class RWGC_Elementor_Experience_Slots {
 			$decision = null;
 		}
 
-		echo rwgc_kses_rendered_html( reactwoo_render_experience_slot( $slot_id, $html, $decision ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rwgc_kses_rendered_html() escapes the builder markup.
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Elementor HTML + Gate B renderer.
+		echo reactwoo_render_experience_slot( $slot_id, $html, $decision );
 	}
 
 	/**

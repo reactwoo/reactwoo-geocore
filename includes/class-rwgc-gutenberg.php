@@ -126,6 +126,7 @@ class RWGC_Gutenberg {
 	 *
 	 * $content is the rendered InnerBlocks HTML. Targeting shows that HTML inside
 	 * the wrapper, or returns an empty string so the inner content stays hidden.
+	 * Embeds and forms in that HTML are kept. Post kses would remove them.
 	 *
 	 * @param array  $attributes Block attributes.
 	 * @param string $content    Rendered inner blocks.
@@ -140,13 +141,13 @@ class RWGC_Gutenberg {
 		if ( class_exists( 'RWGC_Surface_Settings', false ) && class_exists( 'RWGC_Targeting_Surface_Evaluator', false ) ) {
 			$settings = RWGC_Surface_Settings::from_block_attributes( $attrs );
 			if ( ! RWGC_Targeting_Surface_Evaluator::is_surface_active( $settings ) ) {
-				return '<div class="rwgc-geo-content">' . rwgc_kses_post_html( do_shortcode( (string) $content ) ) . '</div>';
+				return '<div class="rwgc-geo-content">' . do_shortcode( (string) $content ) . '</div>';
 			}
 			$result = RWGC_Targeting_Surface_Evaluator::evaluate( $settings );
 			if ( empty( $result['should_render'] ) ) {
 				return '';
 			}
-			return '<div class="rwgc-geo-content">' . rwgc_kses_post_html( do_shortcode( (string) $content ) ) . '</div>';
+			return '<div class="rwgc-geo-content">' . do_shortcode( (string) $content ) . '</div>';
 		}
 
 		return '';

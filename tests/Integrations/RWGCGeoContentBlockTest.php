@@ -50,6 +50,18 @@ require_once dirname( __DIR__, 2 ) . '/includes/targeting/class-rwgc-targeting-s
 require_once dirname( __DIR__, 2 ) . '/includes/targeting/class-rwgc-targeting-rule-set-schema.php';
 require_once dirname( __DIR__, 2 ) . '/includes/class-rwgc-gutenberg.php';
 
+if ( ! function_exists( 'wp_kses_post' ) ) {
+	/**
+	 * Stand-in for post kses: drop the tags WordPress post content does not allow.
+	 *
+	 * @param mixed $html HTML.
+	 * @return string
+	 */
+	function wp_kses_post( $html ) {
+		return (string) preg_replace( '#</?(iframe|form|input|script|svg|select|style)\b[^>]*>#i', '', (string) $html );
+	}
+}
+
 final class RWGCGeoContentBlockTest extends TestCase {
 
 	private const INNER = '<p class="rwgc-inner-marker">Inner offer</p>';
@@ -80,6 +92,35 @@ final class RWGCGeoContentBlockTest extends TestCase {
 
 		$this->assertStringContainsString( 'class="rwgc-geo-content"', $html );
 		$this->assertStringContainsString( self::INNER, $html );
+	}
+
+	public function test_inner_embeds_and_forms_are_not_stripped(): void {
+		$inner = '<p>Offer</p>'
+			. '<iframe src="https://www.youtube.com/embed/abc" title="Film"></iframe>'
+			. '<form method="post" action="/join"><input type="email" name="email"></form>';
+
+		$html = RWGC_Gutenberg::render_geo_content_block( array(), $inner );
+
+		$this->assertStringContainsString( '<iframe src="https://www.youtube.com/embed/abc"', $html );
+		$this->assertStringContainsString( '<form method="post" action="/join">', $html );
+		$this->assertStringContainsString( '<input type="email" name="email">', $html );
+	}
+
+	public function test_visitor_render_paths_do_not_kses_builder_html(): void {
+		$root  = dirname( __DIR__, 2 );
+		$files = array(
+			'/includes/class-rwgc-gutenberg.php',
+			'/includes/class-rwgc-shortcodes.php',
+			'/includes/functions-rwgc.php',
+			'/includes/integrations/gutenberg/class-rwgc-gutenberg-experience-slot.php',
+			'/includes/integrations/elementor/class-rwgc-elementor-popups.php',
+			'/includes/integrations/elementor/class-rwgc-elementor-experience-slots.php',
+		);
+		foreach ( $files as $file ) {
+			$src = (string) file_get_contents( $root . $file );
+			$this->assertStringNotContainsString( 'wp_kses_post', $src, $file );
+			$this->assertStringNotContainsString( 'wp_kses(', $src, $file );
+		}
 	}
 
 	public function test_inner_content_is_hidden_when_show_if_rule_does_not_match(): void {
