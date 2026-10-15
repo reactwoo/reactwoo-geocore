@@ -138,4 +138,88 @@ final class RWGCGeoContentBlockTest extends TestCase {
 		$this->assertStringContainsString( 'class="rwgc-geo-content"', $html );
 		$this->assertStringContainsString( self::INNER, $html );
 	}
+
+	public function test_geo_content_allowlist_adds_embeds_and_blocks_handlers(): void {
+		$allowed = rwgc_geo_content_allowed_html();
+
+		$this->assertArrayHasKey( 'iframe', $allowed );
+		foreach ( array( 'src', 'width', 'height', 'title', 'allow', 'allowfullscreen', 'frameborder', 'loading', 'referrerpolicy', 'style', 'class', 'id' ) as $attr ) {
+			$this->assertArrayHasKey( $attr, $allowed['iframe'] );
+		}
+		$this->assertArrayHasKey( 'form', $allowed );
+		foreach ( array( 'action', 'method', 'class', 'id', 'target' ) as $attr ) {
+			$this->assertArrayHasKey( $attr, $allowed['form'] );
+		}
+		foreach ( array( 'input', 'select', 'option', 'textarea', 'button', 'label' ) as $tag ) {
+			$this->assertArrayHasKey( $tag, $allowed );
+			foreach ( array( 'type', 'name', 'value', 'placeholder', 'required', 'checked', 'selected', 'disabled', 'for', 'class', 'id' ) as $attr ) {
+				$this->assertArrayHasKey( $attr, $allowed[ $tag ] );
+			}
+		}
+		$this->assertArrayHasKey( 'fieldset', $allowed );
+		$this->assertArrayHasKey( 'legend', $allowed );
+		$this->assertArrayNotHasKey( 'script', $allowed );
+		foreach ( $allowed as $attrs ) {
+			$this->assertIsArray( $attrs );
+			foreach ( array_keys( $attrs ) as $attr ) {
+				$this->assertFalse( str_starts_with( strtolower( (string) $attr ), 'on' ) );
+			}
+		}
+
+		$src = (string) file_get_contents( dirname( __DIR__, 2 ) . '/includes/functions-rwgc.php' );
+		$this->assertStringContainsString( "apply_filters( 'rwgc_geo_content_allowed_html'", $src );
+	}
+
+	public function test_youtube_iframe_and_simple_form_survive_geo_content_escape(): void {
+		$html = RWGC_Gutenberg::render_geo_content_block(
+			array(),
+			'<iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" width="560" height="315" title="YouTube video" allow="accelerometer; autoplay" allowfullscreen frameborder="0" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" style="border:0" class="yt" id="yt1"></iframe>'
+			. '<form action="/join" method="post" class="signup" id="signup" target="_self">'
+			. '<fieldset class="fields" id="fields"><legend class="legend" id="legend">Join</legend>'
+			. '<label for="email" class="lbl" id="lbl">Email</label>'
+			. '<input type="email" name="email" value="" placeholder="you@example.com" required class="email" id="email" aria-required="true" data-field="email">'
+			. '<select name="plan" id="plan"><option value="pro" selected>Pro</option></select>'
+			. '<textarea name="note" placeholder="Note" id="note"></textarea>'
+			. '<button type="submit" class="btn" id="go">Join</button>'
+			. '</fieldset></form>'
+		);
+
+		$this->assertStringContainsString( 'https://www.youtube.com/embed/dQw4w9WgXcQ', $html );
+		$this->assertStringContainsString( '<iframe', $html );
+		$this->assertStringContainsString( 'allowfullscreen', $html );
+		$this->assertStringContainsString( '<form', $html );
+		$this->assertStringContainsString( 'action="/join"', $html );
+		$this->assertStringContainsString( 'method="post"', $html );
+		$this->assertStringContainsString( '<fieldset', $html );
+		$this->assertStringContainsString( '<legend', $html );
+		$this->assertStringContainsString( '<label', $html );
+		$this->assertStringContainsString( 'for="email"', $html );
+		$this->assertStringContainsString( '<input', $html );
+		$this->assertStringContainsString( 'aria-required="true"', $html );
+		$this->assertStringContainsString( 'data-field="email"', $html );
+		$this->assertStringContainsString( '<select', $html );
+		$this->assertStringContainsString( '<option', $html );
+		$this->assertStringContainsString( 'selected', $html );
+		$this->assertStringContainsString( '<textarea', $html );
+		$this->assertStringContainsString( '<button', $html );
+	}
+
+	public function test_script_onclick_and_javascript_src_are_stripped(): void {
+		$html = RWGC_Gutenberg::render_geo_content_block(
+			array(),
+			'<script>RWGC_SCRIPT_TOKEN</script>'
+			. '<button type="submit" onclick="alert(1)">Go</button>'
+			. '<iframe src="javascript:alert(1)" title="bad"></iframe>'
+			. '<iframe src="http://evil.example/embed" title="http"></iframe>'
+			. '<form action="javascript:alert(2)" method="post"><input type="text" name="q"></form>'
+		);
+
+		$this->assertStringNotContainsString( '<script', strtolower( $html ) );
+		$this->assertStringNotContainsString( 'RWGC_SCRIPT_TOKEN', $html );
+		$this->assertStringNotContainsString( 'onclick', strtolower( $html ) );
+		$this->assertStringNotContainsString( 'javascript:', strtolower( $html ) );
+		$this->assertStringNotContainsString( 'http://evil.example/embed', $html );
+		$this->assertStringContainsString( '<button', $html );
+		$this->assertStringContainsString( '>Go</button>', $html );
+	}
 }

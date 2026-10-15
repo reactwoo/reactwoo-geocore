@@ -3,6 +3,28 @@
 ## Status
 needs-review
 
+Geo Content block output still runs through `wp_kses` with the post allowlist, and now also allows https iframes and simple forms. The allowlist filter is `rwgc_geo_content_allowed_html`. Script tags and `on*` handlers are removed after that filter. Version was not bumped and nothing was tagged. PR #85 was left open.
+
+## Files changed
+- `includes/functions-rwgc.php` — Geo Content allowlist, `wp_kses` escape, https iframe src check, and the `rwgc_geo_content_allowed_html` filter.
+- `includes/class-rwgc-gutenberg.php` — Geo Content render uses that escape instead of `wp_kses_post`.
+- `tests/Integrations/RWGCGeoContentBlockTest.php` — YouTube iframe and a simple form survive; script, onclick, and a `javascript:` src are stripped.
+
+## Not changed
+- Shortcodes, experience slots, and Elementor popups still use `rwgc_kses_post_html` / `rwgc_kses_rendered_html`.
+- No version bump, changelog entry, or tag.
+- PR #85 was not edited.
+
+## Commands
+- `vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr tests/Integrations/RWGCGeoContentBlockTest.php` — OK (11 tests, 399 assertions).
+- `vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr` — 105 tests, 786 assertions, 7 failures in `RWGCTargetingAssistantUiRegressionTest`. The 9 `RWGC_ContextAttributionTest` errors did not reproduce in this run (those 9 tests passed).
+
+## Remaining errors
+- None from this change. The 7 Targeting Assistant UI failures match the known baseline.
+
+## Status
+needs-review
+
 1.9.8 is the release for the country-only copy pass and the admin-shell view-transition fix (`admin/js/rwgc-app-shell.js` aligns the active tab instantly).
 
 ## Status
