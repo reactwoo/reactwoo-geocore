@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.7
+Stable tag: 1.9.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,7 +67,7 @@ No. You must provide your own MaxMind license key and accept their terms of use.
 
 = What is included without another plugin? =
 
-Country detection, the shortcodes, the Geo Content block, the REST location endpoint, and the visibility-rule conditions listed in the description. Request parameters such as `utm_source` and `gclid` are included. You do not need a ReactWoo account for those features.
+Country detection, the shortcodes, the Geo Content block, the REST location endpoint, and country and country-group visibility rules. UTM, click-ID, device, language, and time rules come with Geo Core Pro. You do not need a ReactWoo account for the country features.
 
 = Do I need an add-on? =
 
@@ -165,6 +165,10 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.8 =
+* The readme, rule-builder cards, and capability text describe country and country-group rules as the conditions included with this plugin. UTM, click-ID, device, language, and time rules are described as Geo Core Pro.
+* Opening a Geo admin screen no longer smooth-scrolls the active tab, which was aborting the browser view transition.
+
 = 1.9.7 =
 * Country and country-group visibility rules are the conditions this plugin evaluates. Device, language, schedule, campaign, visitor, and page conditions are evaluated by Geo Core Pro when that plugin is entitled.
 * The rule builder offers country targeting on its own. Additional conditions appear in the same builder when Geo Core Pro is entitled.
@@ -201,7 +205,7 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 = 1.9.0 =
 * Requires PHP 8.1.
 * Anonymous Cloud telemetry, including the visitor cookie, stays off until an administrator opts in.
-* UTM and click-id conditions are included in Geo Core. Audience, weather, and profile conditions remain in the separate GeoCore Pro plugin.
+* UTM and click-id conditions were included in Geo Core (moved to Geo Core Pro in 1.9.7). Audience, weather, and profile conditions remain in the separate GeoCore Pro plugin.
 * The WordPress.org build does not check api.reactwoo.com for updates. A Pro add-on that still calls the old Core updater helper is ignored instead of causing an error. Pro add-ons update themselves.
 * An uploaded country database no longer shows a license-key warning. That warning appears only when there is no usable database and no license key to download one.
 * The Geo Content block loads in the block editor.
@@ -256,6 +260,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 
 == Upgrade Notice ==
 
+= 1.9.8 =
+Copy now says this plugin includes country and country-group rules. UTM, click-ID, device, language, and time rules are Geo Core Pro.
+
 = 1.9.7 =
 Country and country-group rules stay in this plugin. Advanced targeting is evaluated by Geo Core Pro when that plugin is entitled. Stored rules from other plugins are kept.
 
@@ -278,4 +285,4 @@ Anonymous Cloud telemetry stays off unless the stored choice is an explicit opt-
 Geo Content: rule controls, inner blocks, the rule builder after reload, and published-only library rules.
 
 = 1.9.0 =
-Requires PHP 8.1. Anonymous Cloud telemetry is off until an administrator opts in. UTM and click-id conditions are included.
+Requires PHP 8.1. Anonymous Cloud telemetry is off until an administrator opts in. UTM and click-id conditions moved to Geo Core Pro in 1.9.7.

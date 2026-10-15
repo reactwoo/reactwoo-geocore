@@ -4,11 +4,6 @@
 (function () {
 	'use strict';
 
-	function getScrollBehavior() {
-		var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-		return prefersReduced ? 'auto' : 'smooth';
-	}
-
 	function alignActiveItem(container) {
 		if (!container) {
 			return;
@@ -17,11 +12,21 @@
 		if (!active || typeof active.scrollIntoView !== 'function') {
 			return;
 		}
-		active.scrollIntoView({
-			inline: 'center',
-			block: 'nearest',
-			behavior: getScrollBehavior()
-		});
+		// Instant alignment. A smooth scroll on load aborts Chrome's
+		// cross-document view transition and rejects with InvalidStateError.
+		var align = function () {
+			active.scrollIntoView({
+				inline: 'center',
+				block: 'nearest',
+				behavior: 'auto'
+			});
+		};
+		var transition = document.activeViewTransition;
+		if (transition && transition.finished && typeof transition.finished.finally === 'function') {
+			transition.finished.finally(align);
+			return;
+		}
+		align();
 	}
 
 	function syncFadeState(container) {

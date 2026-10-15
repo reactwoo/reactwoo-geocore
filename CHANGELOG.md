@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.8] - 2026-10-15
+
+### Changed
+- Readme, rule-builder cards, and the visibility-rules capability now say Geo Core includes country and country-group rules. UTM, click-ID, device, language, and time rules are described as Geo Core Pro.
+- Geo Core Pro can add rule-builder cards through `rwgc_target_type_cards`.
+- The admin shell aligns the active tab without a smooth scroll, so Chrome no longer aborts the page view transition when a Geo admin screen opens.
+
 ## [1.9.7] - 2026-10-14
 
 ### Changed

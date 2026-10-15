@@ -229,10 +229,9 @@ if ( ! function_exists( 'rwgc_can_link_ux_opportunity_review' ) ) {
 
 if ( ! function_exists( 'rwgc_advanced_targeting_enabled' ) ) {
 	/**
-	 * Whether the included multi-condition rule builder is shown.
+	 * Whether the included country rule builder is shown.
 	 *
-	 * Country, language, device, time, visitor, page, and request-parameter
-	 * conditions are part of this plugin. The filter defaults to true.
+	 * This plugin evaluates country and country-group conditions. The filter defaults to true.
 	 *
 	 * @return bool
 	 */

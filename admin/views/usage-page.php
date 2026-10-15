@@ -114,7 +114,7 @@ if ( $rwgc_has_pro && class_exists( 'RWGCP_Google_Integration', false ) ) {
 		<?php if ( $rwgc_has_pro ) : ?>
 			<div class="rwgc-card rwgc-card--full">
 				<h2><?php esc_html_e( 'Attribution signals', 'reactwoo-geocore' ); ?></h2>
-				<p class="description"><?php esc_html_e( 'Request UTM fields are included in visibility rules. Synced campaign attribution is available from the active add-on.', 'reactwoo-geocore' ); ?></p>
+				<p class="description"><?php esc_html_e( 'UTM and click-ID rules are evaluated by Geo Core Pro. Synced campaign attribution is available from that add-on.', 'reactwoo-geocore' ); ?></p>
 				<p>
 					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgcp-geocore-pro&rwgcp_tab=campaign-attribution' ) ); ?>"><?php esc_html_e( 'Open attribution', 'reactwoo-geocore' ); ?></a>
 					<a class="button" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-usage-campaign' ) ); ?>" style="margin-left:8px;"><?php esc_html_e( 'Campaign insights', 'reactwoo-geocore' ); ?></a>

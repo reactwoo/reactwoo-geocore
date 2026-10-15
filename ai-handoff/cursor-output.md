@@ -3,6 +3,11 @@
 ## Status
 needs-review
 
+1.9.8 is the release for the country-only copy pass and the admin-shell view-transition fix (`admin/js/rwgc-app-shell.js` aligns the active tab instantly).
+
+## Status
+needs-review
+
 Country-only ownership is on local branch `country-only-free`. It is not merged, tagged, pushed, or submitted. Do not merge `wporg-free-features-1.9.7`.
 
 Geo Core evaluates country and country-group rules. Geo Core Pro 0.1.56 on local branch `advanced-targeting-ownership` registers the other resolvers only when `RWGCP_Bootstrap::is_licensed()` is true (standalone licence or Decision Cloud `cloud.personalisation`).

@@ -21,7 +21,7 @@ class RWGC_Capability_Registry {
 		$defs = array(
 			'country_rules' => array(
 				'label'       => __( 'Visibility rules', 'reactwoo-geocore' ),
-				'description' => __( 'Show or hide content by country, language, device, time, visitor, page, and request parameters.', 'reactwoo-geocore' ),
+				'description' => __( 'Show or hide content with country and country-group rules.', 'reactwoo-geocore' ),
 				'product'     => __( 'Geo Core', 'reactwoo-geocore' ),
 				'area'        => 'targeting',
 				'badge'       => __( 'Included', 'reactwoo-geocore' ),

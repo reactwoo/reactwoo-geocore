@@ -71,12 +71,29 @@ if ( $rwgc_pro_enabled && ! empty( $rwgc_help['integrations_ga'] ) ) {
 		<?php RWGC_Admin_UI::render_quick_actions( $rwgc_quick_actions ); ?>
 	<?php endif; ?>
 
+	<?php
+	$rwgc_target_cards = apply_filters(
+		'rwgc_target_type_cards',
+		array(
+			array(
+				'title'       => __( 'Location', 'reactwoo-geocore' ),
+				'description' => __( 'Country and country groups.', 'reactwoo-geocore' ),
+			),
+		)
+	);
+	?>
 	<div class="rwgc-grid">
-		<div class="rwgc-card"><h2><?php esc_html_e( 'Location', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'Country and country groups.', 'reactwoo-geocore' ); ?></p></div>
-		<div class="rwgc-card"><h2><?php esc_html_e( 'Language', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'Browser language and locale.', 'reactwoo-geocore' ); ?></p></div>
-		<div class="rwgc-card"><h2><?php esc_html_e( 'Device', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'Desktop, mobile, or tablet.', 'reactwoo-geocore' ); ?></p></div>
-		<div class="rwgc-card"><h2><?php esc_html_e( 'Time', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'Day and time windows.', 'reactwoo-geocore' ); ?></p></div>
-		<div class="rwgc-card"><h2><?php esc_html_e( 'Request', 'reactwoo-geocore' ); ?></h2><p><?php esc_html_e( 'UTM parameters and click IDs from the current request.', 'reactwoo-geocore' ); ?></p></div>
+		<?php foreach ( $rwgc_target_cards as $rwgc_card ) : ?>
+			<?php
+			if ( ! is_array( $rwgc_card ) || empty( $rwgc_card['title'] ) ) {
+				continue;
+			}
+			?>
+			<div class="rwgc-card">
+				<h2><?php echo esc_html( (string) $rwgc_card['title'] ); ?></h2>
+				<p><?php echo esc_html( isset( $rwgc_card['description'] ) ? (string) $rwgc_card['description'] : '' ); ?></p>
+			</div>
+		<?php endforeach; ?>
 	</div>
 
 	<div class="rwgc-card rwgc-card--full rwgc-rb-playground-card">

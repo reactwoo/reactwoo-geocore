@@ -595,7 +595,7 @@ class RWGC_Admin {
 					'keywordHints'      => self::get_assistant_keyword_hints(),
 					'i18n'              => array(
 						'assistantName'   => __( 'Geo Assistant', 'reactwoo-geocore' ),
-						'opening'         => __( 'Tell me what you want to target. I can detect countries, devices, pages, variants, weather, campaigns, URLs, popups and product rules.', 'reactwoo-geocore' ),
+						'opening'         => __( 'Tell me what you want to target. Geo Core covers countries and country groups. Device, language, time, and campaign rules come with Geo Core Pro.', 'reactwoo-geocore' ),
 						'detectedLabel'   => __( 'Detected:', 'reactwoo-geocore' ),
 						'livePreview'     => __( 'Likely intent', 'reactwoo-geocore' ),
 						'checking'        => __( 'Checking what Geo Core can build…', 'reactwoo-geocore' ),
