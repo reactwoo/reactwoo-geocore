@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.9] - 2026-10-15
+
+### Fixed
+- Geo Content keeps https embeds and forms across the block, shortcode and Elementor while still escaping unsafe markup.
+
 ## [1.9.8] - 2026-10-15
 
 ### Changed

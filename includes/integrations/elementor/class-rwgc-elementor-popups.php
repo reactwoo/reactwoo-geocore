@@ -299,7 +299,7 @@ class RWGC_Elementor_Popups {
 			$bytes = strlen( trim( $html ) );
 
 			if ( $bytes > 0 ) {
-				echo rwgc_kses_rendered_html( $html ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rwgc_kses_rendered_html() escapes the Elementor document.
+				echo rwgc_kses_rendered_html( $html ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rwgc_kses_rendered_html() uses the Geo Content allowlist.
 				self::$force_emitted_popup_bytes[ $popup_id ] = $bytes;
 				if ( ! $elementor_marked_printed ) {
 					$locations_manager->set_is_printed( 'popup', $popup_id );

@@ -89,6 +89,7 @@ if ( ! defined( 'RWGC_PATH' ) ) {
 	define( 'RWGC_PATH', dirname( __DIR__ ) . '/' );
 }
 
+require_once dirname( __DIR__ ) . '/includes/functions-rwgc.php';
 require_once dirname( __DIR__ ) . '/includes/contracts/class-rwgc-contracts.php';
 RWGC_Contracts::load();
 require_once dirname( __DIR__ ) . '/includes/decision/class-rwgc-decision.php';

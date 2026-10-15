@@ -390,7 +390,7 @@ final class RWGC_Elementor_Experience_Slots {
 			$decision = null;
 		}
 
-		echo rwgc_kses_rendered_html( reactwoo_render_experience_slot( $slot_id, $html, $decision ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rwgc_kses_rendered_html() escapes the builder markup.
+		echo rwgc_kses_rendered_html( reactwoo_render_experience_slot( $slot_id, $html, $decision ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rwgc_kses_rendered_html() uses the Geo Content allowlist.
 	}
 
 	/**

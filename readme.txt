@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.8
+Stable tag: 1.9.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -165,6 +165,9 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.9 =
+* Geo Content keeps https embeds and forms across the block, shortcode and Elementor while still escaping unsafe markup.
+
 = 1.9.8 =
 * The readme, rule-builder cards, and capability text describe country and country-group rules as the conditions included with this plugin. UTM, click-ID, device, language, and time rules are described as Geo Core Pro.
 * Opening a Geo admin screen no longer smooth-scrolls the active tab, which was aborting the browser view transition.
@@ -259,6 +262,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.9 =
+Geo Content keeps https embeds and forms across the block, shortcode and Elementor while still escaping unsafe markup.
 
 = 1.9.8 =
 Copy now says this plugin includes country and country-group rules. UTM, click-ID, device, language, and time rules are Geo Core Pro.

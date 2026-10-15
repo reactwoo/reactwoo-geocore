@@ -44,6 +44,9 @@ if ( ! function_exists( 'apply_filters' ) ) {
 	 * @return mixed
 	 */
 	function apply_filters( $hook, $value, ...$args ) {
+		if ( isset( $GLOBALS['rwgc_test_filters'][ $hook ] ) && is_callable( $GLOBALS['rwgc_test_filters'][ $hook ] ) ) {
+			return $GLOBALS['rwgc_test_filters'][ $hook ]( $value, ...$args );
+		}
 		return $value;
 	}
 }

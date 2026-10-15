@@ -219,6 +219,7 @@ final class RWGCGeoContentBlockTest extends TestCase {
 		$this->assertStringNotContainsString( 'onclick', strtolower( $html ) );
 		$this->assertStringNotContainsString( 'javascript:', strtolower( $html ) );
 		$this->assertStringNotContainsString( 'http://evil.example/embed', $html );
+		$this->assertStringNotContainsString( '<iframe', strtolower( $html ) );
 		$this->assertStringContainsString( '<button', $html );
 		$this->assertStringContainsString( '>Go</button>', $html );
 	}

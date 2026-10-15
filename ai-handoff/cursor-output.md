@@ -3,6 +3,34 @@
 ## Status
 needs-review
 
+Geo Content 1.9.9 uses one allowlist (`rwgc_geo_content_allowed_html`) for the block, the `[rwgc_if]` shortcode, Gutenberg experience slots, and Elementor slots and popups. https iframes and forms stay. Script, `on*` handlers, `srcdoc`, `javascript:` hrefs, and non-https iframes are removed. Non-https iframes are dropped entirely. Not tagged. #86 stays a draft.
+
+## Files changed
+- `includes/functions-rwgc.php` — shared allowlist, builder-attribute merge for Elementor, full removal of non-https iframes, href and srcdoc hardening.
+- `includes/class-rwgc-shortcodes.php` — `[rwgc_if]` uses `rwgc_kses_geo_content_html`.
+- `includes/class-rwgc-gutenberg.php` — block already used that helper.
+- `includes/integrations/gutenberg/class-rwgc-gutenberg-experience-slot.php` — slot output uses the same helper.
+- `includes/integrations/elementor/class-rwgc-elementor-experience-slots.php` and `class-rwgc-elementor-popups.php` — `rwgc_kses_rendered_html()` now starts from the Geo Content allowlist.
+- `tests/Integrations/RWGCGeoContentEscapePathsTest.php` and `RWGCGeoContentBlockTest.php` — embed/form kept; script, onerror, javascript: hrefs, and non-https iframes removed. Hostile filter cannot add script, on* handlers, or srcdoc.
+- `tests/bootstrap.php` — test filters can hook `apply_filters`.
+- `tests/test-rwgc-gutenberg-experience-slot.php` — loads the helper the slot renderer calls.
+- Version 1.9.9 in the plugin header, `RWGC_VERSION`, readme stable tag, changelog, upgrade notice, and block asset files.
+
+## Not changed
+- No tag. #86 stays a draft. #85 is closed as superseded, not merged.
+
+## Commands
+- `vendor/bin/phpunit --bootstrap tests/bootstrap.php --stderr` — 111 tests, 865 assertions, 7 failures in `RWGCTargetingAssistantUiRegressionTest`, 0 errors.
+- `php tests/test-rwgc-wporg-build.php` — passed.
+- `php tests/test-rwgc-gutenberg-experience-slot.php` — passed.
+- `php tests/test-rwgc-elementor-experience-slots.php` — passed.
+
+## Remaining errors
+- None from this change. The 7 Targeting Assistant UI failures match the known baseline.
+
+## Status
+needs-review
+
 Geo Content block output still runs through `wp_kses` with the post allowlist, and now also allows https iframes and simple forms. The allowlist filter is `rwgc_geo_content_allowed_html`. Script tags and `on*` handlers are removed after that filter. Version was not bumped and nothing was tagged. PR #85 was left open.
 
 ## Files changed

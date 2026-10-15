@@ -37,11 +37,11 @@ if ( ! function_exists( 'rwgc_kses_post_html' ) ) {
 
 if ( ! function_exists( 'rwgc_geo_content_allowed_html' ) ) {
 	/**
-	 * Allowlist for Geo Content block output.
+	 * Allowlist for Geo Content output (block, shortcode, slots, and popups).
 	 *
 	 * Starts from the post allowlist, then adds the embed and form tags that
-	 * wp_kses_post() would strip. Script tags and on* handlers are removed after
-	 * the rwgc_geo_content_allowed_html filter so they cannot be turned back on.
+	 * wp_kses_post() would strip. Script tags, on* handlers, and srcdoc are
+	 * removed after the rwgc_geo_content_allowed_html filter.
 	 *
 	 * @return array<string, array<string, bool>>
 	 */
@@ -155,14 +155,19 @@ if ( ! function_exists( 'rwgc_geo_content_strip_unsafe_allowlist' ) ) {
 		if ( ! is_array( $allowed ) ) {
 			return array();
 		}
-		unset( $allowed['script'] );
+		foreach ( array_keys( $allowed ) as $tag ) {
+			if ( 'script' === strtolower( (string) $tag ) ) {
+				unset( $allowed[ $tag ] );
+			}
+		}
 		foreach ( $allowed as $tag => $attrs ) {
 			if ( ! is_array( $attrs ) ) {
 				$allowed[ $tag ] = array();
 				continue;
 			}
 			foreach ( array_keys( $attrs ) as $attr ) {
-				if ( str_starts_with( strtolower( (string) $attr ), 'on' ) ) {
+				$name = strtolower( (string) $attr );
+				if ( str_starts_with( $name, 'on' ) || 'srcdoc' === $name ) {
 					unset( $allowed[ $tag ][ $attr ] );
 				}
 			}
@@ -211,12 +216,16 @@ if ( ! function_exists( 'rwgc_kses_geo_content_html' ) ) {
 	/**
 	 * Escape Geo Content inner HTML, keeping https embeds and simple forms.
 	 *
-	 * @param string $html HTML.
+	 * @param string                                    $html    HTML.
+	 * @param array<string, array<string, bool>>|null $allowed Allowlist. Null builds the Geo Content allowlist.
 	 * @return string
 	 */
-	function rwgc_kses_geo_content_html( $html ) {
-		$html    = (string) $html;
-		$allowed = rwgc_geo_content_allow_wildcard_attrs( $html, rwgc_geo_content_allowed_html() );
+	function rwgc_kses_geo_content_html( $html, $allowed = null ) {
+		$html = (string) $html;
+		if ( ! is_array( $allowed ) ) {
+			$allowed = rwgc_geo_content_allowed_html();
+		}
+		$allowed = rwgc_geo_content_allow_wildcard_attrs( $html, $allowed );
 		$allowed = rwgc_geo_content_strip_unsafe_allowlist( $allowed );
 		if ( function_exists( 'wp_kses' ) ) {
 			$html = wp_kses( $html, $allowed );
@@ -371,7 +380,9 @@ if ( ! function_exists( 'rwgc_geo_content_enforce_embed_safety' ) ) {
 	function rwgc_geo_content_enforce_embed_safety( $html ) {
 		$html = preg_replace( '#<script\b[^>]*>.*?</script\s*>#is', '', (string) $html );
 		$html = preg_replace( '#<script\b[^>]*/?\s*>#i', '', (string) $html );
-		$html = preg_replace( '/\s+on[a-zA-Z0-9]+\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]+)/', '', (string) $html );
+		$html = preg_replace( '/\s+on[a-zA-Z0-9]+\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', (string) $html );
+		$html = preg_replace( '/\ssrcdoc\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', (string) $html );
+		$html = rwgc_geo_content_strip_unsafe_hrefs( (string) $html );
 		$html = preg_replace_callback(
 			'#<form\b([^>]*)>#i',
 			static function ( $matches ) {
@@ -381,24 +392,82 @@ if ( ! function_exists( 'rwgc_geo_content_enforce_embed_safety' ) ) {
 			(string) $html
 		);
 		$html = preg_replace_callback(
-			'#<iframe\b([^>]*)>#i',
+			'#<iframe\b([^>]*)>(.*?)</iframe\s*>|<iframe\b([^>]*)/?\s*>#is',
 			static function ( $matches ) {
-				$attrs = (string) $matches[1];
-				$attrs = preg_replace_callback(
-					'/\ssrc\s*=\s*([\'"])(.*?)\1/i',
-					static function ( $src ) {
-						return rwgc_geo_content_is_https_url( $src[2] ) ? $src[0] : '';
-					},
-					$attrs
-				);
-				$attrs = preg_replace_callback(
-					'/\ssrc\s*=\s*([^\s\'">]+)/i',
-					static function ( $src ) {
-						return rwgc_geo_content_is_https_url( $src[1] ) ? $src[0] : '';
-					},
-					(string) $attrs
-				);
-				return '<iframe' . $attrs . '>';
+				$attrs = ( isset( $matches[3] ) && '' !== $matches[3] ) ? $matches[3] : (string) $matches[1];
+				$src   = rwgc_geo_content_attribute_value( $attrs, 'src' );
+				if ( ! rwgc_geo_content_is_https_url( $src ) ) {
+					return '';
+				}
+				return $matches[0];
+			},
+			(string) $html
+		);
+		return is_string( $html ) ? $html : '';
+	}
+}
+
+if ( ! function_exists( 'rwgc_geo_content_attribute_value' ) ) {
+	/**
+	 * Read one attribute value from a raw attribute string.
+	 *
+	 * @param string $attrs Raw attributes.
+	 * @param string $name  Attribute name.
+	 * @return string
+	 */
+	function rwgc_geo_content_attribute_value( $attrs, $name ) {
+		$name = preg_quote( (string) $name, '/' );
+		if ( preg_match( '/\s' . $name . '\s*=\s*([\'"])(.*?)\1/is', (string) $attrs, $matches ) ) {
+			return (string) $matches[2];
+		}
+		if ( preg_match( '/\s' . $name . '\s*=\s*([^\s\'">]+)/i', (string) $attrs, $matches ) ) {
+			return (string) $matches[1];
+		}
+		return '';
+	}
+}
+
+if ( ! function_exists( 'rwgc_geo_content_is_safe_href' ) ) {
+	/**
+	 * Whether an href is relative or a non-script URL.
+	 *
+	 * @param string $url URL.
+	 * @return bool
+	 */
+	function rwgc_geo_content_is_safe_href( $url ) {
+		$url = html_entity_decode( (string) $url, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		$url = trim( $url );
+		$url = preg_replace( '/[\x00-\x20]+/', '', (string) $url );
+		if ( ! is_string( $url ) || '' === $url ) {
+			return true;
+		}
+		if ( ! preg_match( '#^([a-z][a-z0-9+.\-]*):#i', $url, $matches ) ) {
+			return true;
+		}
+		$scheme = strtolower( $matches[1] );
+		return in_array( $scheme, array( 'http', 'https', 'mailto', 'tel' ), true );
+	}
+}
+
+if ( ! function_exists( 'rwgc_geo_content_strip_unsafe_hrefs' ) ) {
+	/**
+	 * Remove javascript: and data: href attributes.
+	 *
+	 * @param string $html HTML.
+	 * @return string
+	 */
+	function rwgc_geo_content_strip_unsafe_hrefs( $html ) {
+		$html = preg_replace_callback(
+			'/\shref\s*=\s*([\'"])(.*?)\1/i',
+			static function ( $href ) {
+				return rwgc_geo_content_is_safe_href( $href[2] ) ? $href[0] : '';
+			},
+			(string) $html
+		);
+		$html = preg_replace_callback(
+			'/\shref\s*=\s*([^\s\'">]+)/i',
+			static function ( $href ) {
+				return rwgc_geo_content_is_safe_href( $href[1] ) ? $href[0] : '';
 			},
 			(string) $html
 		);
@@ -408,59 +477,65 @@ if ( ! function_exists( 'rwgc_geo_content_enforce_embed_safety' ) ) {
 
 if ( ! function_exists( 'rwgc_kses_rendered_html' ) ) {
 	/**
-	 * Escape builder HTML (Elementor documents and experience-slot markup).
+	 * Escape Elementor slot and popup HTML with the Geo Content allowlist.
 	 *
-	 * Post content tags stay, plus the attributes those builders put on the markup.
+	 * Builder attributes stay. The rwgc_geo_content_allowed_html filter still runs,
+	 * and script, event handlers, and srcdoc are removed after it.
 	 *
 	 * @param string $html HTML.
 	 * @return string
 	 */
 	function rwgc_kses_rendered_html( $html ) {
-		$html = (string) $html;
-		if ( ! function_exists( 'wp_kses' ) || ! function_exists( 'wp_kses_allowed_html' ) ) {
-			return function_exists( 'wp_kses_post' ) ? wp_kses_post( $html ) : $html;
-		}
-		$allowed = wp_kses_allowed_html( 'post' );
-		$attrs   = array(
-			'class'                       => true,
-			'id'                          => true,
-			'style'                       => true,
-			'role'                        => true,
-			'tabindex'                    => true,
-			'hidden'                      => true,
-			'aria-hidden'                 => true,
-			'aria-label'                  => true,
-			'aria-modal'                  => true,
-			'aria-labelledby'             => true,
-			'aria-describedby'            => true,
-			'data-id'                     => true,
-			'data-element_type'           => true,
-			'data-widget_type'            => true,
-			'data-settings'               => true,
-			'data-model-cid'              => true,
-			'data-elementor-id'           => true,
-			'data-elementor-type'         => true,
-			'data-elementor-settings'     => true,
+		return rwgc_kses_geo_content_html( $html, rwgc_geo_content_merge_builder_allowlist( rwgc_geo_content_allowed_html() ) );
+	}
+}
+
+if ( ! function_exists( 'rwgc_geo_content_merge_builder_allowlist' ) ) {
+	/**
+	 * Add Elementor and slot attributes on top of the Geo Content allowlist.
+	 *
+	 * Script, event handlers, and srcdoc are removed again after the merge.
+	 *
+	 * @param array<string, array<string, bool>> $allowed Allowlist.
+	 * @return array<string, array<string, bool>>
+	 */
+	function rwgc_geo_content_merge_builder_allowlist( array $allowed ) {
+		$attrs = array(
+			'class'                        => true,
+			'id'                           => true,
+			'style'                        => true,
+			'role'                         => true,
+			'tabindex'                     => true,
+			'hidden'                       => true,
+			'aria-hidden'                  => true,
+			'aria-label'                   => true,
+			'aria-modal'                   => true,
+			'aria-labelledby'              => true,
+			'aria-describedby'             => true,
+			'data-id'                      => true,
+			'data-element_type'            => true,
+			'data-widget_type'             => true,
+			'data-settings'                => true,
+			'data-model-cid'               => true,
+			'data-elementor-id'            => true,
+			'data-elementor-type'          => true,
+			'data-elementor-settings'      => true,
 			'data-elementor-open-lightbox' => true,
-			'data-elementor-lightbox'     => true,
-			'data-rwgc-slot'              => true,
-			'data-reactwoo-slot-mode'     => true,
+			'data-elementor-lightbox'      => true,
+			'data-rwgc-slot'               => true,
+			'data-reactwoo-slot-mode'      => true,
 		);
 		foreach ( $allowed as $tag => $tag_attrs ) {
 			$allowed[ $tag ] = array_merge( is_array( $tag_attrs ) ? $tag_attrs : array(), $attrs );
 		}
-		$extra_tags = array( 'svg', 'path', 'use', 'g', 'circle', 'polygon', 'polyline', 'line', 'rect', 'form', 'input', 'select', 'option', 'textarea', 'source', 'picture', 'nav', 'section', 'header', 'footer', 'main' );
+		$extra_tags = array( 'svg', 'path', 'use', 'g', 'circle', 'polygon', 'polyline', 'line', 'rect', 'source', 'picture', 'nav', 'section', 'header', 'footer', 'main' );
 		foreach ( $extra_tags as $tag ) {
-			if ( ! isset( $allowed[ $tag ] ) ) {
-				$allowed[ $tag ] = $attrs;
-			} else {
-				$allowed[ $tag ] = array_merge( $allowed[ $tag ], $attrs );
-			}
+			$existing        = ( isset( $allowed[ $tag ] ) && is_array( $allowed[ $tag ] ) ) ? $allowed[ $tag ] : array();
+			$allowed[ $tag ] = array_merge( $existing, $attrs );
 		}
-		$allowed['svg']   = array_merge( $allowed['svg'], array( 'xmlns' => true, 'viewbox' => true, 'viewBox' => true, 'fill' => true, 'stroke' => true, 'width' => true, 'height' => true ) );
-		$allowed['path']  = array_merge( $allowed['path'], array( 'd' => true, 'fill' => true, 'stroke' => true ) );
-		$allowed['input'] = array_merge( $allowed['input'], array( 'type' => true, 'name' => true, 'value' => true, 'checked' => true, 'placeholder' => true ) );
-		return wp_kses( $html, $allowed );
+		$allowed['svg']  = array_merge( $allowed['svg'], array( 'xmlns' => true, 'viewbox' => true, 'viewBox' => true, 'fill' => true, 'stroke' => true, 'width' => true, 'height' => true ) );
+		$allowed['path'] = array_merge( $allowed['path'], array( 'd' => true, 'fill' => true, 'stroke' => true ) );
+		return rwgc_geo_content_strip_unsafe_allowlist( $allowed );
 	}
 }
 

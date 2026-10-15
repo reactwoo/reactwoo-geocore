@@ -71,7 +71,7 @@ final class RWGC_Gutenberg_Experience_Slot {
 		}
 
 		$default = is_string( $block_content ) ? $block_content : '';
-		return rwgc_kses_post_html( reactwoo_render_experience_slot( $slot_id, $default, $decision ) );
+		return rwgc_kses_geo_content_html( reactwoo_render_experience_slot( $slot_id, $default, $decision ) );
 	}
 
 	/**
