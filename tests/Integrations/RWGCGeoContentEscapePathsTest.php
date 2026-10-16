@@ -252,6 +252,41 @@ final class RWGCGeoContentEscapePathsTest extends TestCase {
 		$this->assertStringContainsString( 'rwgc_kses_rendered_html( $html )', $src );
 	}
 
+	public function test_rejected_iframe_does_not_swallow_a_later_https_embed(): void {
+		$html = rwgc_kses_geo_content_html(
+			'<iframe src="http://example.com/old">'
+			. '<p>Between</p>'
+			. '<iframe src="' . self::YOUTUBE . '" title="Video"></iframe>'
+			. '<p>After</p>'
+		);
+
+		$this->assertStringContainsString( self::YOUTUBE, $html );
+		$this->assertStringContainsString( '<p>Between</p>', $html );
+		$this->assertStringContainsString( '<p>After</p>', $html );
+		$this->assertStringNotContainsString( 'http://example.com/old', $html );
+		$this->assertSame( 1, substr_count( strtolower( $html ), '<iframe' ) );
+	}
+
+	public function test_commented_out_iframe_does_not_hide_the_following_page(): void {
+		$html = rwgc_kses_geo_content_html(
+			"<!-- <iframe src=\"http://example.com/old\"> -->\n"
+			. '<p>Special offer</p>'
+			. '<iframe src="' . self::YOUTUBE . '"></iframe>'
+			. '<p>After</p>'
+		);
+
+		$this->assertStringContainsString( self::YOUTUBE, $html );
+		$this->assertStringContainsString( '<p>Special offer</p>', $html );
+		$this->assertStringContainsString( '<p>After</p>', $html );
+		$this->assertStringNotContainsString( 'http://example.com/old', $html );
+		$comment_open  = strpos( $html, '<!--' );
+		$comment_close = strpos( $html, '-->' );
+		$this->assertNotFalse( $comment_open );
+		$this->assertNotFalse( $comment_close );
+		$this->assertLessThan( $comment_close, $comment_open );
+		$this->assertGreaterThan( $comment_close, strpos( $html, 'Special offer' ) );
+	}
+
 	public function test_hostile_filter_cannot_add_script_handlers_or_srcdoc(): void {
 		$GLOBALS['rwgc_test_filters']['rwgc_geo_content_allowed_html'] = static function ( $allowed ) {
 			$allowed['script']            = array( 'src' => true );

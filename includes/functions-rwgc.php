@@ -372,7 +372,12 @@ if ( ! function_exists( 'rwgc_geo_content_strip_unsafe_form_action' ) ) {
 
 if ( ! function_exists( 'rwgc_geo_content_enforce_embed_safety' ) ) {
 	/**
-	 * Strip script, event handlers, non-https iframe src values, and unsafe form actions.
+	 * Strip script, event handlers, non-https iframe opening tags, and unsafe form actions.
+	 *
+	 * Each iframe opening tag is judged on its own src. Pairing it with a later
+	 * closing tag would delete a following https embed, and if the rejected tag
+	 * sat inside an HTML comment it would also delete the comment end and hide
+	 * the rest of the page.
 	 *
 	 * @param string $html HTML.
 	 * @return string
@@ -392,10 +397,9 @@ if ( ! function_exists( 'rwgc_geo_content_enforce_embed_safety' ) ) {
 			(string) $html
 		);
 		$html = preg_replace_callback(
-			'#<iframe\b([^>]*)>(.*?)</iframe\s*>|<iframe\b([^>]*)/?\s*>#is',
+			'#<iframe\b[^>]*>#i',
 			static function ( $matches ) {
-				$attrs = ( isset( $matches[3] ) && '' !== $matches[3] ) ? $matches[3] : (string) $matches[1];
-				$src   = rwgc_geo_content_attribute_value( $attrs, 'src' );
+				$src = rwgc_geo_content_attribute_value( $matches[0], 'src' );
 				if ( ! rwgc_geo_content_is_https_url( $src ) ) {
 					return '';
 				}

@@ -3,6 +3,27 @@
 ## Status
 needs-review
 
+A rejected iframe opening tag no longer consumes a later `</iframe>`. Geo Content, shortcodes, slots, and Elementor popups keep a following https embed, and an HTML comment around the rejected tag still closes so the rest of the page stays visible. No version bump and no tag.
+
+## Files changed
+- `includes/functions-rwgc.php` — `rwgc_geo_content_enforce_embed_safety()` checks each `<iframe>` opening tag on its own.
+- `tests/Integrations/RWGCGeoContentEscapePathsTest.php` — unclosed http iframe, and the same tag inside a comment, before a YouTube embed.
+
+## Not changed
+- Allowlist, form actions, href checks, and https embeds that are already well formed.
+- Version 1.9.9 and tags.
+
+## Commands
+- `php /tmp/phpunit.phar --bootstrap tests/bootstrap.php --stderr tests/Integrations/RWGCGeoContentEscapePathsTest.php` — OK (8 tests, 91 assertions).
+- `php /tmp/phpunit.phar --bootstrap tests/bootstrap.php --stderr tests/Integrations/RWGCGeoContentBlockTest.php` — OK (11 tests, 400 assertions).
+- WordPress 6.7.1 `wp_kses` plus the helper: commented-out http iframe leaves the offer and the YouTube iframe; Google Maps https iframe stays.
+
+## Remaining errors
+- None from this change.
+
+## Status
+needs-review
+
 Geo Content 1.9.9 uses one allowlist (`rwgc_geo_content_allowed_html`) for the block, the `[rwgc_if]` shortcode, Gutenberg experience slots, and Elementor slots and popups. https iframes and forms stay. Script, `on*` handlers, `srcdoc`, `javascript:` hrefs, and non-https iframes are removed. Non-https iframes are dropped entirely. Not tagged. #86 stays a draft.
 
 ## Files changed
