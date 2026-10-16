@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.10] - 2026-10-16
+
+### Fixed
+- A rejected non-https iframe is removed on its own. Later content and https embeds stay on the page.
+
 ## [1.9.9] - 2026-10-15
 
 ### Fixed

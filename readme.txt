@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.9
+Stable tag: 1.9.10
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -165,6 +165,9 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.10 =
+* A rejected iframe is removed on its own, so later content and https embeds stay on the page.
+
 = 1.9.9 =
 * Geo Content keeps https embeds and forms across the block, shortcode and Elementor while still escaping unsafe markup.
 
@@ -262,6 +265,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.10 =
+A rejected iframe is removed on its own, so later content and https embeds stay on the page.
 
 = 1.9.9 =
 Geo Content keeps https embeds and forms across the block, shortcode and Elementor while still escaping unsafe markup.

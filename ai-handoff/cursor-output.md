@@ -3,6 +3,23 @@
 ## Status
 needs-review
 
+Version is 1.9.10 on the PR #87 branch. The iframe fix is unchanged.
+
+## Files changed
+- Plugin header, `RWGC_VERSION`, readme stable tag, changelog, upgrade notice, block asset versions, and the WordPress.org build version assertions.
+
+## Not changed
+- `rwgc_geo_content_enforce_embed_safety()` and its tests.
+
+## Commands
+- Pending: `php tests/test-rwgc-wporg-build.php`.
+
+## Remaining errors
+- None from the version bump.
+
+## Status
+needs-review
+
 A rejected iframe opening tag no longer consumes a later `</iframe>`. Geo Content, shortcodes, slots, and Elementor popups keep a following https embed, and an HTML comment around the rejected tag still closes so the rest of the page stays visible. No version bump and no tag.
 
 ## Files changed
