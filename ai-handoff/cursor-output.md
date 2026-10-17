@@ -3,6 +3,23 @@
 ## Status
 needs-review
 
+Geo Core 1.9.13 extraction no longer uses an unreadable system temp directory. A failed unpack is a saved error, temporary files are removed, and the live database stays in place. The 401 text stays next to the failure time until a download succeeds. Not merged and not tagged.
+
+## Files changed
+- `includes/class-rwgc-maxmind.php` — try/catch Throwable around unpack and listing, work directory under uploads or get_temp_dir(), finally cleanup.
+- `includes/class-rwgc-settings.php` — keep a download error when the body is not valid UTF-8.
+- `admin/views/integrations-maxmind-page.php` — show the stored error on later loads, beside the failure time.
+- `tests/Engine/RWGC_MaxMindFollowupsTest.php` — unlistable temp dir, cleanup, and persistent error message.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist --stderr` — 138 tests, 987 assertions, 7 failures in `RWGCTargetingAssistantUiRegressionTest`, 0 errors.
+
+## Remaining errors
+- None from this change. The 7 Targeting Assistant UI failures match the known baseline.
+
+## Status
+needs-review
+
 Geo Core 1.9.13 schedules MaxMind downloads, shows the credentials-saved notice, keeps the newest database from the archive, and stops the MaxMind screen scrolling sideways on a phone. Not merged and not tagged.
 
 ## Files changed

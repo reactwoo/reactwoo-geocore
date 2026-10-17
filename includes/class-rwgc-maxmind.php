@@ -207,9 +207,17 @@ class RWGC_MaxMind {
 	 * @return string
 	 */
 	public static function get_storage_dir() {
-		$upload_dir = wp_get_upload_dir();
-		$base       = trailingslashit( $upload_dir['basedir'] ) . 'reactwoo-geocore/';
-		return $base;
+		$base = '';
+		if ( function_exists( 'wp_get_upload_dir' ) ) {
+			$upload_dir = wp_get_upload_dir();
+			if ( is_array( $upload_dir ) && ! empty( $upload_dir['basedir'] ) ) {
+				$base = (string) $upload_dir['basedir'];
+			}
+		}
+		if ( '' === $base ) {
+			$base = sys_get_temp_dir();
+		}
+		return rtrim( $base, '/\\' ) . '/reactwoo-geocore/';
 	}
 
 	/**
@@ -469,11 +477,22 @@ class RWGC_MaxMind {
 
 		file_put_contents( $tmp, $body );
 
-		// Extract .mmdb from the tar.gz.
+		// Extract .mmdb from the tar.gz. A failure here must stay a WP_Error.
 		$dest_dir = self::get_storage_dir();
-		$db_path  = self::extract_mmdb_from_archive( $tmp, $dest_dir );
-
-		wp_delete_file( $tmp );
+		try {
+			$db_path = self::extract_database_archive( $tmp, $dest_dir );
+		} catch ( \Throwable $e ) {
+			$db_path = new WP_Error(
+				'rwgc_extract_failed',
+				sprintf(
+					/* translators: %s: archive extraction error message. */
+					__( 'Failed to extract MaxMind archive: %s', 'reactwoo-geocore' ),
+					$e->getMessage()
+				)
+			);
+		} finally {
+			self::delete_file( $tmp );
+		}
 
 		if ( is_wp_error( $db_path ) ) {
 			self::record_error( $db_path );
@@ -500,49 +519,67 @@ class RWGC_MaxMind {
 	/**
 	 * Extract .mmdb file from MaxMind tar.gz archive.
 	 *
+	 * Directory listing is inside the same try as unpacking. Any failure,
+	 * including an unreadable temp directory, becomes a WP_Error and does not
+	 * replace the live database. Copies and the work directory are removed
+	 * on every path.
+	 *
 	 * @param string $archive_path Local tar.gz path.
 	 * @param string $dest_dir     Destination directory.
 	 * @return string|\WP_Error    DB file path or error.
 	 */
-	private static function extract_mmdb_from_archive( $archive_path, $dest_dir ) {
-		if ( ! class_exists( 'PharData' ) ) {
-			return new WP_Error( 'rwgc_no_phar', __( 'Unable to extract MaxMind archive on this server (PharData missing). Please extract manually and set the DB path.', 'reactwoo-geocore' ) );
-		}
-
-		$edition = self::database_edition();
-		$work    = self::make_extract_dir();
-		if ( is_wp_error( $work ) ) {
-			return $work;
-		}
-
-		$tar_path = $archive_path;
-		$cleanup_tar = false;
+	public static function extract_database_archive( $archive_path, $dest_dir ) {
+		$work     = '';
+		$tar_copy = '';
+		$tar_path = '';
 		try {
-			if ( substr( $archive_path, -7 ) !== '.tar.gz' ) {
-				$tar_gz = $archive_path . '.tar.gz';
+			if ( ! class_exists( 'PharData' ) ) {
+				return new WP_Error( 'rwgc_no_phar', __( 'Unable to extract MaxMind archive on this server (PharData missing). Please extract manually and set the DB path.', 'reactwoo-geocore' ) );
+			}
+
+			$made = self::make_extract_dir();
+			if ( is_wp_error( $made ) ) {
+				return $made;
+			}
+			$work = $made;
+
+			$open = (string) $archive_path;
+			if ( substr( $open, -7 ) !== '.tar.gz' ) {
+				$tar_copy = $open . '.tar.gz';
 				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- PharData needs a .tar.gz suffix.
-				if ( ! copy( $archive_path, $tar_gz ) ) {
-					self::remove_tree( $work );
+				if ( ! copy( $open, $tar_copy ) ) {
 					return new WP_Error( 'rwgc_extract_failed', __( 'Failed to prepare the MaxMind archive for extraction.', 'reactwoo-geocore' ) );
 				}
-				$archive_path = $tar_gz;
-				$cleanup_tar  = true;
+				$open = $tar_copy;
 			}
-			$phar = new PharData( $archive_path );
+
+			$phar = new PharData( $open );
 			$phar->decompress();
 			unset( $phar );
-			$tar_path = substr( $archive_path, 0, -3 );
+			$tar_path = substr( $open, 0, -3 );
 			$phar     = new PharData( $tar_path );
 			$phar->extractTo( $work, null, true );
 			unset( $phar );
-		} catch ( Exception $e ) {
-			self::remove_tree( $work );
-			if ( $cleanup_tar ) {
-				self::delete_file( $archive_path );
+
+			$edition  = self::database_edition();
+			$relative = array();
+			foreach ( self::list_files( $work ) as $absolute ) {
+				$relative[] = ltrim( substr( $absolute, strlen( $work ) ), '/\\' );
 			}
-			if ( $tar_path !== $archive_path ) {
-				self::delete_file( $tar_path );
+			$chosen = self::select_archive_mmdb( $relative, $edition );
+			if ( null === $chosen ) {
+				return new WP_Error( 'rwgc_mmdb_not_found', __( 'MaxMind database file (.mmdb) not found after extraction.', 'reactwoo-geocore' ) );
 			}
+
+			$source = $work . '/' . $chosen;
+			$valid  = self::validate_database_file( $source );
+			if ( is_wp_error( $valid ) ) {
+				return $valid;
+			}
+
+			$dest = rtrim( (string) $dest_dir, '/\\' ) . '/' . $edition . '.mmdb';
+			return self::install_database_file( $source, $dest );
+		} catch ( \Throwable $e ) {
 			return new WP_Error(
 				'rwgc_extract_failed',
 				sprintf(
@@ -551,41 +588,17 @@ class RWGC_MaxMind {
 					$e->getMessage()
 				)
 			);
-		}
-
-		$relative = array();
-		foreach ( self::list_files( $work ) as $absolute ) {
-			$relative[] = ltrim( substr( $absolute, strlen( $work ) ), '/\\' );
-		}
-		$chosen = self::select_archive_mmdb( $relative, $edition );
-		if ( null === $chosen ) {
-			self::remove_tree( $work );
-			self::delete_file( $tar_path );
-			if ( $cleanup_tar ) {
-				self::delete_file( $archive_path );
+		} finally {
+			if ( '' !== $work ) {
+				self::remove_tree( $work );
 			}
-			return new WP_Error( 'rwgc_mmdb_not_found', __( 'MaxMind database file (.mmdb) not found after extraction.', 'reactwoo-geocore' ) );
-		}
-
-		$source = $work . '/' . $chosen;
-		$valid  = self::validate_database_file( $source );
-		if ( is_wp_error( $valid ) ) {
-			self::remove_tree( $work );
-			self::delete_file( $tar_path );
-			if ( $cleanup_tar ) {
-				self::delete_file( $archive_path );
+			if ( '' !== $tar_path ) {
+				self::delete_file( $tar_path );
 			}
-			return $valid;
+			if ( '' !== $tar_copy ) {
+				self::delete_file( $tar_copy );
+			}
 		}
-
-		$dest      = rtrim( (string) $dest_dir, '/\\' ) . '/' . $edition . '.mmdb';
-		$installed = self::install_database_file( $source, $dest );
-		self::remove_tree( $work );
-		self::delete_file( $tar_path );
-		if ( $cleanup_tar ) {
-			self::delete_file( $archive_path );
-		}
-		return $installed;
 	}
 
 	/**
@@ -698,14 +711,100 @@ class RWGC_MaxMind {
 	}
 
 	/**
+	 * Private work directory under the uploads folder, or the system temp directory.
+	 *
 	 * @return string|\WP_Error
 	 */
 	private static function make_extract_dir() {
-		$base = rtrim( sys_get_temp_dir(), '/\\' ) . '/rwgc-maxmind-' . bin2hex( random_bytes( 4 ) );
-		if ( ! mkdir( $base, 0755, true ) && ! is_dir( $base ) ) {
+		if ( function_exists( 'apply_filters' ) ) {
+			$forced = apply_filters( 'rwgc_maxmind_extract_work_dir', '' );
+			if ( is_string( $forced ) && '' !== $forced ) {
+				return $forced;
+			}
+		}
+
+		$parent = self::resolve_extract_parent();
+		if ( is_wp_error( $parent ) ) {
+			return $parent;
+		}
+		$dir = rtrim( (string) $parent, '/\\' ) . '/tmp-' . bin2hex( random_bytes( 4 ) );
+		if ( ! self::ensure_dir( $dir ) || ! self::directory_is_usable( $dir ) ) {
+			self::remove_tree( $dir );
 			return new WP_Error( 'rwgc_extract_failed', __( 'Could not create a temporary directory for the MaxMind archive.', 'reactwoo-geocore' ) );
 		}
-		return $base;
+		return $dir;
+	}
+
+	/**
+	 * Uploads directory first, then get_temp_dir(). Both must be writable and listable.
+	 *
+	 * @return string|\WP_Error
+	 */
+	private static function resolve_extract_parent() {
+		$candidates = array(
+			self::get_storage_dir(),
+			self::system_temp_dir(),
+		);
+		if ( function_exists( 'apply_filters' ) ) {
+			$filtered = apply_filters( 'rwgc_maxmind_extract_parents', $candidates );
+			if ( is_array( $filtered ) ) {
+				$candidates = $filtered;
+			}
+		}
+		foreach ( $candidates as $dir ) {
+			if ( ! is_string( $dir ) || '' === $dir ) {
+				continue;
+			}
+			if ( self::ensure_dir( $dir ) && self::directory_is_usable( $dir ) ) {
+				return $dir;
+			}
+		}
+		return new WP_Error( 'rwgc_extract_failed', __( 'No writable temporary directory is available for the MaxMind archive.', 'reactwoo-geocore' ) );
+	}
+
+	/**
+	 * @return string
+	 */
+	private static function system_temp_dir() {
+		if ( function_exists( 'get_temp_dir' ) ) {
+			$dir = get_temp_dir();
+			if ( is_string( $dir ) && '' !== $dir ) {
+				return $dir;
+			}
+		}
+		return sys_get_temp_dir();
+	}
+
+	/**
+	 * @param string $dir Directory.
+	 * @return bool
+	 */
+	private static function ensure_dir( $dir ) {
+		if ( is_dir( $dir ) ) {
+			return true;
+		}
+		if ( function_exists( 'wp_mkdir_p' ) ) {
+			return (bool) wp_mkdir_p( $dir );
+		}
+		return mkdir( $dir, 0755, true ) || is_dir( $dir );
+	}
+
+	/**
+	 * Writable and listable. Listing is checked without letting the iterator throw.
+	 *
+	 * @param string $dir Directory.
+	 * @return bool
+	 */
+	private static function directory_is_usable( $dir ) {
+		if ( ! is_string( $dir ) || '' === $dir || ! is_dir( $dir ) || ! is_writable( $dir ) ) {
+			return false;
+		}
+		try {
+			$listed = @scandir( $dir ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- A denied temp directory must be a false result, not an exception.
+			return is_array( $listed );
+		} catch ( \Throwable $e ) {
+			return false;
+		}
 	}
 
 	/**
@@ -734,18 +833,22 @@ class RWGC_MaxMind {
 		if ( ! is_string( $dir ) || '' === $dir || ! is_dir( $dir ) ) {
 			return;
 		}
-		$iterator = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator( $dir, FilesystemIterator::SKIP_DOTS ),
-			RecursiveIteratorIterator::CHILD_FIRST
-		);
-		foreach ( $iterator as $file ) {
-			if ( $file->isDir() ) {
-				rmdir( $file->getPathname() );
-			} else {
-				self::delete_file( $file->getPathname() );
+		try {
+			$iterator = new RecursiveIteratorIterator(
+				new RecursiveDirectoryIterator( $dir, FilesystemIterator::SKIP_DOTS ),
+				RecursiveIteratorIterator::CHILD_FIRST
+			);
+			foreach ( $iterator as $file ) {
+				if ( $file->isDir() ) {
+					@rmdir( $file->getPathname() ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup must not replace the saved extract error.
+				} else {
+					self::delete_file( $file->getPathname() );
+				}
 			}
+			@rmdir( $dir ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup must not replace the saved extract error.
+		} catch ( \Throwable $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch -- Best-effort cleanup.
+			unset( $e );
 		}
-		rmdir( $dir );
 	}
 
 	/**

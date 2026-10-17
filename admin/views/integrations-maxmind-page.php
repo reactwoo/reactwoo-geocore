@@ -25,16 +25,17 @@ if ( isset( $_GET['rwgc_action'], $_GET['_wpnonce'] ) && current_user_can( 'mana
 			add_settings_error( 'rwgc_maxmind', 'rwgc_cache_cleared', __( 'Geo cache cleared.', 'reactwoo-geocore' ), 'updated' );
 		} elseif ( 'update_db' === $rwgc_action ) {
 			$rwgc_result = RWGC_MaxMind::update_database();
-			if ( is_wp_error( $rwgc_result ) ) {
-				add_settings_error( 'rwgc_maxmind', 'rwgc_db_error', $rwgc_result->get_error_message(), 'error' );
-			} else {
+			$rwgc_status = RWGC_MaxMind::get_status();
+			if ( ! is_wp_error( $rwgc_result ) ) {
 				add_settings_error( 'rwgc_maxmind', 'rwgc_db_updated', __( 'MaxMind country database updated.', 'reactwoo-geocore' ), 'updated' );
 			}
-			$rwgc_status = RWGC_MaxMind::get_status();
 		}
 	}
 }
 
+if ( ! empty( $rwgc_status['last_error'] ) ) {
+	echo '<div class="notice notice-error"><p>' . esc_html( (string) $rwgc_status['last_error'] ) . '</p></div>';
+}
 settings_errors( 'rwgc_maxmind' );
 ?>
 <div class="wrap rwgc-wrap rwgc-suite rwgc-maxmind-screen">
@@ -135,14 +136,13 @@ settings_errors( 'rwgc_maxmind' );
 			</tr>
 			<tr>
 				<th scope="row"><?php esc_html_e( 'Last failed download', 'reactwoo-geocore' ); ?></th>
-				<td><?php echo ! empty( $rwgc_status['last_failure_at'] ) ? esc_html( (string) $rwgc_status['last_failure_at'] ) : esc_html__( 'Not yet', 'reactwoo-geocore' ); ?></td>
+				<td>
+					<?php echo ! empty( $rwgc_status['last_failure_at'] ) ? esc_html( (string) $rwgc_status['last_failure_at'] ) : esc_html__( 'Not yet', 'reactwoo-geocore' ); ?>
+					<?php if ( ! empty( $rwgc_status['last_error'] ) ) : ?>
+						<p class="description"><?php echo esc_html( (string) $rwgc_status['last_error'] ); ?></p>
+					<?php endif; ?>
+				</td>
 			</tr>
-			<?php if ( ! empty( $rwgc_status['last_error'] ) ) : ?>
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Last error', 'reactwoo-geocore' ); ?></th>
-				<td><span class="description"><?php echo esc_html( (string) $rwgc_status['last_error'] ); ?></span></td>
-			</tr>
-			<?php endif; ?>
 		</table>
 	</div>
 

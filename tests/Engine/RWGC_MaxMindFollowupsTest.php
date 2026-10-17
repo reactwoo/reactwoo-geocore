@@ -109,7 +109,7 @@ final class RWGC_MaxMindFollowupsTest extends TestCase {
 		parent::setUp();
 		$GLOBALS['rwgc_test_cron']    = array();
 		$GLOBALS['rwgc_test_options'] = array();
-		unset( $GLOBALS['rwgc_test_filters']['rwgc_maxmind_cron_jitter'] );
+		unset( $GLOBALS['rwgc_test_filters']['rwgc_maxmind_cron_jitter'], $GLOBALS['rwgc_test_filters']['rwgc_maxmind_extract_parents'], $GLOBALS['rwgc_test_filters']['rwgc_maxmind_extract_work_dir'] );
 	}
 
 	/**
@@ -277,5 +277,100 @@ final class RWGC_MaxMindFollowupsTest extends TestCase {
 		$this->assertSame( 'NewKey_123_mmk', RWGC_MaxMind::license_key_from_post( 'NewKey_123_mmk', $stored ) );
 		$view = (string) file_get_contents( dirname( __DIR__, 2 ) . '/admin/views/integrations-maxmind-page.php' );
 		$this->assertStringContainsString( 'mask_license_key(', $view );
+	}
+
+	/**
+	 * @return void
+	 */
+	public function test_unlistable_temp_dir_fails_cleanly_and_leaves_the_live_file(): void {
+		$dir = sys_get_temp_dir() . '/rwgc-nolist-' . bin2hex( random_bytes( 3 ) );
+		mkdir( $dir, 0333 );
+		$live_dir = sys_get_temp_dir() . '/rwgc-live-' . bin2hex( random_bytes( 3 ) );
+		mkdir( $live_dir );
+		$live = $live_dir . '/GeoLite2-Country.mmdb';
+		file_put_contents( $live, 'live-bytes' );
+		$GLOBALS['rwgc_test_filters']['rwgc_maxmind_extract_parents'] = static function () use ( $dir ) {
+			return array( $dir );
+		};
+
+		$result = RWGC_MaxMind::extract_database_archive( $live_dir . '/missing.tar.gz', $live_dir );
+
+		chmod( $dir, 0755 );
+		rmdir( $dir );
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'rwgc_extract_failed', $result->get_error_code() );
+		$this->assertSame( 'live-bytes', (string) file_get_contents( $live ) );
+		unlink( $live );
+		rmdir( $live_dir );
+	}
+
+	/**
+	 * @return void
+	 */
+	public function test_listing_failure_is_a_saved_style_error_and_temp_files_are_removed(): void {
+		$parent = sys_get_temp_dir() . '/rwgc-work-' . bin2hex( random_bytes( 3 ) );
+		mkdir( $parent );
+		$blocked = $parent . '/blocked';
+		mkdir( $blocked, 0333 );
+		$live_dir = $parent . '/live';
+		mkdir( $live_dir );
+		$live = $live_dir . '/GeoLite2-Country.mmdb';
+		file_put_contents( $live, 'live-bytes' );
+		$download = $parent . '/download.bin';
+		file_put_contents( $download, 'not-an-archive' );
+		$GLOBALS['rwgc_test_filters']['rwgc_maxmind_extract_parents'] = static function () use ( $parent ) {
+			return array( $parent );
+		};
+
+		$listed = RWGC_MaxMind::extract_database_archive( $download, $live_dir );
+
+		$this->assertInstanceOf( WP_Error::class, $listed );
+		$this->assertFileExists( $download );
+		$this->assertFileDoesNotExist( $download . '.tar.gz' );
+		$this->assertFileDoesNotExist( $download . '.tar' );
+		$this->assertSame( array(), glob( $parent . '/tmp-*' ) );
+		$this->assertSame( 'live-bytes', (string) file_get_contents( $live ) );
+
+		$GLOBALS['rwgc_test_filters']['rwgc_maxmind_extract_work_dir'] = static function () use ( $blocked ) {
+			return $blocked;
+		};
+		$thrown = RWGC_MaxMind::extract_database_archive( $download, $live_dir );
+		chmod( $blocked, 0755 );
+		$this->assertInstanceOf( WP_Error::class, $thrown );
+		$this->assertSame( 'live-bytes', (string) file_get_contents( $live ) );
+		$this->assertFileDoesNotExist( $download . '.tar.gz' );
+
+		unlink( $download );
+		unlink( $live );
+		rmdir( $live_dir );
+		rmdir( $blocked );
+		rmdir( $parent );
+	}
+
+	/**
+	 * @return void
+	 */
+	public function test_last_error_message_survives_reload_until_success(): void {
+		$message = "MaxMind download failed (HTTP 401 Unauthorized). Response: denied \xFF";
+		$kept    = RWGC_Settings::sanitize_status_message( $message );
+		$this->assertStringContainsString( '401', $kept );
+		$this->assertStringNotContainsString( "\xFF", $kept );
+
+		RWGC_Settings::update(
+			array(
+				'db_last_error'      => $message,
+				'db_last_failure_at' => '2026-10-17T12:00:00+00:00',
+				'maxmind_account_id' => '123456',
+				'maxmind_license_key' => 'AbC123_key_mmk',
+			)
+		);
+		$this->assertStringContainsString( '401', (string) RWGC_Settings::get( 'db_last_error', '' ) );
+		$this->assertSame( '2026-10-17T12:00:00+00:00', (string) RWGC_Settings::get( 'db_last_failure_at', '' ) );
+
+		$view = (string) file_get_contents( dirname( __DIR__, 2 ) . '/admin/views/integrations-maxmind-page.php' );
+		$this->assertStringContainsString( 'notice notice-error', $view );
+		$this->assertMatchesRegularExpression( '/Last failed download.*last_error/s', $view );
+		$src = (string) file_get_contents( dirname( __DIR__, 2 ) . '/includes/class-rwgc-maxmind.php' );
+		$this->assertStringContainsString( "\$settings['db_last_error']      = '';", $src );
 	}
 }

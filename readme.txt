@@ -170,6 +170,7 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * Saving MaxMind credentials shows a confirmation, and the license key field shows only the last four characters.
 * The downloaded database is the newest GeoLite2-Country file in the archive, checked before it replaces the live file.
 * The MaxMind screen no longer scrolls sideways on a phone.
+* A failed MaxMind download keeps its error message until the next successful download.
 
 = 1.9.12 =
 * A pasted MaxMind Account ID or license key is cleaned of invisible characters, a non-numeric Account ID is rejected before MaxMind is called, and a 401 explains what to check.

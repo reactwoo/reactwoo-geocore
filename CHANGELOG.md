@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The license key field shows only the last four characters. Leaving it blank or unchanged keeps the stored key.
 - The download keeps GeoLite2-Country.mmdb from the newest dated directory in the archive, opens it with the MaxMind reader, and replaces the live file by rename.
 - The MaxMind screen no longer scrolls sideways on a 390px-wide phone.
+- Extracting a MaxMind archive no longer uses an unreadable system temp directory. A failed extract is saved as the last error, temporary files are removed, and the live database is left in place.
+- A failed download keeps its error message, including a MaxMind 401, next to the failure time until a later download succeeds.
 
 ## [1.9.12] - 2026-10-17
 
