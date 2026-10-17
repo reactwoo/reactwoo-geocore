@@ -166,8 +166,10 @@ class RWGC_Settings {
 		$out['rest_enabled']        = ! empty( $settings['rest_enabled'] ) ? 1 : 0;
 		$out['debug_mode']          = ! empty( $settings['debug_mode'] ) ? 1 : 0;
 		$out['db_last_updated']     = isset( $settings['db_last_updated'] ) ? sanitize_text_field( $settings['db_last_updated'] ) : '';
+		$out['db_last_success_at']  = isset( $settings['db_last_success_at'] ) ? sanitize_text_field( $settings['db_last_success_at'] ) : '';
+		$out['db_last_failure_at']  = isset( $settings['db_last_failure_at'] ) ? sanitize_text_field( $settings['db_last_failure_at'] ) : '';
 		$out['db_file_path']        = isset( $settings['db_file_path'] ) ? sanitize_text_field( $settings['db_file_path'] ) : '';
-		$out['db_last_error']       = isset( $settings['db_last_error'] ) ? sanitize_text_field( $settings['db_last_error'] ) : '';
+		$out['db_last_error']       = isset( $settings['db_last_error'] ) ? self::sanitize_status_message( $settings['db_last_error'] ) : '';
 		$out['migration_completed'] = ! empty( $settings['migration_completed'] ) ? 1 : 0;
 
 		return $out;
@@ -184,10 +186,34 @@ class RWGC_Settings {
 			'maxmind_license_key',
 			'auto_update_db',
 			'db_last_updated',
+			'db_last_success_at',
+			'db_last_failure_at',
 			'db_file_path',
 			'db_last_error',
 			'migration_completed',
 		);
+	}
+
+	/**
+	 * Keep a download error readable. sanitize_text_field() drops the whole
+	 * message when the MaxMind body contains a byte that is not valid UTF-8,
+	 * which left the failure time on screen and cleared the 401 text.
+	 *
+	 * @param mixed $value Raw message.
+	 * @return string
+	 */
+	public static function sanitize_status_message( $value ) {
+		$value = is_scalar( $value ) ? (string) $value : '';
+		if ( function_exists( 'wp_check_invalid_utf8' ) ) {
+			$clean = wp_check_invalid_utf8( $value, true );
+			$value = is_string( $clean ) ? $clean : '';
+		} elseif ( function_exists( 'iconv' ) ) {
+			$clean = iconv( 'UTF-8', 'UTF-8//IGNORE', $value );
+			$value = false === $clean ? '' : $clean;
+		}
+		$value = function_exists( 'wp_strip_all_tags' ) ? wp_strip_all_tags( $value ) : strip_tags( $value );
+		$value = preg_replace( '/[\r\n\t ]+/', ' ', (string) $value );
+		return trim( (string) $value );
 	}
 
 	/**
@@ -223,6 +249,8 @@ class RWGC_Settings {
 			'rest_enabled'        => 1,
 			'debug_mode'          => 0,
 			'db_last_updated'     => '',
+			'db_last_success_at'  => '',
+			'db_last_failure_at'  => '',
 			'db_file_path'        => '',
 			'db_last_error'       => '',
 			'migration_completed' => 0,

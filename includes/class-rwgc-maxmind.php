@@ -12,6 +12,184 @@ if ( ! defined( 'ABSPATH' ) ) {
 class RWGC_MaxMind {
 
 	/**
+	 * WP-Cron hook for the GeoLite2 download.
+	 */
+	const CRON_HOOK = 'rwgc_maxmind_auto_update';
+
+	/**
+	 * Custom schedule: MaxMind publishes GeoLite2 about twice a week.
+	 */
+	const CRON_SCHEDULE = 'rwgc_twice_weekly';
+
+	/**
+	 * Register the cron callback and schedule.
+	 *
+	 * @return void
+	 */
+	public static function init() {
+		add_filter( 'cron_schedules', array( __CLASS__, 'cron_schedules' ) );
+		add_action( self::CRON_HOOK, array( __CLASS__, 'run_scheduled_update' ) );
+	}
+
+	/**
+	 * Twice-weekly interval with a display name.
+	 *
+	 * @param array<string, array<string, mixed>> $schedules Schedules.
+	 * @return array<string, array<string, mixed>>
+	 */
+	public static function cron_schedules( $schedules ) {
+		if ( ! is_array( $schedules ) ) {
+			$schedules = array();
+		}
+		$day = defined( 'DAY_IN_SECONDS' ) ? (int) DAY_IN_SECONDS : 86400;
+		$schedules[ self::CRON_SCHEDULE ] = array(
+			'interval' => (int) ( 3.5 * $day ),
+			'display'  => __( 'Twice Weekly', 'reactwoo-geocore' ),
+		);
+		return $schedules;
+	}
+
+	/**
+	 * Seconds before the first run. One hour plus up to six hours of jitter.
+	 *
+	 * @return int
+	 */
+	public static function initial_cron_delay() {
+		$hour   = defined( 'HOUR_IN_SECONDS' ) ? (int) HOUR_IN_SECONDS : 3600;
+		$jitter = function_exists( 'wp_rand' ) ? (int) wp_rand( 0, 6 * $hour ) : 0;
+		if ( function_exists( 'apply_filters' ) ) {
+			$jitter = (int) apply_filters( 'rwgc_maxmind_cron_jitter', $jitter );
+		}
+		return $hour + max( 0, $jitter );
+	}
+
+	/**
+	 * Schedule the download when automatic updates and credentials are on.
+	 *
+	 * @return void
+	 */
+	public static function sync_schedule() {
+		$settings = class_exists( 'RWGC_Settings', false ) ? RWGC_Settings::get_settings() : array();
+		$account  = self::normalize_credential( isset( $settings['maxmind_account_id'] ) ? $settings['maxmind_account_id'] : '' );
+		$license  = self::normalize_credential( isset( $settings['maxmind_license_key'] ) ? $settings['maxmind_license_key'] : '' );
+		$enabled  = ! empty( $settings['auto_update_db'] );
+		if ( ! $enabled || '' === $account || '' === $license ) {
+			self::unschedule();
+			return;
+		}
+		if ( ! function_exists( 'wp_next_scheduled' ) || ! function_exists( 'wp_schedule_event' ) ) {
+			return;
+		}
+		$next = wp_next_scheduled( self::CRON_HOOK );
+		$same = function_exists( 'wp_get_schedule' ) ? wp_get_schedule( self::CRON_HOOK ) === self::CRON_SCHEDULE : (bool) $next;
+		if ( $next && $same ) {
+			return;
+		}
+		self::unschedule();
+		wp_schedule_event( time() + self::initial_cron_delay(), self::CRON_SCHEDULE, self::CRON_HOOK );
+	}
+
+	/**
+	 * Remove every scheduled automatic download.
+	 *
+	 * @return void
+	 */
+	public static function unschedule() {
+		if ( ! function_exists( 'wp_next_scheduled' ) || ! function_exists( 'wp_unschedule_event' ) ) {
+			return;
+		}
+		$timestamp = wp_next_scheduled( self::CRON_HOOK );
+		while ( $timestamp ) {
+			wp_unschedule_event( $timestamp, self::CRON_HOOK );
+			$timestamp = wp_next_scheduled( self::CRON_HOOK );
+		}
+	}
+
+	/**
+	 * Cron callback. Does nothing when the setting is off or no credentials are saved.
+	 *
+	 * @return void
+	 */
+	public static function run_scheduled_update() {
+		$settings = class_exists( 'RWGC_Settings', false ) ? RWGC_Settings::get_settings() : array();
+		$account  = self::normalize_credential( isset( $settings['maxmind_account_id'] ) ? $settings['maxmind_account_id'] : '' );
+		$license  = self::normalize_credential( isset( $settings['maxmind_license_key'] ) ? $settings['maxmind_license_key'] : '' );
+		if ( empty( $settings['auto_update_db'] ) || '' === $account || '' === $license ) {
+			return;
+		}
+		self::update_database();
+	}
+
+	/**
+	 * Database product name used in the download URL and the archive.
+	 *
+	 * @return string
+	 */
+	public static function database_edition() {
+		$edition = 'GeoLite2-Country';
+		if ( function_exists( 'apply_filters' ) ) {
+			$edition = (string) apply_filters( 'rwgc_maxmind_database_edition', $edition );
+		}
+		$edition = preg_replace( '/[^A-Za-z0-9_-]/', '', $edition );
+		return is_string( $edition ) && '' !== $edition ? $edition : 'GeoLite2-Country';
+	}
+
+	/**
+	 * Add the query arg WordPress needs before it will show a saved-settings notice.
+	 *
+	 * @param string $url Redirect target.
+	 * @return string
+	 */
+	public static function credentials_saved_redirect( $url ) {
+		$url = (string) $url;
+		if ( '' === $url ) {
+			$url = 'admin.php?page=rwgc-integrations-maxmind';
+		}
+		if ( preg_match( '/(?:\?|&)settings-updated=/', $url ) ) {
+			return $url;
+		}
+		$join = false === strpos( $url, '?' ) ? '?' : '&';
+		return $url . $join . 'settings-updated=true';
+	}
+
+	/**
+	 * Show only the last four characters of a saved license key.
+	 *
+	 * @param string $key Stored key.
+	 * @return string
+	 */
+	public static function mask_license_key( $key ) {
+		$key = (string) $key;
+		$len = strlen( $key );
+		if ( $len < 1 ) {
+			return '';
+		}
+		if ( $len <= 4 ) {
+			return str_repeat( '•', $len );
+		}
+		return str_repeat( '•', $len - 4 ) . substr( $key, -4 );
+	}
+
+	/**
+	 * Keep the stored key when the field is empty or still shows the mask.
+	 *
+	 * @param string $posted Value from the form after credential sanitizing.
+	 * @param string $stored Stored license key.
+	 * @return string
+	 */
+	public static function license_key_from_post( $posted, $stored ) {
+		$posted = self::normalize_credential( $posted );
+		$stored = self::normalize_credential( $stored );
+		if ( '' === $posted ) {
+			return $stored;
+		}
+		if ( '' !== $stored && $posted === self::mask_license_key( $stored ) ) {
+			return $stored;
+		}
+		return $posted;
+	}
+
+	/**
 	 * Ensure storage directory exists.
 	 *
 	 * @return void
@@ -29,9 +207,17 @@ class RWGC_MaxMind {
 	 * @return string
 	 */
 	public static function get_storage_dir() {
-		$upload_dir = wp_get_upload_dir();
-		$base       = trailingslashit( $upload_dir['basedir'] ) . 'reactwoo-geocore/';
-		return $base;
+		$base = '';
+		if ( function_exists( 'wp_get_upload_dir' ) ) {
+			$upload_dir = wp_get_upload_dir();
+			if ( is_array( $upload_dir ) && ! empty( $upload_dir['basedir'] ) ) {
+				$base = (string) $upload_dir['basedir'];
+			}
+		}
+		if ( '' === $base ) {
+			$base = sys_get_temp_dir();
+		}
+		return rtrim( $base, '/\\' ) . '/reactwoo-geocore/';
 	}
 
 	/**
@@ -204,7 +390,7 @@ class RWGC_MaxMind {
 		// This returns a redirect to a presigned R2/S3 URL where authentication is
 		// handled via the query string signature – we must NOT forward our Authorization
 		// header to that second host.
-		$url = 'https://download.maxmind.com/geoip/databases/GeoLite2-Country/download?suffix=tar.gz';
+		$url = 'https://download.maxmind.com/geoip/databases/' . self::database_edition() . '/download?suffix=tar.gz';
 
 		$auth_headers = array(
 			'Authorization' => 'Basic ' . base64_encode( $account_id . ':' . $license ),
@@ -291,21 +477,33 @@ class RWGC_MaxMind {
 
 		file_put_contents( $tmp, $body );
 
-		// Extract .mmdb from the tar.gz.
+		// Extract .mmdb from the tar.gz. A failure here must stay a WP_Error.
 		$dest_dir = self::get_storage_dir();
-		$db_path  = self::extract_mmdb_from_archive( $tmp, $dest_dir );
-
-		wp_delete_file( $tmp );
+		try {
+			$db_path = self::extract_database_archive( $tmp, $dest_dir );
+		} catch ( \Throwable $e ) {
+			$db_path = new WP_Error(
+				'rwgc_extract_failed',
+				sprintf(
+					/* translators: %s: archive extraction error message. */
+					__( 'Failed to extract MaxMind archive: %s', 'reactwoo-geocore' ),
+					$e->getMessage()
+				)
+			);
+		} finally {
+			self::delete_file( $tmp );
+		}
 
 		if ( is_wp_error( $db_path ) ) {
 			self::record_error( $db_path );
 			return $db_path;
 		}
 
-		$settings                    = RWGC_Settings::get_settings();
-		$settings['db_file_path']    = $db_path;
-		$settings['db_last_updated'] = gmdate( 'c' );
-		$settings['db_last_error']   = '';
+		$settings                       = RWGC_Settings::get_settings();
+		$settings['db_file_path']       = $db_path;
+		$settings['db_last_updated']    = gmdate( 'c' );
+		$settings['db_last_success_at'] = $settings['db_last_updated'];
+		$settings['db_last_error']      = '';
 		RWGC_Settings::update( $settings );
 
 		/**
@@ -321,27 +519,67 @@ class RWGC_MaxMind {
 	/**
 	 * Extract .mmdb file from MaxMind tar.gz archive.
 	 *
+	 * Directory listing is inside the same try as unpacking. Any failure,
+	 * including an unreadable temp directory, becomes a WP_Error and does not
+	 * replace the live database. Copies and the work directory are removed
+	 * on every path.
+	 *
 	 * @param string $archive_path Local tar.gz path.
 	 * @param string $dest_dir     Destination directory.
 	 * @return string|\WP_Error    DB file path or error.
 	 */
-	private static function extract_mmdb_from_archive( $archive_path, $dest_dir ) {
-		// Prefer PharData if available; otherwise require manual extraction by admin.
-		if ( ! class_exists( 'PharData' ) ) {
-			return new WP_Error( 'rwgc_no_phar', __( 'Unable to extract MaxMind archive on this server (PharData missing). Please extract manually and set the DB path.', 'reactwoo-geocore' ) );
-		}
-
+	public static function extract_database_archive( $archive_path, $dest_dir ) {
+		$work     = '';
+		$tar_copy = '';
+		$tar_path = '';
 		try {
-			$phar = new PharData( $archive_path );
-			// Decompress first (tar.gz → tar).
-			if ( substr( $archive_path, -7 ) === '.tar.gz' ) {
-				$tar_path = substr( $archive_path, 0, -3 );
-				$phar->decompress(); // creates .tar
-				unset( $phar );
-				$phar = new PharData( $tar_path );
+			if ( ! class_exists( 'PharData' ) ) {
+				return new WP_Error( 'rwgc_no_phar', __( 'Unable to extract MaxMind archive on this server (PharData missing). Please extract manually and set the DB path.', 'reactwoo-geocore' ) );
 			}
-			$phar->extractTo( $dest_dir, null, true );
-		} catch ( Exception $e ) {
+
+			$made = self::make_extract_dir();
+			if ( is_wp_error( $made ) ) {
+				return $made;
+			}
+			$work = $made;
+
+			$open = (string) $archive_path;
+			if ( substr( $open, -7 ) !== '.tar.gz' ) {
+				$tar_copy = $open . '.tar.gz';
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- PharData needs a .tar.gz suffix.
+				if ( ! copy( $open, $tar_copy ) ) {
+					return new WP_Error( 'rwgc_extract_failed', __( 'Failed to prepare the MaxMind archive for extraction.', 'reactwoo-geocore' ) );
+				}
+				$open = $tar_copy;
+			}
+
+			$phar = new PharData( $open );
+			$phar->decompress();
+			unset( $phar );
+			$tar_path = substr( $open, 0, -3 );
+			$phar     = new PharData( $tar_path );
+			$phar->extractTo( $work, null, true );
+			unset( $phar );
+
+			$edition  = self::database_edition();
+			$relative = array();
+			foreach ( self::list_files( $work ) as $absolute ) {
+				$relative[] = ltrim( substr( $absolute, strlen( $work ) ), '/\\' );
+			}
+			$chosen = self::select_archive_mmdb( $relative, $edition );
+			if ( null === $chosen ) {
+				return new WP_Error( 'rwgc_mmdb_not_found', __( 'MaxMind database file (.mmdb) not found after extraction.', 'reactwoo-geocore' ) );
+			}
+
+			$source = $work . '/' . $chosen;
+			$valid  = self::validate_database_file( $source );
+			if ( is_wp_error( $valid ) ) {
+				return $valid;
+			}
+
+			$dest = rtrim( (string) $dest_dir, '/\\' ) . '/' . $edition . '.mmdb';
+			return self::install_database_file( $source, $dest );
+		} catch ( \Throwable $e ) {
 			return new WP_Error(
 				'rwgc_extract_failed',
 				sprintf(
@@ -350,20 +588,282 @@ class RWGC_MaxMind {
 					$e->getMessage()
 				)
 			);
+		} finally {
+			if ( '' !== $work ) {
+				self::remove_tree( $work );
+			}
+			if ( '' !== $tar_path ) {
+				self::delete_file( $tar_path );
+			}
+			if ( '' !== $tar_copy ) {
+				self::delete_file( $tar_copy );
+			}
 		}
+	}
 
-		// Find first .mmdb file in dest_dir recursively.
-		$rii = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $dest_dir ) );
-		foreach ( $rii as $file ) {
-			if ( $file->isDir() ) {
+	/**
+	 * Choose edition.mmdb from the newest dated directory in the archive.
+	 *
+	 * Paths are relative to the extracted archive. An older database already
+	 * on disk is not in this list.
+	 *
+	 * @param array<int, string> $relative_paths Archive-relative paths.
+	 * @param string             $edition        Database edition, such as GeoLite2-Country.
+	 * @return string|null Relative path, or null when the edition is absent.
+	 */
+	public static function select_archive_mmdb( array $relative_paths, $edition ) {
+		$edition  = (string) $edition;
+		$filename = $edition . '.mmdb';
+		$best     = null;
+		$best_date = -1;
+		foreach ( $relative_paths as $path ) {
+			$path = str_replace( '\\', '/', (string) $path );
+			if ( basename( $path ) !== $filename ) {
 				continue;
 			}
-			if ( substr( $file->getFilename(), -5 ) === '.mmdb' ) {
-				return $file->getPathname();
+			$date = 0;
+			$pattern = '/(?:^|\/)' . preg_quote( $edition, '/' ) . '_(\d{8})(?:\/|$)/';
+			if ( preg_match( $pattern, $path, $matches ) ) {
+				$date = (int) $matches[1];
+			}
+			if ( null === $best || $date > $best_date ) {
+				$best      = $path;
+				$best_date = $date;
+			}
+		}
+		return $best;
+	}
+
+	/**
+	 * Open the file with the MaxMind reader before it replaces the live database.
+	 *
+	 * @param string $path Candidate .mmdb.
+	 * @return true|\WP_Error
+	 */
+	public static function validate_database_file( $path ) {
+		if ( ! self::db_is_usable( $path ) ) {
+			return new WP_Error( 'rwgc_mmdb_invalid', __( 'The downloaded file is not a MaxMind database.', 'reactwoo-geocore' ) );
+		}
+		if ( ! class_exists( '\GeoIp2\Database\Reader' ) && defined( 'RWGC_PATH' ) && is_readable( RWGC_PATH . 'vendor/autoload.php' ) ) {
+			require_once RWGC_PATH . 'vendor/autoload.php';
+		}
+		if ( ! class_exists( '\GeoIp2\Database\Reader' ) ) {
+			return new WP_Error( 'rwgc_no_reader', __( 'The MaxMind reader is not available to check this database.', 'reactwoo-geocore' ) );
+		}
+		try {
+			$reader  = new \GeoIp2\Database\Reader( $path );
+			$meta    = $reader->metadata();
+			$reader->close();
+			$type    = isset( $meta->databaseType ) ? (string) $meta->databaseType : '';
+			$edition = self::database_edition();
+			if ( '' !== $type && false === stripos( $type, $edition ) ) {
+				return new WP_Error(
+					'rwgc_mmdb_edition',
+					sprintf(
+						/* translators: 1: database type inside the file, 2: expected edition. */
+						__( 'The downloaded database is %1$s, not %2$s.', 'reactwoo-geocore' ),
+						$type,
+						$edition
+					)
+				);
+			}
+		} catch ( Exception $e ) {
+			return new WP_Error(
+				'rwgc_mmdb_invalid',
+				sprintf(
+					/* translators: %s: reader error message. */
+					__( 'The downloaded database could not be opened: %s', 'reactwoo-geocore' ),
+					$e->getMessage()
+				)
+			);
+		}
+		return true;
+	}
+
+	/**
+	 * Replace the live database by writing a sibling file and renaming it.
+	 *
+	 * @param string $source Validated database.
+	 * @param string $dest   Live path.
+	 * @return string|\WP_Error Destination path.
+	 */
+	public static function install_database_file( $source, $dest ) {
+		$dest = (string) $dest;
+		$dir  = dirname( $dest );
+		if ( ! is_dir( $dir ) ) {
+			if ( function_exists( 'wp_mkdir_p' ) ) {
+				wp_mkdir_p( $dir );
+			} else {
+				mkdir( $dir, 0755, true );
+			}
+		}
+		$tmp = $dest . '.new';
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- Same-directory rename is the atomic replace.
+		if ( ! copy( $source, $tmp ) ) {
+			return new WP_Error( 'rwgc_install_failed', __( 'Could not write the new MaxMind database.', 'reactwoo-geocore' ) );
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- Atomic replace on the same filesystem.
+		if ( ! rename( $tmp, $dest ) ) {
+			self::delete_file( $tmp );
+			return new WP_Error( 'rwgc_install_failed', __( 'Could not replace the MaxMind database.', 'reactwoo-geocore' ) );
+		}
+		return $dest;
+	}
+
+	/**
+	 * Private work directory under the uploads folder, or the system temp directory.
+	 *
+	 * @return string|\WP_Error
+	 */
+	private static function make_extract_dir() {
+		if ( function_exists( 'apply_filters' ) ) {
+			$forced = apply_filters( 'rwgc_maxmind_extract_work_dir', '' );
+			if ( is_string( $forced ) && '' !== $forced ) {
+				return $forced;
 			}
 		}
 
-		return new WP_Error( 'rwgc_mmdb_not_found', __( 'MaxMind database file (.mmdb) not found after extraction.', 'reactwoo-geocore' ) );
+		$parent = self::resolve_extract_parent();
+		if ( is_wp_error( $parent ) ) {
+			return $parent;
+		}
+		$dir = rtrim( (string) $parent, '/\\' ) . '/tmp-' . bin2hex( random_bytes( 4 ) );
+		if ( ! self::ensure_dir( $dir ) || ! self::directory_is_usable( $dir ) ) {
+			self::remove_tree( $dir );
+			return new WP_Error( 'rwgc_extract_failed', __( 'Could not create a temporary directory for the MaxMind archive.', 'reactwoo-geocore' ) );
+		}
+		return $dir;
+	}
+
+	/**
+	 * Uploads directory first, then get_temp_dir(). Both must be writable and listable.
+	 *
+	 * @return string|\WP_Error
+	 */
+	private static function resolve_extract_parent() {
+		$candidates = array(
+			self::get_storage_dir(),
+			self::system_temp_dir(),
+		);
+		if ( function_exists( 'apply_filters' ) ) {
+			$filtered = apply_filters( 'rwgc_maxmind_extract_parents', $candidates );
+			if ( is_array( $filtered ) ) {
+				$candidates = $filtered;
+			}
+		}
+		foreach ( $candidates as $dir ) {
+			if ( ! is_string( $dir ) || '' === $dir ) {
+				continue;
+			}
+			if ( self::ensure_dir( $dir ) && self::directory_is_usable( $dir ) ) {
+				return $dir;
+			}
+		}
+		return new WP_Error( 'rwgc_extract_failed', __( 'No writable temporary directory is available for the MaxMind archive.', 'reactwoo-geocore' ) );
+	}
+
+	/**
+	 * @return string
+	 */
+	private static function system_temp_dir() {
+		if ( function_exists( 'get_temp_dir' ) ) {
+			$dir = get_temp_dir();
+			if ( is_string( $dir ) && '' !== $dir ) {
+				return $dir;
+			}
+		}
+		return sys_get_temp_dir();
+	}
+
+	/**
+	 * @param string $dir Directory.
+	 * @return bool
+	 */
+	private static function ensure_dir( $dir ) {
+		if ( is_dir( $dir ) ) {
+			return true;
+		}
+		if ( function_exists( 'wp_mkdir_p' ) ) {
+			return (bool) wp_mkdir_p( $dir );
+		}
+		return mkdir( $dir, 0755, true ) || is_dir( $dir );
+	}
+
+	/**
+	 * Writable and listable. Listing is checked without letting the iterator throw.
+	 *
+	 * @param string $dir Directory.
+	 * @return bool
+	 */
+	private static function directory_is_usable( $dir ) {
+		if ( ! is_string( $dir ) || '' === $dir || ! is_dir( $dir ) || ! is_writable( $dir ) ) {
+			return false;
+		}
+		try {
+			$listed = @scandir( $dir ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- A denied temp directory must be a false result, not an exception.
+			return is_array( $listed );
+		} catch ( \Throwable $e ) {
+			return false;
+		}
+	}
+
+	/**
+	 * @param string $dir Directory.
+	 * @return string[]
+	 */
+	private static function list_files( $dir ) {
+		$out = array();
+		if ( ! is_dir( $dir ) ) {
+			return $out;
+		}
+		$iterator = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $dir, FilesystemIterator::SKIP_DOTS ) );
+		foreach ( $iterator as $file ) {
+			if ( $file->isFile() ) {
+				$out[] = $file->getPathname();
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * @param string $dir Directory.
+	 * @return void
+	 */
+	private static function remove_tree( $dir ) {
+		if ( ! is_string( $dir ) || '' === $dir || ! is_dir( $dir ) ) {
+			return;
+		}
+		try {
+			$iterator = new RecursiveIteratorIterator(
+				new RecursiveDirectoryIterator( $dir, FilesystemIterator::SKIP_DOTS ),
+				RecursiveIteratorIterator::CHILD_FIRST
+			);
+			foreach ( $iterator as $file ) {
+				if ( $file->isDir() ) {
+					@rmdir( $file->getPathname() ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup must not replace the saved extract error.
+				} else {
+					self::delete_file( $file->getPathname() );
+				}
+			}
+			@rmdir( $dir ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup must not replace the saved extract error.
+		} catch ( \Throwable $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch -- Best-effort cleanup.
+			unset( $e );
+		}
+	}
+
+	/**
+	 * @param string $path File.
+	 * @return void
+	 */
+	private static function delete_file( $path ) {
+		if ( ! is_string( $path ) || '' === $path || ! file_exists( $path ) ) {
+			return;
+		}
+		if ( function_exists( 'wp_delete_file' ) ) {
+			wp_delete_file( $path );
+			return;
+		}
+		unlink( $path );
 	}
 
 	/**
@@ -380,7 +880,9 @@ class RWGC_MaxMind {
 			'last_updated'  => RWGC_Settings::get( 'db_last_updated', '' ),
 			'is_stale'      => self::db_is_stale(),
 			'has_license'   => (bool) trim( (string) RWGC_Settings::get( 'maxmind_license_key', '' ) ),
-			'last_error'    => RWGC_Settings::get( 'db_last_error', '' ),
+			'last_error'      => RWGC_Settings::get( 'db_last_error', '' ),
+			'last_success_at' => RWGC_Settings::get( 'db_last_success_at', '' ),
+			'last_failure_at' => RWGC_Settings::get( 'db_last_failure_at', '' ),
 		);
 	}
 
@@ -394,8 +896,9 @@ class RWGC_MaxMind {
 		if ( ! ( $error instanceof WP_Error ) ) {
 			return;
 		}
-		$settings                  = RWGC_Settings::get_settings();
-		$settings['db_last_error'] = $error->get_error_message();
+		$settings                       = RWGC_Settings::get_settings();
+		$settings['db_last_error']      = $error->get_error_message();
+		$settings['db_last_failure_at'] = gmdate( 'c' );
 		RWGC_Settings::update( $settings );
 	}
 }
