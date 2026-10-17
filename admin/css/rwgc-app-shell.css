@@ -362,3 +362,25 @@ body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-menu-open .wp
 		padding: 12px 14px 20px;
 	}
 }
+
+@media screen and (max-width: 600px) {
+	body.rwgc-app-shell-active #wpcontent {
+		padding-top: 46px;
+	}
+
+	body.rwgc-app-shell-active #wpbody {
+		padding-top: 0;
+	}
+}
+
+@media (max-width: 960px) {
+	.rwgc-app-shell__module-nav {
+		box-sizing: border-box;
+	}
+}
+
+@media screen and (max-width: 782px) {
+	.rwgc-app-shell {
+		margin-right: 0;
+	}
+}

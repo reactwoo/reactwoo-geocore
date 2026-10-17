@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.11] - 2026-10-17
+
+### Fixed
+- Tapping ReactWoo Geo in the WordPress admin menu on a phone opens the hub.
+- The in-page admin menu sits below the admin bar and stays within the screen width.
+
 ## [1.9.10] - 2026-10-16
 
 ### Fixed

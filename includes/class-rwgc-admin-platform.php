@@ -485,7 +485,7 @@ class RWGC_Admin_Platform {
 	}
 
 	/**
-	 * Load collapsed-menu CSS on every wp-admin screen (not only hub screens).
+	 * Load collapsed-menu CSS and the mobile tap handler on every wp-admin screen.
 	 *
 	 * @param string $hook Hook suffix.
 	 * @return void
@@ -496,11 +496,20 @@ class RWGC_Admin_Platform {
 			return;
 		}
 
+		$version = defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.0.0';
+
 		wp_enqueue_style(
 			'rwgc-admin-menu',
 			RWGC_URL . 'admin/css/rwgc-admin-menu.css',
 			array(),
-			defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.0.0'
+			$version
+		);
+		wp_enqueue_script(
+			'rwgc-admin-menu',
+			RWGC_URL . 'admin/js/rwgc-admin-menu.js',
+			array(),
+			$version,
+			true
 		);
 
 		$hide_slugs = self::get_collapsed_submenu_hide_slugs();

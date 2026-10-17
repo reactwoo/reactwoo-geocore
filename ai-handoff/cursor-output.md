@@ -3,6 +3,28 @@
 ## Status
 needs-review
 
+Geo Core 1.9.11 lets a collapsed ReactWoo Geo admin menu item navigate on a phone, and keeps the app-shell module nav below the admin bar. Not merged and not tagged.
+
+## Files changed
+- `admin/js/rwgc-admin-menu.js` — capture-phase click and touchstart stopPropagation on the collapsed top-level item.
+- `includes/class-rwgc-admin-platform.php` — enqueues that script with the `rwgc-admin-menu` handle on every admin screen while the sidebar is collapsed.
+- `admin/css/rwgc-app-shell.css` — 46px offset at 600px, border-box module nav at 960px, no right margin at 782px.
+- Version 1.9.11 in the plugin header, `RWGC_VERSION`, readme stable tag, changelog, upgrade notice, block asset files, and the WordPress.org build assertions.
+- `tests/Admin/RWGCAdminMenuMobileTest.php` — enqueue and CSS/JS presence.
+
+## Not changed
+- Flyout `display:none` rules. No merge and no tag.
+
+## Commands
+- `php tests/test-rwgc-wporg-build.php` — passed.
+- `vendor/bin/phpunit -c phpunit.xml.dist --stderr` — 117 tests, 901 assertions, 7 failures in `RWGCTargetingAssistantUiRegressionTest`, 0 errors.
+
+## Remaining errors
+- None from this change. The 7 Targeting Assistant UI failures match the known baseline.
+
+## Status
+needs-review
+
 Version is 1.9.10 on the PR #87 branch. The iframe fix is unchanged.
 
 ## Files changed
