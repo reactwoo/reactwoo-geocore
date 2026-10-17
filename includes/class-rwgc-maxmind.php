@@ -391,6 +391,8 @@ class RWGC_MaxMind {
 				$settings['db_last_updated'] = gmdate( 'c', $mtime ? $mtime : time() );
 			}
 			RWGC_Settings::update( $settings );
+			// Lookups cached while the path was missing hold the fallback country.
+			self::flush_lookup_cache();
 		}
 		return $use;
 	}
@@ -661,12 +663,25 @@ class RWGC_MaxMind {
 			return $db_path;
 		}
 
+		self::record_download_success( $db_path );
+
+		return true;
+	}
+
+	/**
+	 * Save a successful download and drop cached lookups made with the old file.
+	 *
+	 * @param string $db_path Installed database.
+	 * @return array<string, mixed> Saved settings.
+	 */
+	public static function record_download_success( $db_path ) {
 		$settings                       = RWGC_Settings::get_settings();
-		$settings['db_file_path']       = $db_path;
+		$settings['db_file_path']       = (string) $db_path;
 		$settings['db_last_updated']    = gmdate( 'c' );
 		$settings['db_last_success_at'] = $settings['db_last_updated'];
 		$settings['db_last_error']      = '';
 		RWGC_Settings::update( $settings );
+		self::flush_lookup_cache();
 
 		/**
 		 * Fires when the MaxMind DB has been updated.
@@ -675,7 +690,39 @@ class RWGC_MaxMind {
 		 */
 		do_action( 'rwgc_db_updated', $settings );
 
-		return true;
+		return $settings;
+	}
+
+	/**
+	 * Save a manually uploaded database and drop cached lookups.
+	 *
+	 * @param string $db_path Installed database.
+	 * @return array<string, mixed> Saved settings.
+	 */
+	public static function record_manual_upload( $db_path ) {
+		$settings                    = RWGC_Settings::get_settings();
+		$settings['db_file_path']    = (string) $db_path;
+		$settings['db_last_updated'] = gmdate( 'c' );
+		$settings['db_last_error']   = '';
+		RWGC_Settings::update( $settings );
+		self::flush_lookup_cache();
+		return $settings;
+	}
+
+	/**
+	 * Invalidate every per-IP lookup cached by RWGC_Cache.
+	 *
+	 * @return void
+	 */
+	public static function flush_lookup_cache() {
+		if ( class_exists( 'RWGC_Cache', false ) ) {
+			RWGC_Cache::clear_all();
+			return;
+		}
+		if ( function_exists( 'get_option' ) && function_exists( 'update_option' ) ) {
+			$version = (int) get_option( 'rwgc_cache_version', 1 );
+			update_option( 'rwgc_cache_version', max( 1, $version ) + 1 );
+		}
 	}
 
 	/**

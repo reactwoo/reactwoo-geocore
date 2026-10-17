@@ -169,6 +169,7 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * Country lookup finds a database that an older version saved in a dated GeoLite2-Country_YYYYMMDD folder when the saved path is empty or out of date, and copies it once to uploads/reactwoo-geocore/GeoLite2-Country.mmdb.
 * A "database missing" fallback is no longer cached per visitor, so lookups recover as soon as the database is back.
 * The automatic MaxMind download is also scheduled after a plugin update, not only on activation or a credentials save.
+* A new or uploaded database clears cached visitor lookups straight away.
 
 = 1.9.13 =
 * MaxMind can refresh the country database on a schedule when automatic updates are on.

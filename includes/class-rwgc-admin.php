@@ -1183,11 +1183,7 @@ class RWGC_Admin {
 			wp_delete_file( $uploaded_path );
 		}
 
-		$settings                    = RWGC_Settings::get_settings();
-		$settings['db_file_path']    = $dest_path;
-		$settings['db_last_updated'] = gmdate( 'c' );
-		$settings['db_last_error']   = '';
-		RWGC_Settings::update( $settings );
+		RWGC_MaxMind::record_manual_upload( $dest_path );
 
 		add_settings_error( 'rwgc_maxmind', 'rwgc_upload_success', __( 'MaxMind database uploaded successfully.', 'reactwoo-geocore' ), 'updated' );
 		set_transient( 'settings_errors', get_settings_errors(), 30 );
