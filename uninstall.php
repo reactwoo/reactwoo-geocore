@@ -12,4 +12,5 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 delete_option( 'rwgc_settings' );
 delete_option( 'rwgc_cache_version' );
+delete_option( 'rwgc_maxmind_schedule_version' );
 

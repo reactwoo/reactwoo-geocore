@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Country lookup no longer returns `fallback_db_missing` when the database is still in the dated folder an older version extracted (`uploads/reactwoo-geocore/GeoLite2-Country_YYYYMMDD/GeoLite2-Country.mmdb`) and the saved `db_file_path` is empty or points at a file that no longer exists. `RWGC_MaxMind::get_db_path()` now uses the saved file, then `uploads/reactwoo-geocore/GeoLite2-Country.mmdb`, then the newest valid dated `GeoLite2-Country.mmdb`. A dated database it finds is copied once to the single-file path (the dated folder stays), and the path is saved.
 - A `fallback_db_missing` or `fallback_no_reader` result is no longer kept in the per-IP cache for the cache TTL, so visitors get their real country as soon as the database is back.
+- The automatic MaxMind download is scheduled after a plugin auto-update too. WordPress does not run the activation hook on an update, so 1.9.13 only scheduled `rwgc_maxmind_auto_update` on activation or a credentials save. Geo Core now syncs the schedule on `init` when the plugin version changes (`rwgc_maxmind_schedule_version`), when the event is missing while automatic updates are on, or when it is still queued while they are off. Duplicate events from two racing requests collapse to one.
 
 ## [1.9.13] - 2026-10-17
 

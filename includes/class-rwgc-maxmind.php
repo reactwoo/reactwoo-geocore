@@ -22,6 +22,11 @@ class RWGC_MaxMind {
 	const CRON_SCHEDULE = 'rwgc_twice_weekly';
 
 	/**
+	 * Plugin version the schedule was last checked for.
+	 */
+	const SCHEDULE_VERSION_OPTION = 'rwgc_maxmind_schedule_version';
+
+	/**
 	 * Register the cron callback and schedule.
 	 *
 	 * @return void
@@ -29,6 +34,70 @@ class RWGC_MaxMind {
 	public static function init() {
 		add_filter( 'cron_schedules', array( __CLASS__, 'cron_schedules' ) );
 		add_action( self::CRON_HOOK, array( __CLASS__, 'run_scheduled_update' ) );
+		// Activation hooks do not run on a plugin auto-update. Check on every load instead.
+		add_action( 'init', array( __CLASS__, 'maybe_sync_schedule' ), 20 );
+	}
+
+	/**
+	 * Keep the schedule in line with the settings without waiting for activation
+	 * or a credentials save.
+	 *
+	 * Runs a full sync after any plugin version change. Otherwise it only reads
+	 * the autoloaded settings and cron options, and syncs when an event is missing
+	 * while automatic updates are on, or present while they are off.
+	 *
+	 * @return void
+	 */
+	public static function maybe_sync_schedule() {
+		if ( ! function_exists( 'wp_next_scheduled' ) || ! function_exists( 'get_option' ) ) {
+			return;
+		}
+		$version = defined( 'RWGC_VERSION' ) ? (string) RWGC_VERSION : '';
+		if ( (string) get_option( self::SCHEDULE_VERSION_OPTION, '' ) !== $version ) {
+			self::sync_schedule();
+			if ( function_exists( 'update_option' ) ) {
+				update_option( self::SCHEDULE_VERSION_OPTION, $version );
+			}
+			return;
+		}
+		$wanted = self::auto_update_wanted();
+		$count  = self::scheduled_count();
+		if ( ( $wanted && 1 !== $count ) || ( ! $wanted && $count > 0 ) ) {
+			self::sync_schedule();
+		}
+	}
+
+	/**
+	 * Automatic updates are on and both credentials are saved.
+	 *
+	 * @return bool
+	 */
+	public static function auto_update_wanted() {
+		$settings = class_exists( 'RWGC_Settings', false ) ? RWGC_Settings::get_settings() : array();
+		$account  = self::normalize_credential( isset( $settings['maxmind_account_id'] ) ? $settings['maxmind_account_id'] : '' );
+		$license  = self::normalize_credential( isset( $settings['maxmind_license_key'] ) ? $settings['maxmind_license_key'] : '' );
+		return ! empty( $settings['auto_update_db'] ) && '' !== $account && '' !== $license;
+	}
+
+	/**
+	 * Number of queued events for the download hook.
+	 *
+	 * @return int
+	 */
+	public static function scheduled_count() {
+		if ( function_exists( '_get_cron_array' ) ) {
+			$crons = _get_cron_array();
+			$count = 0;
+			if ( is_array( $crons ) ) {
+				foreach ( $crons as $events ) {
+					if ( is_array( $events ) && isset( $events[ self::CRON_HOOK ] ) && is_array( $events[ self::CRON_HOOK ] ) ) {
+						$count += count( $events[ self::CRON_HOOK ] );
+					}
+				}
+			}
+			return $count;
+		}
+		return function_exists( 'wp_next_scheduled' ) && wp_next_scheduled( self::CRON_HOOK ) ? 1 : 0;
 	}
 
 	/**
@@ -69,11 +138,7 @@ class RWGC_MaxMind {
 	 * @return void
 	 */
 	public static function sync_schedule() {
-		$settings = class_exists( 'RWGC_Settings', false ) ? RWGC_Settings::get_settings() : array();
-		$account  = self::normalize_credential( isset( $settings['maxmind_account_id'] ) ? $settings['maxmind_account_id'] : '' );
-		$license  = self::normalize_credential( isset( $settings['maxmind_license_key'] ) ? $settings['maxmind_license_key'] : '' );
-		$enabled  = ! empty( $settings['auto_update_db'] );
-		if ( ! $enabled || '' === $account || '' === $license ) {
+		if ( ! self::auto_update_wanted() ) {
 			self::unschedule();
 			return;
 		}
@@ -82,7 +147,8 @@ class RWGC_MaxMind {
 		}
 		$next = wp_next_scheduled( self::CRON_HOOK );
 		$same = function_exists( 'wp_get_schedule' ) ? wp_get_schedule( self::CRON_HOOK ) === self::CRON_SCHEDULE : (bool) $next;
-		if ( $next && $same ) {
+		// Exactly one event on the right schedule. Two requests racing can queue a second one; collapse it.
+		if ( $next && $same && self::scheduled_count() <= 1 ) {
 			return;
 		}
 		self::unschedule();
@@ -95,6 +161,9 @@ class RWGC_MaxMind {
 	 * @return void
 	 */
 	public static function unschedule() {
+		if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
+			wp_clear_scheduled_hook( self::CRON_HOOK );
+		}
 		if ( ! function_exists( 'wp_next_scheduled' ) || ! function_exists( 'wp_unschedule_event' ) ) {
 			return;
 		}
@@ -111,10 +180,7 @@ class RWGC_MaxMind {
 	 * @return void
 	 */
 	public static function run_scheduled_update() {
-		$settings = class_exists( 'RWGC_Settings', false ) ? RWGC_Settings::get_settings() : array();
-		$account  = self::normalize_credential( isset( $settings['maxmind_account_id'] ) ? $settings['maxmind_account_id'] : '' );
-		$license  = self::normalize_credential( isset( $settings['maxmind_license_key'] ) ? $settings['maxmind_license_key'] : '' );
-		if ( empty( $settings['auto_update_db'] ) || '' === $account || '' === $license ) {
+		if ( ! self::auto_update_wanted() ) {
 			return;
 		}
 		self::update_database();
