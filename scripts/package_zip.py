@@ -202,7 +202,27 @@ def _main_php_bytes(path: Path, target: str) -> bytes:
 
 # WordPress.org rejects these anywhere in a plugin zip, including inside vendor/.
 _WPORG_PROHIBITED_EXTENSIONS = (".phar", ".sh", ".zip", ".gz", ".tgz", ".tar", ".rar", ".7z")
+# Reviewers also reject non-plugin sources. The MaxMind C extension is the case
+# that failed review: .c, .h, .m4, and .w32. .phpt/.neon/.toml are maintainer files
+# that GeoIP2 3.4 and the reader 1.14 package added beside that extension.
+_WPORG_VENDOR_SOURCE_EXTENSIONS = (".c", ".h", ".m4", ".w32", ".phpt", ".neon", ".toml")
+_WPORG_VENDOR_MAINTAINER_NAMES = {"mise.lock"}
 _WPORG_VCS_DIRS = {".git", ".svn", ".hg", ".bzr"}
+
+
+def _path_is_under_vendor(parts: list[str]) -> bool:
+    return any(part == "vendor" for part in parts)
+
+
+def _path_is_maxmind_reader_ext(parts: list[str]) -> bool:
+    """True for vendor/maxmind-db/reader/ext and everything inside it."""
+    for index, part in enumerate(parts):
+        if part != "maxmind-db":
+            continue
+        tail = parts[index : index + 4]
+        if tail[:3] == ["maxmind-db", "reader", "ext"]:
+            return True
+    return False
 
 
 def wporg_prohibited_names(names: list[str]) -> list[str]:
@@ -216,6 +236,16 @@ def wporg_prohibited_names(names: list[str]) -> list[str]:
         filename = parts[-1].lower() if parts else name.lower()
         if any(filename.endswith(ext) for ext in _WPORG_PROHIBITED_EXTENSIONS):
             bad.append(name)
+            continue
+        if not _path_is_under_vendor(parts):
+            continue
+        if _path_is_maxmind_reader_ext(parts):
+            bad.append(name)
+            continue
+        if filename in _WPORG_VENDOR_MAINTAINER_NAMES or any(
+            filename.endswith(ext) for ext in _WPORG_VENDOR_SOURCE_EXTENSIONS
+        ):
+            bad.append(name)
     return bad
 
 
@@ -225,7 +255,9 @@ def _assert_wporg_zip(zf: zipfile.ZipFile, root_folder: str) -> None:
     if prohibited:
         raise RuntimeError(
             "WordPress.org zip contains prohibited files "
-            "(VCS directories or .phar/.sh/.zip/.gz/.tgz/.tar/.rar/.7z):\n" + "\n".join(prohibited[:30])
+            "(VCS directories, .phar/.sh/.zip/.gz/.tgz/.tar/.rar/.7z, "
+            "or vendor C sources .c/.h/.m4/.w32 and MaxMind reader ext/):\n"
+            + "\n".join(prohibited[:30])
         )
     banned_fragments = (
         "class-rwgc-satellite-updater.php",

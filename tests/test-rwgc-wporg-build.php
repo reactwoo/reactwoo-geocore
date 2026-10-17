@@ -60,8 +60,8 @@ rwgc_wporg_assert( 'core evaluator does not define utm matching', false === strp
 
 rwgc_wporg_assert( 'readme external services', false !== strpos( $readme, '== External services ==' ) );
 rwgc_wporg_assert( 'readme tested up to 7.1', false !== strpos( $readme, 'Tested up to: 7.1' ) );
-rwgc_wporg_assert( 'readme stable tag matches header', false !== strpos( $readme, 'Stable tag: 1.9.11' ) && false !== strpos( $main, 'Version: 1.9.11' ) );
-rwgc_wporg_assert( 'version constant is 1.9.11', false !== strpos( $main, "define( 'RWGC_VERSION', '1.9.11' );" ) );
+rwgc_wporg_assert( 'readme stable tag matches header', false !== strpos( $readme, 'Stable tag: 1.9.12' ) && false !== strpos( $main, 'Version: 1.9.12' ) );
+rwgc_wporg_assert( 'version constant is 1.9.12', false !== strpos( $main, "define( 'RWGC_VERSION', '1.9.12' );" ) );
 rwgc_wporg_assert( 'faq does not include utm as free', false === strpos( $readme, 'Request parameters such as `utm_source` and `gclid` are included' ) );
 rwgc_wporg_assert( 'readme does not advertise a free page-variant cap', false === strpos( $readme, 'Page Variant Routing (free)' ) && false === strpos( $readme, '1 secondary' ) );
 rwgc_wporg_assert( 'distignore keeps composer.json', ! (bool) preg_match( '/^composer\\.json$/m', $distignore ) );
@@ -82,6 +82,9 @@ rwgc_wporg_assert( 'distignore drops the updater', false !== strpos( $distignore
 rwgc_wporg_assert( 'distignore drops docs', (bool) preg_match( '/^docs$/m', $distignore ) );
 rwgc_wporg_assert( 'distignore drops vendor dev-bin', false !== strpos( $distignore, 'vendor/**/dev-bin' ) );
 rwgc_wporg_assert( 'distignore drops shell scripts', (bool) preg_match( '/^\*\.sh$/m', $distignore ) );
+rwgc_wporg_assert( 'distignore drops MaxMind C extension directory', false !== strpos( $distignore, 'vendor/maxmind-db/reader/ext/' ) );
+rwgc_wporg_assert( 'distignore drops C sources under vendor', false !== strpos( $distignore, 'vendor/**/*.c' ) && false !== strpos( $distignore, 'vendor/**/*.h' ) );
+rwgc_wporg_assert( 'distignore drops m4 and w32 sources', false !== strpos( $distignore, 'vendor/**/*.m4' ) && false !== strpos( $distignore, 'vendor/**/*.w32' ) );
 rwgc_wporg_assert( 'distignore drops tgz archives', (bool) preg_match( '/^\*\.tgz$/m', $distignore ) );
 rwgc_wporg_assert( 'packager has a wporg target', false !== strpos( $package, 'wporg' ) );
 rwgc_wporg_assert( 'packager refuses prohibited archive names', false !== strpos( $package, 'def wporg_prohibited_names' ) );
