@@ -166,6 +166,9 @@ Off by default. An administrator must enable “Share anonymous experience event
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
 = 1.9.12 =
+* A pasted MaxMind Account ID or license key is cleaned of invisible characters, a non-numeric Account ID is rejected before MaxMind is called, and a 401 explains what to check.
+* Saving Settings → General keeps the MaxMind Account ID, license key, and database state.
+* Saving new MaxMind credentials clears the previous download error.
 * Country lookup uses GeoIP2 3.4.0. The WordPress.org package no longer includes MaxMind's C extension sources.
 
 = 1.9.11 =
@@ -273,7 +276,7 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 == Upgrade Notice ==
 
 = 1.9.12 =
-Country lookup uses GeoIP2 3.4.0. The WordPress.org package no longer includes MaxMind's C extension sources.
+A pasted MaxMind Account ID or license key is cleaned of invisible characters, and saving Settings → General no longer clears those credentials. Country lookup uses GeoIP2 3.4.0.
 
 = 1.9.11 =
 On a phone, ReactWoo Geo in the WordPress admin menu opens the hub, and the in-page menu sits below the admin bar.

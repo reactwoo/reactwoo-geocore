@@ -1307,13 +1307,18 @@ class RWGC_Admin {
 		check_admin_referer( 'rwgc_save_maxmind_settings' );
 
 		$settings = RWGC_Settings::get_settings();
+		$previous = array( (string) $settings['maxmind_account_id'], (string) $settings['maxmind_license_key'] );
 		if ( isset( $_POST['maxmind_account_id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
-			$settings['maxmind_account_id'] = sanitize_text_field( wp_unslash( $_POST['maxmind_account_id'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
+			$settings['maxmind_account_id'] = RWGC_Settings::sanitize_credential( wp_unslash( $_POST['maxmind_account_id'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- check_admin_referer() above; sanitize_credential() runs sanitize_text_field().
 		}
 		if ( isset( $_POST['maxmind_license_key'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
-			$settings['maxmind_license_key'] = sanitize_text_field( wp_unslash( $_POST['maxmind_license_key'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
+			$settings['maxmind_license_key'] = RWGC_Settings::sanitize_credential( wp_unslash( $_POST['maxmind_license_key'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- check_admin_referer() above; sanitize_credential() runs sanitize_text_field().
 		}
 		$settings['auto_update_db'] = isset( $_POST['auto_update_db'] ) ? 1 : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
+		// New credentials make the previous download error stale. Do not keep showing it.
+		if ( array( (string) $settings['maxmind_account_id'], (string) $settings['maxmind_license_key'] ) !== $previous ) {
+			$settings['db_last_error'] = '';
+		}
 		RWGC_Settings::update( $settings );
 
 		add_settings_error( 'rwgc_maxmind', 'rwgc_maxmind_saved', __( 'MaxMind credentials saved.', 'reactwoo-geocore' ), 'updated' );

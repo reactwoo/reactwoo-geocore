@@ -133,12 +133,26 @@ class RWGC_Settings {
 		$defaults = self::get_defaults();
 		$settings = is_array( $input ) ? $input : array();
 
+		/*
+		 * Settings → General posts only its own fields to options.php. Keep the
+		 * values that live on other screens (MaxMind credentials, database state)
+		 * instead of resetting them to defaults.
+		 */
+		$stored = function_exists( 'get_option' ) ? get_option( self::OPTION_KEY, array() ) : array();
+		if ( is_array( $stored ) ) {
+			foreach ( self::get_preserved_keys() as $key ) {
+				if ( ! array_key_exists( $key, $settings ) && array_key_exists( $key, $stored ) ) {
+					$settings[ $key ] = $stored[ $key ];
+				}
+			}
+		}
+
 		$out = $defaults;
 
 		$out['enabled']             = ! empty( $settings['enabled'] ) ? 1 : 0;
 		$out['quic_cloud_cdn']      = ! empty( $settings['quic_cloud_cdn'] ) ? 1 : 0;
-		$out['maxmind_account_id']  = isset( $settings['maxmind_account_id'] ) ? sanitize_text_field( $settings['maxmind_account_id'] ) : '';
-		$out['maxmind_license_key'] = isset( $settings['maxmind_license_key'] ) ? sanitize_text_field( $settings['maxmind_license_key'] ) : '';
+		$out['maxmind_account_id']  = isset( $settings['maxmind_account_id'] ) ? self::sanitize_credential( $settings['maxmind_account_id'] ) : '';
+		$out['maxmind_license_key'] = isset( $settings['maxmind_license_key'] ) ? self::sanitize_credential( $settings['maxmind_license_key'] ) : '';
 		$out['auto_update_db']      = ! empty( $settings['auto_update_db'] ) ? 1 : 0;
 		$out['cache_enabled']       = ! empty( $settings['cache_enabled'] ) ? 1 : 0;
 		$out['cache_ttl']           = isset( $settings['cache_ttl'] ) ? max( 60, (int) $settings['cache_ttl'] ) : $defaults['cache_ttl'];
@@ -157,6 +171,37 @@ class RWGC_Settings {
 		$out['migration_completed'] = ! empty( $settings['migration_completed'] ) ? 1 : 0;
 
 		return $out;
+	}
+
+	/**
+	 * Keys that are not on the Settings → General form and must survive its save.
+	 *
+	 * @return string[]
+	 */
+	public static function get_preserved_keys() {
+		return array(
+			'maxmind_account_id',
+			'maxmind_license_key',
+			'auto_update_db',
+			'db_last_updated',
+			'db_file_path',
+			'db_last_error',
+			'migration_completed',
+		);
+	}
+
+	/**
+	 * Sanitize a MaxMind credential (strip whitespace and invisible characters).
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string
+	 */
+	public static function sanitize_credential( $value ) {
+		$value = sanitize_text_field( is_scalar( $value ) ? (string) $value : '' );
+		if ( class_exists( 'RWGC_MaxMind', false ) ) {
+			return RWGC_MaxMind::normalize_credential( $value );
+		}
+		return trim( $value );
 	}
 
 	/**

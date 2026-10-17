@@ -135,6 +135,48 @@ class RWGC_MaxMind {
 	}
 
 	/**
+	 * Remove characters that can never be part of a MaxMind credential.
+	 *
+	 * Mobile copy/paste often carries a non-breaking space or a zero-width
+	 * character. trim() and sanitize_text_field() keep both, and MaxMind then
+	 * answers 401 for a key that looks right on screen.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string
+	 */
+	public static function normalize_credential( $value ) {
+		if ( ! is_scalar( $value ) ) {
+			return '';
+		}
+		$value   = (string) $value;
+		$cleaned = preg_replace( '/[\s\p{Z}\p{Cc}\p{Cf}]+/u', '', $value );
+		if ( null === $cleaned ) {
+			// Invalid UTF-8: fall back to ASCII whitespace only.
+			$cleaned = preg_replace( '/\s+/', '', $value );
+		}
+		return (string) $cleaned;
+	}
+
+	/**
+	 * Check the shape of MaxMind credentials before calling MaxMind.
+	 *
+	 * Account IDs are numeric. License keys use letters, digits and underscores.
+	 *
+	 * @param string $account_id Normalized account ID.
+	 * @param string $license    Normalized license key.
+	 * @return true|\WP_Error
+	 */
+	public static function validate_credentials( $account_id, $license ) {
+		if ( ! preg_match( '/^[0-9]+$/', (string) $account_id ) ) {
+			return new WP_Error( 'rwgc_bad_account_id', __( 'The MaxMind Account ID must be the number shown under Account Information on maxmind.com, not your email address or username.', 'reactwoo-geocore' ) );
+		}
+		if ( ! preg_match( '/^[A-Za-z0-9_]+$/', (string) $license ) ) {
+			return new WP_Error( 'rwgc_bad_license_key', __( 'The MaxMind license key contains characters MaxMind never uses. Paste the key again from your MaxMind account.', 'reactwoo-geocore' ) );
+		}
+		return true;
+	}
+
+	/**
 	 * Download/update MaxMind database.
 	 *
 	 * This is a best-effort implementation; failures should be surfaced as WP_Error
@@ -143,12 +185,17 @@ class RWGC_MaxMind {
 	 * @return true|\WP_Error
 	 */
 	public static function update_database() {
-		$account_id = trim( (string) RWGC_Settings::get( 'maxmind_account_id', '' ) );
-		$license    = trim( (string) RWGC_Settings::get( 'maxmind_license_key', '' ) );
+		$account_id = self::normalize_credential( RWGC_Settings::get( 'maxmind_account_id', '' ) );
+		$license    = self::normalize_credential( RWGC_Settings::get( 'maxmind_license_key', '' ) );
 		if ( '' === $account_id || '' === $license ) {
 			$error = new WP_Error( 'rwgc_no_credentials', __( 'MaxMind Account ID or License Key is not configured.', 'reactwoo-geocore' ) );
 			self::record_error( $error );
 			return $error;
+		}
+		$valid = self::validate_credentials( $account_id, $license );
+		if ( is_wp_error( $valid ) ) {
+			self::record_error( $valid );
+			return $valid;
 		}
 
 		self::ensure_storage_dir();
@@ -215,6 +262,14 @@ class RWGC_MaxMind {
 				(string) $message,
 				$body_snippet
 			);
+			if ( 401 === (int) $code ) {
+				$error_msg .= ' ' . sprintf(
+					/* translators: 1: first six characters of the saved license key, 2: saved key length. */
+					__( 'MaxMind rejected the saved pair. Check that the Account ID is the number shown under Account Information on maxmind.com (not your email or username), that the key starting "%1$s" (%2$d characters) was created under that same account, and wait a few minutes if the key is brand new.', 'reactwoo-geocore' ),
+					substr( $license, 0, 6 ),
+					strlen( $license )
+				);
+			}
 			$error = new WP_Error( 'rwgc_http_error', $error_msg );
 			self::record_error( $error );
 			return $error;

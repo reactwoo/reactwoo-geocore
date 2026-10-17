@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.9.12] - 2026-10-17
 
+### Fixed
+- MaxMind credentials: strip non-breaking/zero-width spaces from a pasted Account ID or license key, reject a non-numeric Account ID before calling MaxMind, and explain a 401 in plain words.
+- Saving Settings → General no longer wipes the MaxMind Account ID, license key, auto-update flag and database path.
+- Saving new MaxMind credentials clears the previous download error instead of showing it on every Geo screen.
+- MaxMind credential inputs turn off mobile autocapitalize, autocorrect and autofill.
+
 ### Changed
 - Country lookup uses GeoIP2 3.4.0 against the local GeoLite2 database. The MaxMind licence-key download is unchanged.
 - The WordPress.org package no longer includes MaxMind's C extension sources (`vendor/maxmind-db/reader/ext/`).

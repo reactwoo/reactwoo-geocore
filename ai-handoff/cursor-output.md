@@ -3,6 +3,28 @@
 ## Status
 needs-review
 
+Geo Core 1.9.12 cleans and validates MaxMind credentials, keeps them when Settings → General is saved, and explains a 401. Merged with the GeoIP2 3.4.0 update already on main.
+
+## Files changed
+- `includes/class-rwgc-maxmind.php` — strip invisible characters, reject a bad Account ID or key before HTTP, and append a plain-language 401 hint.
+- `includes/class-rwgc-settings.php` — preserve MaxMind and database keys that the General form does not post, and sanitize credentials.
+- `includes/class-rwgc-admin.php` — clear `db_last_error` when the saved pair changes.
+- `admin/views/integrations-maxmind-page.php` — turn off autocapitalize, autocorrect, and autofill.
+- `tests/Engine/RWGC_MaxMindCredentialsTest.php` — nine tests.
+
+## Not changed
+- The MaxMind download URL, Basic auth, and the manual redirect that drops the Authorization header.
+- The GeoIP2 3.4.0 update and the WordPress.org zip exclusions already on main.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist --stderr` — 126 tests, 924 assertions, 7 failures in `RWGCTargetingAssistantUiRegressionTest`, 0 errors.
+
+## Remaining errors
+- None from this change. The 7 Targeting Assistant UI failures match the known baseline.
+
+## Status
+needs-review
+
 Geo Core 1.9.12 updates GeoIP2 to 3.4.0 and keeps MaxMind C extension sources out of the WordPress.org zip. Not merged and not tagged. 1.9.10 and 1.9.11 are already tagged on main, so this is 1.9.12.
 
 ## Files changed

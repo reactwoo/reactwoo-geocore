@@ -57,13 +57,13 @@ settings_errors( 'rwgc_maxmind' );
 				<tr>
 					<th scope="row"><label for="rwgc_maxmind_account_id"><?php esc_html_e( 'Account ID', 'reactwoo-geocore' ); ?></label></th>
 					<td>
-						<input type="text" class="regular-text" id="rwgc_maxmind_account_id" name="maxmind_account_id" value="<?php echo esc_attr( isset( $rwgc_settings['maxmind_account_id'] ) ? (string) $rwgc_settings['maxmind_account_id'] : '' ); ?>" />
+						<input type="text" class="regular-text" id="rwgc_maxmind_account_id" name="maxmind_account_id" inputmode="numeric" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" value="<?php echo esc_attr( isset( $rwgc_settings['maxmind_account_id'] ) ? (string) $rwgc_settings['maxmind_account_id'] : '' ); ?>" />
 					</td>
 				</tr>
 				<tr>
 					<th scope="row"><label for="rwgc_maxmind_license_key"><?php esc_html_e( 'License key', 'reactwoo-geocore' ); ?></label></th>
 					<td>
-						<input type="text" class="regular-text" id="rwgc_maxmind_license_key" name="maxmind_license_key" value="<?php echo esc_attr( isset( $rwgc_settings['maxmind_license_key'] ) ? (string) $rwgc_settings['maxmind_license_key'] : '' ); ?>" />
+						<input type="text" class="regular-text" id="rwgc_maxmind_license_key" name="maxmind_license_key" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" value="<?php echo esc_attr( isset( $rwgc_settings['maxmind_license_key'] ) ? (string) $rwgc_settings['maxmind_license_key'] : '' ); ?>" />
 						<p class="description">
 							<?php esc_html_e( 'Create a free GeoLite2 license at maxmind.com (Account → Manage License Keys).', 'reactwoo-geocore' ); ?>
 						</p>
