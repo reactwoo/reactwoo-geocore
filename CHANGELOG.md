@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.14] - 2026-10-17
+
+### Fixed
+- Country lookup no longer returns `fallback_db_missing` when the database is still in the dated folder an older version extracted (`uploads/reactwoo-geocore/GeoLite2-Country_YYYYMMDD/GeoLite2-Country.mmdb`) and the saved `db_file_path` is empty or points at a file that no longer exists. `RWGC_MaxMind::get_db_path()` now uses the saved file, then `uploads/reactwoo-geocore/GeoLite2-Country.mmdb`, then the newest valid dated `GeoLite2-Country.mmdb`. A dated database it finds is copied once to the single-file path (the dated folder stays), and the path is saved.
+- A `fallback_db_missing` or `fallback_no_reader` result is no longer kept in the per-IP cache for the cache TTL, so visitors get their real country as soon as the database is back.
+- The automatic MaxMind download is scheduled after a plugin auto-update too. WordPress does not run the activation hook on an update, so 1.9.13 only scheduled `rwgc_maxmind_auto_update` on activation or a credentials save. Geo Core now syncs the schedule on `init` when the plugin version changes (`rwgc_maxmind_schedule_version`), when the event is missing while automatic updates are on, or when it is still queued while they are off. Duplicate events from two racing requests collapse to one.
+- A successful download, a manual upload, or the one-time move of a dated database bumps `rwgc_cache_version`. Cached per-IP lookups made with the old or missing file are dropped straight away instead of lasting for the cache TTL.
+- The MaxMind screen no longer shows an old 401 next to a success notice. Saving credentials makes no request to MaxMind; the red box was the stored error from an earlier download, and 1.9.13 cleared it only when the credentials changed. A credentials save now always clears that message. "Download / refresh database" and "Clear geo cache" now run on `admin_init` and redirect, instead of running inside the page after the shell had already printed the stored error. A successful download or upload clears both the last error and the last failure time. The error box now says it is the last download failure, with its time. The upload notice now shows after the redirect.
+- Geo Core admin screens are readable again when the computer is set to dark mode. 1.9.13's `prefers-color-scheme: dark` styles made headings, strong text and descriptions light while `rwgc-suite.css` kept the cards white, and they left WordPress's dark labels on dark form tables. That gave white-on-white headings (Account credentials, Resolution Hub, Geo Assistant, Product license), dark-on-dark labels (QUIC.cloud, Cache results, MaxMind, Account ID, License key) and an unreadable success notice. The partial dark theme is removed, cards and notices set their own text colour from `--rwgc-canvas-*` / `--rwgc-surface-*` tokens, and muted text (#6b7280 → #4b5563), the assistant avatar (#2563eb → #1d4ed8) and the success tick (#059669 → #047857) now meet WCAG AA 4.5:1. Geo Commerce screens use these stylesheets too, so they are fixed with no change to Commerce.
+
+### Security
+- `GET /wp-json/reactwoo-geocore/v1/location` no longer returns the visitor's `ip` to the public. It stays in the response only for a user who can `manage_options`, for debugging, which needs a REST nonce when you use cookie auth. The response is per visitor, so it now sends `Cache-Control: no-store, no-cache, must-revalidate, max-age=0, private`, `Pragma: no-cache`, `Expires`, `Vary: Cookie` and `X-LiteSpeed-Cache-Control: no-cache`, and it fires `litespeed_control_set_nocache`. A page cache or CDN can no longer serve one visitor's country (or IP) to another. Nothing in Geo Core, Geo Core Pro or Geo Commerce reads `ip` from this response.
+
 ## [1.9.13] - 2026-10-17
 
 ### Fixed

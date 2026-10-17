@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.13
+Stable tag: 1.9.14
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -43,7 +43,7 @@ After setup, you can use Geo Core in multiple ways:
 * **Shortcodes**: `[rwgc_country]`, `[rwgc_country_code]`, `[rwgc_currency]`, `[rwgc_city]`, `[rwgc_region]`
 * **Conditional shortcode**: `[rwgc_if country="US,CA"]Special content[/rwgc_if]`
 * **PHP helpers**: `rwgc_get_visitor_country()`, `rwgc_get_visitor_currency()`, `rwgc_get_visitor_data()`
-* **REST endpoints** (when enabled in settings): `/wp-json/reactwoo-geocore/v1/location` (visitor geo), `/wp-json/reactwoo-geocore/v1/capabilities` (plugin discovery: event types and hooks; no visitor PII)
+* **REST endpoints** (when enabled in settings): `/wp-json/reactwoo-geocore/v1/location` (visitor geo; not cached; the IP address is shown only to admins), `/wp-json/reactwoo-geocore/v1/capabilities` (plugin discovery: event types and hooks; no visitor PII)
 * **Gutenberg**: Use the **Geo Content** block to show/hide content by country
 * **Elementor (free baseline)**: Use Page/Popup document settings for basic show/hide by country. Classic widgets/sections use **Advanced → Geo Visibility**; Elementor Atomic (V4) widgets use a sibling **Geo Visibility** Settings section (ISO country codes and saved visibility rules).
 
@@ -165,6 +165,15 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.14 =
+* Country lookup finds a database that an older version saved in a dated GeoLite2-Country_YYYYMMDD folder when the saved path is empty or out of date, and copies it once to uploads/reactwoo-geocore/GeoLite2-Country.mmdb.
+* A "database missing" fallback is no longer cached per visitor, so lookups recover as soon as the database is back.
+* The automatic MaxMind download is also scheduled after a plugin update, not only on activation or a credentials save.
+* A new or uploaded database clears cached visitor lookups straight away.
+* The MaxMind screen no longer shows an old 401 error next to a successful refresh or a credentials save.
+* Admin screens are readable in dark mode again (no more white-on-white headings or dark-on-dark labels), and muted text meets WCAG AA contrast.
+* The public /location REST response no longer includes the visitor's IP address (site admins still see it), and it is marked so caches never store it.
+
 = 1.9.13 =
 * MaxMind can refresh the country database on a schedule when automatic updates are on.
 * Saving MaxMind credentials shows a confirmation, and the license key field shows only the last four characters.
@@ -281,6 +290,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.14 =
+Fixes country lookup falling back to the default country when the MaxMind database is in a dated GeoLite2-Country_YYYYMMDD folder.
 
 = 1.9.13 =
 MaxMind can refresh the country database automatically, and saving credentials now confirms on screen.

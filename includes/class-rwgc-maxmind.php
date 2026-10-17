@@ -22,6 +22,11 @@ class RWGC_MaxMind {
 	const CRON_SCHEDULE = 'rwgc_twice_weekly';
 
 	/**
+	 * Plugin version the schedule was last checked for.
+	 */
+	const SCHEDULE_VERSION_OPTION = 'rwgc_maxmind_schedule_version';
+
+	/**
 	 * Register the cron callback and schedule.
 	 *
 	 * @return void
@@ -29,6 +34,70 @@ class RWGC_MaxMind {
 	public static function init() {
 		add_filter( 'cron_schedules', array( __CLASS__, 'cron_schedules' ) );
 		add_action( self::CRON_HOOK, array( __CLASS__, 'run_scheduled_update' ) );
+		// Activation hooks do not run on a plugin auto-update. Check on every load instead.
+		add_action( 'init', array( __CLASS__, 'maybe_sync_schedule' ), 20 );
+	}
+
+	/**
+	 * Keep the schedule in line with the settings without waiting for activation
+	 * or a credentials save.
+	 *
+	 * Runs a full sync after any plugin version change. Otherwise it only reads
+	 * the autoloaded settings and cron options, and syncs when an event is missing
+	 * while automatic updates are on, or present while they are off.
+	 *
+	 * @return void
+	 */
+	public static function maybe_sync_schedule() {
+		if ( ! function_exists( 'wp_next_scheduled' ) || ! function_exists( 'get_option' ) ) {
+			return;
+		}
+		$version = defined( 'RWGC_VERSION' ) ? (string) RWGC_VERSION : '';
+		if ( (string) get_option( self::SCHEDULE_VERSION_OPTION, '' ) !== $version ) {
+			self::sync_schedule();
+			if ( function_exists( 'update_option' ) ) {
+				update_option( self::SCHEDULE_VERSION_OPTION, $version );
+			}
+			return;
+		}
+		$wanted = self::auto_update_wanted();
+		$count  = self::scheduled_count();
+		if ( ( $wanted && 1 !== $count ) || ( ! $wanted && $count > 0 ) ) {
+			self::sync_schedule();
+		}
+	}
+
+	/**
+	 * Automatic updates are on and both credentials are saved.
+	 *
+	 * @return bool
+	 */
+	public static function auto_update_wanted() {
+		$settings = class_exists( 'RWGC_Settings', false ) ? RWGC_Settings::get_settings() : array();
+		$account  = self::normalize_credential( isset( $settings['maxmind_account_id'] ) ? $settings['maxmind_account_id'] : '' );
+		$license  = self::normalize_credential( isset( $settings['maxmind_license_key'] ) ? $settings['maxmind_license_key'] : '' );
+		return ! empty( $settings['auto_update_db'] ) && '' !== $account && '' !== $license;
+	}
+
+	/**
+	 * Number of queued events for the download hook.
+	 *
+	 * @return int
+	 */
+	public static function scheduled_count() {
+		if ( function_exists( '_get_cron_array' ) ) {
+			$crons = _get_cron_array();
+			$count = 0;
+			if ( is_array( $crons ) ) {
+				foreach ( $crons as $events ) {
+					if ( is_array( $events ) && isset( $events[ self::CRON_HOOK ] ) && is_array( $events[ self::CRON_HOOK ] ) ) {
+						$count += count( $events[ self::CRON_HOOK ] );
+					}
+				}
+			}
+			return $count;
+		}
+		return function_exists( 'wp_next_scheduled' ) && wp_next_scheduled( self::CRON_HOOK ) ? 1 : 0;
 	}
 
 	/**
@@ -69,11 +138,7 @@ class RWGC_MaxMind {
 	 * @return void
 	 */
 	public static function sync_schedule() {
-		$settings = class_exists( 'RWGC_Settings', false ) ? RWGC_Settings::get_settings() : array();
-		$account  = self::normalize_credential( isset( $settings['maxmind_account_id'] ) ? $settings['maxmind_account_id'] : '' );
-		$license  = self::normalize_credential( isset( $settings['maxmind_license_key'] ) ? $settings['maxmind_license_key'] : '' );
-		$enabled  = ! empty( $settings['auto_update_db'] );
-		if ( ! $enabled || '' === $account || '' === $license ) {
+		if ( ! self::auto_update_wanted() ) {
 			self::unschedule();
 			return;
 		}
@@ -82,7 +147,8 @@ class RWGC_MaxMind {
 		}
 		$next = wp_next_scheduled( self::CRON_HOOK );
 		$same = function_exists( 'wp_get_schedule' ) ? wp_get_schedule( self::CRON_HOOK ) === self::CRON_SCHEDULE : (bool) $next;
-		if ( $next && $same ) {
+		// Exactly one event on the right schedule. Two requests racing can queue a second one; collapse it.
+		if ( $next && $same && self::scheduled_count() <= 1 ) {
 			return;
 		}
 		self::unschedule();
@@ -95,6 +161,9 @@ class RWGC_MaxMind {
 	 * @return void
 	 */
 	public static function unschedule() {
+		if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
+			wp_clear_scheduled_hook( self::CRON_HOOK );
+		}
 		if ( ! function_exists( 'wp_next_scheduled' ) || ! function_exists( 'wp_unschedule_event' ) ) {
 			return;
 		}
@@ -111,10 +180,7 @@ class RWGC_MaxMind {
 	 * @return void
 	 */
 	public static function run_scheduled_update() {
-		$settings = class_exists( 'RWGC_Settings', false ) ? RWGC_Settings::get_settings() : array();
-		$account  = self::normalize_credential( isset( $settings['maxmind_account_id'] ) ? $settings['maxmind_account_id'] : '' );
-		$license  = self::normalize_credential( isset( $settings['maxmind_license_key'] ) ? $settings['maxmind_license_key'] : '' );
-		if ( empty( $settings['auto_update_db'] ) || '' === $account || '' === $license ) {
+		if ( ! self::auto_update_wanted() ) {
 			return;
 		}
 		self::update_database();
@@ -226,11 +292,109 @@ class RWGC_MaxMind {
 	 * @return string
 	 */
 	public static function get_db_path() {
-		$settings = RWGC_Settings::get_settings();
-		if ( ! empty( $settings['db_file_path'] ) ) {
-			return $settings['db_file_path'];
+		$settings   = RWGC_Settings::get_settings();
+		$configured = isset( $settings['db_file_path'] ) && is_string( $settings['db_file_path'] ) ? $settings['db_file_path'] : '';
+		if ( '' !== $configured && is_file( $configured ) ) {
+			return $configured;
 		}
+
+		$canonical = self::get_canonical_db_path();
+		if ( is_file( $canonical ) ) {
+			return $canonical;
+		}
+
+		/*
+		 * Geo Core 1.9.12 and earlier extracted the MaxMind archive as it is,
+		 * so the database sits at uploads/reactwoo-geocore/GeoLite2-Country_YYYYMMDD/GeoLite2-Country.mmdb
+		 * and was found only through db_file_path. When that path is empty or
+		 * stale, use the newest valid file in a dated folder and copy it to the
+		 * canonical path once.
+		 */
+		$legacy = self::find_legacy_db_path();
+		if ( null !== $legacy ) {
+			return self::adopt_legacy_db( $legacy, $canonical );
+		}
+
+		return '' !== $configured ? $configured : $canonical;
+	}
+
+	/**
+	 * Single-file location that downloads (1.9.13+) and manual uploads write to.
+	 *
+	 * @return string
+	 */
+	public static function get_canonical_db_path() {
 		return self::get_storage_dir() . 'GeoLite2-Country.mmdb';
+	}
+
+	/**
+	 * Newest usable GeoLite2-Country.mmdb in a dated folder under the storage directory.
+	 *
+	 * @param string|null $storage_dir Directory to scan. Null uses get_storage_dir().
+	 * @return string|null Absolute path, or null when none is usable.
+	 */
+	public static function find_legacy_db_path( $storage_dir = null ) {
+		$dir = rtrim( null === $storage_dir ? self::get_storage_dir() : (string) $storage_dir, '/\\' );
+		if ( '' === $dir || ! is_dir( $dir ) ) {
+			return null;
+		}
+		$entries = @scandir( $dir ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- An unreadable uploads folder means no legacy database, not a warning on every request.
+		if ( ! is_array( $entries ) ) {
+			return null;
+		}
+		$filename   = 'GeoLite2-Country.mmdb';
+		$candidates = array();
+		foreach ( $entries as $entry ) {
+			if ( ! preg_match( '/^GeoLite2-Country_(\d{8})$/', (string) $entry, $matches ) ) {
+				continue;
+			}
+			$path = $dir . '/' . $entry . '/' . $filename;
+			if ( is_file( $path ) ) {
+				$candidates[ $path ] = (int) $matches[1];
+			}
+		}
+		arsort( $candidates, SORT_NUMERIC );
+		foreach ( array_keys( $candidates ) as $path ) {
+			if ( self::db_is_usable( $path ) ) {
+				return $path;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Copy a legacy dated database to the canonical path and remember it.
+	 *
+	 * The dated folder is left in place. When the copy cannot be written, the
+	 * dated path itself is saved so later requests do not scan again.
+	 *
+	 * @param string $legacy    Usable dated database.
+	 * @param string $canonical Canonical path.
+	 * @return string Path to use for lookups.
+	 */
+	private static function adopt_legacy_db( $legacy, $canonical ) {
+		$use = $legacy;
+		if ( is_writable( dirname( $canonical ) ) ) {
+			// A unique sibling per request, so two first visitors cannot rename a half-written copy.
+			$tmp = $canonical . '.' . bin2hex( random_bytes( 4 ) ) . '.new';
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- Same-directory copy then rename is the atomic replace.
+			if ( @copy( $legacy, $tmp ) && filesize( $tmp ) === filesize( $legacy ) && @rename( $tmp, $canonical ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.rename_rename -- A failed copy falls back to the dated path.
+				$use = $canonical;
+			}
+			self::delete_file( $tmp );
+		}
+		$settings = RWGC_Settings::get_settings();
+		if ( ! isset( $settings['db_file_path'] ) || $settings['db_file_path'] !== $use ) {
+			$settings['db_file_path'] = $use;
+			if ( empty( $settings['db_last_updated'] ) ) {
+				$mtime                       = filemtime( $legacy );
+				$settings['db_last_updated'] = gmdate( 'c', $mtime ? $mtime : time() );
+			}
+			RWGC_Settings::update( $settings );
+			// Lookups cached while the path was missing hold the fallback country.
+			self::flush_lookup_cache();
+		}
+		return $use;
 	}
 
 	/**
@@ -499,12 +663,26 @@ class RWGC_MaxMind {
 			return $db_path;
 		}
 
+		self::record_download_success( $db_path );
+
+		return true;
+	}
+
+	/**
+	 * Save a successful download and drop cached lookups made with the old file.
+	 *
+	 * @param string $db_path Installed database.
+	 * @return array<string, mixed> Saved settings.
+	 */
+	public static function record_download_success( $db_path ) {
 		$settings                       = RWGC_Settings::get_settings();
-		$settings['db_file_path']       = $db_path;
+		$settings['db_file_path']       = (string) $db_path;
 		$settings['db_last_updated']    = gmdate( 'c' );
 		$settings['db_last_success_at'] = $settings['db_last_updated'];
 		$settings['db_last_error']      = '';
+		$settings['db_last_failure_at'] = '';
 		RWGC_Settings::update( $settings );
+		self::flush_lookup_cache();
 
 		/**
 		 * Fires when the MaxMind DB has been updated.
@@ -513,7 +691,104 @@ class RWGC_MaxMind {
 		 */
 		do_action( 'rwgc_db_updated', $settings );
 
-		return true;
+		return $settings;
+	}
+
+	/**
+	 * Save a manually uploaded database and drop cached lookups.
+	 *
+	 * @param string $db_path Installed database.
+	 * @return array<string, mixed> Saved settings.
+	 */
+	public static function record_manual_upload( $db_path ) {
+		$settings                    = RWGC_Settings::get_settings();
+		$settings['db_file_path']    = (string) $db_path;
+		$settings['db_last_updated']    = gmdate( 'c' );
+		$settings['db_last_error']      = '';
+		$settings['db_last_failure_at'] = '';
+		RWGC_Settings::update( $settings );
+		self::flush_lookup_cache();
+		return $settings;
+	}
+
+	/**
+	 * Apply a MaxMind credentials form post to the settings array.
+	 *
+	 * Saving makes no request to MaxMind; the download is the only check. Any
+	 * stored download error describes an earlier attempt, so the save clears the
+	 * message and the screen stops showing an old 401 as if the save had failed.
+	 * The failure time stays under "Last failed download" until a download succeeds.
+	 *
+	 * @param array<string, mixed> $settings Current settings.
+	 * @param string|null          $account  Sanitized posted Account ID, or null when not posted.
+	 * @param string|null          $key      Sanitized posted license key, or null when not posted.
+	 * @param bool                 $auto     Automatic updates checkbox.
+	 * @return array<string, mixed>
+	 */
+	public static function apply_credentials_save( array $settings, $account, $key, $auto ) {
+		if ( null !== $account ) {
+			$settings['maxmind_account_id'] = self::normalize_credential( $account );
+		}
+		if ( null !== $key ) {
+			$stored                          = isset( $settings['maxmind_license_key'] ) ? (string) $settings['maxmind_license_key'] : '';
+			$settings['maxmind_license_key'] = self::license_key_from_post( (string) $key, $stored );
+		}
+		$settings['auto_update_db'] = $auto ? 1 : 0;
+		$settings['db_last_error']  = '';
+		return $settings;
+	}
+
+	/**
+	 * Run a MaxMind screen maintenance action.
+	 *
+	 * @param string $action update_db or clear_cache.
+	 * @return array{type: string, code: string, message: string}
+	 */
+	public static function run_maintenance_action( $action ) {
+		if ( 'clear_cache' === $action ) {
+			self::flush_lookup_cache();
+			return array(
+				'type'    => 'updated',
+				'code'    => 'rwgc_cache_cleared',
+				'message' => __( 'Geo cache cleared.', 'reactwoo-geocore' ),
+			);
+		}
+		if ( 'update_db' === $action ) {
+			$result = self::update_database();
+			if ( is_wp_error( $result ) ) {
+				return array(
+					'type'    => 'error',
+					'code'    => (string) $result->get_error_code(),
+					'message' => (string) $result->get_error_message(),
+				);
+			}
+			return array(
+				'type'    => 'updated',
+				'code'    => 'rwgc_db_updated',
+				'message' => __( 'MaxMind country database updated.', 'reactwoo-geocore' ),
+			);
+		}
+		return array(
+			'type'    => 'error',
+			'code'    => 'rwgc_unknown_action',
+			'message' => '',
+		);
+	}
+
+	/**
+	 * Invalidate every per-IP lookup cached by RWGC_Cache.
+	 *
+	 * @return void
+	 */
+	public static function flush_lookup_cache() {
+		if ( class_exists( 'RWGC_Cache', false ) ) {
+			RWGC_Cache::clear_all();
+			return;
+		}
+		if ( function_exists( 'get_option' ) && function_exists( 'update_option' ) ) {
+			$version = (int) get_option( 'rwgc_cache_version', 1 );
+			update_option( 'rwgc_cache_version', max( 1, $version ) + 1 );
+		}
 	}
 
 	/**

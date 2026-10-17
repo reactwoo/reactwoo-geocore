@@ -20,6 +20,8 @@ class RWGC_Admin {
 		add_action( 'rwgc_platform_admin_notices', array( __CLASS__, 'maybe_show_admin_notices' ) );
 		add_action( 'admin_post_rwgc_upload_mmdb', array( __CLASS__, 'handle_upload_mmdb' ) );
 		add_action( 'admin_post_rwgc_save_maxmind_settings', array( __CLASS__, 'handle_save_maxmind_settings' ) );
+		// Before any output, so the shell notices and the page see the result of the action.
+		add_action( 'admin_init', array( __CLASS__, 'handle_maxmind_maintenance_action' ) );
 		add_action( 'admin_notices', array( __CLASS__, 'maybe_show_page_version_notice' ) );
 	}
 
@@ -1183,15 +1185,11 @@ class RWGC_Admin {
 			wp_delete_file( $uploaded_path );
 		}
 
-		$settings                    = RWGC_Settings::get_settings();
-		$settings['db_file_path']    = $dest_path;
-		$settings['db_last_updated'] = gmdate( 'c' );
-		$settings['db_last_error']   = '';
-		RWGC_Settings::update( $settings );
+		RWGC_MaxMind::record_manual_upload( $dest_path );
 
 		add_settings_error( 'rwgc_maxmind', 'rwgc_upload_success', __( 'MaxMind database uploaded successfully.', 'reactwoo-geocore' ), 'updated' );
 		set_transient( 'settings_errors', get_settings_errors(), 30 );
-		wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
+		wp_safe_redirect( RWGC_MaxMind::credentials_saved_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) ) );
 		exit;
 	}
 
@@ -1296,6 +1294,37 @@ class RWGC_Admin {
 	}
 
 	/**
+	 * Run "Download / refresh database" or "Clear geo cache" before the page renders,
+	 * then redirect (post/redirect/get).
+	 *
+	 * 1.9.13 ran the download inside the page view, after the app shell had already
+	 * printed the stored 401 notice, so the old error and the new success showed together.
+	 *
+	 * @return void
+	 */
+	public static function handle_maxmind_maintenance_action() {
+		if ( ! isset( $_GET['rwgc_action'], $_GET['_wpnonce'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Verified below.
+			return;
+		}
+		$action = sanitize_key( wp_unslash( $_GET['rwgc_action'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Verified below.
+		if ( ! in_array( $action, array( 'clear_cache', 'update_db' ), true ) || ! self::can_manage() ) {
+			return;
+		}
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'rwgc_maxmind_action_' . $action ) ) {
+			return;
+		}
+		$result = RWGC_MaxMind::run_maintenance_action( $action );
+		if ( 'updated' === $result['type'] ) {
+			add_settings_error( 'rwgc_maxmind', $result['code'], $result['message'], 'updated' );
+			set_transient( 'settings_errors', get_settings_errors(), 30 );
+		}
+		// A failure is already saved as the last error and shown once by the page.
+		$target = remove_query_arg( array( 'rwgc_action', '_wpnonce', 'settings-updated' ) );
+		wp_safe_redirect( 'updated' === $result['type'] ? RWGC_MaxMind::credentials_saved_redirect( $target ) : $target );
+		exit;
+	}
+
+	/**
 	 * Save MaxMind credentials from the integrations screen (merge with existing settings).
 	 *
 	 * @return void
@@ -1306,20 +1335,21 @@ class RWGC_Admin {
 		}
 		check_admin_referer( 'rwgc_save_maxmind_settings' );
 
-		$settings = RWGC_Settings::get_settings();
-		$previous = array( (string) $settings['maxmind_account_id'], (string) $settings['maxmind_license_key'] );
+		$posted_account = null;
+		$posted_key     = null;
 		if ( isset( $_POST['maxmind_account_id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
-			$settings['maxmind_account_id'] = RWGC_Settings::sanitize_credential( wp_unslash( $_POST['maxmind_account_id'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- check_admin_referer() above; sanitize_credential() runs sanitize_text_field().
+			$posted_account = RWGC_Settings::sanitize_credential( wp_unslash( $_POST['maxmind_account_id'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- check_admin_referer() above; sanitize_credential() runs sanitize_text_field().
 		}
 		if ( isset( $_POST['maxmind_license_key'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
 			$posted_key = RWGC_Settings::sanitize_credential( wp_unslash( $_POST['maxmind_license_key'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- check_admin_referer() above; sanitize_credential() runs sanitize_text_field().
-			$settings['maxmind_license_key'] = RWGC_MaxMind::license_key_from_post( $posted_key, (string) $previous[1] );
 		}
-		$settings['auto_update_db'] = isset( $_POST['auto_update_db'] ) ? 1 : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
-		// New credentials make the previous download error stale. Do not keep showing it.
-		if ( array( (string) $settings['maxmind_account_id'], (string) $settings['maxmind_license_key'] ) !== $previous ) {
-			$settings['db_last_error'] = '';
-		}
+		// No request to MaxMind here. The first download is the only credential check.
+		$settings = RWGC_MaxMind::apply_credentials_save(
+			RWGC_Settings::get_settings(),
+			$posted_account,
+			$posted_key,
+			isset( $_POST['auto_update_db'] ) // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
+		);
 		RWGC_Settings::update( $settings );
 		RWGC_MaxMind::sync_schedule();
 

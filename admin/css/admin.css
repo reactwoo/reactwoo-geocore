@@ -48,7 +48,7 @@ body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-has-submenu.w
 }
 
 .rwgc-wrap .description {
-  color: #6b7280;
+  color: #4b5563;
   font-size: 13px;
   margin-top: 0;
   margin-bottom: 10px;
@@ -569,91 +569,41 @@ body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-has-submenu.w
   }
 }
 
-/* Dark mode compatibility (respects OS/browser preference). */
-@media (prefers-color-scheme: dark) {
-  .rwgc-wrap {
-    background: #1f2328;
-    color: #e5e7eb;
-  }
+/*
+ * Colour contract (1.9.14).
+ *
+ * 1.9.13 had a prefers-color-scheme: dark block that turned .rwgc-wrap dark and made
+ * every h1-h3, strong and .description inside it light. The cards were meant to go dark as well,
+ * but rwgc-suite.css (loaded after this file, with a more specific selector) puts them
+ * back on white, and about sixty other panels in Core and Geo Commerce hard-code light
+ * backgrounds. The result was white headings on white cards, dark WordPress labels on
+ * the dark form tables, and light text in white notices. The WordPress admin around
+ * these screens has no dark mode, so the screens now use the light palette in both
+ * schemes. Each container sets its own foreground from the tokens below, so text never
+ * inherits a colour chosen for another background. Every pair meets WCAG AA (4.5:1).
+ */
+:root {
+  --rwgc-canvas-fg: #1d2327;     /* 14.9:1 on #f0f0f1 */
+  --rwgc-canvas-muted: #50575e;  /* 6.5:1 on #f0f0f1, 6.6:1 on #f0f4f8 */
+  --rwgc-surface-bg: #ffffff;
+  --rwgc-surface-fg: #1f2937;    /* 14.7:1 on white */
+  --rwgc-surface-muted: #4b5563; /* 7.6:1 on white */
+}
 
-  .rwgc-wrap h1,
-  .rwgc-wrap h2,
-  .rwgc-wrap h3,
-  .rwgc-wrap strong {
-    color: #f3f4f6;
-  }
+.rwgc-wrap {
+  color: var(--rwgc-canvas-fg);
+}
 
-  .rwgc-wrap .description {
-    color: #a1a1aa;
-  }
+.rwgc-wrap .rwgc-card,
+.rwgc-wrap .rwgc-addon-card,
+.rwgc-wrap .notice,
+.rwgc-app-shell .notice {
+  color: var(--rwgc-surface-fg);
+}
 
-  .rwgc-inner-nav {
-    background: #111827;
-    border-color: #374151;
-  }
-
-  .rwgc-inner-nav__link {
-    color: #d1d5db;
-  }
-
-  .rwgc-inner-nav__link:hover {
-    background: #1f2937;
-    color: #e5e7eb;
-  }
-
-  .rwgc-inner-nav__link.is-active {
-    background: #1d4ed8;
-    color: #fff;
-  }
-
-  .rwgc-card,
-  .rwgc-addon-card,
-  .rwgc-wrap .form-table,
-  .rwgc-card--full {
-    background: #111827;
-    border-color: #374151;
-    color: #e5e7eb;
-  }
-
-  .rwgc-card a,
-  .rwgc-addon-card a {
-    color: #93c5fd;
-  }
-
-  .rwgc-tipbox {
-    background: #10233d;
-    border-color: #1d4ed8;
-  }
-
-  .rwgc-addon-image-placeholder {
-    background: linear-gradient(135deg, #1f2937 0%, #1e3a5f 100%);
-    border-color: #374151;
-    color: #dbeafe;
-  }
-
-  .rwui-matrix th {
-    background: #1f2937;
-    color: #d1d5db;
-    border-color: #374151;
-  }
-
-  .rwui-matrix td {
-    background: #111827;
-    color: #e5e7eb;
-    border-color: #374151;
-  }
-
-  .rwui-badge {
-    background: #1e3a5f;
-    border-color: #30567e;
-    color: #dbeafe;
-  }
-
-  .rwui-badge--accent {
-    background: #4a2224;
-    border-color: #7f1d1d;
-    color: #fecaca;
-  }
+.rwgc-wrap > .description,
+.rwgc-wrap > p.description {
+  color: var(--rwgc-canvas-muted);
 }
 
 .rwgc-wrap ul.rwgc-docs-list {

@@ -57,7 +57,8 @@ class RWGC_GeoIP {
 		$data = self::lookup_ip( $ip );
 		$data['cached'] = false;
 
-		if ( $ip ) {
+		// A missing database is a site problem, not a visitor answer. Do not keep it for the cache TTL.
+		if ( $ip && self::should_cache_lookup( $data ) ) {
 			RWGC_Cache::set( $ip, $data );
 		}
 
@@ -617,6 +618,20 @@ class RWGC_GeoIP {
 		self::$quic_ips    = null;
 		self::$quic_lookup = null;
 		return true;
+	}
+
+	/**
+	 * Whether a lookup result may be stored in the per-IP cache.
+	 *
+	 * @param mixed $data Lookup payload.
+	 * @return bool
+	 */
+	public static function should_cache_lookup( $data ) {
+		if ( ! is_array( $data ) ) {
+			return false;
+		}
+		$source = isset( $data['source'] ) ? (string) $data['source'] : '';
+		return ! in_array( $source, array( 'fallback_db_missing', 'fallback_no_reader' ), true );
 	}
 
 	/**
