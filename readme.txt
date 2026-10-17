@@ -43,7 +43,7 @@ After setup, you can use Geo Core in multiple ways:
 * **Shortcodes**: `[rwgc_country]`, `[rwgc_country_code]`, `[rwgc_currency]`, `[rwgc_city]`, `[rwgc_region]`
 * **Conditional shortcode**: `[rwgc_if country="US,CA"]Special content[/rwgc_if]`
 * **PHP helpers**: `rwgc_get_visitor_country()`, `rwgc_get_visitor_currency()`, `rwgc_get_visitor_data()`
-* **REST endpoints** (when enabled in settings): `/wp-json/reactwoo-geocore/v1/location` (visitor geo), `/wp-json/reactwoo-geocore/v1/capabilities` (plugin discovery: event types and hooks; no visitor PII)
+* **REST endpoints** (when enabled in settings): `/wp-json/reactwoo-geocore/v1/location` (visitor geo; not cached; the IP address is shown only to admins), `/wp-json/reactwoo-geocore/v1/capabilities` (plugin discovery: event types and hooks; no visitor PII)
 * **Gutenberg**: Use the **Geo Content** block to show/hide content by country
 * **Elementor (free baseline)**: Use Page/Popup document settings for basic show/hide by country. Classic widgets/sections use **Advanced → Geo Visibility**; Elementor Atomic (V4) widgets use a sibling **Geo Visibility** Settings section (ISO country codes and saved visibility rules).
 
@@ -172,6 +172,7 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * A new or uploaded database clears cached visitor lookups straight away.
 * The MaxMind screen no longer shows an old 401 error next to a successful refresh or a credentials save.
 * Admin screens are readable in dark mode again (no more white-on-white headings or dark-on-dark labels), and muted text meets WCAG AA contrast.
+* The public /location REST response no longer includes the visitor's IP address (site admins still see it), and it is marked so caches never store it.
 
 = 1.9.13 =
 * MaxMind can refresh the country database on a schedule when automatic updates are on.

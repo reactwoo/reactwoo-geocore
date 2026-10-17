@@ -709,8 +709,57 @@ class RWGC_REST {
 	 * @return \WP_REST_Response
 	 */
 	public static function get_location( $request ) {
-		$data = RWGC_API::get_visitor_data();
-		return rest_ensure_response( $data );
+		$data     = RWGC_API::get_visitor_data();
+		$can_see  = function_exists( 'current_user_can' ) && current_user_can( 'manage_options' );
+		$response = rest_ensure_response( self::location_payload_for_viewer( is_array( $data ) ? $data : array(), $can_see ) );
+
+		// The answer is different for each visitor, so no page cache, CDN or browser may keep it.
+		if ( is_object( $response ) && method_exists( $response, 'header' ) ) {
+			foreach ( self::location_no_store_headers() as $name => $value ) {
+				$response->header( $name, $value );
+			}
+		}
+		if ( function_exists( 'do_action' ) ) {
+			// LiteSpeed Cache: mark this request uncacheable (no-op when LSCWP is not active).
+			do_action( 'litespeed_control_set_nocache', 'reactwoo-geocore visitor location' );
+		}
+
+		return $response;
+	}
+
+	/**
+	 * Strip the visitor IP from the public location payload unless the viewer manages the site.
+	 *
+	 * @param array<string, mixed> $data      Visitor data from RWGC_API::get_visitor_data().
+	 * @param bool                 $can_debug Whether the current user can manage_options.
+	 * @return array<string, mixed>
+	 */
+	public static function location_payload_for_viewer( array $data, $can_debug ) {
+		if ( ! $can_debug ) {
+			unset( $data['ip'] );
+		}
+		return $data;
+	}
+
+	/**
+	 * Headers that keep the per-visitor location response out of every cache.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function location_no_store_headers() {
+		$headers = function_exists( 'wp_get_nocache_headers' ) ? (array) wp_get_nocache_headers() : array();
+		$headers = array_filter(
+			$headers,
+			static function ( $value ) {
+				return is_string( $value ) && '' !== $value;
+			}
+		);
+		$headers['Cache-Control']              = 'no-store, no-cache, must-revalidate, max-age=0, private';
+		$headers['Pragma']                     = 'no-cache';
+		$headers['Expires']                    = isset( $headers['Expires'] ) ? $headers['Expires'] : 'Wed, 11 Jan 1984 05:00:00 GMT';
+		$headers['X-LiteSpeed-Cache-Control']  = 'no-cache';
+		$headers['Vary']                       = 'Cookie';
+		return $headers;
 	}
 
 	/**
