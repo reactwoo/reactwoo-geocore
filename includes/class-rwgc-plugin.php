@@ -216,6 +216,7 @@ class RWGC_Plugin {
 	private function register_services() {
 		// Settings and migration always available.
 		RWGC_Settings::init();
+		RWGC_MaxMind::init();
 		RWGC_GeoIP::init();
 		RWGC_Platform_Client::init();
 		RWGC_Migration::init();
@@ -303,6 +304,7 @@ class RWGC_Plugin {
 		RWGC_Settings::ensure_defaults();
 		// Prepare upload directory and DB path if needed.
 		RWGC_MaxMind::ensure_storage_dir();
+		RWGC_MaxMind::sync_schedule();
 		if ( false === get_option( 'rwgc_country_groups', false ) ) {
 			add_option( 'rwgc_country_groups', array(), '', 'no' );
 		}
@@ -318,7 +320,7 @@ class RWGC_Plugin {
 	 * @return void
 	 */
 	public static function deactivate() {
-		// Nothing destructive; cache will naturally expire.
+		RWGC_MaxMind::unschedule();
 	}
 }
 

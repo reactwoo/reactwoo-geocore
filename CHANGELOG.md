@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.13] - 2026-10-17
+
+### Fixed
+- Automatic MaxMind updates run on a twice-weekly schedule, with jitter, when the setting is on and credentials are saved. The schedule is removed on deactivation or when the setting is off, and a run with no credentials does nothing.
+- The MaxMind screen records and shows the last successful download and the last failed download.
+- Saving MaxMind credentials returns to the screen with the “MaxMind credentials saved.” notice.
+- The license key field shows only the last four characters. Leaving it blank or unchanged keeps the stored key.
+- The download keeps GeoLite2-Country.mmdb from the newest dated directory in the archive, opens it with the MaxMind reader, and replaces the live file by rename.
+- The MaxMind screen no longer scrolls sideways on a 390px-wide phone.
+
 ## [1.9.12] - 2026-10-17
 
 ### Fixed

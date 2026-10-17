@@ -1312,7 +1312,8 @@ class RWGC_Admin {
 			$settings['maxmind_account_id'] = RWGC_Settings::sanitize_credential( wp_unslash( $_POST['maxmind_account_id'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- check_admin_referer() above; sanitize_credential() runs sanitize_text_field().
 		}
 		if ( isset( $_POST['maxmind_license_key'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
-			$settings['maxmind_license_key'] = RWGC_Settings::sanitize_credential( wp_unslash( $_POST['maxmind_license_key'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- check_admin_referer() above; sanitize_credential() runs sanitize_text_field().
+			$posted_key = RWGC_Settings::sanitize_credential( wp_unslash( $_POST['maxmind_license_key'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- check_admin_referer() above; sanitize_credential() runs sanitize_text_field().
+			$settings['maxmind_license_key'] = RWGC_MaxMind::license_key_from_post( $posted_key, (string) $previous[1] );
 		}
 		$settings['auto_update_db'] = isset( $_POST['auto_update_db'] ) ? 1 : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
 		// New credentials make the previous download error stale. Do not keep showing it.
@@ -1320,11 +1321,13 @@ class RWGC_Admin {
 			$settings['db_last_error'] = '';
 		}
 		RWGC_Settings::update( $settings );
+		RWGC_MaxMind::sync_schedule();
 
 		add_settings_error( 'rwgc_maxmind', 'rwgc_maxmind_saved', __( 'MaxMind credentials saved.', 'reactwoo-geocore' ), 'updated' );
 		set_transient( 'settings_errors', get_settings_errors(), 30 );
 
-		wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
+		$rwgc_redirect = function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' );
+		wp_safe_redirect( RWGC_MaxMind::credentials_saved_redirect( $rwgc_redirect ) );
 		exit;
 	}
 

@@ -508,6 +508,67 @@ body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-has-submenu.w
   }
 }
 
+/*
+ * MaxMind screen on a phone. The credentials table is width:100% with a 1px
+ * border that the table box model draws outside that width, so a 390px
+ * viewport scrolls by a few pixels. Stack the rows and keep every control
+ * inside the screen.
+ */
+@media (max-width: 782px) {
+  .rwgc-maxmind-screen {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  .rwgc-maxmind-screen .rwgc-card,
+  .rwgc-maxmind-screen .form-table,
+  .rwgc-maxmind-screen .form-table tbody,
+  .rwgc-maxmind-screen .form-table tr,
+  .rwgc-maxmind-screen .form-table th,
+  .rwgc-maxmind-screen .form-table td {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .rwgc-maxmind-screen .form-table {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .rwgc-maxmind-screen .form-table th {
+    width: auto;
+    padding-bottom: 4px;
+  }
+
+  .rwgc-maxmind-screen .regular-text,
+  .rwgc-maxmind-screen input[type="text"],
+  .rwgc-maxmind-screen input[type="file"] {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .rwgc-maxmind-screen code,
+  .rwgc-maxmind-screen pre {
+    display: block;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+
+  .rwgc-maxmind-screen p > .button {
+    margin-left: 0;
+    margin-right: 8px;
+    margin-bottom: 8px;
+  }
+}
+
 /* Dark mode compatibility (respects OS/browser preference). */
 @media (prefers-color-scheme: dark) {
   .rwgc-wrap {

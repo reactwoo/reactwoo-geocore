@@ -105,7 +105,9 @@ final class RWGC_MaxMindCredentialsTest extends TestCase {
 
 	public function test_download_uses_basic_auth_and_does_not_forward_it_on_redirect(): void {
 		$src = (string) file_get_contents( dirname( __DIR__, 2 ) . '/includes/class-rwgc-maxmind.php' );
-		$this->assertStringContainsString( "https://download.maxmind.com/geoip/databases/GeoLite2-Country/download?suffix=tar.gz", $src );
+		$this->assertStringContainsString( 'https://download.maxmind.com/geoip/databases/', $src );
+		$this->assertStringContainsString( "self::database_edition() . '/download?suffix=tar.gz'", $src );
+		$this->assertStringContainsString( "\$edition = 'GeoLite2-Country';", $src );
 		$this->assertStringContainsString( "'Basic ' . base64_encode( \$account_id . ':' . \$license )", $src );
 		$this->assertStringContainsString( "'redirection' => 0", $src );
 	}

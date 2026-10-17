@@ -37,7 +37,7 @@ if ( isset( $_GET['rwgc_action'], $_GET['_wpnonce'] ) && current_user_can( 'mana
 
 settings_errors( 'rwgc_maxmind' );
 ?>
-<div class="wrap rwgc-wrap rwgc-suite">
+<div class="wrap rwgc-wrap rwgc-suite rwgc-maxmind-screen">
 	<?php
 	RWGC_Admin_UI::render_page_header(
 		__( 'MaxMind (GeoLite2)', 'reactwoo-geocore' ),
@@ -63,9 +63,13 @@ settings_errors( 'rwgc_maxmind' );
 				<tr>
 					<th scope="row"><label for="rwgc_maxmind_license_key"><?php esc_html_e( 'License key', 'reactwoo-geocore' ); ?></label></th>
 					<td>
-						<input type="text" class="regular-text" id="rwgc_maxmind_license_key" name="maxmind_license_key" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" value="<?php echo esc_attr( isset( $rwgc_settings['maxmind_license_key'] ) ? (string) $rwgc_settings['maxmind_license_key'] : '' ); ?>" />
+						<?php
+						$rwgc_license_stored = isset( $rwgc_settings['maxmind_license_key'] ) ? (string) $rwgc_settings['maxmind_license_key'] : '';
+						$rwgc_license_shown  = '' !== $rwgc_license_stored ? RWGC_MaxMind::mask_license_key( $rwgc_license_stored ) : '';
+						?>
+						<input type="text" class="regular-text" id="rwgc_maxmind_license_key" name="maxmind_license_key" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" value="<?php echo esc_attr( $rwgc_license_shown ); ?>" />
 						<p class="description">
-							<?php esc_html_e( 'Create a free GeoLite2 license at maxmind.com (Account → Manage License Keys).', 'reactwoo-geocore' ); ?>
+							<?php esc_html_e( 'Create a free GeoLite2 license at maxmind.com (Account → Manage License Keys). Leave this field unchanged to keep the saved key.', 'reactwoo-geocore' ); ?>
 						</p>
 					</td>
 				</tr>
@@ -124,6 +128,14 @@ settings_errors( 'rwgc_maxmind' );
 			<tr>
 				<th scope="row"><?php esc_html_e( 'Last updated', 'reactwoo-geocore' ); ?></th>
 				<td><?php echo ! empty( $rwgc_status['last_updated'] ) ? esc_html( (string) $rwgc_status['last_updated'] ) : esc_html__( 'Unknown', 'reactwoo-geocore' ); ?></td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Last successful download', 'reactwoo-geocore' ); ?></th>
+				<td><?php echo ! empty( $rwgc_status['last_success_at'] ) ? esc_html( (string) $rwgc_status['last_success_at'] ) : esc_html__( 'Not yet', 'reactwoo-geocore' ); ?></td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Last failed download', 'reactwoo-geocore' ); ?></th>
+				<td><?php echo ! empty( $rwgc_status['last_failure_at'] ) ? esc_html( (string) $rwgc_status['last_failure_at'] ) : esc_html__( 'Not yet', 'reactwoo-geocore' ); ?></td>
 			</tr>
 			<?php if ( ! empty( $rwgc_status['last_error'] ) ) : ?>
 			<tr>

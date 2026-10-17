@@ -16,5 +16,5 @@ return array(
 		'wp-components',
 		'wp-i18n',
 	),
-	'version'      => '1.9.12',
+	'version'      => '1.9.13',
 );

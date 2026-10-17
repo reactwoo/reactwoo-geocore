@@ -3,6 +3,34 @@
 ## Status
 needs-review
 
+Geo Core 1.9.13 schedules MaxMind downloads, shows the credentials-saved notice, keeps the newest database from the archive, and stops the MaxMind screen scrolling sideways on a phone. Not merged and not tagged.
+
+## Files changed
+- `includes/class-rwgc-maxmind.php` — twice-weekly cron with jitter, newest dated edition file, reader check, atomic replace, masked key, success and failure times.
+- `includes/class-rwgc-plugin.php` — schedule on activation, unschedule on deactivation, register the cron hook.
+- `includes/class-rwgc-admin.php` — redirect with `settings-updated`, keep a masked or empty license key, sync the schedule on save.
+- `includes/class-rwgc-settings.php` — keep the new download timestamps.
+- `admin/views/integrations-maxmind-page.php` — masked key, last success, last failure.
+- `admin/css/admin.css` — phone layout for the MaxMind screen.
+- `tests/Engine/RWGC_MaxMindFollowupsTest.php` — nine tests. Credential URL assertion updated for the edition.
+- Version 1.9.13 in the plugin header, `RWGC_VERSION`, readme, changelog, block assets, and the WordPress.org build assertions.
+
+## Not changed
+- Manual MaxMind download still uses Basic auth and drops the Authorization header on the redirect.
+- The seven known Targeting Assistant UI failures.
+- No tag and no merge.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist --stderr` — 135 tests, 968 assertions, 7 failures in `RWGCTargetingAssistantUiRegressionTest`, 0 errors.
+- `php tests/test-rwgc-wporg-build.php` — all guards passed.
+- `composer install --no-dev --optimize-autoloader` then `python3 scripts/package_zip.py` — `reactwoo-geocore-1.9.13.zip`.
+
+## Remaining errors
+- None from this change. The 7 Targeting Assistant UI failures match the known baseline.
+
+## Status
+needs-review
+
 Geo Core 1.9.12 cleans and validates MaxMind credentials, keeps them when Settings → General is saved, and explains a 401. Merged with the GeoIP2 3.4.0 update already on main.
 
 ## Files changed

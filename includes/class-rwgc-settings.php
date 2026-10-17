@@ -166,6 +166,8 @@ class RWGC_Settings {
 		$out['rest_enabled']        = ! empty( $settings['rest_enabled'] ) ? 1 : 0;
 		$out['debug_mode']          = ! empty( $settings['debug_mode'] ) ? 1 : 0;
 		$out['db_last_updated']     = isset( $settings['db_last_updated'] ) ? sanitize_text_field( $settings['db_last_updated'] ) : '';
+		$out['db_last_success_at']  = isset( $settings['db_last_success_at'] ) ? sanitize_text_field( $settings['db_last_success_at'] ) : '';
+		$out['db_last_failure_at']  = isset( $settings['db_last_failure_at'] ) ? sanitize_text_field( $settings['db_last_failure_at'] ) : '';
 		$out['db_file_path']        = isset( $settings['db_file_path'] ) ? sanitize_text_field( $settings['db_file_path'] ) : '';
 		$out['db_last_error']       = isset( $settings['db_last_error'] ) ? sanitize_text_field( $settings['db_last_error'] ) : '';
 		$out['migration_completed'] = ! empty( $settings['migration_completed'] ) ? 1 : 0;
@@ -184,6 +186,8 @@ class RWGC_Settings {
 			'maxmind_license_key',
 			'auto_update_db',
 			'db_last_updated',
+			'db_last_success_at',
+			'db_last_failure_at',
 			'db_file_path',
 			'db_last_error',
 			'migration_completed',
@@ -223,6 +227,8 @@ class RWGC_Settings {
 			'rest_enabled'        => 1,
 			'debug_mode'          => 0,
 			'db_last_updated'     => '',
+			'db_last_success_at'  => '',
+			'db_last_failure_at'  => '',
 			'db_file_path'        => '',
 			'db_last_error'       => '',
 			'migration_completed' => 0,
