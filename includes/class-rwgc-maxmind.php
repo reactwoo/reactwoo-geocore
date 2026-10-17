@@ -226,11 +226,107 @@ class RWGC_MaxMind {
 	 * @return string
 	 */
 	public static function get_db_path() {
-		$settings = RWGC_Settings::get_settings();
-		if ( ! empty( $settings['db_file_path'] ) ) {
-			return $settings['db_file_path'];
+		$settings   = RWGC_Settings::get_settings();
+		$configured = isset( $settings['db_file_path'] ) && is_string( $settings['db_file_path'] ) ? $settings['db_file_path'] : '';
+		if ( '' !== $configured && is_file( $configured ) ) {
+			return $configured;
 		}
+
+		$canonical = self::get_canonical_db_path();
+		if ( is_file( $canonical ) ) {
+			return $canonical;
+		}
+
+		/*
+		 * Geo Core 1.9.12 and earlier extracted the MaxMind archive as it is,
+		 * so the database sits at uploads/reactwoo-geocore/GeoLite2-Country_YYYYMMDD/GeoLite2-Country.mmdb
+		 * and was found only through db_file_path. When that path is empty or
+		 * stale, use the newest valid file in a dated folder and copy it to the
+		 * canonical path once.
+		 */
+		$legacy = self::find_legacy_db_path();
+		if ( null !== $legacy ) {
+			return self::adopt_legacy_db( $legacy, $canonical );
+		}
+
+		return '' !== $configured ? $configured : $canonical;
+	}
+
+	/**
+	 * Single-file location that downloads (1.9.13+) and manual uploads write to.
+	 *
+	 * @return string
+	 */
+	public static function get_canonical_db_path() {
 		return self::get_storage_dir() . 'GeoLite2-Country.mmdb';
+	}
+
+	/**
+	 * Newest usable GeoLite2-Country.mmdb in a dated folder under the storage directory.
+	 *
+	 * @param string|null $storage_dir Directory to scan. Null uses get_storage_dir().
+	 * @return string|null Absolute path, or null when none is usable.
+	 */
+	public static function find_legacy_db_path( $storage_dir = null ) {
+		$dir = rtrim( null === $storage_dir ? self::get_storage_dir() : (string) $storage_dir, '/\\' );
+		if ( '' === $dir || ! is_dir( $dir ) ) {
+			return null;
+		}
+		$entries = @scandir( $dir ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- An unreadable uploads folder means no legacy database, not a warning on every request.
+		if ( ! is_array( $entries ) ) {
+			return null;
+		}
+		$filename   = 'GeoLite2-Country.mmdb';
+		$candidates = array();
+		foreach ( $entries as $entry ) {
+			if ( ! preg_match( '/^GeoLite2-Country_(\d{8})$/', (string) $entry, $matches ) ) {
+				continue;
+			}
+			$path = $dir . '/' . $entry . '/' . $filename;
+			if ( is_file( $path ) ) {
+				$candidates[ $path ] = (int) $matches[1];
+			}
+		}
+		arsort( $candidates, SORT_NUMERIC );
+		foreach ( array_keys( $candidates ) as $path ) {
+			if ( self::db_is_usable( $path ) ) {
+				return $path;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Copy a legacy dated database to the canonical path and remember it.
+	 *
+	 * The dated folder is left in place. When the copy cannot be written, the
+	 * dated path itself is saved so later requests do not scan again.
+	 *
+	 * @param string $legacy    Usable dated database.
+	 * @param string $canonical Canonical path.
+	 * @return string Path to use for lookups.
+	 */
+	private static function adopt_legacy_db( $legacy, $canonical ) {
+		$use = $legacy;
+		if ( is_writable( dirname( $canonical ) ) ) {
+			// A unique sibling per request, so two first visitors cannot rename a half-written copy.
+			$tmp = $canonical . '.' . bin2hex( random_bytes( 4 ) ) . '.new';
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- Same-directory copy then rename is the atomic replace.
+			if ( @copy( $legacy, $tmp ) && filesize( $tmp ) === filesize( $legacy ) && @rename( $tmp, $canonical ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.rename_rename -- A failed copy falls back to the dated path.
+				$use = $canonical;
+			}
+			self::delete_file( $tmp );
+		}
+		$settings = RWGC_Settings::get_settings();
+		if ( ! isset( $settings['db_file_path'] ) || $settings['db_file_path'] !== $use ) {
+			$settings['db_file_path'] = $use;
+			if ( empty( $settings['db_last_updated'] ) ) {
+				$mtime                       = filemtime( $legacy );
+				$settings['db_last_updated'] = gmdate( 'c', $mtime ? $mtime : time() );
+			}
+			RWGC_Settings::update( $settings );
+		}
+		return $use;
 	}
 
 	/**
