@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 require __DIR__ . '/../vendor/autoload.php';
 
 use GeoIp2\Database\Reader;
+use GeoIp2\Exception\AddressNotFoundException;
 
 srand(0);
 
@@ -14,7 +17,7 @@ for ($i = 0; $i < $count; ++$i) {
 
     try {
         $t = $reader->city($ip);
-    } catch (\GeoIp2\Exception\AddressNotFoundException $e) {
+    } catch (AddressNotFoundException $e) {
     }
     if ($i % 10000 === 0) {
         echo $i . ' ' . $ip . "\n";

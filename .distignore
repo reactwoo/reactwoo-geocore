@@ -41,6 +41,18 @@ vendor/**/.svn
 vendor/**/.hg
 vendor/**/.bzr
 
+# Optional MaxMind DB C extension. Geo Core uses the pure-PHP reader.
+# WordPress.org allows php, js, css, txt, md, images, json, and xml only.
+vendor/maxmind-db/reader/ext/
+vendor/**/*.c
+vendor/**/*.h
+vendor/**/*.m4
+vendor/**/*.w32
+vendor/**/*.phpt
+vendor/**/*.neon
+vendor/**/*.toml
+vendor/**/mise.lock
+
 # Project manifests. The WordPress.org zip includes composer.json (Plugin Check
 # warns when vendor/ is present without it). composer.lock stays out.
 composer.lock

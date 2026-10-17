@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.11
+Stable tag: 1.9.12
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -165,6 +165,9 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.12 =
+* Country lookup uses GeoIP2 3.4.0. The WordPress.org package no longer includes MaxMind's C extension sources.
+
 = 1.9.11 =
 * On a phone, ReactWoo Geo in the WordPress admin menu opens the hub, and the in-page menu sits below the admin bar.
 
@@ -268,6 +271,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.12 =
+Country lookup uses GeoIP2 3.4.0. The WordPress.org package no longer includes MaxMind's C extension sources.
 
 = 1.9.11 =
 On a phone, ReactWoo Geo in the WordPress admin menu opens the hub, and the in-page menu sits below the admin bar.

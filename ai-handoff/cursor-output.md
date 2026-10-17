@@ -3,6 +3,34 @@
 ## Status
 needs-review
 
+Geo Core 1.9.12 updates GeoIP2 to 3.4.0 and keeps MaxMind C extension sources out of the WordPress.org zip. Not merged and not tagged. 1.9.10 and 1.9.11 are already tagged on main, so this is 1.9.12.
+
+## Files changed
+- `composer.json`, `composer.lock`, `vendor/` — geoip2/geoip2 v3.4.0, maxmind-db/reader v1.14.0, composer/ca-bundle 1.5.14. Production autoload only. maxmind/web-service-common v0.11.1 stays because GeoIP2 3.4 still requires it.
+- `includes/class-rwgc-geoip.php` — country lookup reads GeoIP2 3 readonly `isoCode` and `name`.
+- `.distignore`, `scripts/package_zip.py` — WordPress.org zip drops `vendor/maxmind-db/reader/ext/` and vendor `.c`/`.h`/`.m4`/`.w32`/`.phpt`/`.neon`/`.toml`/`mise.lock`.
+- Version 1.9.12 in the plugin header, `RWGC_VERSION`, readme stable tag, changelog, upgrade notice, block asset files, and the WordPress.org build assertions.
+
+## Not changed
+- MaxMind licence-key download and the pure-PHP database reader.
+- ReactWoo channel zip still includes the updater and the C extension sources.
+- No tag, no merge, no WordPress.org upload.
+
+## Commands
+- `php tests/test-rwgc-wporg-build.php` — passed.
+- `python3 tests/test-rwgc-wporg-zip-guard.py` — passed.
+- `python3 scripts/package_zip.py --target wporg` — created `reactwoo-geocore-wporg.zip`.
+- `python3 tests/test-rwgc-wporg-upload-precheck.py` — 44 checks, 0 failed.
+- `python3 scripts/package_zip.py --target reactwoo` — updater and `ext/maxminddb.c` still present.
+- GeoIP2 3.4 lookup against MaxMind test databases — country GB / United Kingdom, city London, ASN 1221 Telstra Pty Ltd. Plugin `lookup_ip` returned the same country.
+- Plugin Check 2.1.0 on the directory zip — 0 errors, 6 warnings (nonce and VIP `exclude` queries). None are in the GeoIP2 upgrade.
+
+## Remaining errors
+- None from this change.
+
+## Status
+needs-review
+
 Geo Core 1.9.11 lets a collapsed ReactWoo Geo admin menu item navigate on a phone, and keeps the app-shell module nav below the admin bar. Not merged and not tagged.
 
 ## Files changed

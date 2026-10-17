@@ -51,6 +51,21 @@ def main() -> None:
     for sample in samples:
         check(sample.rsplit("/", 1)[-1] + " is prohibited", sample in PACKAGE.wporg_prohibited_names([sample]))
 
+    source_samples = (
+        "reactwoo-geocore/vendor/maxmind-db/reader/ext/php_maxminddb.h",
+        "reactwoo-geocore/vendor/maxmind-db/reader/ext/maxminddb.c",
+        "reactwoo-geocore/vendor/maxmind-db/reader/ext/config.m4",
+        "reactwoo-geocore/vendor/maxmind-db/reader/ext/config.w32",
+        "reactwoo-geocore/vendor/maxmind-db/reader/ext/tests/001-load.phpt",
+        "reactwoo-geocore/vendor/maxmind-db/reader/ext/bundled-include/maxminddb_config.h",
+        "reactwoo-geocore/vendor/geoip2/geoip2/mise.toml",
+        "reactwoo-geocore/vendor/geoip2/geoip2/mise.lock",
+        "reactwoo-geocore/vendor/maxmind/web-service-common/phpstan.neon",
+        "reactwoo-geocore/vendor/somewhere/extra.c",
+    )
+    for sample in source_samples:
+        check(sample.rsplit("/", 1)[-1] + " is prohibited", sample in PACKAGE.wporg_prohibited_names([sample]))
+
     safe = [
         "reactwoo-geocore/readme.txt",
         "reactwoo-geocore/vendor/autoload.php",
@@ -67,6 +82,25 @@ def main() -> None:
     check(
         "distignore keeps vendor/autoload.php",
         not PACKAGE._is_distignored("vendor/autoload.php", rules),
+    )
+    ext_files = (
+        "vendor/maxmind-db/reader/ext/php_maxminddb.h",
+        "vendor/maxmind-db/reader/ext/maxminddb.c",
+        "vendor/maxmind-db/reader/ext/config.m4",
+        "vendor/maxmind-db/reader/ext/config.w32",
+        "vendor/maxmind-db/reader/ext/tests/001-load.phpt",
+        "vendor/geoip2/geoip2/mise.toml",
+        "vendor/maxmind-db/reader/lychee.toml",
+        "vendor/geoip2/geoip2/mise.lock",
+        "vendor/maxmind/web-service-common/phpstan.neon",
+        "vendor/nested/helper.c",
+        "vendor/nested/helper.h",
+    )
+    for rel in ext_files:
+        check("distignore excludes " + rel, PACKAGE._is_distignored(rel, rules))
+    check(
+        "distignore keeps GeoIP2 reader class",
+        not PACKAGE._is_distignored("vendor/geoip2/geoip2/src/Database/Reader.php", rules),
     )
 
     buf = io.BytesIO()

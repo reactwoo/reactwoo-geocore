@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.12] - 2026-10-17
+
+### Changed
+- Country lookup uses GeoIP2 3.4.0 against the local GeoLite2 database. The MaxMind licence-key download is unchanged.
+- The WordPress.org package no longer includes MaxMind's C extension sources (`vendor/maxmind-db/reader/ext/`).
+
 ## [1.9.11] - 2026-10-17
 
 ### Fixed

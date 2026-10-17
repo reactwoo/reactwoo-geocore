@@ -683,11 +683,14 @@ class RWGC_GeoIP {
 		}
 
 		try {
+			// GeoIP2 3.x exposes these as public readonly properties (isoCode and name are ?string).
 			$reader  = new \GeoIp2\Database\Reader( $db_path );
 			$record  = $reader->country( $ip );
-			$country = strtoupper( (string) $record->country->isoCode );
-			$name    = (string) $record->country->name;
+			$iso     = $record->country->isoCode;
+			$label   = $record->country->name;
 			$reader->close();
+			$country = is_string( $iso ) ? strtoupper( $iso ) : '';
+			$name    = is_string( $label ) ? $label : '';
 
 			if ( ! $country ) {
 				$country = $fallback_country;
