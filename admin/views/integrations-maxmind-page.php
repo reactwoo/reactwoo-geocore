@@ -16,25 +16,16 @@ $rwgc_data         = isset( $rwgc_data ) && is_array( $rwgc_data ) ? $rwgc_data 
 $rwgc_page_url     = function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' );
 $rwgc_settings_url = admin_url( 'admin.php?page=rwgc-settings' );
 
-// Handle maintenance actions (update DB, clear cache).
-if ( isset( $_GET['rwgc_action'], $_GET['_wpnonce'] ) && current_user_can( 'manage_options' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$rwgc_action = sanitize_key( wp_unslash( $_GET['rwgc_action'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	if ( in_array( $rwgc_action, array( 'clear_cache', 'update_db' ), true ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'rwgc_maxmind_action_' . $rwgc_action ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( 'clear_cache' === $rwgc_action && class_exists( 'RWGC_Cache', false ) ) {
-			RWGC_Cache::clear_all();
-			add_settings_error( 'rwgc_maxmind', 'rwgc_cache_cleared', __( 'Geo cache cleared.', 'reactwoo-geocore' ), 'updated' );
-		} elseif ( 'update_db' === $rwgc_action ) {
-			$rwgc_result = RWGC_MaxMind::update_database();
-			$rwgc_status = RWGC_MaxMind::get_status();
-			if ( ! is_wp_error( $rwgc_result ) ) {
-				add_settings_error( 'rwgc_maxmind', 'rwgc_db_updated', __( 'MaxMind country database updated.', 'reactwoo-geocore' ), 'updated' );
-			}
-		}
-	}
-}
+// Download / refresh and Clear geo cache run in RWGC_Admin::handle_maxmind_maintenance_action() on admin_init, before any output.
 
 if ( ! empty( $rwgc_status['last_error'] ) ) {
-	echo '<div class="notice notice-error"><p>' . esc_html( (string) $rwgc_status['last_error'] ) . '</p></div>';
+	$rwgc_failed_at = ! empty( $rwgc_status['last_failure_at'] ) ? (string) $rwgc_status['last_failure_at'] : '';
+	echo '<div class="notice notice-error rwgc-maxmind-last-error"><p><strong>' . esc_html(
+		'' !== $rwgc_failed_at
+			/* translators: %s: time of the failed download. */
+			? sprintf( __( 'Last MaxMind download failed (%s):', 'reactwoo-geocore' ), $rwgc_failed_at )
+			: __( 'Last MaxMind download failed:', 'reactwoo-geocore' )
+	) . '</strong> ' . esc_html( (string) $rwgc_status['last_error'] ) . '</p></div>';
 }
 settings_errors( 'rwgc_maxmind' );
 ?>

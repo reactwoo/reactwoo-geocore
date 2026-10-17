@@ -170,6 +170,7 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * A "database missing" fallback is no longer cached per visitor, so lookups recover as soon as the database is back.
 * The automatic MaxMind download is also scheduled after a plugin update, not only on activation or a credentials save.
 * A new or uploaded database clears cached visitor lookups straight away.
+* The MaxMind screen no longer shows an old 401 error next to a successful refresh or a credentials save.
 
 = 1.9.13 =
 * MaxMind can refresh the country database on a schedule when automatic updates are on.

@@ -680,6 +680,7 @@ class RWGC_MaxMind {
 		$settings['db_last_updated']    = gmdate( 'c' );
 		$settings['db_last_success_at'] = $settings['db_last_updated'];
 		$settings['db_last_error']      = '';
+		$settings['db_last_failure_at'] = '';
 		RWGC_Settings::update( $settings );
 		self::flush_lookup_cache();
 
@@ -702,11 +703,76 @@ class RWGC_MaxMind {
 	public static function record_manual_upload( $db_path ) {
 		$settings                    = RWGC_Settings::get_settings();
 		$settings['db_file_path']    = (string) $db_path;
-		$settings['db_last_updated'] = gmdate( 'c' );
-		$settings['db_last_error']   = '';
+		$settings['db_last_updated']    = gmdate( 'c' );
+		$settings['db_last_error']      = '';
+		$settings['db_last_failure_at'] = '';
 		RWGC_Settings::update( $settings );
 		self::flush_lookup_cache();
 		return $settings;
+	}
+
+	/**
+	 * Apply a MaxMind credentials form post to the settings array.
+	 *
+	 * Saving makes no request to MaxMind; the download is the only check. Any
+	 * stored download error describes an earlier attempt, so the save clears the
+	 * message and the screen stops showing an old 401 as if the save had failed.
+	 * The failure time stays under "Last failed download" until a download succeeds.
+	 *
+	 * @param array<string, mixed> $settings Current settings.
+	 * @param string|null          $account  Sanitized posted Account ID, or null when not posted.
+	 * @param string|null          $key      Sanitized posted license key, or null when not posted.
+	 * @param bool                 $auto     Automatic updates checkbox.
+	 * @return array<string, mixed>
+	 */
+	public static function apply_credentials_save( array $settings, $account, $key, $auto ) {
+		if ( null !== $account ) {
+			$settings['maxmind_account_id'] = self::normalize_credential( $account );
+		}
+		if ( null !== $key ) {
+			$stored                          = isset( $settings['maxmind_license_key'] ) ? (string) $settings['maxmind_license_key'] : '';
+			$settings['maxmind_license_key'] = self::license_key_from_post( (string) $key, $stored );
+		}
+		$settings['auto_update_db'] = $auto ? 1 : 0;
+		$settings['db_last_error']  = '';
+		return $settings;
+	}
+
+	/**
+	 * Run a MaxMind screen maintenance action.
+	 *
+	 * @param string $action update_db or clear_cache.
+	 * @return array{type: string, code: string, message: string}
+	 */
+	public static function run_maintenance_action( $action ) {
+		if ( 'clear_cache' === $action ) {
+			self::flush_lookup_cache();
+			return array(
+				'type'    => 'updated',
+				'code'    => 'rwgc_cache_cleared',
+				'message' => __( 'Geo cache cleared.', 'reactwoo-geocore' ),
+			);
+		}
+		if ( 'update_db' === $action ) {
+			$result = self::update_database();
+			if ( is_wp_error( $result ) ) {
+				return array(
+					'type'    => 'error',
+					'code'    => (string) $result->get_error_code(),
+					'message' => (string) $result->get_error_message(),
+				);
+			}
+			return array(
+				'type'    => 'updated',
+				'code'    => 'rwgc_db_updated',
+				'message' => __( 'MaxMind country database updated.', 'reactwoo-geocore' ),
+			);
+		}
+		return array(
+			'type'    => 'error',
+			'code'    => 'rwgc_unknown_action',
+			'message' => '',
+		);
 	}
 
 	/**

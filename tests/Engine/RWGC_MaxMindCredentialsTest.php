@@ -93,8 +93,10 @@ final class RWGC_MaxMindCredentialsTest extends TestCase {
 	}
 
 	public function test_saving_new_credentials_clears_the_stale_error(): void {
+		$saved = RWGC_MaxMind::apply_credentials_save( array( 'maxmind_account_id' => '1', 'maxmind_license_key' => 'old_key', 'db_last_error' => 'HTTP 401' ), '123456', 'AbC123_key_mmk', true );
+		$this->assertSame( '', $saved['db_last_error'] );
 		$src = (string) file_get_contents( dirname( __DIR__, 2 ) . '/includes/class-rwgc-admin.php' );
-		$this->assertMatchesRegularExpression( "/!== \\\$previous \\) \\{\\s*\\\$settings\\['db_last_error'\\] = '';/", $src );
+		$this->assertStringContainsString( 'RWGC_MaxMind::apply_credentials_save(', $src );
 	}
 
 	public function test_credential_inputs_disable_mobile_autocapitalize_and_autofill(): void {
