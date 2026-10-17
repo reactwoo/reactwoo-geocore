@@ -3,6 +3,29 @@
 ## Status
 needs-review
 
+Geo Core 1.9.12 cleans and validates MaxMind credentials, keeps them when Settings → General is saved, and explains a 401. Not merged and not tagged.
+
+## Files changed
+- `includes/class-rwgc-maxmind.php` — strip invisible characters, reject a bad Account ID or key before HTTP, and append a plain-language 401 hint.
+- `includes/class-rwgc-settings.php` — preserve MaxMind and database keys that the General form does not post, and sanitize credentials.
+- `includes/class-rwgc-admin.php` — clear `db_last_error` when the saved pair changes.
+- `admin/views/integrations-maxmind-page.php` — turn off autocapitalize, autocorrect, and autofill.
+- `tests/Engine/RWGC_MaxMindCredentialsTest.php` — nine tests.
+- Version 1.9.12 in the plugin header, `RWGC_VERSION`, readme stable tag, changelog, upgrade notice, block asset files, and the WordPress.org build assertions.
+
+## Not changed
+- The MaxMind download URL, Basic auth, and the manual redirect that drops the Authorization header.
+- No merge and no tag.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist --stderr` — 126 tests, 924 assertions, 7 failures in `RWGCTargetingAssistantUiRegressionTest`, 0 errors.
+
+## Remaining errors
+- None from this change. The 7 Targeting Assistant UI failures match the known baseline.
+
+## Status
+needs-review
+
 Geo Core 1.9.11 lets a collapsed ReactWoo Geo admin menu item navigate on a phone, and keeps the app-shell module nav below the admin bar. Not merged and not tagged.
 
 ## Files changed

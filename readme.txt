@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.11
+Stable tag: 1.9.12
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -165,6 +165,11 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.12 =
+* A pasted MaxMind Account ID or license key is cleaned of invisible characters, a non-numeric Account ID is rejected before MaxMind is called, and a 401 explains what to check.
+* Saving Settings → General keeps the MaxMind Account ID, license key, and database state.
+* Saving new MaxMind credentials clears the previous download error.
+
 = 1.9.11 =
 * On a phone, ReactWoo Geo in the WordPress admin menu opens the hub, and the in-page menu sits below the admin bar.
 
@@ -268,6 +273,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.12 =
+A pasted MaxMind Account ID or license key is cleaned of invisible characters, and saving Settings → General no longer clears those credentials.
 
 = 1.9.11 =
 On a phone, ReactWoo Geo in the WordPress admin menu opens the hub, and the in-page menu sits below the admin bar.

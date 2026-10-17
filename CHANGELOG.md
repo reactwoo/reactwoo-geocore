@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.12] - 2026-10-17
+
+### Fixed
+- MaxMind credentials: strip non-breaking/zero-width spaces from a pasted Account ID or license key, reject a non-numeric Account ID before calling MaxMind, and explain a 401 in plain words.
+- Saving Settings → General no longer wipes the MaxMind Account ID, license key, auto-update flag and database path.
+- Saving new MaxMind credentials clears the previous download error instead of showing it on every Geo screen.
+- MaxMind credential inputs turn off mobile autocapitalize, autocorrect and autofill.
+
 ## [1.9.11] - 2026-10-17
 
 ### Fixed
