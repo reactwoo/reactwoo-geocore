@@ -12,7 +12,7 @@
   --rw-suite-surface-alt: #f8fafc;
   --rw-suite-border: #e5e7eb;
   --rw-suite-text: #111827;
-  --rw-suite-text-muted: #6b7280;
+  --rw-suite-text-muted: #4b5563; /* 7.5:1 on white, 6.9:1 on the WordPress canvas (was #6b7280, 4.4:1) */
   --rw-suite-accent: #1d4ed8;
   --rw-suite-accent-soft: #eff6ff;
   --rw-suite-accent-strong: #1e40af;
@@ -48,7 +48,7 @@
 
 .rwgc-suite-page-header__subtitle {
   font-size: 15px;
-  color: var(--rwgc-suite-muted, #6b7280);
+  color: var(--rwgc-suite-muted, #4b5563);
   margin: 0 0 8px;
   max-width: 52rem;
   line-height: 1.5;
@@ -267,7 +267,7 @@
 
 .rwgc-platform-overview__meta {
   margin: 0 0 var(--rwgc-space-3, 12px);
-  color: var(--rwgc-color-muted, #6b7280);
+  color: var(--rwgc-color-muted, #4b5563);
 }
 
 .rwgc-platform-overview__percent {
@@ -307,7 +307,7 @@
 }
 
 .rwgc-platform-overview__step.is-done .rwgc-platform-overview__step-mark {
-  color: var(--rwgc-color-success, #059669);
+  color: var(--rwgc-color-success, #047857);
 }
 
 .rwgc-platform-overview__step-body {
@@ -329,12 +329,12 @@ a.rwgc-platform-overview__step-label:focus {
 
 .rwgc-platform-overview__step-hint {
   font-size: var(--rwgc-font-size-sm, 12px);
-  color: var(--rwgc-color-muted, #6b7280);
+  color: var(--rwgc-color-muted, #4b5563);
 }
 
 .rwgc-platform-overview__step-tag {
   font-size: var(--rwgc-font-size-sm, 12px);
-  color: var(--rwgc-color-muted, #6b7280);
+  color: var(--rwgc-color-muted, #4b5563);
 }
 
 .rwgc-platform-overview__sync-pill {
@@ -346,7 +346,7 @@ a.rwgc-platform-overview__step-label:focus {
 }
 
 .rwgc-platform-overview__sync-pill--success {
-  color: var(--rwgc-color-success, #059669);
+  color: var(--rwgc-color-success, #047857);
 }
 
 .rwgc-platform-overview__sync-pill--warning {
@@ -380,7 +380,7 @@ a.rwgc-platform-overview__step-label:focus {
 }
 
 .rwgc-platform-overview__section-link .dashicons {
-  color: var(--rwgc-color-muted, #6b7280);
+  color: var(--rwgc-color-muted, #4b5563);
 }
 
 @media (max-width: 960px) {
@@ -660,7 +660,7 @@ a.rwgc-platform-overview__step-label:focus {
 .rwgc-provider-badge {
   margin: -8px 0 16px;
   font-size: 12px;
-  color: var(--rw-suite-text-muted, #6b7280);
+  color: var(--rw-suite-text-muted, #4b5563);
 }
 
 .rwgc-provider-badge__name {
@@ -1134,7 +1134,7 @@ a.rwgc-platform-overview__step-label:focus {
 .rwgc-hub-breadcrumb {
   margin: 0 0 12px;
   font-size: 13px;
-  color: var(--rwgc-suite-muted, #6b7280);
+  color: var(--rwgc-suite-muted, #4b5563);
 }
 
 .rwgc-hub-breadcrumb__link {

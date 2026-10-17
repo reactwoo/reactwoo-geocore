@@ -171,6 +171,7 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * The automatic MaxMind download is also scheduled after a plugin update, not only on activation or a credentials save.
 * A new or uploaded database clears cached visitor lookups straight away.
 * The MaxMind screen no longer shows an old 401 error next to a successful refresh or a credentials save.
+* Admin screens are readable in dark mode again (no more white-on-white headings or dark-on-dark labels), and muted text meets WCAG AA contrast.
 
 = 1.9.13 =
 * MaxMind can refresh the country database on a schedule when automatic updates are on.

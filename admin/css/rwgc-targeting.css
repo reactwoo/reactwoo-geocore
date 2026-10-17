@@ -113,7 +113,7 @@
 	height: 28px;
 	border-radius: 50%;
 	background: var(--rwgeo-primary-soft);
-	color: var(--rwgeo-primary);
+	color: #1d4ed8; /* 5.5:1 on --rwgeo-primary-soft; the primary blue was 4.2:1 */
 	font-size: 0.75rem;
 	font-weight: 700;
 	display: inline-flex;
@@ -1200,7 +1200,7 @@
 
 .rwgc-status-pill--removed {
 	background: #eceef3;
-	color: #6b7280;
+	color: #4b5563;
 }
 
 /* Condition grid + cards ------------------------------------------------ */
