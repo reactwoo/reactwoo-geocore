@@ -3,7 +3,7 @@
 ## Status
 done
 
-Plugin Check's eight filesystem and `strip_tags` errors are gone on 1.9.16. MaxMind download, extract, and cleanup still run through `wp_mkdir_p()`, `wp_is_writable()`, `wp_delete_file()`, and `WP_Filesystem_Direct::rmdir()`. The Elementor AJAX check stays read-only. The LiteSpeed hook keeps its third-party name. `post__not_in` warnings are unchanged. Not tagged and not uploaded.
+Merged latest main (squash of PR #94, `79a869b`) into the 1.9.16 Plugin Check branch. Both the filesystem fixes and the popup-resolver / attribution test fixes are kept. Not tagged and not uploaded.
 
 ## Files changed
 - `includes/class-rwgc-settings.php` — `wp_strip_all_tags()` only.
@@ -12,20 +12,47 @@ Plugin Check's eight filesystem and `strip_tags` errors are gone on 1.9.16. MaxM
 - `includes/class-rwgc-rest.php` — phpcs ignore for LiteSpeed's `litespeed_control_set_nocache`.
 - `tests/bootstrap.php` — stubs for those WordPress helpers.
 - `tests/Engine/RWGC_MaxMindFollowupsTest.php` — missing destination directory, archive extract plus cleanup, and a stubbed download.
+- `tests/Admin/RWGCTargetingAssistantUiRegressionTest.php` — popup-resolver slices from PR #94.
+- `tests/Engine/RWGC_ContextAttributionTest.php` — separate processes from PR #94.
+- `tests/test-rwgc-elementor-preview-bypass.php` — CLI stubs from PR #94.
+- `tests/test-rwgc-geoip-ip.php` — stub `wp_strip_all_tags()` for the CLI script, which does not load the PHPUnit bootstrap.
+- `.github/workflows/test.yml` — Geo Core tests run on `cursor/*` pull requests.
 - Version 1.9.16 in the plugin header, `RWGC_VERSION`, readme, changelog, and the wporg build guard.
 
 ## Not changed
 - `post__not_in` queries.
-- Visitor-facing MaxMind or Elementor behaviour.
-- PR #94 (tests only). No merge, tag, or WordPress.org upload.
+- Visitor-facing MaxMind, Elementor, or attribution behaviour.
+- No merge of this PR, no tag, and no WordPress.org upload.
 
 ## Commands
-- `vendor/bin/phpunit -c phpunit.xml.dist --filter RWGC_MaxMind` — 59 tests, 221 assertions, OK.
+- `vendor/bin/phpunit -c phpunit.xml.dist --filter RWGC_MaxMind` — 59 tests, 221 assertions, OK (before this merge).
 - `php tests/test-rwgc-wporg-build.php` — all guards passed.
-- Full `vendor/bin/phpunit -c phpunit.xml.dist` still has the 9 attribution errors and 7 popup-resolver failures that main already has. Those stay on PR #94.
 
 ## Remaining errors
-- None from this change. Plugin Check results are in the pull request.
+- None from this change.
+
+## Status
+done
+
+Geo Core tests on current main failed for the same reasons as the 1.9.14 PR run: popup-resolver PHPUnit checks sliced the wrong JavaScript, three helpers were looked up as `function function …`, and attribution tests called `setcookie()` after PHPUnit had already written output. The assistant behaviour and cookie classification are unchanged. No plugin file and no version bump. Squash-merged to main as `79a869b`.
+
+## Files changed
+- `tests/Admin/RWGCTargetingAssistantUiRegressionTest.php` — assert the popup hint, cancel footer, and create-error renderer in the functions that own them; stop doubling the `function` prefix.
+- `tests/Engine/RWGC_ContextAttributionTest.php` — run each case in its own process so `setcookie()` happens before any output.
+- `tests/test-rwgc-elementor-preview-bypass.php` — stub `absint()`, `wp_unslash()`, `sanitize_key()`, and `get_queried_object_id()` so the logged-out preview assertion can run.
+- `.github/workflows/test.yml` — run the suite on every pull request, including `cursor/*`, so a green check means the tests ran.
+
+## Not changed
+- `admin/js/rwgc-targeting-assistant.js` and attribution cookie writes.
+- Plugin version (still 1.9.15). No tag, no WordPress.org upload.
+- Visitor-facing plugin code.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 177 tests, 1227 assertions, OK.
+- Workflow CLI scripts (`test:rwgc-rule-evaluator`, `test:rules`, `test:library-rule-lookup`, `test:visibility-rule-status`, `test:geoip-ip`, `test:elementor-preview-bypass`, `test:elementor-rule-status`, `test:geo-content-block`) — OK.
+
+## Remaining errors
+- None from this change.
 
 ## Status
 needs-review

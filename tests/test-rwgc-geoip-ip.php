@@ -310,6 +310,20 @@ if ( ! function_exists( 'sanitize_text_field' ) ) {
 		return is_scalar( $str ) ? (string) $str : '';
 	}
 }
+if ( ! function_exists( 'wp_strip_all_tags' ) ) {
+	/**
+	 * @param string $text          Text.
+	 * @param bool   $remove_breaks Collapse breaks.
+	 * @return string
+	 */
+	function wp_strip_all_tags( $text, $remove_breaks = false ) {
+		$text = strip_tags( (string) $text );
+		if ( $remove_breaks ) {
+			$text = preg_replace( '/[\r\n\t ]+/', ' ', $text );
+		}
+		return trim( (string) $text );
+	}
+}
 require_once dirname( __DIR__ ) . '/includes/class-rwgc-settings.php';
 $quic_defaults = RWGC_Settings::get_defaults();
 rwgc_geoip_assert( 'quic setting defaults off', isset( $quic_defaults['quic_cloud_cdn'] ) && 0 === (int) $quic_defaults['quic_cloud_cdn'] );
