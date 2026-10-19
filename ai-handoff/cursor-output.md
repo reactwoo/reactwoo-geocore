@@ -3,6 +3,27 @@
 ## Status
 needs-review
 
+A MaxMind download no longer writes the request's cached settings back over an admin save. `RWGC_Settings::get_settings_fresh()` drops the autoloaded option cache before `record_download_success`, `record_error`, `record_manual_upload`, and `adopt_legacy_db` merge their fields. Not tagged.
+
+## Files changed
+- `includes/class-rwgc-settings.php` — re-read `rwgc_settings` after deleting the alloptions cache entry.
+- `includes/class-rwgc-maxmind.php` — those four writers use the fresh read.
+- `tests/Engine/RWGC_MaxMindCacheFlushTest.php` — a license key saved during the request survives the download write.
+- `CHANGELOG.md` — unreleased note.
+
+## Not changed
+- The download still authenticates with the credentials loaded when the request started.
+- No version bump and no tag.
+
+## Commands
+- `php phpunit-9.6.phar -c /tmp/phpunit-maxmind.xml --stderr` — 56 tests, 198 assertions, OK. The new test fails if the cache delete is removed (returns `old_key`).
+
+## Remaining errors
+- None from this change.
+
+## Status
+needs-review
+
 Geo Core 1.9.13 extraction no longer uses an unreadable system temp directory. A failed unpack is a saved error, temporary files are removed, and the live database stays in place. The 401 text stays next to the failure time until a download succeeds. Not merged and not tagged.
 
 ## Files changed

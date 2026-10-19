@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.14
+Stable tag: 1.9.15
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -165,6 +165,9 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.15 =
+* Fix: MaxMind download/upload/copy no longer overwrites settings an admin saved while it ran
+
 = 1.9.14 =
 * Country lookup finds a database that an older version saved in a dated GeoLite2-Country_YYYYMMDD folder when the saved path is empty or out of date, and copies it once to uploads/reactwoo-geocore/GeoLite2-Country.mmdb.
 * A "database missing" fallback is no longer cached per visitor, so lookups recover as soon as the database is back.
@@ -290,6 +293,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.15 =
+Fix: MaxMind download/upload/copy no longer overwrites settings an admin saved while it ran
 
 = 1.9.14 =
 Fixes country lookup falling back to the default country when the MaxMind database is in a dated GeoLite2-Country_YYYYMMDD folder.

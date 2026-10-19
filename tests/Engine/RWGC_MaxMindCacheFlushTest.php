@@ -7,6 +7,45 @@
 
 use PHPUnit\Framework\TestCase;
 
+if ( ! class_exists( 'WP_Error', false ) ) {
+	// phpcs:ignore Generic.Files.OneObjectStructurePerFile.MultipleFound
+	class WP_Error {
+		/** @var string */
+		public $code;
+		/** @var string */
+		public $message;
+		/**
+		 * @param string $code    Error code.
+		 * @param string $message Error message.
+		 */
+		public function __construct( $code = '', $message = '' ) {
+			$this->code    = $code;
+			$this->message = $message;
+		}
+		/**
+		 * @return string
+		 */
+		public function get_error_code() {
+			return $this->code;
+		}
+		/**
+		 * @return string
+		 */
+		public function get_error_message() {
+			return $this->message;
+		}
+	}
+}
+if ( ! function_exists( 'is_wp_error' ) ) {
+	/**
+	 * @param mixed $thing Value.
+	 * @return bool
+	 */
+	function is_wp_error( $thing ) {
+		return $thing instanceof WP_Error;
+	}
+}
+
 if ( ! defined( 'HOUR_IN_SECONDS' ) ) {
 	define( 'HOUR_IN_SECONDS', 3600 );
 }
@@ -17,10 +56,27 @@ if ( ! function_exists( 'get_option' ) ) {
 	 * @return mixed
 	 */
 	function get_option( $key, $default = false ) {
+		if ( isset( $GLOBALS['rwgc_test_get_option'] ) && is_callable( $GLOBALS['rwgc_test_get_option'] ) ) {
+			return $GLOBALS['rwgc_test_get_option']( $key, $default );
+		}
 		if ( isset( $GLOBALS['rwgc_test_options'] ) && is_array( $GLOBALS['rwgc_test_options'] ) && array_key_exists( $key, $GLOBALS['rwgc_test_options'] ) ) {
 			return $GLOBALS['rwgc_test_options'][ $key ];
 		}
 		return $default;
+	}
+}
+if ( ! function_exists( 'wp_cache_delete' ) ) {
+	/**
+	 * @param string $key   Cache key.
+	 * @param string $group Cache group.
+	 * @return bool
+	 */
+	function wp_cache_delete( $key, $group = '' ) {
+		unset( $group );
+		if ( isset( $GLOBALS['rwgc_test_on_cache_delete'] ) && is_callable( $GLOBALS['rwgc_test_on_cache_delete'] ) ) {
+			$GLOBALS['rwgc_test_on_cache_delete']( $key );
+		}
+		return true;
 	}
 }
 if ( ! function_exists( 'update_option' ) ) {
@@ -74,7 +130,13 @@ final class RWGC_MaxMindCacheFlushTest extends TestCase {
 	 * @return void
 	 */
 	protected function tearDown(): void {
-		unset( $GLOBALS['rwgc_test_options'], $GLOBALS['rwgc_test_upload_basedir'] );
+		unset(
+			$GLOBALS['rwgc_test_options'],
+			$GLOBALS['rwgc_test_upload_basedir'],
+			$GLOBALS['rwgc_test_get_option'],
+			$GLOBALS['rwgc_test_on_cache_delete'],
+			$GLOBALS['rwgc_settings_cache_busted']
+		);
 		parent::tearDown();
 	}
 
@@ -138,6 +200,60 @@ final class RWGC_MaxMindCacheFlushTest extends TestCase {
 		unlink( $uploads . '/reactwoo-geocore/GeoLite2-Country.mmdb' );
 		rmdir( $uploads . '/reactwoo-geocore' );
 		rmdir( $uploads );
+	}
+
+	/**
+	 * @return void
+	 */
+	/**
+	 * The download request cached rwgc_settings at bootstrap. An admin save landed
+	 * in the database during the HTTP call. The write after the download must keep
+	 * that save. Runs in its own process so this file's get_option stub is the one
+	 * that notices the cache delete.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 * @return void
+	 */
+	public function test_download_save_keeps_a_license_key_saved_during_the_request(): void {
+		$GLOBALS['rwgc_settings_cache_busted'] = false;
+		$GLOBALS['rwgc_test_options']          = array(
+			'rwgc_cache_version' => 4,
+		);
+		$GLOBALS['rwgc_test_on_cache_delete'] = static function ( $key ) {
+			if ( 'alloptions' === $key || 'rwgc_settings' === $key ) {
+				$GLOBALS['rwgc_settings_cache_busted'] = true;
+			}
+		};
+		$GLOBALS['rwgc_test_get_option'] = static function ( $key, $default ) {
+			if ( 'rwgc_cache_version' === $key ) {
+				return $GLOBALS['rwgc_test_options']['rwgc_cache_version'];
+			}
+			if ( 'rwgc_settings' !== $key ) {
+				return $default;
+			}
+			if ( ! empty( $GLOBALS['rwgc_settings_cache_busted'] ) ) {
+				return array(
+					'maxmind_account_id'  => '999',
+					'maxmind_license_key' => 'rotated_key',
+					'fallback_country'    => 'DE',
+				);
+			}
+			return array(
+				'maxmind_account_id'  => '111',
+				'maxmind_license_key' => 'old_key',
+				'fallback_country'    => 'US',
+			);
+		};
+
+		$saved = RWGC_MaxMind::record_download_success( '/x/GeoLite2-Country.mmdb' );
+
+		$this->assertSame( 'rotated_key', $saved['maxmind_license_key'] );
+		$this->assertSame( '999', $saved['maxmind_account_id'] );
+		$this->assertSame( '/x/GeoLite2-Country.mmdb', $saved['db_file_path'] );
+		$this->assertSame( 'rotated_key', $GLOBALS['rwgc_test_options']['rwgc_settings']['maxmind_license_key'] );
+		$src = (string) file_get_contents( dirname( __DIR__, 2 ) . '/includes/class-rwgc-maxmind.php' );
+		$this->assertSame( 4, substr_count( $src, 'RWGC_Settings::get_settings_fresh()' ) );
 	}
 
 	/**
