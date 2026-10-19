@@ -1,6 +1,33 @@
 # Cursor output
 
 ## Status
+done
+
+Plugin Check's eight filesystem and `strip_tags` errors are gone on 1.9.16. MaxMind download, extract, and cleanup still run through `wp_mkdir_p()`, `wp_is_writable()`, `wp_delete_file()`, and `WP_Filesystem_Direct::rmdir()`. The Elementor AJAX check stays read-only. The LiteSpeed hook keeps its third-party name. `post__not_in` warnings are unchanged. Not tagged and not uploaded.
+
+## Files changed
+- `includes/class-rwgc-settings.php` — `wp_strip_all_tags()` only.
+- `includes/class-rwgc-maxmind.php` — WordPress filesystem helpers for directory checks, creation, and cleanup.
+- `includes/integrations/elementor/class-rwgc-elementor-ajax.php` — phpcs ignore for the read-only Elementor action check.
+- `includes/class-rwgc-rest.php` — phpcs ignore for LiteSpeed's `litespeed_control_set_nocache`.
+- `tests/bootstrap.php` — stubs for those WordPress helpers.
+- `tests/Engine/RWGC_MaxMindFollowupsTest.php` — missing destination directory, archive extract plus cleanup, and a stubbed download.
+- Version 1.9.16 in the plugin header, `RWGC_VERSION`, readme, changelog, and the wporg build guard.
+
+## Not changed
+- `post__not_in` queries.
+- Visitor-facing MaxMind or Elementor behaviour.
+- PR #94 (tests only). No merge, tag, or WordPress.org upload.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist --filter RWGC_MaxMind` — 59 tests, 221 assertions, OK.
+- `php tests/test-rwgc-wporg-build.php` — all guards passed.
+- Full `vendor/bin/phpunit -c phpunit.xml.dist` still has the 9 attribution errors and 7 popup-resolver failures that main already has. Those stay on PR #94.
+
+## Remaining errors
+- None from this change. Plugin Check results are in the pull request.
+
+## Status
 needs-review
 
 A MaxMind download no longer writes the request's cached settings back over an admin save. `RWGC_Settings::get_settings_fresh()` drops the autoloaded option cache before `record_download_success`, `record_error`, `record_manual_upload`, and `adopt_legacy_db` merge their fields. Not tagged.

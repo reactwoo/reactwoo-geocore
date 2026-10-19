@@ -119,6 +119,100 @@ if ( ! class_exists( 'WP_Post', false ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_strip_all_tags' ) ) {
+	/**
+	 * @param string $text          Text.
+	 * @param bool   $remove_breaks Collapse breaks.
+	 * @return string
+	 */
+	function wp_strip_all_tags( $text, $remove_breaks = false ) {
+		$text = preg_replace( '@<(script|style)[^>]*?>.*?</\\1>@si', '', (string) $text );
+		$text = strip_tags( (string) $text );
+		if ( $remove_breaks ) {
+			$text = preg_replace( '/[\r\n\t ]+/', ' ', $text );
+		}
+		return trim( (string) $text );
+	}
+}
+
+if ( ! function_exists( 'wp_mkdir_p' ) ) {
+	/**
+	 * @param string $target Directory.
+	 * @return bool
+	 */
+	function wp_mkdir_p( $target ) {
+		if ( is_dir( $target ) ) {
+			return true;
+		}
+		return mkdir( (string) $target, 0755, true ) || is_dir( $target );
+	}
+}
+
+if ( ! function_exists( 'wp_is_writable' ) ) {
+	/**
+	 * @param string $path Path.
+	 * @return bool
+	 */
+	function wp_is_writable( $path ) {
+		return is_writable( $path );
+	}
+}
+
+if ( ! function_exists( 'wp_delete_file' ) ) {
+	/**
+	 * @param string $file File.
+	 * @return void
+	 */
+	function wp_delete_file( $file ) {
+		if ( is_string( $file ) && '' !== $file && file_exists( $file ) && ! is_dir( $file ) ) {
+			unlink( $file );
+		}
+	}
+}
+
+if ( ! class_exists( 'WP_Filesystem_Direct', false ) ) {
+	/**
+	 * Recursive local delete for MaxMind temp directories.
+	 */
+	class WP_Filesystem_Direct {
+		/**
+		 * @param mixed $arg Unused.
+		 */
+		public function __construct( $arg = null ) {
+			unset( $arg );
+		}
+
+		/**
+		 * @param string $path      File or directory.
+		 * @param bool   $recursive Delete contents.
+		 * @return bool
+		 */
+		public function rmdir( $path, $recursive = false ) {
+			if ( ! is_string( $path ) || '' === $path || ! file_exists( $path ) ) {
+				return false;
+			}
+			if ( is_link( $path ) || is_file( $path ) ) {
+				return unlink( $path );
+			}
+			if ( $recursive ) {
+				$items = scandir( $path );
+				if ( ! is_array( $items ) ) {
+					return false;
+				}
+				foreach ( $items as $item ) {
+					if ( '.' === $item || '..' === $item ) {
+						continue;
+					}
+					if ( ! $this->rmdir( $path . '/' . $item, true ) ) {
+						return false;
+					}
+				}
+			}
+			return rmdir( $path );
+		}
+	}
+}
+
 if ( ! function_exists( '__' ) ) {
 	/**
 	 * @param string $text Text.

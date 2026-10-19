@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.16] - 2026-10-19
+
+### Fixed
+- Status messages use `wp_strip_all_tags()`. MaxMind directory checks, creation, and archive cleanup use `wp_is_writable()`, `wp_mkdir_p()`, `wp_delete_file()`, and `WP_Filesystem_Direct`.
+
 ## [1.9.15] - 2026-10-19
 
 ### Fixed
