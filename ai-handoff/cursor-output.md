@@ -1,6 +1,29 @@
 # Cursor output
 
 ## Status
+done
+
+Geo Core tests on current main failed for the same reasons as the 1.9.14 PR run: popup-resolver PHPUnit checks sliced the wrong JavaScript, three helpers were looked up as `function function …`, and attribution tests called `setcookie()` after PHPUnit had already written output. The assistant behaviour and cookie classification are unchanged. No plugin file and no version bump.
+
+## Files changed
+- `tests/Admin/RWGCTargetingAssistantUiRegressionTest.php` — assert the popup hint, cancel footer, and create-error renderer in the functions that own them; stop doubling the `function` prefix.
+- `tests/Engine/RWGC_ContextAttributionTest.php` — run each case in its own process so `setcookie()` happens before any output.
+- `tests/test-rwgc-elementor-preview-bypass.php` — stub `absint()`, `wp_unslash()`, `sanitize_key()`, and `get_queried_object_id()` so the logged-out preview assertion can run.
+- `.github/workflows/test.yml` — run the suite on every pull request, including `cursor/*`, so a green check means the tests ran.
+
+## Not changed
+- `admin/js/rwgc-targeting-assistant.js` and attribution cookie writes.
+- Plugin version (still 1.9.15). No tag, no WordPress.org upload.
+- Visitor-facing plugin code.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 177 tests, 1227 assertions, OK.
+- Workflow CLI scripts (`test:rwgc-rule-evaluator`, `test:rules`, `test:library-rule-lookup`, `test:visibility-rule-status`, `test:geoip-ip`, `test:elementor-preview-bypass`, `test:elementor-rule-status`, `test:geo-content-block`) — OK.
+
+## Remaining errors
+- None from this change.
+
+## Status
 needs-review
 
 A MaxMind download no longer writes the request's cached settings back over an admin save. `RWGC_Settings::get_settings_fresh()` drops the autoloaded option cache before `record_download_success`, `record_error`, `record_manual_upload`, and `adopt_legacy_db` merge their fields. Not tagged.

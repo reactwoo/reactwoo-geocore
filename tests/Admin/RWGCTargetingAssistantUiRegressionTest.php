@@ -39,10 +39,22 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 	 * @return string
 	 */
 	private function js_between( $js, $start, $end ) {
-		$from = strpos( $js, 'function ' . $start );
-		$this->assertNotFalse( $from, 'Missing function ' . $start );
-		$to = strpos( $js, 'function ' . $end, $from + 1 );
-		$this->assertNotFalse( $to, 'Missing function ' . $end );
+		return $this->source_between( $js, 'function ' . $start, 'function ' . $end );
+	}
+
+	/**
+	 * Slice source from an exact marker up to the next exact marker.
+	 *
+	 * @param string $js    Script source.
+	 * @param string $start Exact start marker.
+	 * @param string $end   Exact end marker.
+	 * @return string
+	 */
+	private function source_between( $js, $start, $end ) {
+		$from = strpos( $js, $start );
+		$this->assertNotFalse( $from, 'Missing marker ' . $start );
+		$to = strpos( $js, $end, $from + strlen( $start ) );
+		$this->assertNotFalse( $to, 'Missing marker ' . $end );
 		return substr( $js, $from, $to - $from );
 	}
 
@@ -89,14 +101,23 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 	}
 
 	public function test_popup_target_actions_are_popup_specific(): void {
-		$js   = $this->assistant_js();
-		$card = $this->js_between( $js, 'renderCard', 'renderActionCards' );
+		$js      = $this->assistant_js();
+		$card    = $this->js_between( $js, 'renderCard', 'renderActionCards' );
+		$field   = $this->js_between( $js, 'fieldBlock', 'dashicon' );
+		$buttons = $this->js_between( $js, 'fieldActionButton', 'targetPicker' );
 
 		$this->assertStringContainsString( 'resolve_popup', $card );
-		$this->assertStringContainsString( 'popupTargetHint', $card );
 		$this->assertStringContainsString( 'remove_action', $card );
-		$this->assertStringContainsString( "resolve_popup: 'open_resolver'", $card );
-		$this->assertStringNotContainsString( 'search_popups', $card );
+		$this->assertStringContainsString( "t.type === 'popup'", $card );
+		$this->assertStringContainsString( 'isPopup: t.type === \'popup\'', $card );
+		// Generic popup search is filtered out of the actions offered on the card.
+		$this->assertStringContainsString( "act !== 'search_popups'", $card );
+
+		$this->assertStringContainsString( 'popupTargetHint', $field );
+		$this->assertStringContainsString( 'opts.isPopup && opts.actions && opts.actions.length', $field );
+
+		$this->assertStringContainsString( "resolve_popup: 'open_resolver'", $buttons );
+		$this->assertStringNotContainsString( 'search_popups', $buttons );
 	}
 
 	public function test_create_rule_resolver_journey_wiring(): void {
@@ -113,12 +134,17 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$this->assertStringContainsString( 'targetSearchUrl', $js );
 		$this->assertStringContainsString( 'targetCreateUrl', $js );
 
-		$drawer = $this->js_between( $js, 'openPopupTargetResolver', 'openFirstUnresolvedDrawer' );
-		$this->assertStringContainsString( 'popupCreateNew', $drawer );
-		$this->assertStringContainsString( 'popupChooseExisting', $drawer );
-		$this->assertStringContainsString( 'goto_confirm_remove', $drawer );
-		$this->assertStringNotContainsString( 'search_popups', $drawer );
-		$this->assertStringNotContainsString( 'popupTargetResolverOptions', $drawer );
+		$opener = $this->js_between( $js, 'openPopupTargetResolver', 'openFirstUnresolvedDrawer' );
+		$this->assertStringContainsString( 'renderPopupResolver()', $opener );
+		$this->assertStringNotContainsString( 'search_popups', $opener );
+		$this->assertStringNotContainsString( 'popupTargetResolverOptions', $opener );
+
+		$start = $this->js_between( $js, 'renderPopupResolverStart', 'renderPopupResolverCreate' );
+		$this->assertStringContainsString( 'popupCreateNew', $start );
+		$this->assertStringContainsString( 'popupChooseExisting', $start );
+		$this->assertStringContainsString( 'goto_confirm_remove', $start );
+		$this->assertStringNotContainsString( 'search_popups', $start );
+		$this->assertStringNotContainsString( 'popupTargetResolverOptions', $start );
 	}
 
 	public function test_popup_resolver_modal_button_styles(): void {
@@ -142,9 +168,13 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$this->assertStringContainsString( 'goto_create', $start );
 		$this->assertStringContainsString( 'goto_choose', $start );
 		$this->assertStringContainsString( 'goto_confirm_remove', $start );
-		$this->assertStringContainsString( "'cancel'", $start );
+		$this->assertStringContainsString( 'rwgcModalFooter( [], true )', $start );
 		$this->assertStringNotContainsString( 'search_popups', $start );
 		$this->assertStringNotContainsString( 'rwgc-popup-search-input', $start );
+
+		$footer = $this->js_between( $js, 'rwgcModalFooter', 'proposalIdForRequest' );
+		$this->assertStringContainsString( 'includeCancel !== false', $footer );
+		$this->assertStringContainsString( "'cancel'", $footer );
 	}
 
 	public function test_create_popup_auto_selects_target(): void {
@@ -163,7 +193,13 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$this->assertStringNotContainsString( 'window.alert', $create );
 		$this->assertStringContainsString( 'proposalIdForRequest', $create );
 		$this->assertStringContainsString( 'setPopupCreateError', $create );
-		$this->assertStringContainsString( 'renderPopupResolverCreateError', $create );
+		$this->assertStringContainsString( 'applyPopupTargetResolution', $create );
+
+		$setter = $this->js_between( $js, 'setPopupCreateError', 'isPopupDuplicateResponse' );
+		$this->assertStringContainsString( 'renderPopupResolver()', $setter );
+
+		$render = $this->js_between( $js, 'renderPopupResolverCreate', 'renderPopupResolverCreateError' );
+		$this->assertStringContainsString( 'renderPopupResolverCreateError( $panel, pr )', $render );
 	}
 
 	public function test_modal_mounted_to_body_and_centered(): void {
@@ -211,7 +247,7 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 
 	public function test_setup_status_label_ready_when_resolved(): void {
 		$js = $this->assistant_js();
-		$fn = $this->js_between( $js, 'function setupStatusLabel', 'function locationOptionLabel' );
+		$fn = $this->js_between( $js, 'setupStatusLabel', 'normalizePopupTargetLabel' );
 
 		$this->assertStringContainsString( 'remainingResolutions', $fn );
 		$this->assertStringContainsString( 'responseCanExecute', $fn );
@@ -291,23 +327,23 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$this->assertStringContainsString( 'showExecuteBlockedMessage', $js );
 		$this->assertStringContainsString( 'applyTrafficResolutionToCard', $js );
 
-		$collect = $this->js_between( $js, 'function collectCardResolutions', 'function recordConditionLearning' );
+		$collect = $this->js_between( $js, 'collectCardResolutions', 'recordConditionLearning' );
 		$this->assertStringContainsString( 'findFieldResolution', $collect );
 		$this->assertStringContainsString( 'cardResolutionEntries', $collect );
 		$this->assertStringContainsString( 'collectPopupTargetResolution', $collect );
 
-		$finalize = $this->js_between( $js, 'function finalizeCardSetup', 'function updateSetupPanel' );
+		$finalize = $this->js_between( $js, 'finalizeCardSetup', 'updateSetupPanel' );
 		$this->assertStringContainsString( 'syncProposalPayload', $finalize );
 		$this->assertStringContainsString( 'unresolvedExecuteItems', $finalize );
 		$this->assertStringContainsString( 'executePayloadTargetMismatches', $finalize );
 
-		$execute = $this->js_between( $js, 'function executeProposal', 'function renderExecutionSummary' );
+		$execute = $this->js_between( $js, 'executeProposal', 'renderExecutionSummary' );
 		$this->assertStringContainsString( 'unresolvedExecuteItems', $execute );
 		$this->assertStringContainsString( 'unresolved_details', $execute );
 		$this->assertStringContainsString( 'logExecutePayloadDebug', $execute );
 		$this->assertStringContainsString( 'executePayloadTargetMismatches', $execute );
 		$this->assertStringContainsString( 'showExecuteFailedMessage', $execute );
-		$fail = $this->js_between( $js, '.fail( function ( jqxhr )', '.always( function ()' );
+		$fail = $this->source_between( $js, '.fail( function ( jqxhr )', '.always( function ()' );
 		$this->assertStringContainsString( 'showExecuteFailedMessage( serverMsg, jqxhr )', $fail );
 		$this->assertStringNotContainsString( 'goWorkflowFromProposal', $fail );
 	}
@@ -323,19 +359,19 @@ class RWGCTargetingAssistantUiRegressionTest extends TestCase {
 		$this->assertStringContainsString( 'collectPopupTargetResolution', $js );
 		$this->assertStringContainsString( 'showTargetExecuteMismatchMessage', $js );
 
-		$auto = $this->js_between( $js, 'function autoMatchPopupTargets', 'function locationOptionLabel' );
+		$auto = $this->js_between( $js, 'autoMatchPopupTargets', 'locationOptionLabel' );
 		$this->assertStringContainsString( 'ensurePopupTargetCardResolutions', $auto );
 
-		$collect = $this->js_between( $js, 'function collectPopupTargetResolution', 'function executePayloadTargetMismatches' );
+		$collect = $this->js_between( $js, 'collectPopupTargetResolution', 'executePayloadTargetMismatches' );
 		$this->assertStringContainsString( "type: 'popup'", $collect );
 		$this->assertStringContainsString( "status: 'valid'", $collect );
 		$this->assertStringContainsString( 'popupTargetResolvedFromCard', $collect );
 
-		$target = $this->js_between( $js, 'function applyTargetResolutionToCard', 'function applyResolutionsToProposalCards' );
+		$target = $this->js_between( $js, 'applyTargetResolutionToCard', 'applyResolutionsToProposalCards' );
 		$this->assertStringContainsString( 'ensurePopupTargetCardResolutions', $target );
 		$this->assertStringContainsString( 'syncPopupTargetActionState', $target );
 
-		$update = $this->js_between( $js, 'function updateActionTargetFromResolution', 'function syncProposalPayload' );
+		$update = $this->js_between( $js, 'updateActionTargetFromResolution', 'syncProposalPayload' );
 		$this->assertStringContainsString( "card.target.status = 'matched'", $update );
 		$this->assertStringContainsString( 'seedPopupTargetCardResolutions', $update );
 	}

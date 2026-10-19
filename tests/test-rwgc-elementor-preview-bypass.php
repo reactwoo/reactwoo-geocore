@@ -40,6 +40,19 @@ function add_action( ...$args ) {
 function add_filter( ...$args ) {
 	unset( $args );
 }
+function absint( $maybeint ) {
+	return (int) abs( (float) $maybeint );
+}
+function wp_unslash( $value ) {
+	return $value;
+}
+function sanitize_key( $key ) {
+	$key = strtolower( (string) $key );
+	return preg_replace( '/[^a-z0-9_\-]/', '', $key );
+}
+function get_queried_object_id() {
+	return 0;
+}
 
 $src = (string) file_get_contents( dirname( __DIR__ ) . '/includes/class-rwgc-elementor.php' );
 $at  = strpos( $src, 'function filter_document_content' );
