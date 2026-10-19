@@ -232,7 +232,7 @@ class RWGC_Settings {
 			$clean = iconv( 'UTF-8', 'UTF-8//IGNORE', $value );
 			$value = false === $clean ? '' : $clean;
 		}
-		$value = function_exists( 'wp_strip_all_tags' ) ? wp_strip_all_tags( $value ) : strip_tags( $value );
+		$value = wp_strip_all_tags( $value );
 		$value = preg_replace( '/[\r\n\t ]+/', ' ', (string) $value );
 		return trim( (string) $value );
 	}

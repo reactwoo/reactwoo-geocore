@@ -374,7 +374,7 @@ class RWGC_MaxMind {
 	 */
 	private static function adopt_legacy_db( $legacy, $canonical ) {
 		$use = $legacy;
-		if ( is_writable( dirname( $canonical ) ) ) {
+		if ( wp_is_writable( dirname( $canonical ) ) ) {
 			// A unique sibling per request, so two first visitors cannot rename a half-written copy.
 			$tmp = $canonical . '.' . bin2hex( random_bytes( 4 ) ) . '.new';
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- Same-directory copy then rename is the atomic replace.
@@ -966,11 +966,7 @@ class RWGC_MaxMind {
 		$dest = (string) $dest;
 		$dir  = dirname( $dest );
 		if ( ! is_dir( $dir ) ) {
-			if ( function_exists( 'wp_mkdir_p' ) ) {
-				wp_mkdir_p( $dir );
-			} else {
-				mkdir( $dir, 0755, true );
-			}
+			wp_mkdir_p( $dir );
 		}
 		$tmp = $dest . '.new';
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- Same-directory rename is the atomic replace.
@@ -1058,10 +1054,7 @@ class RWGC_MaxMind {
 		if ( is_dir( $dir ) ) {
 			return true;
 		}
-		if ( function_exists( 'wp_mkdir_p' ) ) {
-			return (bool) wp_mkdir_p( $dir );
-		}
-		return mkdir( $dir, 0755, true ) || is_dir( $dir );
+		return (bool) wp_mkdir_p( $dir );
 	}
 
 	/**
@@ -1071,7 +1064,7 @@ class RWGC_MaxMind {
 	 * @return bool
 	 */
 	private static function directory_is_usable( $dir ) {
-		if ( ! is_string( $dir ) || '' === $dir || ! is_dir( $dir ) || ! is_writable( $dir ) ) {
+		if ( ! is_string( $dir ) || '' === $dir || ! is_dir( $dir ) || ! wp_is_writable( $dir ) ) {
 			return false;
 		}
 		try {
@@ -1109,21 +1102,36 @@ class RWGC_MaxMind {
 			return;
 		}
 		try {
-			$iterator = new RecursiveIteratorIterator(
-				new RecursiveDirectoryIterator( $dir, FilesystemIterator::SKIP_DOTS ),
-				RecursiveIteratorIterator::CHILD_FIRST
-			);
-			foreach ( $iterator as $file ) {
-				if ( $file->isDir() ) {
-					@rmdir( $file->getPathname() ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup must not replace the saved extract error.
-				} else {
-					self::delete_file( $file->getPathname() );
-				}
+			$filesystem = self::direct_filesystem();
+			if ( $filesystem ) {
+				$filesystem->rmdir( $dir, true );
 			}
-			@rmdir( $dir ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup must not replace the saved extract error.
 		} catch ( \Throwable $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch -- Best-effort cleanup.
 			unset( $e );
 		}
+	}
+
+	/**
+	 * Direct filesystem for temp directories this process created.
+	 *
+	 * Cron and REST must not call request_filesystem_credentials(), which can
+	 * print an FTP form. Extract work stays on the local disk.
+	 *
+	 * @return WP_Filesystem_Direct|null
+	 */
+	private static function direct_filesystem() {
+		if ( ! class_exists( 'WP_Filesystem_Direct', false ) ) {
+			$base   = ABSPATH . 'wp-admin/includes/class-wp-filesystem-base.php';
+			$direct = ABSPATH . 'wp-admin/includes/class-wp-filesystem-direct.php';
+			if ( is_readable( $base ) && is_readable( $direct ) ) {
+				require_once $base;
+				require_once $direct;
+			}
+		}
+		if ( ! class_exists( 'WP_Filesystem_Direct', false ) ) {
+			return null;
+		}
+		return new WP_Filesystem_Direct( null );
 	}
 
 	/**
@@ -1134,11 +1142,7 @@ class RWGC_MaxMind {
 		if ( ! is_string( $path ) || '' === $path || ! file_exists( $path ) ) {
 			return;
 		}
-		if ( function_exists( 'wp_delete_file' ) ) {
-			wp_delete_file( $path );
-			return;
-		}
-		unlink( $path );
+		wp_delete_file( $path );
 	}
 
 	/**

@@ -3,7 +3,38 @@
 ## Status
 done
 
-Geo Core tests on current main failed for the same reasons as the 1.9.14 PR run: popup-resolver PHPUnit checks sliced the wrong JavaScript, three helpers were looked up as `function function …`, and attribution tests called `setcookie()` after PHPUnit had already written output. The assistant behaviour and cookie classification are unchanged. No plugin file and no version bump.
+Merged latest main (squash of PR #94, `79a869b`) into the 1.9.16 Plugin Check branch. Both the filesystem fixes and the popup-resolver / attribution test fixes are kept. Not tagged and not uploaded.
+
+## Files changed
+- `includes/class-rwgc-settings.php` — `wp_strip_all_tags()` only.
+- `includes/class-rwgc-maxmind.php` — WordPress filesystem helpers for directory checks, creation, and cleanup.
+- `includes/integrations/elementor/class-rwgc-elementor-ajax.php` — phpcs ignore for the read-only Elementor action check.
+- `includes/class-rwgc-rest.php` — phpcs ignore for LiteSpeed's `litespeed_control_set_nocache`.
+- `tests/bootstrap.php` — stubs for those WordPress helpers.
+- `tests/Engine/RWGC_MaxMindFollowupsTest.php` — missing destination directory, archive extract plus cleanup, and a stubbed download.
+- `tests/Admin/RWGCTargetingAssistantUiRegressionTest.php` — popup-resolver slices from PR #94.
+- `tests/Engine/RWGC_ContextAttributionTest.php` — separate processes from PR #94.
+- `tests/test-rwgc-elementor-preview-bypass.php` — CLI stubs from PR #94.
+- `tests/test-rwgc-geoip-ip.php` — stub `wp_strip_all_tags()` for the CLI script, which does not load the PHPUnit bootstrap.
+- `.github/workflows/test.yml` — Geo Core tests run on `cursor/*` pull requests.
+- Version 1.9.16 in the plugin header, `RWGC_VERSION`, readme, changelog, and the wporg build guard.
+
+## Not changed
+- `post__not_in` queries.
+- Visitor-facing MaxMind, Elementor, or attribution behaviour.
+- No merge of this PR, no tag, and no WordPress.org upload.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist --filter RWGC_MaxMind` — 59 tests, 221 assertions, OK (before this merge).
+- `php tests/test-rwgc-wporg-build.php` — all guards passed.
+
+## Remaining errors
+- None from this change.
+
+## Status
+done
+
+Geo Core tests on current main failed for the same reasons as the 1.9.14 PR run: popup-resolver PHPUnit checks sliced the wrong JavaScript, three helpers were looked up as `function function …`, and attribution tests called `setcookie()` after PHPUnit had already written output. The assistant behaviour and cookie classification are unchanged. No plugin file and no version bump. Squash-merged to main as `79a869b`.
 
 ## Files changed
 - `tests/Admin/RWGCTargetingAssistantUiRegressionTest.php` — assert the popup hint, cancel footer, and create-error renderer in the functions that own them; stop doubling the `function` prefix.

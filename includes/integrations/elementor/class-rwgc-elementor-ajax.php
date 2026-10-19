@@ -39,7 +39,7 @@ class RWGC_Elementor_Ajax {
 			return false;
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- read-only context detect.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only detection of Elementor's own admin-ajax action. No data is saved and no form is processed.
 		$action = isset( $_REQUEST['action'] ) ? sanitize_key( wp_unslash( (string) $_REQUEST['action'] ) ) : '';
 		self::$is_elementor_ajax = ( 'elementor_ajax' === $action );
 		return self::$is_elementor_ajax;

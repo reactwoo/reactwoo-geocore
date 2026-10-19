@@ -86,6 +86,90 @@ if ( ! function_exists( 'wp_unschedule_event' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_remote_get' ) ) {
+	/**
+	 * @param string               $url  URL.
+	 * @param array<string, mixed> $args Arguments.
+	 * @return array<string, mixed>|\WP_Error
+	 */
+	function wp_remote_get( $url, $args = array() ) {
+		unset( $args );
+		if ( isset( $GLOBALS['rwgc_test_wp_remote_get'] ) && is_callable( $GLOBALS['rwgc_test_wp_remote_get'] ) ) {
+			return $GLOBALS['rwgc_test_wp_remote_get']( $url );
+		}
+		return new WP_Error( 'rwgc_test_http', 'No HTTP stub.' );
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_response_code' ) ) {
+	/**
+	 * @param mixed $response Response.
+	 * @return int
+	 */
+	function wp_remote_retrieve_response_code( $response ) {
+		return is_array( $response ) && isset( $response['code'] ) ? (int) $response['code'] : 0;
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_response_message' ) ) {
+	/**
+	 * @param mixed $response Response.
+	 * @return string
+	 */
+	function wp_remote_retrieve_response_message( $response ) {
+		return is_array( $response ) && isset( $response['message'] ) ? (string) $response['message'] : '';
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_header' ) ) {
+	/**
+	 * @param mixed  $response Response.
+	 * @param string $header   Header name.
+	 * @return string
+	 */
+	function wp_remote_retrieve_header( $response, $header ) {
+		if ( ! is_array( $response ) || empty( $response['headers'][ $header ] ) ) {
+			return '';
+		}
+		return (string) $response['headers'][ $header ];
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_body' ) ) {
+	/**
+	 * @param mixed $response Response.
+	 * @return string
+	 */
+	function wp_remote_retrieve_body( $response ) {
+		return is_array( $response ) && isset( $response['body'] ) ? (string) $response['body'] : '';
+	}
+}
+
+if ( ! function_exists( 'wp_get_upload_dir' ) ) {
+	/**
+	 * @return array<string, string>
+	 */
+	function wp_get_upload_dir() {
+		$base = isset( $GLOBALS['rwgc_test_upload_basedir'] ) ? (string) $GLOBALS['rwgc_test_upload_basedir'] : sys_get_temp_dir();
+		return array( 'basedir' => $base );
+	}
+}
+
+if ( ! function_exists( 'wp_tempnam' ) ) {
+	/**
+	 * @param string $filename Prefix.
+	 * @param string $dir      Directory.
+	 * @return string
+	 */
+	function wp_tempnam( $filename = '', $dir = '' ) {
+		$dir  = is_string( $dir ) && '' !== $dir ? $dir : sys_get_temp_dir();
+		$path = rtrim( $dir, '/\\' ) . '/' . ( $filename ? $filename : 'rwgc' ) . bin2hex( random_bytes( 4 ) );
+		file_put_contents( $path, '' );
+		$GLOBALS['rwgc_test_tempnam_paths'][] = $path;
+		return $path;
+	}
+}
+
 /**
  * @covers RWGC_MaxMind
  */
@@ -109,7 +193,7 @@ final class RWGC_MaxMindFollowupsTest extends TestCase {
 		parent::setUp();
 		$GLOBALS['rwgc_test_cron']    = array();
 		$GLOBALS['rwgc_test_options'] = array();
-		unset( $GLOBALS['rwgc_test_filters']['rwgc_maxmind_cron_jitter'], $GLOBALS['rwgc_test_filters']['rwgc_maxmind_extract_parents'], $GLOBALS['rwgc_test_filters']['rwgc_maxmind_extract_work_dir'] );
+		unset( $GLOBALS['rwgc_test_filters']['rwgc_maxmind_cron_jitter'], $GLOBALS['rwgc_test_filters']['rwgc_maxmind_extract_parents'], $GLOBALS['rwgc_test_filters']['rwgc_maxmind_extract_work_dir'], $GLOBALS['rwgc_test_wp_remote_get'], $GLOBALS['rwgc_test_tempnam_paths'] );
 	}
 
 	/**
@@ -263,6 +347,151 @@ final class RWGC_MaxMindFollowupsTest extends TestCase {
 		unlink( $source );
 		unlink( $dest );
 		rmdir( $dir );
+	}
+
+	/**
+	 * @return void
+	 */
+	public function test_install_creates_a_missing_destination_directory(): void {
+		$root   = sys_get_temp_dir() . '/rwgc-install-missing-' . bin2hex( random_bytes( 3 ) );
+		$source = $root . '/incoming.mmdb';
+		$dest   = $root . '/uploads/reactwoo-geocore/GeoLite2-Country.mmdb';
+		mkdir( $root );
+		file_put_contents( $source, 'new-database' );
+
+		$installed = RWGC_MaxMind::install_database_file( $source, $dest );
+
+		$this->assertSame( $dest, $installed );
+		$this->assertSame( 'new-database', (string) file_get_contents( $dest ) );
+		$this->assertFileDoesNotExist( $dest . '.new' );
+		unlink( $source );
+		unlink( $dest );
+		rmdir( dirname( $dest ) );
+		rmdir( dirname( $dest, 2 ) );
+		rmdir( $root );
+	}
+
+	/**
+	 * Build a GeoLite2-shaped tar.gz. The database has the MaxMind marker and is not a real mmdb.
+	 *
+	 * @param string $root Empty directory.
+	 * @return string Archive path.
+	 */
+	private function write_country_archive( $root ) {
+		mkdir( $root . '/GeoLite2-Country_20261019', 0755, true );
+		file_put_contents(
+			$root . '/GeoLite2-Country_20261019/GeoLite2-Country.mmdb',
+			str_repeat( "\0", 200 ) . "\xab\xcd\xefMaxMind.com"
+		);
+		$archive = $root . '/GeoLite2-Country.tar.gz';
+		$command = 'tar -czf ' . escapeshellarg( $archive ) . ' -C ' . escapeshellarg( $root ) . ' GeoLite2-Country_20261019';
+		exec( $command, $output, $code );
+		unset( $output );
+		$this->assertSame( 0, $code );
+		$this->assertFileExists( $archive );
+		return $archive;
+	}
+
+	/**
+	 * @param string $dir Directory.
+	 * @return void
+	 */
+	private function remove_fixture( $dir ) {
+		if ( ! is_dir( $dir ) ) {
+			return;
+		}
+		$iterator = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator( $dir, FilesystemIterator::SKIP_DOTS ),
+			RecursiveIteratorIterator::CHILD_FIRST
+		);
+		foreach ( $iterator as $file ) {
+			if ( $file->isDir() ) {
+				rmdir( $file->getPathname() );
+			} else {
+				unlink( $file->getPathname() );
+			}
+		}
+		rmdir( $dir );
+	}
+
+	/**
+	 * @return void
+	 */
+	public function test_extract_opens_the_archive_and_removes_the_work_directory(): void {
+		$root   = sys_get_temp_dir() . '/rwgc-extract-' . bin2hex( random_bytes( 3 ) );
+		$source = $root . '/src';
+		$parent = $root . '/parent';
+		$live   = $root . '/live';
+		mkdir( $root );
+		mkdir( $parent );
+		mkdir( $live );
+		$archive = $this->write_country_archive( $source );
+		file_put_contents( $live . '/GeoLite2-Country.mmdb', 'live-bytes' );
+		$GLOBALS['rwgc_test_filters']['rwgc_maxmind_extract_parents'] = static function () use ( $parent ) {
+			return array( $parent );
+		};
+
+		$result = RWGC_MaxMind::extract_database_archive( $archive, $live );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'rwgc_mmdb_invalid', $result->get_error_code() );
+		$this->assertSame( array(), glob( $parent . '/tmp-*' ) ?: array() );
+		$this->assertFileDoesNotExist( substr( $archive, 0, -3 ) );
+		$this->assertFileExists( $archive );
+		$this->assertSame( 'live-bytes', (string) file_get_contents( $live . '/GeoLite2-Country.mmdb' ) );
+		$this->remove_fixture( $root );
+	}
+
+	/**
+	 * @return void
+	 */
+	public function test_download_extracts_the_archive_and_deletes_temporary_files(): void {
+		$root    = sys_get_temp_dir() . '/rwgc-download-' . bin2hex( random_bytes( 3 ) );
+		$uploads = $root . '/uploads';
+		mkdir( $root );
+		mkdir( $uploads );
+		$archive = $this->write_country_archive( $root . '/src' );
+		$body    = (string) file_get_contents( $archive );
+		$GLOBALS['rwgc_test_upload_basedir']           = $uploads;
+		$GLOBALS['rwgc_test_options']['rwgc_settings'] = array(
+			'maxmind_account_id'  => '123456',
+			'maxmind_license_key' => 'AbC123_key_mmk',
+			'db_file_path'        => '',
+		);
+		$GLOBALS['rwgc_test_wp_remote_get'] = static function ( $url ) use ( $body ) {
+			if ( false !== strpos( (string) $url, 'download.maxmind.com' ) ) {
+				return array(
+					'code'    => 302,
+					'message' => 'Found',
+					'headers' => array( 'location' => 'https://example.test/signed.tar.gz' ),
+					'body'    => '',
+				);
+			}
+			return array(
+				'code'    => 200,
+				'message' => 'OK',
+				'headers' => array(),
+				'body'    => $body,
+			);
+		};
+
+		$result = RWGC_MaxMind::update_database();
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'rwgc_mmdb_invalid', $result->get_error_code() );
+		$this->assertNotEmpty( $GLOBALS['rwgc_test_tempnam_paths'] );
+		foreach ( $GLOBALS['rwgc_test_tempnam_paths'] as $tmp ) {
+			$this->assertFileDoesNotExist( $tmp );
+			$this->assertFileDoesNotExist( $tmp . '.tar.gz' );
+			$this->assertFileDoesNotExist( $tmp . '.tar' );
+		}
+		$storage = $uploads . '/reactwoo-geocore';
+		$this->assertSame( array(), glob( $storage . '/tmp-*' ) ?: array() );
+		$this->assertFileDoesNotExist( $storage . '/GeoLite2-Country.mmdb' );
+		$this->assertStringContainsString( 'could not be opened', (string) $GLOBALS['rwgc_test_options']['rwgc_settings']['db_last_error'] );
+		$this->assertNotSame( '', $GLOBALS['rwgc_test_options']['rwgc_settings']['db_last_failure_at'] );
+		unset( $GLOBALS['rwgc_test_upload_basedir'] );
+		$this->remove_fixture( $root );
 	}
 
 	/**

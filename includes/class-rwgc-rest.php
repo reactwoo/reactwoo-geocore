@@ -720,7 +720,7 @@ class RWGC_REST {
 			}
 		}
 		if ( function_exists( 'do_action' ) ) {
-			// LiteSpeed Cache: mark this request uncacheable (no-op when LSCWP is not active).
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- LiteSpeed Cache's own hook. A prefixed name would not mark the request uncacheable.
 			do_action( 'litespeed_control_set_nocache', 'reactwoo-geocore visitor location' );
 		}
 
