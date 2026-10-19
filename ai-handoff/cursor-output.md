@@ -9,10 +9,12 @@ Geo Core tests on current main failed for the same reasons as the 1.9.14 PR run:
 - `tests/Admin/RWGCTargetingAssistantUiRegressionTest.php` — assert the popup hint, cancel footer, and create-error renderer in the functions that own them; stop doubling the `function` prefix.
 - `tests/Engine/RWGC_ContextAttributionTest.php` — run each case in its own process so `setcookie()` happens before any output.
 - `tests/test-rwgc-elementor-preview-bypass.php` — stub `absint()`, `wp_unslash()`, `sanitize_key()`, and `get_queried_object_id()` so the logged-out preview assertion can run.
+- `.github/workflows/test.yml` — run the suite on every pull request, including `cursor/*`, so a green check means the tests ran.
 
 ## Not changed
 - `admin/js/rwgc-targeting-assistant.js` and attribution cookie writes.
 - Plugin version (still 1.9.15). No tag, no WordPress.org upload.
+- Visitor-facing plugin code.
 
 ## Commands
 - `vendor/bin/phpunit -c phpunit.xml.dist` — 177 tests, 1227 assertions, OK.
