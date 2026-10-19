@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.15] - 2026-10-19
+
 ### Fixed
-- A MaxMind download, a failed download, a manual upload, or the one-time copy of a dated database no longer writes back the settings snapshot from the start of the request. That snapshot lived for the whole HTTP call, so a license key or fallback country saved while the download was running was replaced by the old values.
+- Fix: MaxMind download/upload/copy no longer overwrites settings an admin saved while it ran
 
 ## [1.9.14] - 2026-10-17
 
