@@ -3,7 +3,13 @@
 use PHPUnit\Framework\TestCase;
 
 /**
+ * Cookie writes use setcookie(). PHPUnit's printer has already produced output
+ * in the parent process, so each case runs in its own process where headers
+ * are still unsent.
+ *
  * @covers RWGC_Context_Attribution
+ * @runTestsInSeparateProcesses
+ * @preserveGlobalState disabled
  */
 final class RWGC_ContextAttributionTest extends TestCase {
 
