@@ -85,6 +85,27 @@ class RWGC_Settings {
 	}
 
 	/**
+	 * Settings as stored now, not the copy WordPress cached at the start of this request.
+	 *
+	 * `rwgc_settings` is autoloaded, so get_option() keeps returning the alloptions
+	 * snapshot from the first read. A MaxMind download holds that snapshot across
+	 * the HTTP call. Writing it back afterwards replaces a license key or fallback
+	 * country an admin saved while the download was in flight. Drop the cached
+	 * option first. Deleting alloptions (the same call WordPress uses) forces the
+	 * next read to load the database row. Do not write the stale alloptions array
+	 * back into the cache.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function get_settings_fresh() {
+		if ( function_exists( 'wp_cache_delete' ) ) {
+			wp_cache_delete( self::OPTION_KEY, 'options' );
+			wp_cache_delete( 'alloptions', 'options' );
+		}
+		return self::get_settings();
+	}
+
+	/**
 	 * Get single setting value.
 	 *
 	 * @param string $key     Setting key.

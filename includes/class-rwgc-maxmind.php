@@ -383,7 +383,7 @@ class RWGC_MaxMind {
 			}
 			self::delete_file( $tmp );
 		}
-		$settings = RWGC_Settings::get_settings();
+		$settings = RWGC_Settings::get_settings_fresh();
 		if ( ! isset( $settings['db_file_path'] ) || $settings['db_file_path'] !== $use ) {
 			$settings['db_file_path'] = $use;
 			if ( empty( $settings['db_last_updated'] ) ) {
@@ -675,7 +675,7 @@ class RWGC_MaxMind {
 	 * @return array<string, mixed> Saved settings.
 	 */
 	public static function record_download_success( $db_path ) {
-		$settings                       = RWGC_Settings::get_settings();
+		$settings                       = RWGC_Settings::get_settings_fresh();
 		$settings['db_file_path']       = (string) $db_path;
 		$settings['db_last_updated']    = gmdate( 'c' );
 		$settings['db_last_success_at'] = $settings['db_last_updated'];
@@ -701,7 +701,7 @@ class RWGC_MaxMind {
 	 * @return array<string, mixed> Saved settings.
 	 */
 	public static function record_manual_upload( $db_path ) {
-		$settings                    = RWGC_Settings::get_settings();
+		$settings                    = RWGC_Settings::get_settings_fresh();
 		$settings['db_file_path']    = (string) $db_path;
 		$settings['db_last_updated']    = gmdate( 'c' );
 		$settings['db_last_error']      = '';
@@ -1171,7 +1171,7 @@ class RWGC_MaxMind {
 		if ( ! ( $error instanceof WP_Error ) ) {
 			return;
 		}
-		$settings                       = RWGC_Settings::get_settings();
+		$settings                       = RWGC_Settings::get_settings_fresh();
 		$settings['db_last_error']      = $error->get_error_message();
 		$settings['db_last_failure_at'] = gmdate( 'c' );
 		RWGC_Settings::update( $settings );
