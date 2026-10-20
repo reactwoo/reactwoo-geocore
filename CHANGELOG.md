@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.17] - 2026-10-20
+
+### Added
+- WordPress 6.9+ Abilities (MCP) exposes three read-only admin tools: list capabilities, describe one capability, and read site context (Geo ready, licensed satellites, active experiences). Conditions and actions stay on the Decision Runtime.
+
 ## [1.9.16] - 2026-10-19
 
 ### Fixed

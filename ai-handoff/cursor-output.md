@@ -3,6 +3,22 @@
 ## Status
 done
 
+WordPress 6.9+ Abilities bridge now exposes three read-only admin tools (reactwoo/list-capabilities, reactwoo/describe-capability, reactwoo/site-context) with show_in_rest. Capability ids are not MCP tools. Version 1.9.17, rebased onto origin/main.
+
+## Files changed
+- includes/platform/class-rwgc-wp-abilities-adapter.php — three admin tools instead of one ability per capability.
+- docs/contracts/capabilities.md, tests/test-rwgc-platform-capabilities.php.
+
+## Not changed
+- Satellite capability registration. Decision Cloud. Condition and action execution.
+
+## Commands
+- php tests/test-rwgc-platform-capabilities.php — passed before rebase
+- php tests/test-rwgc-elementor-ajax.php — passed before rebase
+
+## Status
+done
+
 Merged latest main (squash of PR #94, `79a869b`) into the 1.9.16 Plugin Check branch. Both the filesystem fixes and the popup-resolver / attribution test fixes are kept. Not tagged and not uploaded.
 
 ## Files changed

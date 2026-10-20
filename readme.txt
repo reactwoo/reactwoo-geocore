@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.16
+Stable tag: 1.9.17
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -165,6 +165,9 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.17 =
+* Administrators on WordPress 6.9+ can list ReactWoo capabilities, describe one capability, and read which satellites are licensed. These three tools are visible to MCP clients. Pricing, experiments, and other actions are not tools.
+
 = 1.9.16 =
 * Status messages and MaxMind archive cleanup use WordPress text and filesystem helpers.
 
@@ -296,6 +299,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.17 =
+WordPress 6.9+ administrators get three read-only ReactWoo tools for MCP. Country detection and visibility rules are unchanged.
 
 = 1.9.16 =
 Status messages and MaxMind archive cleanup use WordPress text and filesystem helpers.
