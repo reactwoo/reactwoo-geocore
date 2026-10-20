@@ -162,6 +162,14 @@ final class RWGC_WP_Abilities_Adapter {
 	}
 
 	/**
+	 * JSON Schema for one tool.
+	 *
+	 * List and site context are valid with no arguments. WordPress passes null
+	 * when a readonly ability is called without `input`, then rejects null
+	 * against `type: object` unless the schema has an object default. That is
+	 * the same default core uses for `core/get-site-info`. Describe still
+	 * requires `id`, so it has no default.
+	 *
 	 * @param string $name Tool name.
 	 * @return array<string, mixed>
 	 */
@@ -170,6 +178,7 @@ final class RWGC_WP_Abilities_Adapter {
 			return array(
 				'type'                 => 'object',
 				'additionalProperties' => false,
+				'default'              => array(),
 				'properties'           => array(
 					'type' => array(
 						'type'        => 'string',
@@ -195,6 +204,7 @@ final class RWGC_WP_Abilities_Adapter {
 		return array(
 			'type'                 => 'object',
 			'additionalProperties' => false,
+			'default'              => array(),
 			'properties'           => array(),
 		);
 	}

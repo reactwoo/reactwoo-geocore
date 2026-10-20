@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- The WordPress 6.9+ list-capabilities and site-context tools accept a call that omits `input`. Without an object default, that call was rejected before the tool ran.
+
 ## [1.9.17] - 2026-10-20
 
 ### Added
