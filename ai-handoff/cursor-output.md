@@ -3,6 +3,22 @@
 ## Status
 done
 
+Read-only ReactWoo ability tools now default omitted input to an object, matching `core/get-site-info`. A no-argument run was rejected as "input is not of type object" before the callback.
+
+## Files changed
+- includes/platform/class-rwgc-wp-abilities-adapter.php — `default` on list and site-context input schemas. Describe still requires `id`.
+- tests/test-rwgc-platform-capabilities.php — locks those schema defaults.
+- CHANGELOG.md — unreleased note.
+
+## Not changed
+- Permission checks, tool ids, capability registration, MaxMind, visitor rendering.
+
+## Commands
+- php tests/test-rwgc-platform-capabilities.php — passed (28 assertions)
+
+## Status
+done
+
 WordPress 6.9+ Abilities bridge now exposes three read-only admin tools (reactwoo/list-capabilities, reactwoo/describe-capability, reactwoo/site-context) with show_in_rest. Capability ids are not MCP tools. Version 1.9.17, rebased onto origin/main.
 
 ## Files changed

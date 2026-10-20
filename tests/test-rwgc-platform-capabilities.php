@@ -184,6 +184,20 @@ rwgc_cap_assert(
 );
 $list_schema = RWGC_WP_Abilities_Adapter::input_schema( 'reactwoo/list-capabilities' );
 rwgc_cap_assert( 'list tool schema is an object', isset( $list_schema['type'] ) && 'object' === $list_schema['type'] );
+rwgc_cap_assert(
+	'list tool defaults omitted input to an object',
+	array_key_exists( 'default', $list_schema ) && array() === $list_schema['default']
+);
+$site_schema = RWGC_WP_Abilities_Adapter::input_schema( 'reactwoo/site-context' );
+rwgc_cap_assert(
+	'site tool defaults omitted input to an object',
+	isset( $site_schema['type'] ) && 'object' === $site_schema['type'] && array_key_exists( 'default', $site_schema ) && array() === $site_schema['default']
+);
+$describe_schema = RWGC_WP_Abilities_Adapter::input_schema( 'reactwoo/describe-capability' );
+rwgc_cap_assert(
+	'describe schema still requires an id',
+	isset( $describe_schema['required'] ) && in_array( 'id', $describe_schema['required'], true ) && ! array_key_exists( 'default', $describe_schema )
+);
 
 $listed     = RWGC_WP_Abilities_Adapter::list_capabilities( null );
 $listed_ids = array();

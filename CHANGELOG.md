@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.18] - 2026-10-20
+
+### Fixed
+- Fix: list-capabilities and site-context abilities accept calls with no input
+
 ## [1.9.17] - 2026-10-20
 
 ### Added
