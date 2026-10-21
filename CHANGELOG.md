@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.19] - 2026-10-21
+
+### Changed
+- Updated bundled composer/ca-bundle to 1.6.0
+
 ## [1.9.18] - 2026-10-20
 
 ### Fixed

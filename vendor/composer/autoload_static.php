@@ -7,48 +7,48 @@ namespace Composer\Autoload;
 class ComposerStaticInit31113f328c784efba08f80d4d975e0fc
 {
     public static $prefixLengthsPsr4 = array (
-        'R' => 
+        'R' =>
         array (
             'RWGC\\' => 5,
         ),
-        'M' => 
+        'M' =>
         array (
             'MaxMind\\WebService\\' => 19,
             'MaxMind\\Exception\\' => 18,
             'MaxMind\\Db\\' => 11,
         ),
-        'G' => 
+        'G' =>
         array (
             'GeoIp2\\' => 7,
         ),
-        'C' => 
+        'C' =>
         array (
             'Composer\\CaBundle\\' => 18,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'RWGC\\' => 
+        'RWGC\\' =>
         array (
             0 => __DIR__ . '/../..' . '/includes',
         ),
-        'MaxMind\\WebService\\' => 
+        'MaxMind\\WebService\\' =>
         array (
             0 => __DIR__ . '/..' . '/maxmind/web-service-common/src/WebService',
         ),
-        'MaxMind\\Exception\\' => 
+        'MaxMind\\Exception\\' =>
         array (
             0 => __DIR__ . '/..' . '/maxmind/web-service-common/src/Exception',
         ),
-        'MaxMind\\Db\\' => 
+        'MaxMind\\Db\\' =>
         array (
             0 => __DIR__ . '/..' . '/maxmind-db/reader/src/MaxMind/Db',
         ),
-        'GeoIp2\\' => 
+        'GeoIp2\\' =>
         array (
             0 => __DIR__ . '/..' . '/geoip2/geoip2/src',
         ),
-        'Composer\\CaBundle\\' => 
+        'Composer\\CaBundle\\' =>
         array (
             0 => __DIR__ . '/..' . '/composer/ca-bundle/src',
         ),

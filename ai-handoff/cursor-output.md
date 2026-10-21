@@ -3,6 +3,28 @@
 ## Status
 done
 
+Bundled `composer/ca-bundle` is 1.6.0. geoip2 stays v3.4.0. Plugin version is 1.9.19. Not merged and not tagged.
+
+## Files changed
+- `composer.lock` and `vendor/composer/ca-bundle/` — 1.5.14 to 1.6.0, plus the Composer metadata that records that package.
+- Plugin header, `RWGC_VERSION`, readme stable tag, changelog, and the wporg build guard — 1.9.19.
+
+## Not changed
+- Other locked dependencies, including geoip2 v3.4.0.
+- Root `composer.json` stays in the wporg zip.
+- No tag and no merge.
+
+## Commands
+- `composer update composer/ca-bundle` — lock moved only ca-bundle 1.5.14 to 1.6.0.
+- `composer install --no-dev --optimize-autoloader` — committed vendor stays production-only.
+- `python3 scripts/package_zip.py --target wporg` — zip contains `composer.json`, `composer/ca-bundle` 1.6.0, and `geoip2/geoip2` v3.4.0. No `ext/` C files and no `dev-bin/release.sh`.
+
+## Remaining errors
+- None from this change.
+
+## Status
+done
+
 Read-only ReactWoo ability tools now default omitted input to an object, matching `core/get-site-info`. A no-argument run was rejected as "input is not of type object" before the callback.
 
 ## Files changed
