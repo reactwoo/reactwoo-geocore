@@ -3,7 +3,7 @@
         'name' => 'reactwoo/reactwoo-geocore',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'fe088515ef27c74f126039caca88e0c883aa8d20',
+        'reference' => '9f81abe728c847e64d09b2d85c742937d63ea073',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         'composer/ca-bundle' => array(
-            'pretty_version' => '1.5.14',
-            'version' => '1.5.14.0',
-            'reference' => '0c8abba0634f637bd78c4e451981da368d403463',
+            'pretty_version' => '1.6.0',
+            'version' => '1.6.0.0',
+            'reference' => '2c99cf2e92516985dea4914812b93d9daf01cdd6',
             'type' => 'library',
             'install_path' => __DIR__ . '/./ca-bundle',
             'aliases' => array(),
@@ -49,7 +49,7 @@
         'reactwoo/reactwoo-geocore' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'fe088515ef27c74f126039caca88e0c883aa8d20',
+            'reference' => '9f81abe728c847e64d09b2d85c742937d63ea073',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
