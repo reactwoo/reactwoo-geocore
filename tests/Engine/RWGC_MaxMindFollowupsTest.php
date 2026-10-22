@@ -267,6 +267,34 @@ final class RWGC_MaxMindFollowupsTest extends TestCase {
 	/**
 	 * @return void
 	 */
+	public function test_upload_and_download_failures_redirect_with_the_settings_notice(): void {
+		$admin  = (string) file_get_contents( dirname( __DIR__, 2 ) . '/includes/class-rwgc-admin.php' );
+		$upload = $this->admin_method_source( $admin, 'handle_upload_mmdb' );
+		$this->assertSame( 6, substr_count( $upload, 'redirect_maxmind_with_notice(' ) );
+		$this->assertStringNotContainsString( 'wp_safe_redirect(', $upload );
+		$this->assertStringContainsString( "'error'", $upload );
+		$this->assertStringContainsString( "'updated'", $upload );
+
+		$maintain = $this->admin_method_source( $admin, 'handle_maxmind_maintenance_action' );
+		$this->assertStringContainsString( 'redirect_maxmind_with_notice( $target )', $maintain );
+		$this->assertStringContainsString( "'updated' === \$result['type'] ? 'updated' : 'error'", $maintain );
+
+		$redirect = $this->admin_method_source( $admin, 'redirect_maxmind_with_notice' );
+		$this->assertStringContainsString( "set_transient( 'settings_errors', get_settings_errors(), 30 )", $redirect );
+		$this->assertStringContainsString( 'RWGC_MaxMind::credentials_saved_redirect( $url )', $redirect );
+	}
+
+	/**
+	 * @param string $source File contents.
+	 * @param string $name   Method name.
+	 * @return string
+	 */
+	private function admin_method_source( $source, $name ) {
+		$matched = preg_match( '/function ' . preg_quote( $name, '/' ) . '\(.*?\n\t\}/s', $source, $found );
+		$this->assertSame( 1, $matched, $name );
+		return $found[0];
+	}
+
 	public function test_credentials_saved_redirect_includes_settings_updated(): void {
 		$url = RWGC_MaxMind::credentials_saved_redirect( 'https://example.test/wp-admin/admin.php?page=rwgc-integrations-maxmind' );
 		$this->assertStringContainsString( 'settings-updated=true', $url );

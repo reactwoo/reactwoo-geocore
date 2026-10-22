@@ -1121,9 +1121,7 @@ class RWGC_Admin {
 
 		if ( ! isset( $_FILES['rwgc_mmdb']['name'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- check_admin_referer() above.
 			add_settings_error( 'rwgc_maxmind', 'rwgc_upload_missing', __( 'No file uploaded or upload failed.', 'reactwoo-geocore' ), 'error' );
-			set_transient( 'settings_errors', get_settings_errors(), 30 );
-			wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
-			exit;
+			self::redirect_maxmind_with_notice();
 		}
 
 		$file     = $_FILES['rwgc_mmdb']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- wp_handle_upload() validates the upload.
@@ -1134,9 +1132,7 @@ class RWGC_Admin {
 
 		if ( 'mmdb' !== $ext || $size <= 0 || $size > $max_size ) {
 			add_settings_error( 'rwgc_maxmind', 'rwgc_upload_ext', __( 'Invalid file. Upload a GeoLite2 Country .mmdb database (100 MB or smaller).', 'reactwoo-geocore' ), 'error' );
-			set_transient( 'settings_errors', get_settings_errors(), 30 );
-			wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
-			exit;
+			self::redirect_maxmind_with_notice();
 		}
 
 		require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -1157,18 +1153,14 @@ class RWGC_Admin {
 		if ( ! is_array( $upload ) || ! empty( $upload['error'] ) || empty( $upload['file'] ) ) {
 			$message = ( is_array( $upload ) && ! empty( $upload['error'] ) ) ? (string) $upload['error'] : __( 'Failed to store the uploaded database.', 'reactwoo-geocore' );
 			add_settings_error( 'rwgc_maxmind', 'rwgc_upload_move', $message, 'error' );
-			set_transient( 'settings_errors', get_settings_errors(), 30 );
-			wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
-			exit;
+			self::redirect_maxmind_with_notice();
 		}
 
 		$uploaded_path = $upload['file'];
 		if ( ! self::is_maxmind_database_file( $uploaded_path ) ) {
 			wp_delete_file( $uploaded_path );
 			add_settings_error( 'rwgc_maxmind', 'rwgc_upload_ext', __( 'That file is not a MaxMind database.', 'reactwoo-geocore' ), 'error' );
-			set_transient( 'settings_errors', get_settings_errors(), 30 );
-			wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
-			exit;
+			self::redirect_maxmind_with_notice();
 		}
 
 		RWGC_MaxMind::ensure_storage_dir();
@@ -1177,9 +1169,7 @@ class RWGC_Admin {
 		if ( ! self::copy_uploaded_database( $uploaded_path, $dest_path ) ) {
 			wp_delete_file( $uploaded_path );
 			add_settings_error( 'rwgc_maxmind', 'rwgc_upload_move', __( 'Failed to store the uploaded database.', 'reactwoo-geocore' ), 'error' );
-			set_transient( 'settings_errors', get_settings_errors(), 30 );
-			wp_safe_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) );
-			exit;
+			self::redirect_maxmind_with_notice();
 		}
 		if ( $uploaded_path !== $dest_path ) {
 			wp_delete_file( $uploaded_path );
@@ -1188,8 +1178,24 @@ class RWGC_Admin {
 		RWGC_MaxMind::record_manual_upload( $dest_path );
 
 		add_settings_error( 'rwgc_maxmind', 'rwgc_upload_success', __( 'MaxMind database uploaded successfully.', 'reactwoo-geocore' ), 'updated' );
+		self::redirect_maxmind_with_notice();
+	}
+
+	/**
+	 * Send the admin back to the MaxMind screen with a settings notice.
+	 *
+	 * settings_errors() only reads the stored transient when the URL includes
+	 * settings-updated, so a failure redirect without that query arg shows nothing.
+	 *
+	 * @param string $url Optional target. Empty uses the MaxMind admin URL.
+	 * @return void
+	 */
+	private static function redirect_maxmind_with_notice( $url = '' ) {
 		set_transient( 'settings_errors', get_settings_errors(), 30 );
-		wp_safe_redirect( RWGC_MaxMind::credentials_saved_redirect( function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ) ) );
+		if ( '' === (string) $url ) {
+			$url = function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' );
+		}
+		wp_safe_redirect( RWGC_MaxMind::credentials_saved_redirect( $url ) );
 		exit;
 	}
 
@@ -1314,13 +1320,17 @@ class RWGC_Admin {
 			return;
 		}
 		$result = RWGC_MaxMind::run_maintenance_action( $action );
-		if ( 'updated' === $result['type'] ) {
-			add_settings_error( 'rwgc_maxmind', $result['code'], $result['message'], 'updated' );
-			set_transient( 'settings_errors', get_settings_errors(), 30 );
-		}
-		// A failure is already saved as the last error and shown once by the page.
 		$target = remove_query_arg( array( 'rwgc_action', '_wpnonce', 'settings-updated' ) );
-		wp_safe_redirect( 'updated' === $result['type'] ? RWGC_MaxMind::credentials_saved_redirect( $target ) : $target );
+		if ( '' !== (string) $result['message'] ) {
+			add_settings_error(
+				'rwgc_maxmind',
+				$result['code'],
+				$result['message'],
+				'updated' === $result['type'] ? 'updated' : 'error'
+			);
+			self::redirect_maxmind_with_notice( $target );
+		}
+		wp_safe_redirect( $target );
 		exit;
 	}
 

@@ -64,6 +64,23 @@ final class RWGC_MaxMindCredentialsTest extends TestCase {
 		$this->assertSame( 'rwgc_bad_account_id', $error->get_error_code() );
 	}
 
+	public function test_401_hint_shows_at_most_the_last_four_characters(): void {
+		$key  = 'AbCdEfGhIjKlMn';
+		$hint = RWGC_MaxMind::license_rejection_hint( $key );
+		$this->assertStringContainsString( 'KlMn', $hint );
+		$this->assertStringContainsString( '14 characters', $hint );
+		$this->assertStringNotContainsString( substr( $key, 0, 6 ), $hint );
+		$this->assertStringNotContainsString( 'AbCdEfGhIj', $hint );
+
+		$short = RWGC_MaxMind::license_rejection_hint( 'ab12' );
+		$this->assertStringContainsString( '4 characters', $short );
+		$this->assertStringNotContainsString( 'ab12', $short );
+
+		$src = (string) file_get_contents( dirname( __DIR__, 2 ) . '/includes/class-rwgc-maxmind.php' );
+		$this->assertStringNotContainsString( 'substr( $license, 0, 6 )', $src );
+		$this->assertStringNotContainsString( 'key starting', $src );
+	}
+
 	public function test_license_key_with_foreign_characters_is_rejected_before_calling_maxmind(): void {
 		$error = RWGC_MaxMind::validate_credentials( '123456', 'AbC123•••' );
 		$this->assertInstanceOf( WP_Error::class, $error );
