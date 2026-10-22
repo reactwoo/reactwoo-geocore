@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.20] - 2026-10-22
+
+### Fixed
+- A rejected MaxMind database upload or download now redirects with the admin error notice. Success still shows its notice.
+- A MaxMind 401 no longer shows the start of the saved license key. The hint is at most the last four characters.
+
 ## [1.9.19] - 2026-10-21
 
 ### Changed

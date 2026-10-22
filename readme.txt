@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.19
+Stable tag: 1.9.20
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -165,6 +165,9 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.20 =
+* A rejected MaxMind database upload shows its error notice, and a MaxMind 401 shows at most the last four characters of the saved license key.
+
 = 1.9.19 =
 * Updated bundled composer/ca-bundle to 1.6.0
 
@@ -305,6 +308,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.20 =
+A rejected MaxMind database upload shows its error notice, and a MaxMind 401 shows at most the last four characters of the saved license key.
 
 = 1.9.19 =
 Updated bundled composer/ca-bundle to 1.6.0

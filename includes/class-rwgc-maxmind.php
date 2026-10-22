@@ -219,6 +219,32 @@ class RWGC_MaxMind {
 	}
 
 	/**
+	 * Admin hint for a MaxMind 401. At most the last four characters of the key.
+	 *
+	 * A short key is not shown at all, because those characters would be the whole key.
+	 *
+	 * @param string $license Normalized license key.
+	 * @return string
+	 */
+	public static function license_rejection_hint( $license ) {
+		$license = (string) $license;
+		$len     = strlen( $license );
+		if ( $len > 4 ) {
+			return sprintf(
+				/* translators: 1: last four characters of the saved license key, 2: saved key length. */
+				__( 'MaxMind rejected the saved pair. Check that the Account ID is the number shown under Account Information on maxmind.com (not your email or username), that the key ending "%1$s" (%2$d characters) was created under that same account, and wait a few minutes if the key is brand new.', 'reactwoo-geocore' ),
+				substr( $license, -4 ),
+				$len
+			);
+		}
+		return sprintf(
+			/* translators: %d: saved license key length. */
+			__( 'MaxMind rejected the saved pair. Check that the Account ID is the number shown under Account Information on maxmind.com (not your email or username), that the saved key (%d characters) was created under that same account, and wait a few minutes if the key is brand new.', 'reactwoo-geocore' ),
+			$len
+		);
+	}
+
+	/**
 	 * Show only the last four characters of a saved license key.
 	 *
 	 * @param string $key Stored key.
@@ -613,12 +639,7 @@ class RWGC_MaxMind {
 				$body_snippet
 			);
 			if ( 401 === (int) $code ) {
-				$error_msg .= ' ' . sprintf(
-					/* translators: 1: first six characters of the saved license key, 2: saved key length. */
-					__( 'MaxMind rejected the saved pair. Check that the Account ID is the number shown under Account Information on maxmind.com (not your email or username), that the key starting "%1$s" (%2$d characters) was created under that same account, and wait a few minutes if the key is brand new.', 'reactwoo-geocore' ),
-					substr( $license, 0, 6 ),
-					strlen( $license )
-				);
+				$error_msg .= ' ' . self::license_rejection_hint( $license );
 			}
 			$error = new WP_Error( 'rwgc_http_error', $error_msg );
 			self::record_error( $error );

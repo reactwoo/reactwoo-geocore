@@ -1,6 +1,27 @@
 # Cursor output
 
 ## Status
+needs-review
+
+Draft only. Geo Core 1.9.20 makes a rejected MaxMind upload or download redirect with `settings-updated=true`, so the admin error notice renders. A MaxMind 401 hint shows at most the last four characters of the saved license key. Not merged and not tagged.
+
+## Files changed
+- `includes/class-rwgc-admin.php` — upload and download failure redirects go through `redirect_maxmind_with_notice()`. Success still uses that same notice redirect.
+- `includes/class-rwgc-maxmind.php` — `license_rejection_hint()` replaces the first-six-character 401 hint.
+- Tests for the hint and the redirect source.
+- Plugin header, `RWGC_VERSION`, readme stable tag, changelog, and the wporg build guard — 1.9.20.
+
+## Not changed
+- The saved license key itself, the on-screen mask of the credentials field, and the persistent "Last MaxMind download failed" box.
+- No tag and no merge.
+
+## Commands
+- Source assertions for the redirect helper and the 401 hint were checked against the edited files. PHP is not installed in this environment, so PHPUnit runs in CI.
+
+## Remaining errors
+- None from this change.
+
+## Status
 done
 
 Bundled `composer/ca-bundle` is 1.6.0. geoip2 stays v3.4.0. Plugin version is 1.9.19. Not merged and not tagged.
