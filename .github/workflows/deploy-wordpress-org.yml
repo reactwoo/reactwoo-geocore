@@ -1,0 +1,223 @@
+# Publish ReactWoo Geo Core to the WordPress.org plugin directory.
+#
+# Plugin code is deployed only for a published GitHub Release, a v* tag push,
+# or a manual run whose selected ref is a v* tag. A push or manual run on main
+# never publishes plugin code.
+#
+# Readme and directory artwork updates between releases use
+# 10up/action-wordpress-plugin-asset-update. That job runs only when a main
+# push changes nothing except readme.txt and .wordpress-org/, or when the
+# workflow is dispatched on main. IGNORE_OTHER_FILES is required because SVN
+# trunk is the packaged build (RWGC_DISTRIBUTION rewritten to wporg), not a
+# raw checkout. Functional changes still ship only through the tag deploy.
+#
+# Secrets (repository Actions secrets, never committed):
+#   SVN_USERNAME  WordPress.org username
+#   SVN_PASSWORD  WordPress.org SVN password
+#
+# This file does not replace publish-update.yml (R2 and the ReactWoo updates API).
+
+name: Deploy to WordPress.org
+
+on:
+  release:
+    types: [published]
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+    # Path filters apply to branch pushes only. Tag pushes still start a deploy.
+    paths:
+      - "readme.txt"
+      - ".wordpress-org/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wporg-svn-reactwoo-geocore
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy plugin tag
+    if: >-
+      github.event_name == 'release'
+      || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))
+      || (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          tools: composer:v2
+          coverage: none
+
+      - name: Composer install (production vendor)
+        run: composer install --no-dev --optimize-autoloader
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Build WordPress.org zip
+        run: python3 scripts/package_zip.py --target wporg
+
+      - name: Unpack WordPress.org build
+        id: unpack
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f reactwoo-geocore-wporg.zip
+          dest="${RUNNER_TEMP}/wporg-plugin"
+          rm -rf "${dest}"
+          mkdir -p "${dest}"
+          unzip -q reactwoo-geocore-wporg.zip -d "${dest}"
+          build="${dest}/reactwoo-geocore"
+          if [[ ! -f "${build}/reactwoo-geocore.php" || ! -f "${build}/readme.txt" ]]; then
+            echo "Unpacked zip is missing the plugin root."
+            find "${dest}" -maxdepth 2 -type f | head -n 40
+            exit 1
+          fi
+          echo "build_dir=${build}" >> "${GITHUB_OUTPUT}"
+
+      - name: Pre-deploy verification
+        id: verify
+        shell: bash
+        env:
+          BUILD: ${{ steps.unpack.outputs.build_dir }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+
+          header="$(sed -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*//p' "${BUILD}/reactwoo-geocore.php" | head -n1 | tr -d '\r')"
+          stable="$(sed -n 's/^Stable tag:[[:space:]]*//p' "${BUILD}/readme.txt" | head -n1 | tr -d '\r')"
+          if [[ "${GITHUB_EVENT_NAME}" == "release" ]]; then
+            tag_version="${RELEASE_TAG}"
+          else
+            tag_version="${GITHUB_REF_NAME}"
+          fi
+          tag_version="${tag_version#v}"
+
+          echo "Plugin header Version: ${header}"
+          echo "Readme Stable tag: ${stable}"
+          echo "Tag version: ${tag_version}"
+
+          if [[ -z "${header}" || -z "${stable}" || -z "${tag_version}" || "${header}" != "${stable}" || "${stable}" != "${tag_version}" ]]; then
+            echo "Pre-deploy verification failed: plugin header Version, readme Stable tag, and tag version must be identical."
+            exit 1
+          fi
+
+          prohibited=0
+          while IFS= read -r -d '' path; do
+            echo "Prohibited file: ${path#"${BUILD}/"}"
+            prohibited=1
+          done < <(find "${BUILD}" -type f \( \
+            -name 'release.sh' -o \
+            -path '*/dev-bin/*' -o \
+            -name '*.c' -o \
+            -name '*.h' -o \
+            -name '*.m4' -o \
+            -name '*.w32' -o \
+            -name 'class-rwgc-routing.php' -o \
+            -name 'class-rwgc-page-version-routing.php' -o \
+            -name 'class-rwgc-variant-manager.php' \
+          \) -print0)
+          if [[ "${prohibited}" -ne 0 ]]; then
+            echo "Pre-deploy verification failed: dev-bin/release.sh, C sources, or Pro classes are in the build."
+            exit 1
+          fi
+
+          assets_in_build="$(find "${BUILD}" \( \
+            -name '.wordpress-org' -o \
+            -name 'banner-772x250.png' -o \
+            -name 'banner-1544x500.png' -o \
+            -name 'screenshot-*.png' -o \
+            -name 'icon-128x128.png' -o \
+            -name 'icon-256x256.png' -o \
+            -name 'icon.svg' \
+          \) -print)"
+          if [[ -n "${assets_in_build}" ]]; then
+            echo "Pre-deploy verification failed: WordPress.org assets are inside the plugin build."
+            printf '%s\n' "${assets_in_build}"
+            exit 1
+          fi
+
+          echo "version=${header}" >> "${GITHUB_OUTPUT}"
+
+      - name: Deploy to WordPress.org
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: reactwoo-geocore
+          BUILD_DIR: ${{ steps.unpack.outputs.build_dir }}
+          ASSETS_DIR: .wordpress-org
+          VERSION: ${{ steps.verify.outputs.version }}
+
+  assets:
+    name: Update readme and assets
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+      || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Decide whether this push is readme and assets only
+        id: scope
+        if: github.event_name == 'push'
+        shell: bash
+        env:
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          only=false
+          if [[ "${PUSH_BEFORE}" != "0000000000000000000000000000000000000000" ]] && git cat-file -e "${PUSH_BEFORE}^{commit}" 2>/dev/null; then
+            only=true
+            found=0
+            while IFS= read -r file; do
+              found=1
+              case "${file}" in
+                readme.txt|.wordpress-org/*)
+                  echo "Allowed: ${file}"
+                  ;;
+                *)
+                  echo "Not a readme/asset change: ${file}"
+                  only=false
+                  ;;
+              esac
+            done < <(git diff --name-only "${PUSH_BEFORE}" "${GITHUB_SHA}")
+            if [[ "${found}" -eq 0 ]]; then
+              only=false
+            fi
+          fi
+          echo "only=${only}" >> "${GITHUB_OUTPUT}"
+          if [[ "${only}" == "true" ]]; then
+            echo "This push only changes readme.txt and/or .wordpress-org/. Updating WordPress.org assets."
+          else
+            echo "Skipping the WordPress.org asset update. Plugin code ships on a v* tag or a published release."
+          fi
+
+      - name: Update WordPress.org readme and assets
+        if: github.event_name == 'workflow_dispatch' || steps.scope.outputs.only == 'true'
+        uses: 10up/action-wordpress-plugin-asset-update@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: reactwoo-geocore
+          ASSETS_DIR: .wordpress-org
+          README_NAME: readme.txt
+          IGNORE_OTHER_FILES: "true"
