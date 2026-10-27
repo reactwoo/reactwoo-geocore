@@ -3,6 +3,35 @@
 ## Status
 needs-review
 
+Geo Core 1.9.21 is the first WordPress.org directory release. Header Version, `RWGC_VERSION`, readme Stable tag, and block asset versions are 1.9.21. Not merged, not tagged, and the WordPress.org deploy workflow was not run.
+
+## Files changed
+- `reactwoo-geocore.php` — Version and `RWGC_VERSION` 1.9.21.
+- `readme.txt` — Stable tag, changelog, and upgrade notice. Tested up to stays 7.1 (current WordPress major; latest release is 7.1.3). Requires PHP stays 8.1, matching the header.
+- `CHANGELOG.md` — 1.9.21 entry. The only commit on main since `v1.9.20` is the WordPress.org SVN deploy workflow (`3142f45`).
+- `blocks/geo-content/index.asset.php` and `blocks/experience-slot/editor.asset.php` — script versions 1.9.21.
+- `tests/test-rwgc-wporg-build.php` — version assertions 1.9.21.
+
+## Not changed
+- `composer.json` and `package.json` have no version field.
+- `.github/workflows/deploy-wordpress-org.yml` and `publish-update.yml`.
+- No tag, no GitHub Release, no deploy workflow run.
+
+## Commands
+- `python3 scripts/package_zip.py --target wporg` — `reactwoo-geocore-wporg.zip`.
+- Zip scan: no `dev-bin/` or `release.sh`, no `.c`/`.h`/`.m4`/`.w32`, no `class-rwgc-routing.php`, `class-rwgc-page-version-routing.php`, or `class-rwgc-variant-manager.php`, no `icon-128`/`icon-256`. Header Version, `RWGC_VERSION`, and Stable tag are 1.9.21. Plugin URI `https://reactwoo.com/geo-core/` differs from Author URI `https://reactwoo.com/`. `RWGC_DISTRIBUTION` inside the zip is `wporg`.
+- sha256 `f77b43f3ab6f2ad326b4462cc5f7f5c7f3232b2ed77b4ad432c9b662e34dd3b2`, 707561 bytes, 347 entries.
+- `python3 tests/test-rwgc-wporg-zip-guard.py` — passed.
+- `python3 tests/test-rwgc-wporg-upload-precheck.py --require-zip` — 44 checks, 0 failed. Known WARN: `textdomain_mismatch`.
+- `php tests/test-rwgc-wporg-build.php` — all guards passed.
+- Plugin Check is still to run against the built zip.
+
+## Remaining errors
+- Plugin Check counts are not recorded yet.
+
+## Status
+needs-review
+
 Draft only. Geo Core 1.9.20 makes a rejected MaxMind upload or download redirect with `settings-updated=true`, so the admin error notice renders. A MaxMind 401 hint shows at most the last four characters of the saved license key. Not merged and not tagged.
 
 ## Files changed
