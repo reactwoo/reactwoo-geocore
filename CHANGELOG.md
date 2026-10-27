@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.21] - 2026-10-27
+
+### Added
+- First WordPress.org directory release; adds automated WordPress.org deploy workflow. The packaged build publishes to the `reactwoo-geocore` directory only on a GitHub Release or v* tag. Readme and directory artwork can update from main without shipping plugin code.
+
 ## [1.9.20] - 2026-10-22
 
 ### Fixed
