@@ -24,10 +24,10 @@ Geo Core 1.9.21 is the first WordPress.org directory release. Header Version, `R
 - `python3 tests/test-rwgc-wporg-zip-guard.py` — passed.
 - `python3 tests/test-rwgc-wporg-upload-precheck.py --require-zip` — 44 checks, 0 failed. Known WARN: `textdomain_mismatch`.
 - `php tests/test-rwgc-wporg-build.php` — all guards passed.
-- Plugin Check is still to run against the built zip.
+- Plugin Check 2.1.0 on WordPress 7.1.3, slug `reactwoo-geocore`, low-severity included: 0 errors, 4 warnings, all `WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_exclude` (`visibility-rules-edit.php:193`, `class-rwgc-shortcodes.php:89`, `class-rwgc-visibility-rule-editor-presenter.php:91` and `:109`).
 
 ## Remaining errors
-- Plugin Check counts are not recorded yet.
+- None. The 4 PostNotIn warnings match the baseline.
 
 ## Status
 needs-review
