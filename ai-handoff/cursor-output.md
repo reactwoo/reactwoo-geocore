@@ -3,6 +3,30 @@
 ## Status
 needs-review
 
+Geo Core 1.9.22 stops a logged-out visitor from choosing a country with `X-Forwarded-For` (or `X-Real-IP`, `True-Client-IP`, `CF-Connecting-IP`, `CF-IPCountry`) unless `REMOTE_ADDR` is a trusted proxy. Draft PR only. Not merged, not tagged.
+
+## Files changed
+- `includes/class-rwgc-geoip.php` — trust decision, right-hand `X-Forwarded-For` walk, bundled Cloudflare ranges (`rwgc_cloudflare_ip_cidrs`), `rwgc_is_trusted_proxy`, CF-IPCountry, legacy Cloudflare mode, admin notices.
+- `includes/class-rwgc-settings.php` — `behind_cloudflare` and `trusted_proxies`. A partial save does not invent an explicit Cloudflare off, so upgrades keep legacy trust until Settings is saved.
+- `admin/views/settings-page.php` — Behind Cloudflare and Trusted proxies.
+- `admin/css/admin.css` — settings form stacks at 782px.
+- `tests/test-rwgc-geoip-ip.php` — spoofed headers, trusted proxy, Cloudflare ranges.
+- Version 1.9.22 in the plugin header, `RWGC_VERSION`, readme, changelog, block assets, and the WordPress.org build guard.
+
+## Not changed
+- No tag, no merge, no WordPress.org deploy. QUIC.cloud stays an opt-in checkbox. `rwgc_visitor_ip` still runs last.
+
+## Commands
+- `php tests/test-rwgc-geoip-ip.php` — all assertions passed.
+- `php tests/test-rwgc-wporg-build.php` — all guards passed. Stable tag and `RWGC_VERSION` are 1.9.22.
+- No wp-admin browser pass: this environment has no WordPress site. Mobile layout is the 782px settings-form rules.
+
+## Remaining errors
+- None from the GeoIP IP tests.
+
+## Status
+needs-review
+
 Geo Core 1.9.21 is the first WordPress.org directory release. Header Version, `RWGC_VERSION`, readme Stable tag, and block asset versions are 1.9.21. Not merged, not tagged, and the WordPress.org deploy workflow was not run.
 
 ## Files changed

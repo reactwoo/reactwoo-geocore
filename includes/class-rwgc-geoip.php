@@ -34,6 +34,8 @@ class RWGC_GeoIP {
 		add_action( self::QUIC_REFRESH_HOOK, array( __CLASS__, 'refresh_quic_cloud_ips' ) );
 		add_action( 'admin_init', array( __CLASS__, 'sync_quic_cloud_schedule' ) );
 		add_action( 'update_option_' . RWGC_Settings::OPTION_KEY, array( __CLASS__, 'sync_quic_cloud_schedule' ) );
+		add_action( 'admin_notices', array( __CLASS__, 'render_proxy_admin_notice' ) );
+		add_action( 'rwgc_platform_admin_notices', array( __CLASS__, 'render_proxy_admin_notice' ) );
 	}
 
 	/**
@@ -48,6 +50,7 @@ class RWGC_GeoIP {
 		$cached = $ip ? RWGC_Cache::get( $ip ) : null;
 		if ( is_array( $cached ) && ! empty( $cached ) ) {
 			$cached['cached'] = true;
+			$cached = self::apply_cloudflare_country( $cached );
 			/**
 			 * Filter final geo data.
 			 */
@@ -56,6 +59,7 @@ class RWGC_GeoIP {
 
 		$data = self::lookup_ip( $ip );
 		$data['cached'] = false;
+		$data = self::apply_cloudflare_country( $data );
 
 		// A missing database is a site problem, not a visitor answer. Do not keep it for the cache TTL.
 		if ( $ip && self::should_cache_lookup( $data ) ) {
@@ -78,13 +82,16 @@ class RWGC_GeoIP {
 	}
 
 	/**
-	 * Cloudflare IPv4/IPv6 ranges (https://www.cloudflare.com/ips/).
-	 * Used so CF-Connecting-IP is trusted only when the TCP peer is Cloudflare.
+	 * Cloudflare IPv4/IPv6 ranges (https://www.cloudflare.com/ips-v4 and ips-v6).
+	 *
+	 * Bundled so visitor rendering never fetches them. CF-Connecting-IP and
+	 * CF-IPCountry are used only when Behind Cloudflare is on and REMOTE_ADDR
+	 * is inside this list.
 	 *
 	 * @return list<string>
 	 */
 	public static function cloudflare_ip_cidrs() {
-		return array(
+		$cidrs = array(
 			'173.245.48.0/20',
 			'103.21.244.0/22',
 			'103.22.200.0/22',
@@ -108,29 +115,50 @@ class RWGC_GeoIP {
 			'2a06:98c0::/29',
 			'2c0f:f248::/32',
 		);
+		/**
+		 * Replace or extend the bundled Cloudflare ranges.
+		 *
+		 * @param list<string> $cidrs CIDRs shipped with this version.
+		 */
+		$filtered = apply_filters( 'rwgc_cloudflare_ip_cidrs', $cidrs );
+		if ( ! is_array( $filtered ) ) {
+			return $cidrs;
+		}
+		$out = array();
+		foreach ( $filtered as $cidr ) {
+			if ( ! is_string( $cidr ) ) {
+				continue;
+			}
+			$cidr = trim( $cidr );
+			if ( '' !== $cidr ) {
+				$out[] = $cidr;
+			}
+		}
+		return $out;
 	}
 
 	/**
-	 * Get current visitor IP (public address).
+	 * Get current visitor IP.
 	 *
-	 * Client-controlled forwarding headers (X-Forwarded-For, CF-Connecting-IP,
-	 * Client-IP, …) are not trusted unless the TCP peer is a Cloudflare edge,
-	 * a private/reserved reverse-proxy address, or a trusted public proxy.
-	 * Spoofed leftmost XFF values are ignored. A trusted proxy contributes the
-	 * rightmost public hop that is not itself a trusted proxy (QUIC.cloud's
-	 * header can end with the PoP address). A private peer uses that same walk:
-	 * a local reverse proxy often leaves REMOTE_ADDR on a loopback address while
-	 * the QUIC.cloud PoP is still the last public hop.
+	 * Only REMOTE_ADDR is used unless that address is a trusted proxy. A trusted
+	 * proxy is an entry under Settings → Trusted proxies, a QUIC.cloud edge while
+	 * that option is on, or a published Cloudflare range while Behind Cloudflare
+	 * is on. Private and loopback addresses are not trusted on their own.
 	 *
-	 * Trusted public proxies are off by default. Settings → “My site uses
-	 * QUIC.cloud CDN” trusts only QUIC.cloud's published edge list. Developers
-	 * can add other CDN ranges with the `rwgc_trusted_proxy_cidrs` filter.
-	 * `rwgc_visitor_ip` still runs last.
+	 * X-Forwarded-For, Forwarded, X-Real-IP, True-Client-IP, Client-IP,
+	 * CF-Connecting-IP, and CF-IPCountry are ignored for every other peer.
+	 * Behind a trusted proxy, X-Forwarded-For is walked from the right and
+	 * trusted hops are skipped. The left-most value is never taken because it
+	 * is first. CF-Connecting-IP is used only when Behind Cloudflare is on and
+	 * REMOTE_ADDR is inside the bundled Cloudflare ranges.
+	 *
+	 * `rwgc_is_trusted_proxy` can force the trust decision. `rwgc_visitor_ip`
+	 * still runs last.
 	 *
 	 * @return string
 	 */
 	public static function get_current_ip() {
-		$remote = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+		$remote = self::server_header( 'REMOTE_ADDR' );
 		$ip     = self::resolve_client_ip( $remote );
 
 		/**
@@ -149,39 +177,56 @@ class RWGC_GeoIP {
 	 */
 	private static function resolve_client_ip( $remote ) {
 		$remote = trim( (string) $remote );
-		$cf     = self::first_public_ip( isset( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) : '' );
-
-		if ( '' !== $cf && self::is_cloudflare_ip( $remote ) ) {
-			return $cf;
-		}
-
-		if ( self::is_public_ip( $remote ) ) {
-			if ( self::peer_is_trusted_proxy( $remote ) ) {
-				$from_header = self::visitor_from_trusted_xff( $remote );
-				if ( '' !== $from_header ) {
-					return $from_header;
-				}
-			}
+		if ( ! self::is_trusted_proxy( $remote ) ) {
 			return $remote;
 		}
 
-		// Origin is on a private/reserved address (typical reverse proxy).
-		// Do not trust CF-Connecting-IP here — clients can send that header when
-		// the TCP peer is not Cloudflare. Skip trusted proxy hops in X-Forwarded-For
-		// (QUIC.cloud appends its PoP) and use the visitor hop in front of them.
-		// If every public hop is a trusted proxy, keep the rightmost public address
-		// rather than the private REMOTE_ADDR.
+		if ( self::cloudflare_headers_trusted( $remote ) ) {
+			$cf = self::first_public_ip( self::server_header( 'HTTP_CF_CONNECTING_IP' ) );
+			if ( '' !== $cf && ! self::is_trusted_hop( $cf ) ) {
+				return $cf;
+			}
+		}
+
 		$from_header = self::visitor_from_trusted_xff( $remote );
 		if ( '' !== $from_header ) {
 			return $from_header;
 		}
 
-		$xff = self::rightmost_public_ip( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) : '' );
-		if ( '' !== $xff ) {
-			return $xff;
+		foreach ( array( 'HTTP_X_REAL_IP', 'HTTP_TRUE_CLIENT_IP' ) as $key ) {
+			$single = self::single_forwarded_ip( self::server_header( $key ) );
+			if ( '' !== $single && ! self::ips_equal( $single, $remote ) && ! self::is_trusted_hop( $single ) ) {
+				return $single;
+			}
 		}
 
 		return $remote;
+	}
+
+	/**
+	 * @param string $key $_SERVER key.
+	 * @return string
+	 */
+	private static function server_header( $key ) {
+		if ( ! isset( $_SERVER[ $key ] ) ) {
+			return '';
+		}
+		$value = sanitize_text_field( wp_unslash( $_SERVER[ $key ] ) );
+		return is_string( $value ) ? trim( $value ) : '';
+	}
+
+	/**
+	 * One public IP. A comma-separated list is ignored.
+	 *
+	 * @param string $header Header value.
+	 * @return string
+	 */
+	private static function single_forwarded_ip( $header ) {
+		$header = trim( (string) $header );
+		if ( '' === $header || false !== strpos( $header, ',' ) ) {
+			return '';
+		}
+		return self::first_public_ip( $header );
 	}
 
 	/**
@@ -220,20 +265,6 @@ class RWGC_GeoIP {
 	private static function first_public_ip( $header ) {
 		$ips = self::public_ips_from_header( $header );
 		return isset( $ips[0] ) ? $ips[0] : '';
-	}
-
-	/**
-	 * Rightmost public hop — the address a reverse proxy typically appends.
-	 *
-	 * @param string $header Header value.
-	 * @return string
-	 */
-	private static function rightmost_public_ip( $header ) {
-		$ips = self::public_ips_from_header( $header );
-		if ( empty( $ips ) ) {
-			return '';
-		}
-		return $ips[ count( $ips ) - 1 ];
 	}
 
 	/**
@@ -310,19 +341,290 @@ class RWGC_GeoIP {
 	}
 
 	/**
-	 * Extra trusted proxy CIDRs or exact IPs for CDNs other than Cloudflare and QUIC.cloud.
+	 * Behind Cloudflare: on, off, or legacy.
+	 *
+	 * Legacy is an upgraded site whose saved settings predate the checkbox.
+	 * Those sites keep the previous Cloudflare behaviour until an admin saves.
+	 *
+	 * @return string on|off|legacy
+	 */
+	public static function cloudflare_mode() {
+		if ( ! function_exists( 'get_option' ) || ! class_exists( 'RWGC_Settings', false ) ) {
+			return 'off';
+		}
+		$stored = get_option( RWGC_Settings::OPTION_KEY, array() );
+		if ( ! is_array( $stored ) || array() === $stored ) {
+			return 'off';
+		}
+		if ( ! array_key_exists( 'behind_cloudflare', $stored ) ) {
+			return 'legacy';
+		}
+		return ! empty( $stored['behind_cloudflare'] ) ? 'on' : 'off';
+	}
+
+	/**
+	 * Whether a Cloudflare peer may supply CF-Connecting-IP and CF-IPCountry.
+	 *
+	 * @return bool
+	 */
+	public static function cloudflare_trust_active() {
+		$active = in_array( self::cloudflare_mode(), array( 'on', 'legacy' ), true );
+		/**
+		 * Override the Behind Cloudflare checkbox.
+		 *
+		 * @param bool $active Saved choice, or legacy trust before that choice is saved.
+		 */
+		return (bool) apply_filters( 'rwgc_behind_cloudflare', $active );
+	}
+
+	/**
+	 * ISO country from CF-IPCountry when the TCP peer is Cloudflare and the mode is on.
+	 *
+	 * XX (unknown) and any value that is not two letters are ignored.
+	 *
+	 * @return string
+	 */
+	public static function trusted_cloudflare_country() {
+		$remote = self::server_header( 'REMOTE_ADDR' );
+		if ( ! self::cloudflare_headers_trusted( $remote ) ) {
+			return '';
+		}
+		$code = strtoupper( trim( self::server_header( 'HTTP_CF_IPCOUNTRY' ) ) );
+		if ( ! preg_match( '/^[A-Z]{2}$/', $code ) || 'XX' === $code ) {
+			return '';
+		}
+		return $code;
+	}
+
+	/**
+	 * Apply a trusted CF-IPCountry onto a lookup payload.
+	 *
+	 * @param array<string, mixed> $data Geo payload.
+	 * @return array<string, mixed>
+	 */
+	public static function apply_cloudflare_country( array $data ) {
+		$code = self::trusted_cloudflare_country();
+		if ( '' === $code ) {
+			return $data;
+		}
+		$data['country_code'] = $code;
+		$data['country_name'] = self::get_country_name( $code );
+		$data['source']       = 'cloudflare';
+		if ( class_exists( 'RWGC_API', false ) ) {
+			$map = RWGC_API::get_country_currency_map();
+			if ( isset( $map[ $code ] ) ) {
+				$data['currency'] = strtoupper( (string) $map[ $code ] );
+			}
+		}
+		return $data;
+	}
+
+	/**
+	 * Keep valid IP and CIDR tokens from the Trusted proxies field.
+	 *
+	 * @param mixed $raw Textarea, CSV, or list.
+	 * @return list<string>
+	 */
+	public static function parse_trusted_proxy_list( $raw ) {
+		$tokens = self::proxy_list_tokens( $raw );
+		$out    = array();
+		$seen   = array();
+		foreach ( $tokens as $token ) {
+			if ( isset( $seen[ $token ] ) || ! self::is_valid_proxy_token( $token ) ) {
+				continue;
+			}
+			$seen[ $token ] = true;
+			$out[]          = $token;
+		}
+		return $out;
+	}
+
+	/**
+	 * Tokens that are not an IP address or a CIDR range.
+	 *
+	 * @param mixed $raw Textarea, CSV, or list.
+	 * @return list<string>
+	 */
+	public static function invalid_trusted_proxy_tokens( $raw ) {
+		$bad = array();
+		foreach ( self::proxy_list_tokens( $raw ) as $token ) {
+			if ( ! self::is_valid_proxy_token( $token ) ) {
+				$bad[] = $token;
+			}
+		}
+		return $bad;
+	}
+
+	/**
+	 * @param mixed $raw Textarea, CSV, or list.
+	 * @return list<string>
+	 */
+	private static function proxy_list_tokens( $raw ) {
+		$parts = array();
+		if ( is_array( $raw ) ) {
+			foreach ( $raw as $item ) {
+				if ( is_string( $item ) ) {
+					$parts[] = $item;
+				}
+			}
+		} else {
+			$split = preg_split( '/[\s,;]+/', (string) $raw );
+			$parts = is_array( $split ) ? $split : array();
+		}
+		$tokens = array();
+		foreach ( $parts as $part ) {
+			$token = trim( (string) $part );
+			if ( '' !== $token ) {
+				$tokens[] = $token;
+			}
+		}
+		return $tokens;
+	}
+
+	/**
+	 * @param string $token IP or CIDR.
+	 * @return bool
+	 */
+	public static function is_valid_proxy_token( $token ) {
+		$token = trim( (string) $token );
+		if ( '' === $token ) {
+			return false;
+		}
+		if ( false === strpos( $token, '/' ) ) {
+			return (bool) filter_var( $token, FILTER_VALIDATE_IP );
+		}
+		$parts = explode( '/', $token, 2 );
+		if ( 2 !== count( $parts ) || ! filter_var( $parts[0], FILTER_VALIDATE_IP ) ) {
+			return false;
+		}
+		if ( ! preg_match( '/^\d+$/', $parts[1] ) ) {
+			return false;
+		}
+		$bits = (int) $parts[1];
+		if ( $bits < 1 ) {
+			return false;
+		}
+		$max = false !== strpos( $parts[0], ':' ) ? 128 : 32;
+		return $bits <= $max;
+	}
+
+	/**
+	 * Admin notice when Cloudflare trust is still the upgraded default, when
+	 * Cloudflare is detected while the option is off, or when a private peer
+	 * is sending a forwarding header that Geo Core now ignores.
+	 *
+	 * @return void
+	 */
+	public static function render_proxy_admin_notice() {
+		static $shown = false;
+		if ( $shown ) {
+			return;
+		}
+		if ( function_exists( 'wp_doing_ajax' ) && wp_doing_ajax() ) {
+			return;
+		}
+		if ( class_exists( 'RWGC_Admin', false ) ) {
+			if ( ! RWGC_Admin::can_manage() ) {
+				return;
+			}
+		} elseif ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		$shown = true;
+
+		$remote = self::server_header( 'REMOTE_ADDR' );
+		$url    = function_exists( 'admin_url' ) ? admin_url( 'admin.php?page=rwgc-settings' ) : '';
+		$mode   = self::cloudflare_mode();
+
+		if ( 'legacy' === $mode ) {
+			self::render_notice_paragraph(
+				__( 'ReactWoo Geo Core is still reading the visitor IP from Cloudflare, because this site was updated from a version that did that whenever the connection came from Cloudflare. Behind Cloudflare stays on until you save Geo Core settings. Confirm it there, or turn it off if this site is not using Cloudflare.', 'reactwoo-geocore' ),
+				$url,
+				__( 'Open Geo Core settings', 'reactwoo-geocore' )
+			);
+		} elseif ( 'off' === $mode && ! self::cloudflare_trust_active() && self::is_cloudflare_ip( $remote ) && self::request_has_cloudflare_visitor_header() ) {
+			self::render_notice_paragraph(
+				__( 'This request reached WordPress from a Cloudflare address, and Behind Cloudflare is turned off. Country, prices, and payment methods will follow the Cloudflare edge instead of the visitor. Turn on Behind Cloudflare in Geo Core settings.', 'reactwoo-geocore' ),
+				$url,
+				__( 'Open Geo Core settings', 'reactwoo-geocore' )
+			);
+		}
+
+		if ( '' !== $remote && ! self::is_public_ip( $remote ) && ! self::is_trusted_proxy( $remote ) && self::request_has_forwarding_header() ) {
+			self::render_notice_paragraph(
+				sprintf(
+					/* translators: %s: private address PHP sees for this request. */
+					__( 'PHP sees the private address %s together with a forwarding header such as X-Forwarded-For. Geo Core ignores that header, so a visitor cannot choose a country. If a reverse proxy on this server sets the header, add that address under Trusted proxies in Geo Core settings.', 'reactwoo-geocore' ),
+					$remote
+				),
+				$url,
+				__( 'Open Geo Core settings', 'reactwoo-geocore' )
+			);
+		}
+	}
+
+	/**
+	 * @param string $message    Notice text.
+	 * @param string $url        Settings URL.
+	 * @param string $link_label Link text.
+	 * @return void
+	 */
+	private static function render_notice_paragraph( $message, $url, $link_label ) {
+		echo '<div class="notice notice-warning rwgc-notice"><p>';
+		echo esc_html( $message );
+		if ( is_string( $url ) && '' !== $url ) {
+			echo ' <a href="' . esc_url( $url ) . '">' . esc_html( $link_label ) . '</a>';
+		}
+		echo '</p></div>';
+	}
+
+	/**
+	 * @return bool
+	 */
+	private static function request_has_cloudflare_visitor_header() {
+		return '' !== self::server_header( 'HTTP_CF_CONNECTING_IP' )
+			|| '' !== self::server_header( 'HTTP_CF_IPCOUNTRY' )
+			|| '' !== self::server_header( 'HTTP_CF_RAY' );
+	}
+
+	/**
+	 * @return bool
+	 */
+	private static function request_has_forwarding_header() {
+		foreach ( array(
+			'HTTP_X_FORWARDED_FOR',
+			'HTTP_X_REAL_IP',
+			'HTTP_TRUE_CLIENT_IP',
+			'HTTP_CF_CONNECTING_IP',
+			'HTTP_CF_IPCOUNTRY',
+			'HTTP_CLIENT_IP',
+			'HTTP_X_CLUSTER_CLIENT_IP',
+			'HTTP_FORWARDED',
+			'HTTP_FORWARDED_FOR',
+			'HTTP_X_FORWARDED',
+		) as $key ) {
+			if ( '' !== self::server_header( $key ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Trusted proxy CIDRs or exact IPs from the setting, then the filter.
 	 *
 	 * @return list<string>
 	 */
 	public static function trusted_proxy_cidrs() {
+		$configured = self::configured_trusted_proxy_cidrs();
 		/**
-		 * Trusted reverse-proxy ranges. When REMOTE_ADDR matches, the visitor IP is
-		 * the rightmost public X-Forwarded-For hop that is not itself in this list.
-		 * Default is empty, so a public peer is never trusted from this filter alone.
+		 * Trusted reverse-proxy ranges. The list starts as Settings → Trusted proxies.
+		 * When REMOTE_ADDR matches, the visitor IP is the rightmost public
+		 * X-Forwarded-For hop that is not itself in this list.
 		 *
-		 * @param list<string> $cidrs CIDRs or exact IPs.
+		 * @param list<string> $cidrs CIDRs or exact IPs from the setting.
 		 */
-		$cidrs = apply_filters( 'rwgc_trusted_proxy_cidrs', array() );
+		$cidrs = apply_filters( 'rwgc_trusted_proxy_cidrs', $configured );
 		if ( ! is_array( $cidrs ) ) {
 			return array();
 		}
@@ -340,33 +642,102 @@ class RWGC_GeoIP {
 	}
 
 	/**
-	 * @param string $remote REMOTE_ADDR.
-	 * @return bool
+	 * Saved trusted proxies, before the rwgc_trusted_proxy_cidrs filter.
+	 *
+	 * @return list<string>
 	 */
-	private static function peer_is_trusted_proxy( $remote ) {
-		if ( self::quic_cloud_enabled() && self::is_quic_cloud_ip( $remote ) ) {
-			return true;
+	public static function configured_trusted_proxy_cidrs() {
+		if ( ! class_exists( 'RWGC_Settings', false ) || ! function_exists( 'get_option' ) ) {
+			return array();
 		}
-		return self::ip_matches_proxy_list( $remote, self::trusted_proxy_cidrs() );
+		return self::parse_trusted_proxy_list( (string) RWGC_Settings::get( 'trusted_proxies', '' ) );
 	}
 
 	/**
-	 * Rightmost public X-Forwarded-For hop that is not the proxy itself.
+	 * Whether this TCP peer may supply the visitor IP through forwarding headers.
 	 *
 	 * @param string $remote REMOTE_ADDR.
-	 * @return string Empty when the header has no usable visitor hop.
+	 * @return bool
+	 */
+	public static function is_trusted_proxy( $remote ) {
+		$remote  = trim( (string) $remote );
+		$trusted = self::is_trusted_hop( $remote );
+		/**
+		 * Override the trusted-proxy decision for this connection.
+		 *
+		 * Return true to honour forwarding headers from this peer, or false to
+		 * keep REMOTE_ADDR. CF-Connecting-IP and CF-IPCountry still require the
+		 * peer to be inside Cloudflare's ranges while Behind Cloudflare is on.
+		 *
+		 * @param bool   $trusted Result of the saved proxies, QUIC.cloud, and Cloudflare checks.
+		 * @param string $remote  REMOTE_ADDR.
+		 */
+		return (bool) apply_filters( 'rwgc_is_trusted_proxy', $trusted, $remote );
+	}
+
+	/**
+	 * A hop that should be skipped while walking X-Forwarded-For from the right.
+	 *
+	 * Does not apply rwgc_is_trusted_proxy. That filter decides the TCP peer only.
+	 *
+	 * @param string $ip IP.
+	 * @return bool
+	 */
+	private static function is_trusted_hop( $ip ) {
+		if ( self::quic_cloud_enabled() && self::is_quic_cloud_ip( $ip ) ) {
+			return true;
+		}
+		if ( self::ip_matches_proxy_list( $ip, self::trusted_proxy_cidrs() ) ) {
+			return true;
+		}
+		if ( self::cloudflare_trust_active() && self::is_cloudflare_ip( $ip ) ) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * CF-Connecting-IP and CF-IPCountry apply only for a Cloudflare peer while the mode is on.
+	 *
+	 * @param string $remote REMOTE_ADDR.
+	 * @return bool
+	 */
+	private static function cloudflare_headers_trusted( $remote ) {
+		return self::cloudflare_trust_active()
+			&& self::is_cloudflare_ip( $remote )
+			&& self::is_trusted_proxy( $remote );
+	}
+
+	/**
+	 * Rightmost public forwarding hop that is not itself a trusted proxy.
+	 *
+	 * Reads X-Forwarded-For, then Forwarded, then X-Forwarded. When every public
+	 * hop is a trusted proxy, the rightmost hop is kept. The left-most address
+	 * is never chosen merely because it is first.
+	 *
+	 * @param string $remote REMOTE_ADDR.
+	 * @return string Empty when the headers have no public hop.
 	 */
 	private static function visitor_from_trusted_xff( $remote ) {
-		$header = isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) : '';
-		$ips    = self::public_ips_from_header( $header );
-		for ( $i = count( $ips ) - 1; $i >= 0; $i-- ) {
+		$ips = self::public_ips_from_header( self::server_header( 'HTTP_X_FORWARDED_FOR' ) );
+		if ( empty( $ips ) ) {
+			$ips = self::public_ips_from_header( self::server_header( 'HTTP_FORWARDED' ) );
+		}
+		if ( empty( $ips ) ) {
+			$ips = self::public_ips_from_header( self::server_header( 'HTTP_X_FORWARDED' ) );
+		}
+		$count = count( $ips );
+		if ( 0 === $count ) {
+			return '';
+		}
+		for ( $i = $count - 1; $i >= 0; $i-- ) {
 			$hop = $ips[ $i ];
-			if ( self::ips_equal( $hop, $remote ) || self::peer_is_trusted_proxy( $hop ) ) {
+			if ( self::ips_equal( $hop, $remote ) || self::is_trusted_hop( $hop ) ) {
 				continue;
 			}
 			return $hop;
 		}
-		return '';
+		return $ips[ $count - 1 ];
 	}
 
 	/**

@@ -81,6 +81,13 @@ class RWGC_Settings {
 		}
 		$merged = array_merge( $defaults, $stored );
 		unset( $merged['reactwoo_api_base'], $merged['reactwoo_license_key'] );
+		/*
+		 * An upgraded site has no behind_cloudflare key. Leave it out so a
+		 * later save of another screen does not turn legacy Cloudflare trust off.
+		 */
+		if ( ! array_key_exists( 'behind_cloudflare', $stored ) ) {
+			unset( $merged['behind_cloudflare'] );
+		}
 		return $merged;
 	}
 
@@ -172,6 +179,14 @@ class RWGC_Settings {
 
 		$out['enabled']             = ! empty( $settings['enabled'] ) ? 1 : 0;
 		$out['quic_cloud_cdn']      = ! empty( $settings['quic_cloud_cdn'] ) ? 1 : 0;
+		$out['trusted_proxies']     = self::sanitize_trusted_proxies( isset( $settings['trusted_proxies'] ) ? $settings['trusted_proxies'] : '' );
+		if ( array_key_exists( 'behind_cloudflare', $settings ) ) {
+			$out['behind_cloudflare'] = ! empty( $settings['behind_cloudflare'] ) ? 1 : 0;
+		} elseif ( is_array( $stored ) && array_key_exists( 'behind_cloudflare', $stored ) ) {
+			$out['behind_cloudflare'] = ! empty( $stored['behind_cloudflare'] ) ? 1 : 0;
+		} else {
+			unset( $out['behind_cloudflare'] );
+		}
 		$out['maxmind_account_id']  = isset( $settings['maxmind_account_id'] ) ? self::sanitize_credential( $settings['maxmind_account_id'] ) : '';
 		$out['maxmind_license_key'] = isset( $settings['maxmind_license_key'] ) ? self::sanitize_credential( $settings['maxmind_license_key'] ) : '';
 		$out['auto_update_db']      = ! empty( $settings['auto_update_db'] ) ? 1 : 0;
@@ -194,6 +209,33 @@ class RWGC_Settings {
 		$out['migration_completed'] = ! empty( $settings['migration_completed'] ) ? 1 : 0;
 
 		return $out;
+	}
+
+	/**
+	 * Keep IP addresses and CIDR ranges. Drop anything else and report it.
+	 *
+	 * @param mixed $raw Textarea or list.
+	 * @return string One valid entry per line.
+	 */
+	public static function sanitize_trusted_proxies( $raw ) {
+		if ( ! class_exists( 'RWGC_GeoIP', false ) ) {
+			return '';
+		}
+		$invalid = RWGC_GeoIP::invalid_trusted_proxy_tokens( $raw );
+		$valid   = RWGC_GeoIP::parse_trusted_proxy_list( $raw );
+		if ( ! empty( $invalid ) && function_exists( 'add_settings_error' ) ) {
+			add_settings_error(
+				'rwgc_settings',
+				'rwgc_trusted_proxies',
+				sprintf(
+					/* translators: %s: comma-separated values that were not an IP or CIDR. */
+					__( 'These trusted proxy values were not saved because they are not an IP address or CIDR range: %s', 'reactwoo-geocore' ),
+					implode( ', ', $invalid )
+				),
+				'error'
+			);
+		}
+		return implode( "\n", $valid );
 	}
 
 	/**
@@ -260,6 +302,8 @@ class RWGC_Settings {
 		return array(
 			'enabled'             => 1,
 			'quic_cloud_cdn'      => 0,
+			'behind_cloudflare'   => 0,
+			'trusted_proxies'     => '',
 			'maxmind_account_id'  => '',
 			'maxmind_license_key' => '',
 			'auto_update_db'      => 1,

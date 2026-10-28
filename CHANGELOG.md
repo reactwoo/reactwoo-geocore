@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.22] - 2026-10-28
+
+### Security
+- Visitor IP and country now come from `REMOTE_ADDR` unless that address is a trusted proxy. A logged-out request can no longer choose a country (and, through Geo Commerce, prices or payment methods) by sending `X-Forwarded-For: 102.132.0.1` or the same value in `X-Real-IP`, `True-Client-IP`, `CF-Connecting-IP`, `CF-IPCountry`, `Client-IP`, or `Forwarded`. A private or loopback peer is not treated as a proxy.
+- Settings → Detection adds **Trusted proxies** (IP addresses and CIDR ranges) and **Behind Cloudflare**. Forwarding headers are read only when `REMOTE_ADDR` is in that list, is a QUIC.cloud edge while “My site uses QUIC.cloud CDN” is on, or is inside the bundled Cloudflare ranges while Behind Cloudflare is on. `X-Forwarded-For` is walked from the right and trusted hops are skipped. `CF-Connecting-IP` and `CF-IPCountry` are used only in that Cloudflare case. The bundled ranges match `https://www.cloudflare.com/ips-v4` and `ips-v6` and can be replaced with `rwgc_cloudflare_ip_cidrs`. `rwgc_is_trusted_proxy` can force the trust decision for a peer. `rwgc_visitor_ip` still runs last.
+- Sites updated from a version that trusted Cloudflare automatically keep that behaviour until an administrator saves Geo Core settings. The checkbox is shown on, and an admin notice explains it. Saving MaxMind or any other screen does not clear it. A site that is reached from a Cloudflare address while the option is off, or a private address that is still sending a forwarding header, gets an admin notice instead of a silent country change.
+
 ## [1.9.21] - 2026-10-27
 
 ### Added

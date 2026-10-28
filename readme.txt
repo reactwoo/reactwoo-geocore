@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.21
+Stable tag: 1.9.22
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -165,6 +165,11 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.22 =
+* Visitor country follows the connection address. A visitor cannot choose a country by sending X-Forwarded-For, X-Real-IP, True-Client-IP, CF-Connecting-IP, or CF-IPCountry.
+* Settings → Detection adds Trusted proxies and Behind Cloudflare. Cloudflare headers are used only when that option is on and the connection comes from Cloudflare's published addresses, which are included with the plugin.
+* A site updated from an older version keeps Cloudflare visitor detection until settings are saved. An admin notice appears when a private address is still sending a forwarding header, or when Cloudflare is detected while the option is off.
+
 = 1.9.21 =
 * First WordPress.org directory release; adds automated WordPress.org deploy workflow. The packaged build publishes to the directory only on a GitHub Release or v* tag. Readme and directory assets can update from main without shipping plugin code.
 
@@ -311,6 +316,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.22 =
+Visitor country is taken from the connection address unless you list a trusted proxy or turn on Behind Cloudflare. Sites that already use Cloudflare keep that behaviour until settings are saved. Review Settings → Detection after updating.
 
 = 1.9.21 =
 First WordPress.org directory release. Country detection, shortcodes, the Geo Content block, and visibility rules are unchanged. Updates for this build come from WordPress.org.
