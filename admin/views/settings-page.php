@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 $rwgc_option_key = RWGC_Settings::OPTION_KEY;
 $rwgc_wporg = function_exists( 'rwgc_is_wordpress_org_distribution' ) && rwgc_is_wordpress_org_distribution();
 ?>
-<div class="wrap rwgc-wrap">
+<div class="wrap rwgc-wrap rwgc-settings-screen">
 	<h1><?php esc_html_e( 'Geo Core Settings', 'reactwoo-geocore' ); ?></h1>
 	<p class="description"><?php esc_html_e( 'Configure detection, database, behavior, and integrations.', 'reactwoo-geocore' ); ?></p>
 	<?php RWGC_Admin::render_inner_nav( 'rwgc-settings' ); ?>
@@ -33,6 +33,37 @@ $rwgc_wporg = function_exists( 'rwgc_is_wordpress_org_distribution' ) && rwgc_is
 					</label>
 					<p class="description">
 						<?php esc_html_e( 'Turn this on only if this site is served through QUIC.cloud. Geo Core then reads the visitor IP from the forwarding header when the connection comes from a QUIC.cloud server. A direct visitor still cannot change their country by sending that header.', 'reactwoo-geocore' ); ?>
+					</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Cloudflare', 'reactwoo-geocore' ); ?></th>
+				<td>
+					<?php
+					$rwgc_cf_mode = class_exists( 'RWGC_GeoIP', false ) ? RWGC_GeoIP::cloudflare_mode() : 'off';
+					$rwgc_cf_on   = in_array( $rwgc_cf_mode, array( 'on', 'legacy' ), true );
+					?>
+					<input type="hidden" name="<?php echo esc_attr( $rwgc_option_key ); ?>[behind_cloudflare]" value="0" />
+					<label>
+						<input type="checkbox" name="<?php echo esc_attr( $rwgc_option_key ); ?>[behind_cloudflare]" value="1" <?php checked( $rwgc_cf_on ); ?> />
+						<?php esc_html_e( 'Behind Cloudflare', 'reactwoo-geocore' ); ?>
+					</label>
+					<p class="description">
+						<?php esc_html_e( 'Turn this on only if this site is served through Cloudflare. Geo Core then uses CF-Connecting-IP and CF-IPCountry when the connection comes from a published Cloudflare address. A direct visitor still cannot change their country by sending those headers.', 'reactwoo-geocore' ); ?>
+					</p>
+					<?php if ( 'legacy' === $rwgc_cf_mode ) : ?>
+						<p class="description">
+							<?php esc_html_e( 'This box stays on until you save, because an older version trusted Cloudflare whenever the connection came from Cloudflare. Saving confirms that choice.', 'reactwoo-geocore' ); ?>
+						</p>
+					<?php endif; ?>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="rwgc_trusted_proxies"><?php esc_html_e( 'Trusted proxies', 'reactwoo-geocore' ); ?></label></th>
+				<td>
+					<textarea id="rwgc_trusted_proxies" name="<?php echo esc_attr( $rwgc_option_key ); ?>[trusted_proxies]" rows="6" cols="40" class="large-text code" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><?php echo esc_textarea( isset( $rwgc_settings['trusted_proxies'] ) ? (string) $rwgc_settings['trusted_proxies'] : '' ); ?></textarea>
+					<p class="description">
+						<?php esc_html_e( 'IP addresses or CIDR ranges, one per line. Geo Core reads forwarding headers only when the connection comes from one of these, from QUIC.cloud while that option is on, or from Cloudflare while Behind Cloudflare is on. The visitor address is the rightmost forwarding hop that is not itself a trusted proxy. Add 127.0.0.1 only when a reverse proxy on this server sets that header.', 'reactwoo-geocore' ); ?>
 					</p>
 				</td>
 			</tr>

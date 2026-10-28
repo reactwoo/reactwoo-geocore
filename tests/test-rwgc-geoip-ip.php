@@ -38,14 +38,37 @@ function apply_filters( $hook, $value, ...$args ) {
 	if ( 'rwgc_quic_cloud_cdn_enabled' === $hook ) {
 		return ! empty( $GLOBALS['rwgc_test_quic'] );
 	}
+	if ( 'rwgc_behind_cloudflare' === $hook && array_key_exists( 'rwgc_test_cloudflare', $GLOBALS ) ) {
+		return ! empty( $GLOBALS['rwgc_test_cloudflare'] );
+	}
 	if ( 'rwgc_trusted_proxy_cidrs' === $hook && isset( $GLOBALS['rwgc_test_trusted_cidrs'] ) && is_array( $GLOBALS['rwgc_test_trusted_cidrs'] ) ) {
 		return $GLOBALS['rwgc_test_trusted_cidrs'];
+	}
+	if ( 'rwgc_is_trusted_proxy' === $hook && array_key_exists( 'rwgc_test_trust_override', $GLOBALS ) ) {
+		return $GLOBALS['rwgc_test_trust_override'];
+	}
+	if ( 'rwgc_cloudflare_ip_cidrs' === $hook && isset( $GLOBALS['rwgc_test_cf_cidrs'] ) && is_array( $GLOBALS['rwgc_test_cf_cidrs'] ) ) {
+		return $GLOBALS['rwgc_test_cf_cidrs'];
 	}
 	if ( 'rwgc_visitor_ip' === $hook && isset( $GLOBALS['rwgc_test_visitor_ip'] ) ) {
 		return $GLOBALS['rwgc_test_visitor_ip'];
 	}
 	return $value;
 }
+}
+
+if ( ! function_exists( 'get_option' ) ) {
+	/**
+	 * @param string $key     Option name.
+	 * @param mixed  $default Default.
+	 * @return mixed
+	 */
+	function get_option( $key, $default = false ) {
+		if ( isset( $GLOBALS['rwgc_test_options'] ) && is_array( $GLOBALS['rwgc_test_options'] ) && array_key_exists( $key, $GLOBALS['rwgc_test_options'] ) ) {
+			return $GLOBALS['rwgc_test_options'][ $key ];
+		}
+		return $default;
+	}
 }
 
 require_once dirname( __DIR__ ) . '/includes/class-rwgc-geoip.php';
@@ -77,6 +100,18 @@ function rwgc_geoip_resolve( array $server ) {
 	$ip               = RWGC_GeoIP::get_current_ip();
 	$_SERVER          = $backup;
 	return $ip;
+}
+
+/**
+ * @param array<string, string> $server Server vars.
+ * @return string
+ */
+function rwgc_geoip_country( array $server ) {
+	$backup  = $_SERVER;
+	$_SERVER = $server;
+	$country = RWGC_GeoIP::trusted_cloudflare_country();
+	$_SERVER = $backup;
+	return $country;
 }
 
 $visitor = '203.0.113.10';
@@ -112,12 +147,23 @@ rwgc_geoip_assert(
 );
 
 rwgc_geoip_assert(
-	'Cloudflare edge uses CF-Connecting-IP',
-	$cf_cli === rwgc_geoip_resolve(
+	'Cloudflare edge ignores CF-Connecting-IP until Behind Cloudflare is on',
+	$cf_edge === rwgc_geoip_resolve(
 		array(
 			'REMOTE_ADDR'           => $cf_edge,
 			'HTTP_CF_CONNECTING_IP' => $cf_cli,
+			'HTTP_CF_IPCOUNTRY'     => 'ZA',
 			'HTTP_X_FORWARDED_FOR'  => $spoof,
+		)
+	)
+);
+rwgc_geoip_assert(
+	'spoofed CF-IPCountry ignored when Behind Cloudflare is off',
+	'' === rwgc_geoip_country(
+		array(
+			'REMOTE_ADDR'           => $cf_edge,
+			'HTTP_CF_CONNECTING_IP' => $cf_cli,
+			'HTTP_CF_IPCOUNTRY'     => 'ZA',
 		)
 	)
 );
@@ -131,13 +177,37 @@ rwgc_geoip_assert( 'cidr /17 match', RWGC_GeoIP::ip_in_cidr( '198.41.128.1', '19
 rwgc_geoip_assert( 'cidr /17 miss', ! RWGC_GeoIP::ip_in_cidr( '198.41.127.1', '198.41.128.0/17' ) );
 
 rwgc_geoip_assert(
-	'private origin uses rightmost public XFF (proxy-appended)',
-	'198.51.100.7' === rwgc_geoip_resolve(
+	'private origin ignores spoofed X-Forwarded-For',
+	'10.0.0.2' === rwgc_geoip_resolve(
 		array(
-			'REMOTE_ADDR'          => '10.0.0.2',
-			'HTTP_X_FORWARDED_FOR' => $spoof . ', 198.51.100.7',
-			'HTTP_CLIENT_IP'       => $spoof,
-			'HTTP_CF_CONNECTING_IP'=> $spoof,
+			'REMOTE_ADDR'           => '10.0.0.2',
+			'HTTP_X_FORWARDED_FOR'  => '102.132.0.1',
+			'HTTP_X_REAL_IP'        => '102.132.0.1',
+			'HTTP_TRUE_CLIENT_IP'   => '102.132.0.1',
+			'HTTP_CLIENT_IP'        => $spoof,
+			'HTTP_CF_CONNECTING_IP' => $spoof,
+			'HTTP_CF_IPCOUNTRY'     => 'ZA',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'loopback ignores X-Forwarded-For 102.132.0.1',
+	'127.0.0.1' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => '127.0.0.1',
+			'HTTP_X_FORWARDED_FOR' => '102.132.0.1',
+			'HTTP_X_REAL_IP'       => '102.132.0.1',
+			'HTTP_CF_IPCOUNTRY'    => 'ZA',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'loopback spoof does not yield a Cloudflare country',
+	'' === rwgc_geoip_country(
+		array(
+			'REMOTE_ADDR'          => '127.0.0.1',
+			'HTTP_X_FORWARDED_FOR' => '102.132.0.1',
+			'HTTP_CF_IPCOUNTRY'    => 'ZA',
 		)
 	)
 );
@@ -222,8 +292,8 @@ rwgc_geoip_assert(
 	)
 );
 rwgc_geoip_assert(
-	'private origin with QUIC on skips the appended PoP',
-	$visitor === rwgc_geoip_resolve(
+	'QUIC on does not trust a loopback peer by itself',
+	'127.0.0.1' === rwgc_geoip_resolve(
 		array(
 			'REMOTE_ADDR'          => '127.0.0.1',
 			'HTTP_X_FORWARDED_FOR' => $spoof . ', ' . $visitor . ', ' . $quic_edge,
@@ -232,28 +302,40 @@ rwgc_geoip_assert(
 	)
 );
 rwgc_geoip_assert(
-	'private origin with QUIC on still uses a proxy-appended visitor',
+	'QUIC on does not trust a private peer by itself',
+	'10.0.0.2' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => '10.0.0.2',
+			'HTTP_X_FORWARDED_FOR' => '102.132.0.1, 198.51.100.7',
+		)
+	)
+);
+$GLOBALS['rwgc_test_trusted_cidrs'] = array( '127.0.0.1', '10.0.0.0/8' );
+rwgc_geoip_assert(
+	'trusted loopback with QUIC on skips the appended PoP',
+	$visitor === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => '127.0.0.1',
+			'HTTP_X_FORWARDED_FOR' => '102.132.0.1, ' . $visitor . ', ' . $quic_edge,
+			'HTTP_X_REAL_IP'       => '102.132.0.1',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'trusted private proxy walks from the right and skips itself',
 	'198.51.100.7' === rwgc_geoip_resolve(
 		array(
 			'REMOTE_ADDR'          => '10.0.0.2',
-			'HTTP_X_FORWARDED_FOR' => $spoof . ', 198.51.100.7',
+			'HTTP_X_FORWARDED_FOR' => '102.132.0.1, 198.51.100.7, 10.0.0.2',
 		)
 	)
 );
-rwgc_geoip_assert(
-	'private origin falls back to the PoP when it is the only public hop',
-	$quic_edge === rwgc_geoip_resolve(
-		array(
-			'REMOTE_ADDR'          => '127.0.0.1',
-			'HTTP_X_FORWARDED_FOR' => $quic_edge,
-		)
-	)
-);
+$GLOBALS['rwgc_test_trusted_cidrs'] = null;
 $GLOBALS['rwgc_test_quic'] = false;
 
 rwgc_geoip_assert(
-	'private origin without QUIC still uses the rightmost public hop',
-	$quic_edge === rwgc_geoip_resolve(
+	'private origin without a trusted proxy ignores the rightmost public hop',
+	'127.0.0.1' === rwgc_geoip_resolve(
 		array(
 			'REMOTE_ADDR'          => '127.0.0.1',
 			'HTTP_X_FORWARDED_FOR' => $visitor . ', ' . $quic_edge,
@@ -281,15 +363,175 @@ rwgc_geoip_assert(
 	)
 );
 rwgc_geoip_assert(
-	'private origin skips a trusted hop appended after the visitor',
-	'203.0.113.50' === rwgc_geoip_resolve(
+	'unlisted private origin ignores a trusted hop in X-Forwarded-For',
+	'10.0.0.2' === rwgc_geoip_resolve(
 		array(
 			'REMOTE_ADDR'          => '10.0.0.2',
-			'HTTP_X_FORWARDED_FOR' => $spoof . ', 203.0.113.50, 198.51.100.8',
+			'HTTP_X_FORWARDED_FOR' => '102.132.0.1, 203.0.113.50, 198.51.100.8',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'trusted proxy skips its own hop and ignores the left-most spoof',
+	'203.0.113.50' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'           => '198.51.100.8',
+			'HTTP_X_FORWARDED_FOR'  => '102.132.0.1, 203.0.113.50, 198.51.100.9',
+			'HTTP_X_REAL_IP'        => '102.132.0.1',
+			'HTTP_TRUE_CLIENT_IP'   => '102.132.0.1',
+			'HTTP_CF_CONNECTING_IP' => '102.132.0.1',
+			'HTTP_CF_IPCOUNTRY'     => 'ZA',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'trusted proxy uses X-Real-IP only when X-Forwarded-For is absent',
+	'203.0.113.60' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'    => '198.51.100.8',
+			'HTTP_X_REAL_IP' => '203.0.113.60',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'trusted proxy ignores a comma list in X-Real-IP',
+	'198.51.100.8' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'    => '198.51.100.8',
+			'HTTP_X_REAL_IP' => '102.132.0.1, 203.0.113.60',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'trusted proxy uses True-Client-IP when no other forwarding header is set',
+	'203.0.113.61' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'         => '198.51.100.8',
+			'HTTP_TRUE_CLIENT_IP' => '203.0.113.61',
 		)
 	)
 );
 $GLOBALS['rwgc_test_trusted_cidrs'] = null;
+
+$GLOBALS['rwgc_test_cloudflare'] = true;
+rwgc_geoip_assert(
+	'Behind Cloudflare uses CF-Connecting-IP and ignores a spoofed X-Forwarded-For',
+	$cf_cli === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'           => $cf_edge,
+			'HTTP_CF_CONNECTING_IP' => $cf_cli,
+			'HTTP_X_FORWARDED_FOR'  => '102.132.0.1',
+			'HTTP_X_REAL_IP'        => '102.132.0.1',
+			'HTTP_TRUE_CLIENT_IP'   => '102.132.0.1',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'Behind Cloudflare trusts CF-IPCountry from a Cloudflare peer',
+	'ZA' === rwgc_geoip_country(
+		array(
+			'REMOTE_ADDR'           => $cf_edge,
+			'HTTP_CF_CONNECTING_IP' => $cf_cli,
+			'HTTP_CF_IPCOUNTRY'     => 'ZA',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'Behind Cloudflare ignores CF-IPCountry when the peer is not Cloudflare',
+	'' === rwgc_geoip_country(
+		array(
+			'REMOTE_ADDR'       => $visitor,
+			'HTTP_CF_IPCOUNTRY' => 'ZA',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'Behind Cloudflare ignores CF-Connecting-IP from a non-Cloudflare peer',
+	$visitor === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'           => $visitor,
+			'HTTP_CF_CONNECTING_IP' => '102.132.0.1',
+			'HTTP_CF_IPCOUNTRY'     => 'ZA',
+			'HTTP_X_FORWARDED_FOR'  => '102.132.0.1',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'Behind Cloudflare ignores CF-IPCountry XX',
+	'' === rwgc_geoip_country(
+		array(
+			'REMOTE_ADDR'       => $cf_edge,
+			'HTTP_CF_IPCOUNTRY' => 'XX',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'Behind Cloudflare skips a Cloudflare hop and does not take the left-most spoof',
+	$cf_cli === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => $cf_edge,
+			'HTTP_X_FORWARDED_FOR' => '102.132.0.1, ' . $cf_cli . ', ' . $cf_edge,
+		)
+	)
+);
+$GLOBALS['rwgc_test_cf_cidrs'] = array( '203.0.113.0/24' );
+rwgc_geoip_assert( 'Cloudflare range filter can add a range', RWGC_GeoIP::is_cloudflare_ip( '203.0.113.9' ) );
+rwgc_geoip_assert( 'Cloudflare range filter replaces the bundled list', ! RWGC_GeoIP::is_cloudflare_ip( $cf_edge ) );
+rwgc_geoip_assert(
+	'filtered Cloudflare range trusts CF-Connecting-IP for that peer only',
+	'198.51.100.40' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'           => '203.0.113.9',
+			'HTTP_CF_CONNECTING_IP' => '198.51.100.40',
+			'HTTP_X_FORWARDED_FOR'  => '102.132.0.1',
+		)
+	)
+);
+$GLOBALS['rwgc_test_cloudflare'] = false;
+rwgc_geoip_assert(
+	'turning Behind Cloudflare off stops trusting the filtered range',
+	'203.0.113.9' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'           => '203.0.113.9',
+			'HTTP_CF_CONNECTING_IP' => '198.51.100.40',
+			'HTTP_CF_IPCOUNTRY'     => 'ZA',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'filtered range does not supply a country while Behind Cloudflare is off',
+	'' === rwgc_geoip_country(
+		array(
+			'REMOTE_ADDR'       => '203.0.113.9',
+			'HTTP_CF_IPCOUNTRY' => 'ZA',
+		)
+	)
+);
+$GLOBALS['rwgc_test_cf_cidrs'] = null;
+
+$GLOBALS['rwgc_test_trust_override'] = true;
+rwgc_geoip_assert(
+	'rwgc_is_trusted_proxy can trust a peer that is not in the proxy list',
+	$visitor === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => '198.51.100.8',
+			'HTTP_X_FORWARDED_FOR' => '102.132.0.1, ' . $visitor,
+		)
+	)
+);
+$GLOBALS['rwgc_test_trust_override'] = false;
+$GLOBALS['rwgc_test_trusted_cidrs'] = array( '198.51.100.0/24' );
+rwgc_geoip_assert(
+	'rwgc_is_trusted_proxy can refuse a peer that is in the proxy list',
+	'198.51.100.8' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => '198.51.100.8',
+			'HTTP_X_FORWARDED_FOR' => '102.132.0.1, ' . $visitor,
+		)
+	)
+);
+$GLOBALS['rwgc_test_trusted_cidrs'] = null;
+unset( $GLOBALS['rwgc_test_trust_override'] );
 
 $GLOBALS['rwgc_test_visitor_ip'] = '198.51.100.77';
 rwgc_geoip_assert(
@@ -338,10 +580,90 @@ $quic_again = RWGC_Settings::sanitize_settings( $quic_on );
 rwgc_geoip_assert( 'quic setting persists through sanitize', 1 === (int) $quic_again['quic_cloud_cdn'] );
 $quic_off = RWGC_Settings::sanitize_settings( array( 'enabled' => '1' ) );
 rwgc_geoip_assert( 'unchecked quic setting sanitizes off', 0 === (int) $quic_off['quic_cloud_cdn'] );
+rwgc_geoip_assert( 'cloudflare setting defaults off', isset( $quic_defaults['behind_cloudflare'] ) && 0 === (int) $quic_defaults['behind_cloudflare'] );
+rwgc_geoip_assert( 'trusted proxies default empty', isset( $quic_defaults['trusted_proxies'] ) && '' === $quic_defaults['trusted_proxies'] );
+$proxy_saved = RWGC_Settings::sanitize_settings(
+	array(
+		'enabled'           => '1',
+		'behind_cloudflare' => '1',
+		'trusted_proxies'   => "127.0.0.1\n10.0.0.0/8\nnot-an-ip\n198.51.100.8",
+	)
+);
+rwgc_geoip_assert( 'cloudflare setting sanitizes on', 1 === (int) $proxy_saved['behind_cloudflare'] );
+rwgc_geoip_assert(
+	'trusted proxies keep IP and CIDR lines',
+	"127.0.0.1\n10.0.0.0/8\n198.51.100.8" === $proxy_saved['trusted_proxies']
+);
+$proxy_off = RWGC_Settings::sanitize_settings(
+	array(
+		'enabled'           => '1',
+		'behind_cloudflare' => '0',
+	)
+);
+rwgc_geoip_assert( 'unchecked cloudflare setting sanitizes off', 0 === (int) $proxy_off['behind_cloudflare'] );
+$proxy_partial = RWGC_Settings::sanitize_settings( array( 'enabled' => '1' ) );
+rwgc_geoip_assert( 'partial save does not invent an explicit cloudflare off', ! array_key_exists( 'behind_cloudflare', $proxy_partial ) );
+
+unset( $GLOBALS['rwgc_test_cloudflare'] );
+$GLOBALS['rwgc_test_options'] = array(
+	'rwgc_settings' => array(
+		'enabled' => 1,
+	),
+);
+rwgc_geoip_assert( 'missing cloudflare key is legacy trust', 'legacy' === RWGC_GeoIP::cloudflare_mode() );
+rwgc_geoip_assert( 'legacy trust is active before the setting is saved', RWGC_GeoIP::cloudflare_trust_active() );
+$legacy_merged = RWGC_Settings::get_settings();
+rwgc_geoip_assert( 'merged settings keep legacy cloudflare unset', ! array_key_exists( 'behind_cloudflare', $legacy_merged ) );
+$legacy_resaved = RWGC_Settings::sanitize_settings( $legacy_merged );
+rwgc_geoip_assert( 'resaving other settings keeps legacy cloudflare unset', ! array_key_exists( 'behind_cloudflare', $legacy_resaved ) );
+rwgc_geoip_assert(
+	'legacy trust uses CF-Connecting-IP from a Cloudflare peer',
+	$cf_cli === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'           => $cf_edge,
+			'HTTP_CF_CONNECTING_IP' => $cf_cli,
+			'HTTP_X_FORWARDED_FOR'  => '102.132.0.1',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'legacy trust reads CF-IPCountry',
+	'ZA' === rwgc_geoip_country(
+		array(
+			'REMOTE_ADDR'       => $cf_edge,
+			'HTTP_CF_IPCOUNTRY' => 'ZA',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'legacy trust still ignores a spoof from a private address',
+	'127.0.0.1' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => '127.0.0.1',
+			'HTTP_X_FORWARDED_FOR' => '102.132.0.1',
+			'HTTP_CF_IPCOUNTRY'    => 'ZA',
+		)
+	)
+);
+$GLOBALS['rwgc_test_options']['rwgc_settings']['behind_cloudflare'] = 0;
+rwgc_geoip_assert( 'saved cloudflare off is explicit', 'off' === RWGC_GeoIP::cloudflare_mode() );
+rwgc_geoip_assert( 'explicit off is not active', ! RWGC_GeoIP::cloudflare_trust_active() );
+$GLOBALS['rwgc_test_options']['rwgc_settings']['behind_cloudflare'] = 1;
+rwgc_geoip_assert( 'saved cloudflare on is explicit', 'on' === RWGC_GeoIP::cloudflare_mode() );
+$GLOBALS['rwgc_test_options'] = array( 'rwgc_settings' => array() );
+rwgc_geoip_assert( 'empty settings are not legacy', 'off' === RWGC_GeoIP::cloudflare_mode() );
+unset( $GLOBALS['rwgc_test_options'] );
 
 $settings_page = (string) file_get_contents( dirname( __DIR__ ) . '/admin/views/settings-page.php' );
+$settings_css  = (string) file_get_contents( dirname( __DIR__ ) . '/admin/css/admin.css' );
 rwgc_geoip_assert( 'settings screen labels the QUIC.cloud checkbox', false !== strpos( $settings_page, 'My site uses QUIC.cloud CDN' ) );
 rwgc_geoip_assert( 'settings screen saves quic_cloud_cdn', false !== strpos( $settings_page, '[quic_cloud_cdn]' ) );
+rwgc_geoip_assert( 'settings screen labels Behind Cloudflare', false !== strpos( $settings_page, 'Behind Cloudflare' ) );
+rwgc_geoip_assert( 'settings screen saves behind_cloudflare', false !== strpos( $settings_page, '[behind_cloudflare]' ) );
+rwgc_geoip_assert( 'settings screen posts an explicit cloudflare off', false !== strpos( $settings_page, 'type="hidden"' ) && false !== strpos( $settings_page, '[behind_cloudflare]" value="0"' ) );
+rwgc_geoip_assert( 'settings screen saves trusted_proxies', false !== strpos( $settings_page, '[trusted_proxies]' ) );
+rwgc_geoip_assert( 'settings screen uses the mobile settings class', false !== strpos( $settings_page, 'rwgc-settings-screen' ) );
+rwgc_geoip_assert( 'settings stylesheet stacks the form on a phone', false !== strpos( $settings_css, '.rwgc-settings-screen' ) && false !== strpos( $settings_css, 'max-width: 782px' ) );
 
 if ( $failed > 0 ) {
 	fwrite( STDERR, "\n$failed assertion(s) failed\n" );

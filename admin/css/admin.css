@@ -567,6 +567,59 @@ body.rwgc-admin-sidebar-collapsed #toplevel_page_rwgc-dashboard.wp-has-submenu.w
     margin-right: 8px;
     margin-bottom: 8px;
   }
+
+  /*
+   * Settings → Detection on a phone. The trusted-proxy textarea and the
+   * Cloudflare checkbox sit in the same form table, which otherwise keeps a
+   * 260px label column and scrolls sideways at 390px.
+   */
+  .rwgc-settings-screen {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  .rwgc-settings-screen .form-table,
+  .rwgc-settings-screen .form-table tbody,
+  .rwgc-settings-screen .form-table tr,
+  .rwgc-settings-screen .form-table th,
+  .rwgc-settings-screen .form-table td {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .rwgc-settings-screen .form-table {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .rwgc-settings-screen .form-table th {
+    width: auto;
+    padding-bottom: 4px;
+  }
+
+  .rwgc-settings-screen .regular-text,
+  .rwgc-settings-screen input[type="text"],
+  .rwgc-settings-screen input[type="number"],
+  .rwgc-settings-screen select,
+  .rwgc-settings-screen textarea {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .rwgc-settings-screen label {
+    overflow-wrap: anywhere;
+  }
+
+  .rwgc-settings-screen p > .button {
+    margin-left: 0;
+    margin-bottom: 8px;
+  }
 }
 
 /*
