@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- A trusted proxy no longer lets a client `Forwarded` or `X-Forwarded` header replace `X-Real-IP` or `True-Client-IP`. Those headers are read only when `X-Forwarded-For` has no public hop and neither single-value header is set. A proxy that overwrites `X-Real-IP` and still forwards `Forwarded` was handing the visitor country to the client.
+
 ## [1.9.22] - 2026-10-28
 
 ### Security

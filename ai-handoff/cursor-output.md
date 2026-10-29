@@ -3,6 +3,25 @@
 ## Status
 needs-review
 
+A trusted proxy was still letting a client choose a country. `Forwarded` and `X-Forwarded` were read before `X-Real-IP` and `True-Client-IP`. A proxy that overwrites `X-Real-IP` and forwards `Forwarded` (nginx does this unless the header is cleared) resolved `Forwarded: for=102.132.0.1` instead of the proxy-set address. Those two headers are now used only when `X-Forwarded-For` has no public hop and neither single-value header is set. Not tagged.
+
+## Files changed
+- `includes/class-rwgc-geoip.php` — header order.
+- `tests/test-rwgc-geoip-ip.php` — locks the spoof and the Forwarded-only fallback.
+- `CHANGELOG.md` — unreleased security note.
+
+## Not changed
+- Trusted-proxy, Cloudflare, and QUIC.cloud decisions. No version bump and no tag.
+
+## Commands
+- `php tests/test-rwgc-geoip-ip.php`
+
+## Remaining errors
+- None from that test.
+
+## Status
+needs-review
+
 Geo Core 1.9.22 stops a logged-out visitor from choosing a country with `X-Forwarded-For` (or `X-Real-IP`, `True-Client-IP`, `CF-Connecting-IP`, `CF-IPCountry`) unless `REMOTE_ADDR` is a trusted proxy. Draft PR only. Not merged, not tagged.
 
 ## Files changed

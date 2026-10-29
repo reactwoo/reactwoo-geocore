@@ -149,7 +149,10 @@ class RWGC_GeoIP {
 	 * CF-Connecting-IP, and CF-IPCountry are ignored for every other peer.
 	 * Behind a trusted proxy, X-Forwarded-For is walked from the right and
 	 * trusted hops are skipped. The left-most value is never taken because it
-	 * is first. CF-Connecting-IP is used only when Behind Cloudflare is on and
+	 * is first. X-Real-IP and True-Client-IP are used only when that walk has
+	 * no public hop, and they win over Forwarded and X-Forwarded. A client can
+	 * send those last two headers even when the proxy overwrote X-Real-IP.
+	 * CF-Connecting-IP is used only when Behind Cloudflare is on and
 	 * REMOTE_ADDR is inside the bundled Cloudflare ranges.
 	 *
 	 * `rwgc_is_trusted_proxy` can force the trust decision. `rwgc_visitor_ip`
@@ -197,6 +200,17 @@ class RWGC_GeoIP {
 			$single = self::single_forwarded_ip( self::server_header( $key ) );
 			if ( '' !== $single && ! self::ips_equal( $single, $remote ) && ! self::is_trusted_hop( $single ) ) {
 				return $single;
+			}
+		}
+
+		// A proxy that only sets X-Real-IP still forwards Forwarded unless it
+		// clears the header. Reading it before X-Real-IP let the client choose
+		// the country. Use it only when the proxy supplied neither X-Forwarded-For
+		// nor a single-value client header.
+		foreach ( array( 'HTTP_FORWARDED', 'HTTP_X_FORWARDED' ) as $key ) {
+			$from_forwarded = self::visitor_from_forwarding_header( self::server_header( $key ), $remote );
+			if ( '' !== $from_forwarded ) {
+				return $from_forwarded;
 			}
 		}
 
@@ -709,23 +723,29 @@ class RWGC_GeoIP {
 	}
 
 	/**
-	 * Rightmost public forwarding hop that is not itself a trusted proxy.
+	 * Rightmost public X-Forwarded-For hop that is not itself a trusted proxy.
 	 *
-	 * Reads X-Forwarded-For, then Forwarded, then X-Forwarded. When every public
-	 * hop is a trusted proxy, the rightmost hop is kept. The left-most address
-	 * is never chosen merely because it is first.
+	 * When every public hop is a trusted proxy, the rightmost hop is kept.
+	 * The left-most address is never chosen merely because it is first.
+	 * Forwarded and X-Forwarded are not read here; a client can send those
+	 * while the proxy overwrites X-Real-IP.
 	 *
 	 * @param string $remote REMOTE_ADDR.
-	 * @return string Empty when the headers have no public hop.
+	 * @return string Empty when the header has no public hop.
 	 */
 	private static function visitor_from_trusted_xff( $remote ) {
-		$ips = self::public_ips_from_header( self::server_header( 'HTTP_X_FORWARDED_FOR' ) );
-		if ( empty( $ips ) ) {
-			$ips = self::public_ips_from_header( self::server_header( 'HTTP_FORWARDED' ) );
-		}
-		if ( empty( $ips ) ) {
-			$ips = self::public_ips_from_header( self::server_header( 'HTTP_X_FORWARDED' ) );
-		}
+		return self::visitor_from_forwarding_header( self::server_header( 'HTTP_X_FORWARDED_FOR' ), $remote );
+	}
+
+	/**
+	 * Rightmost public hop in one forwarding header that is not a trusted proxy.
+	 *
+	 * @param string $header Header value.
+	 * @param string $remote REMOTE_ADDR.
+	 * @return string Empty when the header has no public hop.
+	 */
+	private static function visitor_from_forwarding_header( $header, $remote ) {
+		$ips   = self::public_ips_from_header( $header );
 		$count = count( $ips );
 		if ( 0 === $count ) {
 			return '';

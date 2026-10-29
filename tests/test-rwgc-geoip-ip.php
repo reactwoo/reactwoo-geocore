@@ -411,6 +411,37 @@ rwgc_geoip_assert(
 		)
 	)
 );
+rwgc_geoip_assert(
+	'Forwarded cannot replace a proxy-set X-Real-IP',
+	'203.0.113.60' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'      => '198.51.100.8',
+			'HTTP_X_REAL_IP'   => '203.0.113.60',
+			'HTTP_FORWARDED'   => 'for=102.132.0.1',
+			'HTTP_X_FORWARDED' => '102.132.0.1',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'X-Forwarded cannot replace a proxy-set True-Client-IP',
+	'203.0.113.61' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'         => '198.51.100.8',
+			'HTTP_TRUE_CLIENT_IP' => '203.0.113.61',
+			'HTTP_X_FORWARDED'    => '102.132.0.1',
+			'HTTP_FORWARDED'      => 'for=102.132.0.1',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'Forwarded is used when the proxy did not set X-Forwarded-For or X-Real-IP',
+	'203.0.113.70' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'    => '198.51.100.8',
+			'HTTP_FORWARDED' => 'for=102.132.0.1, for=203.0.113.70',
+		)
+	)
+);
 $GLOBALS['rwgc_test_trusted_cidrs'] = null;
 
 $GLOBALS['rwgc_test_cloudflare'] = true;
