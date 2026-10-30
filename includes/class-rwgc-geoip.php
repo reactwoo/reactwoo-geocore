@@ -145,12 +145,18 @@ class RWGC_GeoIP {
 	 * that option is on, or a published Cloudflare range while Behind Cloudflare
 	 * is on. Private and loopback addresses are not trusted on their own.
 	 *
-	 * X-Forwarded-For, Forwarded, X-Real-IP, True-Client-IP, Client-IP,
-	 * CF-Connecting-IP, and CF-IPCountry are ignored for every other peer.
-	 * Behind a trusted proxy, X-Forwarded-For is walked from the right and
-	 * trusted hops are skipped. The left-most value is never taken because it
-	 * is first. CF-Connecting-IP is used only when Behind Cloudflare is on and
-	 * REMOTE_ADDR is inside the bundled Cloudflare ranges.
+	 * X-Forwarded-For, Forwarded, X-Forwarded, X-Real-IP, True-Client-IP,
+	 * Client-IP, CF-Connecting-IP, and CF-IPCountry are ignored for every
+	 * other peer. Behind a trusted proxy, X-Forwarded-For is walked from the
+	 * right and trusted hops are skipped. The left-most value is never taken
+	 * because it is first. X-Real-IP and True-Client-IP are used only when
+	 * that walk has no public hop. Forwarded and X-Forwarded are used only
+	 * when that walk found nothing and the proxy did not send X-Real-IP,
+	 * True-Client-IP, or (while Behind Cloudflare is on) CF-Connecting-IP.
+	 * A present proxy header blocks them even when its value is not a single
+	 * public address, because nginx forwards a client Forwarded header unless
+	 * it is cleared. CF-Connecting-IP is used only when Behind Cloudflare is
+	 * on and REMOTE_ADDR is inside the bundled Cloudflare ranges.
 	 *
 	 * `rwgc_is_trusted_proxy` can force the trust decision. `rwgc_visitor_ip`
 	 * still runs last.
@@ -181,10 +187,19 @@ class RWGC_GeoIP {
 			return $remote;
 		}
 
+		// Set when the proxy sent a client-address header. Forwarded and
+		// X-Forwarded stay client-controlled unless that proxy clears them,
+		// so they must not replace a header the proxy did send.
+		$proxy_set_client_header = false;
+
 		if ( self::cloudflare_headers_trusted( $remote ) ) {
-			$cf = self::first_public_ip( self::server_header( 'HTTP_CF_CONNECTING_IP' ) );
-			if ( '' !== $cf && ! self::is_trusted_hop( $cf ) ) {
-				return $cf;
+			$cf_raw = self::server_header( 'HTTP_CF_CONNECTING_IP' );
+			if ( '' !== $cf_raw ) {
+				$proxy_set_client_header = true;
+				$cf                      = self::first_public_ip( $cf_raw );
+				if ( '' !== $cf && ! self::is_trusted_hop( $cf ) ) {
+					return $cf;
+				}
 			}
 		}
 
@@ -194,9 +209,25 @@ class RWGC_GeoIP {
 		}
 
 		foreach ( array( 'HTTP_X_REAL_IP', 'HTTP_TRUE_CLIENT_IP' ) as $key ) {
-			$single = self::single_forwarded_ip( self::server_header( $key ) );
+			$raw = self::server_header( $key );
+			if ( '' === $raw ) {
+				continue;
+			}
+			$proxy_set_client_header = true;
+			$single                  = self::single_forwarded_ip( $raw );
 			if ( '' !== $single && ! self::ips_equal( $single, $remote ) && ! self::is_trusted_hop( $single ) ) {
 				return $single;
+			}
+		}
+
+		if ( $proxy_set_client_header ) {
+			return $remote;
+		}
+
+		foreach ( array( 'HTTP_FORWARDED', 'HTTP_X_FORWARDED' ) as $key ) {
+			$from_forwarded = self::visitor_from_forwarding_header( self::server_header( $key ), $remote );
+			if ( '' !== $from_forwarded ) {
+				return $from_forwarded;
 			}
 		}
 
@@ -274,16 +305,35 @@ class RWGC_GeoIP {
 	private static function public_ips_from_header( $header ) {
 		$out = array();
 		foreach ( explode( ',', (string) $header ) as $part ) {
-			$ip = trim( $part );
-			if ( 0 === stripos( $ip, 'for=' ) ) {
-				$ip = trim( substr( $ip, 4 ), " \t\"[]" );
-			}
-			$ip = trim( $ip, '[]' );
+			$ip = self::ip_token_from_forwarded_part( $part );
 			if ( self::is_public_ip( $ip ) ) {
 				$out[] = $ip;
 			}
 		}
 		return $out;
+	}
+
+	/**
+	 * One address from an X-Forwarded-For hop or an RFC 7239 Forwarded element.
+	 *
+	 * `for=` may follow other parameters. A quoted value may be an IPv6 address
+	 * in brackets. Parameters after the address are ignored.
+	 *
+	 * @param string $part Comma-separated element.
+	 * @return string
+	 */
+	private static function ip_token_from_forwarded_part( $part ) {
+		$part = trim( (string) $part );
+		if ( '' === $part ) {
+			return '';
+		}
+		if ( false !== stripos( $part, 'for=' ) ) {
+			if ( ! preg_match( '/(?:^|;)\s*for=\s*("?)(\[[^\]]+\]|[^";,\s]+)\1/i', $part, $matches ) ) {
+				return '';
+			}
+			return trim( $matches[2], " \t\"[]" );
+		}
+		return trim( $part, '[]' );
 	}
 
 	/**
@@ -709,23 +759,29 @@ class RWGC_GeoIP {
 	}
 
 	/**
-	 * Rightmost public forwarding hop that is not itself a trusted proxy.
+	 * Rightmost public X-Forwarded-For hop that is not itself a trusted proxy.
 	 *
-	 * Reads X-Forwarded-For, then Forwarded, then X-Forwarded. When every public
-	 * hop is a trusted proxy, the rightmost hop is kept. The left-most address
-	 * is never chosen merely because it is first.
+	 * When every public hop is a trusted proxy, the rightmost hop is kept.
+	 * The left-most address is never chosen merely because it is first.
+	 * Forwarded and X-Forwarded are not read here; a client can send those
+	 * while the proxy overwrites X-Real-IP.
 	 *
 	 * @param string $remote REMOTE_ADDR.
-	 * @return string Empty when the headers have no public hop.
+	 * @return string Empty when the header has no public hop.
 	 */
 	private static function visitor_from_trusted_xff( $remote ) {
-		$ips = self::public_ips_from_header( self::server_header( 'HTTP_X_FORWARDED_FOR' ) );
-		if ( empty( $ips ) ) {
-			$ips = self::public_ips_from_header( self::server_header( 'HTTP_FORWARDED' ) );
-		}
-		if ( empty( $ips ) ) {
-			$ips = self::public_ips_from_header( self::server_header( 'HTTP_X_FORWARDED' ) );
-		}
+		return self::visitor_from_forwarding_header( self::server_header( 'HTTP_X_FORWARDED_FOR' ), $remote );
+	}
+
+	/**
+	 * Rightmost public hop in one forwarding header that is not a trusted proxy.
+	 *
+	 * @param string $header Header value.
+	 * @param string $remote REMOTE_ADDR.
+	 * @return string Empty when the header has no public hop.
+	 */
+	private static function visitor_from_forwarding_header( $header, $remote ) {
+		$ips   = self::public_ips_from_header( $header );
 		$count = count( $ips );
 		if ( 0 === $count ) {
 			return '';

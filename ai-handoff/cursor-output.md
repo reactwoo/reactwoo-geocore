@@ -3,6 +3,33 @@
 ## Status
 needs-review
 
+Geo Core 1.9.23 is ready for review on PR #102 (`cursor/critical-bug-investigation-d1b6`). The branch was already one commit ahead of `origin/main` (`9f185d5`), so it was not rebased. Not merged and not tagged.
+
+A present `X-Real-IP`, `True-Client-IP`, or Cloudflare `CF-Connecting-IP` now blocks a client `Forwarded` or `X-Forwarded` header even when that proxy header is not a single public address. Previously a comma list, a private address, or the proxy's own address fell through and the client header was used. RFC 7239 `for=` values that include parameters still resolve when they are the only forwarding header.
+
+## Files changed
+- `includes/class-rwgc-geoip.php` — presence guard before `Forwarded` / `X-Forwarded`, and RFC 7239 `for=` parsing.
+- `tests/test-rwgc-geoip-ip.php` — spoof attempts for each header, the trusted-proxy path, Cloudflare opt-in and legacy trust, and a direct visitor.
+- Plugin header, `RWGC_VERSION`, readme Stable tag, changelog, upgrade notice, block asset versions, and the WordPress.org build guard — 1.9.23.
+
+## Not changed
+- `X-Forwarded-For` is still walked from the right before `X-Real-IP`. Untrusted peers, including a plain public visitor and a private address that is not listed as a proxy, still ignore every forwarding header. QUIC.cloud stays an opt-in checkbox. `rwgc_visitor_ip` still runs last.
+- No tag, no merge, no WordPress.org deploy.
+
+## Commands
+- `php tests/test-rwgc-geoip-ip.php` — all assertions passed.
+- `php tests/test-rwgc-wporg-build.php` — all guards passed. Stable tag and `RWGC_VERSION` are 1.9.23.
+- `python3 tests/test-rwgc-wporg-zip-guard.py` — passed.
+- `python3 tests/test-rwgc-wporg-upload-precheck.py` — 9 checks, 0 failed (zip not built).
+- `php /tmp/phpunit-9.6.phar -c phpunit.xml.dist --stderr` — OK (182 tests, 1269 assertions).
+- CLI and JS regressions from `.github/workflows/test.yml` — exit 0.
+
+## Remaining errors
+- None from these tests.
+
+## Status
+needs-review
+
 Geo Core 1.9.22 stops a logged-out visitor from choosing a country with `X-Forwarded-For` (or `X-Real-IP`, `True-Client-IP`, `CF-Connecting-IP`, `CF-IPCountry`) unless `REMOTE_ADDR` is a trusted proxy. Draft PR only. Not merged, not tagged.
 
 ## Files changed

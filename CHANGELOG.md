@@ -5,7 +5,10 @@ All notable changes to **reactwoo-geocore** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.9.23] - 2026-10-30
+
+### Security
+- A client `Forwarded` or `X-Forwarded` header no longer replaces a proxy-set `X-Real-IP` or `True-Client-IP`. Those headers are read only when `X-Forwarded-For` has no public hop and neither single-value header was sent. A present header that is not one public address (a comma list, a private address, or the proxy's own address) falls back to `REMOTE_ADDR` instead of the client header. The same block applies to a present `CF-Connecting-IP` while Behind Cloudflare is on. An RFC 7239 `Forwarded` value with parameters is still accepted when it is the only forwarding header.
 
 ## [1.9.22] - 2026-10-28
 
