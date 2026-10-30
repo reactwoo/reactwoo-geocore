@@ -131,6 +131,10 @@ rwgc_geoip_assert(
 			'HTTP_CF_CONNECTING_IP'    => $spoof,
 			'HTTP_X_CLUSTER_CLIENT_IP' => $spoof,
 			'HTTP_FORWARDED_FOR'       => $spoof,
+			'HTTP_FORWARDED'           => 'for=' . $spoof,
+			'HTTP_X_FORWARDED'         => $spoof,
+			'HTTP_X_REAL_IP'           => $spoof,
+			'HTTP_TRUE_CLIENT_IP'      => $spoof,
 		)
 	)
 );
@@ -154,6 +158,18 @@ rwgc_geoip_assert(
 			'HTTP_CF_CONNECTING_IP' => $cf_cli,
 			'HTTP_CF_IPCOUNTRY'     => 'ZA',
 			'HTTP_X_FORWARDED_FOR'  => $spoof,
+		)
+	)
+);
+rwgc_geoip_assert(
+	'Cloudflare edge ignores Forwarded until Behind Cloudflare is on',
+	$cf_edge === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'         => $cf_edge,
+			'HTTP_FORWARDED'      => 'for=' . $cf_cli,
+			'HTTP_X_FORWARDED'    => $cf_cli,
+			'HTTP_X_REAL_IP'      => $cf_cli,
+			'HTTP_TRUE_CLIENT_IP' => $cf_cli,
 		)
 	)
 );
@@ -187,6 +203,9 @@ rwgc_geoip_assert(
 			'HTTP_CLIENT_IP'        => $spoof,
 			'HTTP_CF_CONNECTING_IP' => $spoof,
 			'HTTP_CF_IPCOUNTRY'     => 'ZA',
+			'HTTP_FORWARDED'        => 'for=102.132.0.1',
+			'HTTP_X_FORWARDED'      => '102.132.0.1',
+			'HTTP_FORWARDED_FOR'    => '102.132.0.1',
 		)
 	)
 );
@@ -442,6 +461,90 @@ rwgc_geoip_assert(
 		)
 	)
 );
+rwgc_geoip_assert(
+	'Forwarded parameters do not replace a proxy-set X-Real-IP',
+	'203.0.113.60' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'    => '198.51.100.8',
+			'HTTP_X_REAL_IP' => '203.0.113.60',
+			'HTTP_FORWARDED' => 'proto=https;for="102.132.0.1";by=198.51.100.8',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'a comma-list X-Real-IP is not replaced by Forwarded',
+	'198.51.100.8' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'      => '198.51.100.8',
+			'HTTP_X_REAL_IP'   => '203.0.113.60, 102.132.0.1',
+			'HTTP_FORWARDED'   => 'for=102.132.0.1',
+			'HTTP_X_FORWARDED' => '102.132.0.1',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'X-Forwarded cannot replace an X-Real-IP that is the proxy itself',
+	'198.51.100.8' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'      => '198.51.100.8',
+			'HTTP_X_REAL_IP'   => '198.51.100.8',
+			'HTTP_X_FORWARDED' => '102.132.0.1',
+			'HTTP_FORWARDED'   => 'for=102.132.0.1',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'Forwarded cannot replace a private True-Client-IP',
+	'198.51.100.8' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'         => '198.51.100.8',
+			'HTTP_TRUE_CLIENT_IP' => '10.1.2.3',
+			'HTTP_FORWARDED'      => 'for=102.132.0.1;proto=https',
+			'HTTP_X_FORWARDED'    => '102.132.0.1',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'X-Forwarded-For still wins over a client Forwarded header',
+	'203.0.113.50' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => '198.51.100.8',
+			'HTTP_X_FORWARDED_FOR' => '102.132.0.1, 203.0.113.50',
+			'HTTP_FORWARDED'       => 'for=102.132.0.1',
+			'HTTP_X_FORWARDED'     => '102.132.0.1',
+			'HTTP_X_REAL_IP'       => '102.132.0.1',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'X-Forwarded is used when no other forwarding header is set',
+	'203.0.113.80' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'      => '198.51.100.8',
+			'HTTP_X_FORWARDED' => '102.132.0.1, 203.0.113.80',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'Forwarded with parameters is used when no other forwarding header is set',
+	'203.0.113.70' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'    => '198.51.100.8',
+			'HTTP_FORWARDED' => 'for=102.132.0.1;proto=http, for="203.0.113.70";proto=https',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'Client-IP, Forwarded-For, and X-Cluster-Client-IP are not visitor addresses',
+	'198.51.100.8' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'              => '198.51.100.8',
+			'HTTP_CLIENT_IP'           => '102.132.0.1',
+			'HTTP_FORWARDED_FOR'       => '102.132.0.1',
+			'HTTP_X_CLUSTER_CLIENT_IP' => '102.132.0.1',
+		)
+	)
+);
 $GLOBALS['rwgc_test_trusted_cidrs'] = null;
 
 $GLOBALS['rwgc_test_cloudflare'] = true;
@@ -454,6 +557,30 @@ rwgc_geoip_assert(
 			'HTTP_X_FORWARDED_FOR'  => '102.132.0.1',
 			'HTTP_X_REAL_IP'        => '102.132.0.1',
 			'HTTP_TRUE_CLIENT_IP'   => '102.132.0.1',
+			'HTTP_FORWARDED'        => 'for=102.132.0.1',
+			'HTTP_X_FORWARDED'      => '102.132.0.1',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'Behind Cloudflare does not fall through from a bad CF-Connecting-IP to Forwarded',
+	$cf_edge === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'           => $cf_edge,
+			'HTTP_CF_CONNECTING_IP' => 'not-an-ip',
+			'HTTP_FORWARDED'        => 'for=102.132.0.1',
+			'HTTP_X_FORWARDED'      => '102.132.0.1',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'Behind Cloudflare still walks X-Forwarded-For when CF-Connecting-IP is not a public address',
+	$cf_cli === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'           => $cf_edge,
+			'HTTP_CF_CONNECTING_IP' => 'not-an-ip',
+			'HTTP_X_FORWARDED_FOR'  => '102.132.0.1, ' . $cf_cli,
+			'HTTP_FORWARDED'        => 'for=102.132.0.1',
 		)
 	)
 );
@@ -654,6 +781,8 @@ rwgc_geoip_assert(
 			'REMOTE_ADDR'           => $cf_edge,
 			'HTTP_CF_CONNECTING_IP' => $cf_cli,
 			'HTTP_X_FORWARDED_FOR'  => '102.132.0.1',
+			'HTTP_FORWARDED'        => 'for=102.132.0.1',
+			'HTTP_X_FORWARDED'      => '102.132.0.1',
 		)
 	)
 );

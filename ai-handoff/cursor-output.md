@@ -3,21 +3,29 @@
 ## Status
 needs-review
 
-A trusted proxy was still letting a client choose a country. `Forwarded` and `X-Forwarded` were read before `X-Real-IP` and `True-Client-IP`. A proxy that overwrites `X-Real-IP` and forwards `Forwarded` (nginx does this unless the header is cleared) resolved `Forwarded: for=102.132.0.1` instead of the proxy-set address. Those two headers are now used only when `X-Forwarded-For` has no public hop and neither single-value header is set. Not tagged.
+Geo Core 1.9.23 is ready for review on PR #102 (`cursor/critical-bug-investigation-d1b6`). The branch was already one commit ahead of `origin/main` (`9f185d5`), so it was not rebased. Not merged and not tagged.
+
+A present `X-Real-IP`, `True-Client-IP`, or Cloudflare `CF-Connecting-IP` now blocks a client `Forwarded` or `X-Forwarded` header even when that proxy header is not a single public address. Previously a comma list, a private address, or the proxy's own address fell through and the client header was used. RFC 7239 `for=` values that include parameters still resolve when they are the only forwarding header.
 
 ## Files changed
-- `includes/class-rwgc-geoip.php` — header order.
-- `tests/test-rwgc-geoip-ip.php` — locks the spoof and the Forwarded-only fallback.
-- `CHANGELOG.md` — unreleased security note.
+- `includes/class-rwgc-geoip.php` — presence guard before `Forwarded` / `X-Forwarded`, and RFC 7239 `for=` parsing.
+- `tests/test-rwgc-geoip-ip.php` — spoof attempts for each header, the trusted-proxy path, Cloudflare opt-in and legacy trust, and a direct visitor.
+- Plugin header, `RWGC_VERSION`, readme Stable tag, changelog, upgrade notice, block asset versions, and the WordPress.org build guard — 1.9.23.
 
 ## Not changed
-- Trusted-proxy, Cloudflare, and QUIC.cloud decisions. No version bump and no tag.
+- `X-Forwarded-For` is still walked from the right before `X-Real-IP`. Untrusted peers, including a plain public visitor and a private address that is not listed as a proxy, still ignore every forwarding header. QUIC.cloud stays an opt-in checkbox. `rwgc_visitor_ip` still runs last.
+- No tag, no merge, no WordPress.org deploy.
 
 ## Commands
-- `php tests/test-rwgc-geoip-ip.php`
+- `php tests/test-rwgc-geoip-ip.php` — all assertions passed.
+- `php tests/test-rwgc-wporg-build.php` — all guards passed. Stable tag and `RWGC_VERSION` are 1.9.23.
+- `python3 tests/test-rwgc-wporg-zip-guard.py` — passed.
+- `python3 tests/test-rwgc-wporg-upload-precheck.py` — 9 checks, 0 failed (zip not built).
+- `php /tmp/phpunit-9.6.phar -c phpunit.xml.dist --stderr` — OK (182 tests, 1269 assertions).
+- CLI and JS regressions from `.github/workflows/test.yml` — exit 0.
 
 ## Remaining errors
-- None from that test.
+- None from these tests.
 
 ## Status
 needs-review
