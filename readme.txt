@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.22
+Stable tag: 1.9.23
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -165,6 +165,9 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.23 =
+* A visitor can no longer choose a country by sending a Forwarded or X-Forwarded header when the proxy has set X-Real-IP or True-Client-IP. That stays true when the proxy header is present but is not a single public address. Cloudflare's CF-Connecting-IP is not replaced by those headers while Behind Cloudflare is on.
+
 = 1.9.22 =
 * Visitor country follows the connection address. A visitor cannot choose a country by sending X-Forwarded-For, X-Real-IP, True-Client-IP, CF-Connecting-IP, or CF-IPCountry.
 * Settings → Detection adds Trusted proxies and Behind Cloudflare. Cloudflare headers are used only when that option is on and the connection comes from Cloudflare's published addresses, which are included with the plugin.
@@ -316,6 +319,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.23 =
+A client Forwarded or X-Forwarded header no longer replaces the visitor address a trusted proxy set in X-Real-IP or True-Client-IP. Trusted proxies and Behind Cloudflare are unchanged from 1.9.22.
 
 = 1.9.22 =
 Visitor country is taken from the connection address unless you list a trusted proxy or turn on Behind Cloudflare. Sites that already use Cloudflare keep that behaviour until settings are saved. Review Settings → Detection after updating.
