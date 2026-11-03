@@ -5,6 +5,11 @@ All notable changes to **reactwoo-geocore** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.24] - 2026-11-03
+
+### Fixed
+- An IPv4 peer that PHP reports as `::ffff:a.b.c.d` (Apache and some php-fpm listeners on a dual-stack socket) now matches an IPv4 trusted proxy, Cloudflare range, or QUIC.cloud edge. Forwarding headers from that peer are read, including an RFC 7239 `for="[::ffff:a.b.c.d]:port"` node and a trusted range written as an IPv4-mapped CIDR. The visitor address passed to MaxMind is the embedded IPv4 address. A private peer in that form shows the admin notice, naming the IPv4 address to add under Trusted proxies, instead of being treated as a public visitor.
+
 ## [1.9.23] - 2026-10-30
 
 ### Security
