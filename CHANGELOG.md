@@ -5,6 +5,12 @@ All notable changes to **reactwoo-geocore** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.25] - 2026-11-03
+
+### Fixed
+- Plugin updates from ReactWoo no longer keep a ten-minute download link in the WordPress update list, which can stay cached for hours. Update now requests a new link when the download starts. A failed license login is remembered for 15 minutes, and saving the update list only to record the last check time does not call ReactWoo again.
+- Release zips put the plugin file and readme first, then other files, and JavaScript last, so a ClamAV Foxhole rule does not treat a normal admin script as the first file in the archive.
+
 ## [1.9.24] - 2026-11-03
 
 ### Fixed

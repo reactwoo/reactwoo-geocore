@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.24
+Stable tag: 1.9.25
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -165,6 +165,10 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= 1.9.25 =
+* Update now on the Plugins screen downloads a fresh ReactWoo release link. A link that expired after ten minutes is no longer kept in the update list.
+* The release archive lists the plugin file and readme before JavaScript, so a virus scanner does not flag a normal script as the first file in the zip.
+
 = 1.9.24 =
 * A connection that PHP reports as ::ffff:a.b.c.d is treated as that IPv4 address. Trusted proxies, Cloudflare, and the private-address admin notice match it, so visitors are not geolocated as the proxy.
 
@@ -322,6 +326,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.25 =
+Update now downloads a fresh ReactWoo release link. The Plugins screen no longer waits on a license login every time WordPress records that it checked for updates.
 
 = 1.9.24 =
 An IPv4 connection that PHP reports as ::ffff:a.b.c.d now matches Trusted proxies and Behind Cloudflare. A private address in that form shows the admin notice.

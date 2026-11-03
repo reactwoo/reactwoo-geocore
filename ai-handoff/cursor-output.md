@@ -3,6 +3,23 @@
 ## Status
 done
 
+Geo Core 1.9.25 is on PR #104 for QA. The branch already contained main `7564839` (1.9.24). Not merged and not tagged.
+
+## Files changed
+- Plugin header, `RWGC_VERSION`, readme Stable tag, changelog, upgrade notice, block asset versions, and the WordPress.org build guard — 1.9.25.
+
+## Not changed
+- Update and zip behaviour from the previous commit on this branch.
+
+## Commands
+- `php /tmp/composer.phar test:all` — passed. PHPUnit 182 tests, 1269 assertions. WordPress.org build guard reports 1.9.25. Zip order and satellite updater checks passed.
+
+## Remaining errors
+- None from these tests.
+
+## Status
+done
+
 Release zips no longer put a `.js` file on the ClamAV Foxhole entries, and the plugins screen no longer stores a ten-minute R2 URL or blocks on login plus an update check every time `update_plugins` is saved. Versions were not bumped. Not tagged and not merged.
 
 ## Files changed
