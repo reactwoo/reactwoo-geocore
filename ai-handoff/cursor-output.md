@@ -3,6 +3,26 @@
 ## Status
 done
 
+Failed-login flags now store an `expires_at` of `time() + 900` and use that same 900-second transient TTL. Offer flags use 3600 seconds. `RWGC_Platform_Client::get_access_token()` does not call `/api/v5/auth/login` unless the update path passes `$allow_remote_login`. Version stays 1.9.25.
+
+## Files changed
+- `includes/class-rwgc-platform-client.php` — 900-second failed-login cache; no remote login from AI or other non-update callers.
+- `includes/class-rwgc-satellite-updater.php` — failed-login and offer caches record `expires_at` in seconds.
+- `tests/test-rwgc-satellite-updater.php` — TTL is 900 and 3600, and a non-update `request()` does not log in.
+
+## Not changed
+- Plugin version, readme stable tag, changelog.
+
+## Commands
+- `php tests/test-rwgc-satellite-updater.php` — passed.
+- `php tests/test-rwgc-wporg-build.php` — passed. Stable tag and `RWGC_VERSION` stay 1.9.25.
+
+## Remaining errors
+- None from these tests.
+
+## Status
+done
+
 Geo Core 1.9.25 is on PR #104 for QA. The branch already contained main `7564839` (1.9.24). Not merged and not tagged.
 
 ## Files changed

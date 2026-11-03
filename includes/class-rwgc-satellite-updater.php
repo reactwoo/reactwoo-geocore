@@ -396,7 +396,7 @@ class RWGC_Satellite_Updater {
 		if ( ! class_exists( 'RWGC_Platform_Client', false ) ) {
 			return null;
 		}
-		$token = RWGC_Platform_Client::get_access_token( (int) $login_timeout );
+		$token = RWGC_Platform_Client::get_access_token( (int) $login_timeout, true );
 		if ( is_wp_error( $token ) || ! is_string( $token ) || '' === $token ) {
 			return null;
 		}
@@ -719,16 +719,20 @@ class RWGC_Satellite_Updater {
 	 */
 	private static function bearer_for_check( $cfg, $slug, $login_timeout, $honor_login_cache ) {
 		$key = self::login_fail_key( $slug, $cfg );
-		if ( $honor_login_cache && function_exists( 'get_transient' ) ) {
-			$failed = get_transient( $key );
-			if ( false !== $failed && '' !== (string) $failed ) {
-				return null;
-			}
+		if ( $honor_login_cache && function_exists( 'get_transient' ) && self::failure_flag_is_active( get_transient( $key ) ) ) {
+			return null;
 		}
 		$token = self::item_bearer_for_updates( $cfg, $login_timeout );
 		if ( null === $token ) {
 			if ( function_exists( 'set_transient' ) ) {
-				set_transient( $key, '1', self::LOGIN_FAIL_TTL );
+				$ttl = self::LOGIN_FAIL_TTL;
+				set_transient(
+					$key,
+					array(
+						'expires_at' => time() + $ttl,
+					),
+					$ttl
+				);
 			}
 			return null;
 		}
@@ -745,6 +749,25 @@ class RWGC_Satellite_Updater {
 		if ( function_exists( 'update_option' ) ) {
 			update_option( 'rwgc_upd_cache_gen', (string) time(), false );
 		}
+		if ( class_exists( 'RWGC_Platform_Client', false ) && is_callable( array( 'RWGC_Platform_Client', 'clear_login_failure_cache' ) ) ) {
+			RWGC_Platform_Client::clear_login_failure_cache();
+		}
+	}
+
+	/**
+	 * A stored failure flag is active only until its expires_at timestamp.
+	 *
+	 * The transient TTL is the same number of seconds. expires_at is what callers
+	 * should trust if they inspect the stored flag.
+	 *
+	 * @param mixed $failed Stored flag.
+	 * @return bool
+	 */
+	private static function failure_flag_is_active( $failed ) {
+		if ( ! is_array( $failed ) || empty( $failed['expires_at'] ) ) {
+			return false;
+		}
+		return (int) $failed['expires_at'] > time();
 	}
 
 	/**
@@ -817,6 +840,12 @@ class RWGC_Satellite_Updater {
 				'offer' => null,
 			);
 		}
+		if ( isset( $raw['expires_at'] ) && (int) $raw['expires_at'] <= time() ) {
+			return array(
+				'hit'   => false,
+				'offer' => null,
+			);
+		}
 		$offer = $raw['offer'];
 		if ( is_array( $offer ) && isset( $offer['package'] ) ) {
 			unset( $offer['package'] );
@@ -841,12 +870,14 @@ class RWGC_Satellite_Updater {
 		if ( is_array( $offer ) && isset( $offer['package'] ) ) {
 			unset( $offer['package'] );
 		}
+		$ttl = self::OFFER_CACHE_TTL;
 		set_transient(
 			self::offer_cache_key( $slug, $current, $cfg ),
 			array(
-				'offer' => $offer,
+				'expires_at' => time() + $ttl,
+				'offer'      => $offer,
 			),
-			self::OFFER_CACHE_TTL
+			$ttl
 		);
 	}
 

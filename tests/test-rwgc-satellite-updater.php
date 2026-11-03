@@ -487,7 +487,9 @@ foreach ( $GLOBALS['rw_transients'] as $key => $row ) {
 	if ( 0 === strpos( (string) $key, 'rwgc_uo_' ) ) {
 		$offer_ttls[] = (int) $row['ttl'];
 		$cached       = $row['value'];
+		$offer_left = ( isset( $cached['expires_at'] ) ? (int) $cached['expires_at'] : 0 ) - time();
 		rwgc_upd_assert( 'the one-hour offer cache does not keep the signed URL', is_array( $cached ) && isset( $cached['offer']['version'] ) && ! isset( $cached['offer']['package'] ) );
+		rwgc_upd_assert( 'the offer cache expiry is 3600 seconds', $offer_left >= 3590 && $offer_left <= 3600 );
 	}
 }
 rwgc_upd_assert( 'offers are cached for one hour', array( 3600 ) === $offer_ttls );
@@ -526,6 +528,18 @@ RWGC_Satellite_Updater::filter_update_transient( rwgc_upd_transient( $core, '1.0
 rwgc_upd_assert( 'a transport error is not cached for an hour', rwgc_upd_posts() === $before + 2 );
 $GLOBALS['rw_transport'] = false;
 
+$GLOBALS['rw_login_mode'] = 'token';
+$outside_before = count( rwgc_upd_posts_matching( '/auth/login' ) );
+$outside        = RWGC_Platform_Client::get_access_token();
+$outside_api    = RWGC_Platform_Client::request( 'GET', '/api/v5/ai/assistant/usage' );
+rwgc_upd_assert(
+	'licence login outside the update path does not call the network',
+	is_wp_error( $outside )
+		&& 'rwgc_login_not_cached' === $outside->get_error_code()
+		&& is_wp_error( $outside_api )
+		&& count( rwgc_upd_posts_matching( '/auth/login' ) ) === $outside_before
+);
+
 $GLOBALS['rw_transients'] = array();
 $GLOBALS['rw_login_mode'] = 'fail';
 $before_login = count( rwgc_upd_posts_matching( '/auth/login' ) );
@@ -535,14 +549,24 @@ rwgc_upd_assert( 'a failed commercial login uses a 10 second timeout', count( $l
 rwgc_upd_assert( 'a failed login does not offer an update', ! isset( $paid->response[ $commerce ] ) );
 $fail_ttls = array();
 foreach ( $GLOBALS['rw_transients'] as $key => $row ) {
-	if ( 0 === strpos( (string) $key, 'rwgc_ulf_' ) ) {
-		$fail_ttls[] = (int) $row['ttl'];
+	if ( 0 !== strpos( (string) $key, 'rwgc_ulf_' ) && RWGC_Platform_Client::LOGIN_FAIL_TRANSIENT !== $key ) {
+		continue;
 	}
+	$fail_ttls[] = (int) $row['ttl'];
+	$fail_left   = ( isset( $row['value']['expires_at'] ) ? (int) $row['value']['expires_at'] : 0 ) - time();
+	rwgc_upd_assert( 'failed-login flag ' . $key . ' lasts 900 seconds', 900 === (int) $row['ttl'] && $fail_left >= 890 && $fail_left <= 900 );
 }
-rwgc_upd_assert( 'a failed login is cached for 15 minutes', array( 900 ) === $fail_ttls );
+rwgc_upd_assert( 'a failed login is cached for 15 minutes', 2 === count( $fail_ttls ) && array( 900, 900 ) === $fail_ttls );
 $before_login = count( $login_posts );
 RWGC_Satellite_Updater::filter_update_transient( rwgc_upd_transient( $commerce, '1.0.0' ) );
+$still_outside = RWGC_Platform_Client::get_access_token();
+$still_api     = RWGC_Platform_Client::request( 'GET', '/api/v5/ai/assistant/usage' );
+RWGC_Platform_Client::get_access_token( 10, true );
 rwgc_upd_assert( 'the cached login failure is not attempted again', count( rwgc_upd_posts_matching( '/auth/login' ) ) === $before_login );
+rwgc_upd_assert(
+	'later licence calls reuse the 900 second failure cache',
+	is_wp_error( $still_outside ) && is_wp_error( $still_api ) && count( rwgc_upd_posts_matching( '/auth/login' ) ) === $before_login
+);
 
 $GLOBALS['rw_transients'] = array();
 $GLOBALS['rw_login_mode'] = 'token';
