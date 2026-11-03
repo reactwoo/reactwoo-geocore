@@ -95,9 +95,14 @@ class RWGC_Platform_Client {
 	/**
 	 * Bearer JWT for Authorization header, refreshed via login when needed.
 	 *
+	 * @param int $timeout Login HTTP timeout in seconds. The update path passes 10; other callers keep 30.
 	 * @return string|\WP_Error
 	 */
-	public static function get_access_token() {
+	public static function get_access_token( $timeout = 30 ) {
+		$timeout = (int) $timeout;
+		if ( $timeout < 1 ) {
+			$timeout = 30;
+		}
 		$cached = get_transient( self::TOKEN_TRANSIENT );
 		if ( is_array( $cached ) && ! empty( $cached['token'] ) && isset( $cached['expires'] ) && (int) $cached['expires'] > time() + 120 ) {
 			return (string) $cached['token'];
@@ -137,7 +142,7 @@ class RWGC_Platform_Client {
 		$response = wp_remote_post(
 			$url,
 			array(
-				'timeout' => 30,
+				'timeout' => $timeout,
 				'headers' => self::base_headers(),
 				'body'    => wp_json_encode( $body ),
 			)

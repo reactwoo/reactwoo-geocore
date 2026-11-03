@@ -1,6 +1,33 @@
 # Cursor output
 
 ## Status
+done
+
+Release zips no longer put a `.js` file on the ClamAV Foxhole entries, and the plugins screen no longer stores a ten-minute R2 URL or blocks on login plus an update check every time `update_plugins` is saved. Versions were not bumped. Not tagged and not merged.
+
+## Files changed
+- `scripts/package_zip.py` — write `reactwoo-geocore.php` and `readme.txt`, then other non-JS files, then `.js`, in a stable order. Both targets refuse a zip that matches `Sanesecurity.Foxhole.JS_Zip_1`, `_2`, `_4`, or `_11`–`_24`.
+- `tests/test-rwgc-zip-js-order.py` — applies those rules to synthetic zips and to the reactwoo and wporg trees.
+- `includes/class-rwgc-satellite-updater.php` — placeholder package, fresh signed URL in `upgrader_pre_download`, one-hour offer cache, 15-minute failed-login cache, skip when a save only changes `last_checked`. Check timeout 8s, install check 10s, login 10s.
+- `includes/class-rwgc-platform-client.php` — `get_access_token()` accepts a timeout. The default remains 30s.
+- `tests/test-rwgc-satellite-updater.php` — covers the placeholder, caches, timeouts, and install-time URL.
+- `composer.json`, `.github/workflows/test.yml` — run the new checks on pull requests.
+
+## Not changed
+- Plugin version, readme stable tag, and changelog.
+- WordPress.org distribution constant, `.distignore`, and the updater stub. The wporg zip still drops `includes/class-rwgc-satellite-updater.php`.
+- AI and other platform calls still use the 30s login timeout and the 45s API timeout.
+
+## Commands
+- `python3 tests/test-rwgc-zip-js-order.py` — passed, including both built zips and the wporg guard.
+- `php tests/test-rwgc-satellite-updater.php` — passed.
+- `php tests/test-rwgc-wporg-build.php` — all guards passed.
+- `python3 tests/test-rwgc-wporg-zip-guard.py` — passed.
+
+## Remaining errors
+- None from these tests.
+
+## Status
 needs-review
 
 Geo Core 1.9.24 is on PR #103 (`cursor/critical-bug-investigation-001c`), ready for review. Not merged, not tagged, and not published.

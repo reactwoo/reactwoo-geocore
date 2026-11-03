@@ -53,3 +53,9 @@ jobs:
 
       - name: JS Geo Content block
         run: composer test:geo-content-block
+
+      - name: Zip entry order (ClamAV Foxhole JS rules)
+        run: composer test:zip-js-order
+
+      - name: Satellite updater transient
+        run: composer test:satellite-updater
