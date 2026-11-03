@@ -120,6 +120,19 @@ $cf_edge = '162.158.0.1';
 $cf_cli  = '198.51.100.20';
 
 rwgc_geoip_assert( 'plain REMOTE_ADDR', $visitor === rwgc_geoip_resolve( array( 'REMOTE_ADDR' => $visitor ) ) );
+rwgc_geoip_assert(
+	'ipv4-mapped public visitor ignores forwarding headers',
+	$visitor === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'           => '::ffff:' . $visitor,
+			'HTTP_X_FORWARDED_FOR'  => $spoof,
+			'HTTP_FORWARDED'        => 'for=' . $spoof,
+			'HTTP_X_REAL_IP'        => $spoof,
+			'HTTP_CF_CONNECTING_IP' => $spoof,
+			'HTTP_CF_IPCOUNTRY'     => 'ZA',
+		)
+	)
+);
 
 rwgc_geoip_assert(
 	'spoofed X-Forwarded-For ignored on public origin',
@@ -197,6 +210,16 @@ rwgc_geoip_assert( 'ipv4-mapped visitor stays public', RWGC_GeoIP::is_public_ip(
 rwgc_geoip_assert( 'ipv4-mapped Cloudflare edge matches the v4 range', RWGC_GeoIP::is_cloudflare_ip( '::ffff:' . $cf_edge ) );
 rwgc_geoip_assert( 'compressed ipv4-mapped Cloudflare edge matches', RWGC_GeoIP::is_cloudflare_ip( '::ffff:a29e:1' ) );
 rwgc_geoip_assert( 'ipv4-mapped address matches an ipv4 cidr', RWGC_GeoIP::ip_in_cidr( '::ffff:104.16.0.1', '104.16.0.0/13' ) );
+rwgc_geoip_assert( 'mapped /120 is an ipv4 /24', RWGC_GeoIP::ip_in_cidr( '::ffff:198.51.100.8', '::FFFF:198.51.100.0/120' ) );
+rwgc_geoip_assert( 'plain ipv4 matches a mapped cidr', RWGC_GeoIP::ip_in_cidr( '198.51.100.8', '::ffff:198.51.100.0/120' ) );
+rwgc_geoip_assert( 'mapped /128 is one address', RWGC_GeoIP::ip_in_cidr( '::ffff:198.51.100.8', '::ffff:198.51.100.8/128' ) );
+rwgc_geoip_assert( 'mapped /128 misses the neighbour', ! RWGC_GeoIP::ip_in_cidr( '::ffff:198.51.100.9', '::ffff:198.51.100.8/128' ) );
+rwgc_geoip_assert( 'mapped /96 is every ipv4 address', RWGC_GeoIP::ip_in_cidr( '8.8.8.8', '::ffff:0:0/96' ) );
+rwgc_geoip_assert( 'ipv4 mask copied onto a mapped address is not a cidr match', ! RWGC_GeoIP::ip_in_cidr( '::ffff:10.1.2.3', '::ffff:10.0.0.0/8' ) );
+rwgc_geoip_assert( 'uppercase ipv4-mapped loopback is not public', ! RWGC_GeoIP::is_public_ip( '::FFFF:127.0.0.1' ) );
+rwgc_geoip_assert( 'expanded ipv4-mapped loopback is not public', ! RWGC_GeoIP::is_public_ip( '0:0:0:0:0:ffff:7f00:1' ) );
+rwgc_geoip_assert( 'ipv4-translated form is not unwrapped to loopback', RWGC_GeoIP::is_public_ip( '::ffff:0:127.0.0.1' ) );
+rwgc_geoip_assert( 'ipv4-translated form is outside 127.0.0.0/8', ! RWGC_GeoIP::ip_in_cidr( '::ffff:0:127.0.0.1', '127.0.0.0/8' ) );
 rwgc_geoip_assert(
 	'ipv4-mapped loopback is not trusted until 127.0.0.1 is listed',
 	'127.0.0.1' === rwgc_geoip_resolve(
@@ -419,6 +442,73 @@ rwgc_geoip_assert(
 	)
 );
 rwgc_geoip_assert(
+	'X-Forwarded-For accepts a bracketed ipv4-mapped hop with a port',
+	'203.0.113.50' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => '::ffff:198.51.100.8',
+			'HTTP_X_FORWARDED_FOR' => $spoof . ', [::ffff:203.0.113.50]:443',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'trusted proxy reads an ipv4-mapped X-Real-IP',
+	'203.0.113.60' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'    => '::ffff:198.51.100.8',
+			'HTTP_X_REAL_IP' => '::ffff:203.0.113.60',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'Forwarded IPv4-mapped node with a port is the visitor',
+	'203.0.113.70' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'    => '::ffff:198.51.100.8',
+			'HTTP_FORWARDED' => 'for=102.132.0.1, for="[::ffff:203.0.113.70]:443"',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'Forwarded drops an ipv4-mapped private node that has a port',
+	'203.0.113.50' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'    => '::ffff:198.51.100.8',
+			'HTTP_FORWARDED' => 'for="[::ffff:203.0.113.50]", for="[::ffff:10.0.0.9]:80"',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'Forwarded native IPv6 node with a port is kept',
+	'2606:4700:4700::1111' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'    => '198.51.100.8',
+			'HTTP_FORWARDED' => 'for="[2606:4700:4700::1111]:443"',
+		)
+	)
+);
+$rwgc_saved_trusted = $GLOBALS['rwgc_test_trusted_cidrs'];
+$GLOBALS['rwgc_test_trusted_cidrs'] = array( '::ffff:198.51.100.0/120' );
+rwgc_geoip_assert(
+	'mapped trusted-proxy cidr matches an ipv4-mapped peer',
+	'203.0.113.50' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => '::FFFF:198.51.100.8',
+			'HTTP_X_FORWARDED_FOR' => $spoof . ', 203.0.113.50',
+		)
+	)
+);
+$GLOBALS['rwgc_test_trusted_cidrs'] = array( '::ffff:198.51.100.8' );
+rwgc_geoip_assert(
+	'mapped trusted-proxy address matches a plain peer',
+	'203.0.113.50' === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'          => '198.51.100.8',
+			'HTTP_X_FORWARDED_FOR' => $spoof . ', 203.0.113.50',
+		)
+	)
+);
+$GLOBALS['rwgc_test_trusted_cidrs'] = $rwgc_saved_trusted;
+rwgc_geoip_assert(
 	'trusted proxy filter ignores a peer outside the range',
 	$visitor === rwgc_geoip_resolve(
 		array(
@@ -603,6 +693,16 @@ rwgc_geoip_assert(
 			'HTTP_X_FORWARDED_FOR'  => '102.132.0.1',
 			'HTTP_FORWARDED'        => 'for=102.132.0.1',
 			'HTTP_X_FORWARDED'      => '102.132.0.1',
+		)
+	)
+);
+rwgc_geoip_assert(
+	'Behind Cloudflare unwraps an ipv4-mapped CF-Connecting-IP',
+	$cf_cli === rwgc_geoip_resolve(
+		array(
+			'REMOTE_ADDR'           => '::ffff:' . $cf_edge,
+			'HTTP_CF_CONNECTING_IP' => '::ffff:' . $cf_cli,
+			'HTTP_X_FORWARDED_FOR'  => '102.132.0.1',
 		)
 	)
 );
@@ -891,6 +991,71 @@ rwgc_geoip_assert( 'settings screen posts an explicit cloudflare off', false !==
 rwgc_geoip_assert( 'settings screen saves trusted_proxies', false !== strpos( $settings_page, '[trusted_proxies]' ) );
 rwgc_geoip_assert( 'settings screen uses the mobile settings class', false !== strpos( $settings_page, 'rwgc-settings-screen' ) );
 rwgc_geoip_assert( 'settings stylesheet stacks the form on a phone', false !== strpos( $settings_css, '.rwgc-settings-screen' ) && false !== strpos( $settings_css, 'max-width: 782px' ) );
+
+if ( ! function_exists( '__' ) ) {
+	/**
+	 * @param string $text   Text.
+	 * @param string $domain Domain.
+	 * @return string
+	 */
+	function __( $text, $domain = 'default' ) {
+		unset( $domain );
+		return (string) $text;
+	}
+}
+if ( ! function_exists( 'esc_html' ) ) {
+	/**
+	 * @param mixed $text Text.
+	 * @return string
+	 */
+	function esc_html( $text ) {
+		return htmlspecialchars( (string) $text, ENT_QUOTES, 'UTF-8' );
+	}
+}
+if ( ! function_exists( 'esc_url' ) ) {
+	/**
+	 * @param mixed $url URL.
+	 * @return string
+	 */
+	function esc_url( $url ) {
+		return (string) $url;
+	}
+}
+if ( ! function_exists( 'current_user_can' ) ) {
+	/**
+	 * @param string $capability Capability.
+	 * @return bool
+	 */
+	function current_user_can( $capability ) {
+		unset( $capability );
+		return true;
+	}
+}
+if ( ! function_exists( 'admin_url' ) ) {
+	/**
+	 * @param string $path Path.
+	 * @return string
+	 */
+	function admin_url( $path = '' ) {
+		return 'https://example.test/wp-admin/' . ltrim( (string) $path, '/' );
+	}
+}
+$rwgc_notice_backup = $_SERVER;
+$_SERVER            = array(
+	'REMOTE_ADDR'          => '::ffff:127.0.0.1',
+	'HTTP_X_FORWARDED_FOR' => '203.0.113.50',
+);
+ob_start();
+RWGC_GeoIP::render_proxy_admin_notice();
+$rwgc_notice = ob_get_clean();
+$_SERVER     = $rwgc_notice_backup;
+rwgc_geoip_assert(
+	'ipv4-mapped loopback raises the private-peer admin warning',
+	false !== strpos( $rwgc_notice, 'notice-warning' )
+		&& false !== strpos( $rwgc_notice, '127.0.0.1' )
+		&& false !== strpos( $rwgc_notice, 'ignores that header' )
+		&& false === strpos( $rwgc_notice, '::ffff:' )
+);
 
 if ( $failed > 0 ) {
 	fwrite( STDERR, "\n$failed assertion(s) failed\n" );

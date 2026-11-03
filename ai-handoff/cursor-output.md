@@ -3,6 +3,34 @@
 ## Status
 needs-review
 
+Geo Core 1.9.24 is on PR #103 (`cursor/critical-bug-investigation-001c`), ready for review. Not merged, not tagged, and not published.
+
+An IPv4 peer reported as `::ffff:a.b.c.d` matches an IPv4 trusted proxy, Cloudflare range, or QUIC.cloud edge. `REMOTE_ADDR`, forwarding headers, and CIDR checks use the embedded IPv4 address. An RFC 7239 node `for="[::ffff:a.b.c.d]:port"` is read, and a trusted range written as `::ffff:a.b.c.0/120` matches. A private peer in that form shows the admin notice and names the IPv4 address to add under Trusted proxies. A direct public visitor in that form still ignores client forwarding headers.
+
+## Files changed
+- `includes/class-rwgc-geoip.php` — unwrap `::ffff:0:0/96` before public, CIDR, and equality checks; strip a bracketed port before that unwrap; convert a mapped CIDR whose prefix is 96–128 into the IPv4 range.
+- `tests/test-rwgc-geoip-ip.php` — mapped peers, port-bearing Forwarded nodes, mapped CIDRs, and the private-peer admin notice.
+- Plugin header, `RWGC_VERSION`, readme Stable tag, changelog, upgrade notice, block asset versions, and the WordPress.org build guard — 1.9.24.
+
+## Not changed
+- Header order. Untrusted peers still ignore every forwarding header. QUIC.cloud stays opt-in. `rwgc_visitor_ip` still runs last.
+- `::ffff:0:a.b.c.d` (IPv4-translated) is not treated as the embedded IPv4 address.
+- No tag, no merge, no WordPress.org deploy.
+
+## Commands
+- `php tests/test-rwgc-geoip-ip.php` — all assertions passed.
+- `php tests/test-rwgc-wporg-build.php` — all guards passed. Stable tag and `RWGC_VERSION` are 1.9.24.
+- `python3 tests/test-rwgc-wporg-zip-guard.py` — passed.
+- `python3 tests/test-rwgc-wporg-upload-precheck.py` — 9 checks, 0 failed (zip not built).
+- `php /tmp/phpunit-9.6.phar -c phpunit.xml.dist --stderr` — OK (182 tests, 1269 assertions).
+- CLI and JS regressions from `.github/workflows/test.yml` — exit 0.
+
+## Remaining errors
+- None from these tests.
+
+## Status
+needs-review
+
 IPv4-mapped peers (`::ffff:a.b.c.d`) now match an IPv4 trusted proxy, Cloudflare range, or QUIC.cloud edge. PHP 8.3 treats that form as public, so the private-peer warning never appeared and forwarding headers were ignored. Country, prices, and payment methods followed the proxy instead of the visitor.
 
 ## Files changed

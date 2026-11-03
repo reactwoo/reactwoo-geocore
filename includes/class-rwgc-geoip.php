@@ -361,9 +361,30 @@ class RWGC_GeoIP {
 			if ( ! preg_match( '/(?:^|;)\s*for=\s*("?)(\[[^\]]+\]|[^";,\s]+)\1/i', $part, $matches ) ) {
 				return '';
 			}
-			return self::normalize_mapped_ipv4( trim( $matches[2], " \t\"[]" ) );
+			$token = $matches[2];
+		} else {
+			$token = $part;
 		}
-		return self::normalize_mapped_ipv4( trim( $part, '[]' ) );
+		return self::normalize_mapped_ipv4( self::strip_forwarded_node( $token ) );
+	}
+
+	/**
+	 * Host from an X-Forwarded-For token or an RFC 7239 node.
+	 *
+	 * `for="[::ffff:203.0.113.50]:443"` keeps the port outside the brackets.
+	 * Trimming [] off that whole token leaves the port attached, so the
+	 * address never matches. An IPv6 address written without brackets is
+	 * left unchanged, because its colons are not a port.
+	 *
+	 * @param string $token Raw token.
+	 * @return string
+	 */
+	private static function strip_forwarded_node( $token ) {
+		$token = trim( (string) $token, " \t\"" );
+		if ( preg_match( '/^\[([^\]]+)\](?::\d+)?$/', $token, $matches ) ) {
+			return $matches[1];
+		}
+		return trim( $token, '[]' );
 	}
 
 	/**
@@ -377,9 +398,19 @@ class RWGC_GeoIP {
 		if ( 2 !== count( $parts ) ) {
 			return false;
 		}
-		$subnet = $parts[0];
-		$bits   = (int) $parts[1];
-		$ip_bin = inet_pton( (string) $ip );
+		$subnet_raw = trim( (string) $parts[0] );
+		$subnet     = self::normalize_mapped_ipv4( $subnet_raw );
+		$bits       = (int) $parts[1];
+		// A mapped CIDR is an IPv6 prefix: /96 is every IPv4 address and
+		// /120 is an IPv4 /24. A shorter prefix is a real IPv6 range, not
+		// an IPv4 mask copied onto a mapped address.
+		if ( $subnet !== $subnet_raw && false !== strpos( $subnet_raw, ':' ) ) {
+			if ( $bits < 96 || $bits > 128 ) {
+				return false;
+			}
+			$bits -= 96;
+		}
+		$ip_bin  = inet_pton( (string) $ip );
 		$sub_bin = inet_pton( $subnet );
 		if ( false === $ip_bin || false === $sub_bin || strlen( $ip_bin ) !== strlen( $sub_bin ) ) {
 			return false;
@@ -632,11 +663,14 @@ class RWGC_GeoIP {
 		}
 
 		if ( '' !== $remote && ! self::is_public_ip( $remote ) && ! self::is_trusted_proxy( $remote ) && self::request_has_forwarding_header() ) {
+			// Show the embedded IPv4 address. PHP reports ::ffff:127.0.0.1,
+			// and Trusted proxies matches that peer when 127.0.0.1 is listed.
+			$seen = self::normalize_mapped_ipv4( $remote );
 			self::render_notice_paragraph(
 				sprintf(
-					/* translators: %s: private address PHP sees for this request. */
+					/* translators: %s: private address for this connection. An IPv4-mapped peer is shown as its embedded IPv4 address. */
 					__( 'PHP sees the private address %s together with a forwarding header such as X-Forwarded-For. Geo Core ignores that header, so a visitor cannot choose a country. If a reverse proxy on this server sets the header, add that address under Trusted proxies in Geo Core settings.', 'reactwoo-geocore' ),
-					$remote
+					$seen
 				),
 				$url,
 				__( 'Open Geo Core settings', 'reactwoo-geocore' )
@@ -751,7 +785,7 @@ class RWGC_GeoIP {
 		 * peer to be inside Cloudflare's ranges while Behind Cloudflare is on.
 		 *
 		 * @param bool   $trusted Result of the saved proxies, QUIC.cloud, and Cloudflare checks.
-		 * @param string $remote  REMOTE_ADDR.
+		 * @param string $remote  Peer address. An IPv4-mapped peer is the embedded IPv4 address.
 		 */
 		return (bool) apply_filters( 'rwgc_is_trusted_proxy', $trusted, $remote );
 	}
