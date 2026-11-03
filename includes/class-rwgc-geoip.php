@@ -182,7 +182,10 @@ class RWGC_GeoIP {
 	 * @return string
 	 */
 	private static function resolve_client_ip( $remote ) {
-		$remote = trim( (string) $remote );
+		// Apache and some php-fpm listeners report an IPv4 peer as
+		// ::ffff:a.b.c.d. Compare and return the embedded IPv4 address so a
+		// trusted proxy or Cloudflare range written in IPv4 still matches.
+		$remote = self::normalize_mapped_ipv4( $remote );
 		if ( ! self::is_trusted_proxy( $remote ) ) {
 			return $remote;
 		}
@@ -265,11 +268,38 @@ class RWGC_GeoIP {
 	 * @return bool
 	 */
 	public static function is_public_ip( $ip ) {
-		$ip = trim( (string) $ip );
+		$ip = self::normalize_mapped_ipv4( $ip );
 		if ( '' === $ip ) {
 			return false;
 		}
 		return (bool) filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE );
+	}
+
+	/**
+	 * Unwrap an IPv4-mapped IPv6 address to IPv4.
+	 *
+	 * ::ffff:0:0/96 is the written form of an IPv4 address, not a distinct
+	 * network. PHP's private-range flag does not apply to that form, and an
+	 * IPv4 CIDR compare fails because the address is sixteen bytes. Other
+	 * IPv6 addresses are left unchanged.
+	 *
+	 * @param string $ip IP.
+	 * @return string
+	 */
+	private static function normalize_mapped_ipv4( $ip ) {
+		$ip = trim( (string) $ip );
+		if ( '' === $ip || false === strpos( $ip, ':' ) ) {
+			return $ip;
+		}
+		$bin = inet_pton( $ip );
+		if ( false === $bin || 16 !== strlen( $bin ) ) {
+			return $ip;
+		}
+		if ( "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff" !== substr( $bin, 0, 12 ) ) {
+			return $ip;
+		}
+		$v4 = inet_ntop( substr( $bin, 12, 4 ) );
+		return is_string( $v4 ) ? $v4 : $ip;
 	}
 
 	/**
@@ -331,9 +361,9 @@ class RWGC_GeoIP {
 			if ( ! preg_match( '/(?:^|;)\s*for=\s*("?)(\[[^\]]+\]|[^";,\s]+)\1/i', $part, $matches ) ) {
 				return '';
 			}
-			return trim( $matches[2], " \t\"[]" );
+			return self::normalize_mapped_ipv4( trim( $matches[2], " \t\"[]" ) );
 		}
-		return trim( $part, '[]' );
+		return self::normalize_mapped_ipv4( trim( $part, '[]' ) );
 	}
 
 	/**
@@ -342,6 +372,7 @@ class RWGC_GeoIP {
 	 * @return bool
 	 */
 	public static function ip_in_cidr( $ip, $cidr ) {
+		$ip    = self::normalize_mapped_ipv4( $ip );
 		$parts = explode( '/', (string) $cidr, 2 );
 		if ( 2 !== count( $parts ) ) {
 			return false;
@@ -710,7 +741,7 @@ class RWGC_GeoIP {
 	 * @return bool
 	 */
 	public static function is_trusted_proxy( $remote ) {
-		$remote  = trim( (string) $remote );
+		$remote  = self::normalize_mapped_ipv4( $remote );
 		$trusted = self::is_trusted_hop( $remote );
 		/**
 		 * Override the trusted-proxy decision for this connection.
@@ -834,7 +865,7 @@ class RWGC_GeoIP {
 	 * @return string
 	 */
 	private static function ip_lookup_key( $ip ) {
-		$bin = inet_pton( trim( (string) $ip ) );
+		$bin = inet_pton( self::normalize_mapped_ipv4( $ip ) );
 		return false === $bin ? '' : $bin;
 	}
 

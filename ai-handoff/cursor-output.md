@@ -3,6 +3,24 @@
 ## Status
 needs-review
 
+IPv4-mapped peers (`::ffff:a.b.c.d`) now match an IPv4 trusted proxy, Cloudflare range, or QUIC.cloud edge. PHP 8.3 treats that form as public, so the private-peer warning never appeared and forwarding headers were ignored. Country, prices, and payment methods followed the proxy instead of the visitor.
+
+## Files changed
+- `includes/class-rwgc-geoip.php` — unwrap `::ffff:0:0/96` before public, CIDR, and equality checks, and return the embedded IPv4 address.
+- `tests/test-rwgc-geoip-ip.php` — mapped Cloudflare, trusted-proxy, loopback, and QUIC.cloud cases.
+
+## Not changed
+- Header order, opt-in Cloudflare and QUIC.cloud, and the rightmost-public-hop walk. No version bump.
+
+## Commands
+- `php tests/test-rwgc-geoip-ip.php` — all assertions passed.
+
+## Remaining errors
+- None from this test.
+
+## Status
+needs-review
+
 Geo Core 1.9.23 is ready for review on PR #102 (`cursor/critical-bug-investigation-d1b6`). The branch was already one commit ahead of `origin/main` (`9f185d5`), so it was not rebased. Not merged and not tagged.
 
 A present `X-Real-IP`, `True-Client-IP`, or Cloudflare `CF-Connecting-IP` now blocks a client `Forwarded` or `X-Forwarded` header even when that proxy header is not a single public address. Previously a comma list, a private address, or the proxy's own address fell through and the client header was used. RFC 7239 `for=` values that include parameters still resolve when they are the only forwarding header.
