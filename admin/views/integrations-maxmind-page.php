@@ -35,45 +35,40 @@ settings_errors( 'rwgc_maxmind' );
 		__( 'MaxMind (GeoLite2)', 'reactwoo-geocore' ),
 		__( 'Connect your MaxMind account, refresh the country database, and verify visitor detection for targeting.', 'reactwoo-geocore' )
 	);
-	$rwgc_link_kses = array(
-		'a' => array(
-			'href'   => true,
-			'target' => true,
-			'rel'    => true,
-		),
-	);
 	?>
 
 	<div class="rwgc-card rwgc-card--full rwgc-card--highlight">
 		<h2><?php esc_html_e( 'How to get your free MaxMind key', 'reactwoo-geocore' ); ?></h2>
-		<ol class="rwgc-steps">
-			<li>
-				<?php
-				echo wp_kses(
-					sprintf(
+		<?php
+		RWGC_Admin_UI::render_numbered_steps(
+			array(
+				array(
+					'label' => __( 'Sign up for a free GeoLite2 account', 'reactwoo-geocore' ),
+					'hint'  => sprintf(
 						/* translators: %s: MaxMind sign-up URL. */
-						__( 'Sign up for a free GeoLite2 account (<a href="%s" target="_blank" rel="noopener noreferrer">create an account</a>).', 'reactwoo-geocore' ),
+						__( '<a href="%s" target="_blank" rel="noopener noreferrer">Create an account</a>. No payment is required.', 'reactwoo-geocore' ),
 						esc_url( RWGC_MaxMind::GEO_LITE_SIGNUP_URL )
 					),
-					$rwgc_link_kses
-				);
-				?>
-			</li>
-			<li>
-				<?php
-				echo wp_kses(
-					sprintf(
+				),
+				array(
+					'label' => __( 'Generate a license key and copy it', 'reactwoo-geocore' ),
+					'hint'  => sprintf(
 						/* translators: %s: MaxMind license key page URL. */
-						__( 'In your MaxMind account, open <a href="%s" target="_blank" rel="noopener noreferrer">Account → Manage License Keys</a>, generate a key, and copy it. MaxMind shows the full key only once.', 'reactwoo-geocore' ),
+						__( 'Open <a href="%s" target="_blank" rel="noopener noreferrer">Account → Manage License Keys</a>. MaxMind shows the full key only once.', 'reactwoo-geocore' ),
 						esc_url( RWGC_MaxMind::LICENSE_KEYS_URL )
 					),
-					$rwgc_link_kses
-				);
-				?>
-			</li>
-			<li><?php esc_html_e( 'Paste the Account ID and license key below, then click Save credentials.', 'reactwoo-geocore' ); ?></li>
-			<li><?php esc_html_e( 'Click Download / refresh database to fetch the country database now. Saving credentials does not download it. If Automatic updates stays checked, that save also schedules the first download for about one to seven hours later, then about twice a week.', 'reactwoo-geocore' ); ?></li>
-		</ol>
+				),
+				array(
+					'label' => __( 'Paste the Account ID and license key', 'reactwoo-geocore' ),
+					'hint'  => __( 'Enter both fields below, then click Save credentials.', 'reactwoo-geocore' ),
+				),
+				array(
+					'label' => __( 'Download the country database', 'reactwoo-geocore' ),
+					'hint'  => __( 'Click Download / refresh database to fetch it now. Saving credentials does not download it. If Automatic updates stays checked, that save also schedules the first download for about one to seven hours later, then about twice a week.', 'reactwoo-geocore' ),
+				),
+			)
+		);
+		?>
 	</div>
 
 	<div class="rwgc-card rwgc-card--full">

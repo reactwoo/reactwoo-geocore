@@ -106,44 +106,38 @@ $rwgc_goal_label    = isset( $rwgc_goal_labels[ $rwgc_goal ] ) ? $rwgc_goal_labe
 		<?php
 		$rwgc_maxmind_screen = function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' );
 		?>
-		<ol class="rwgc-steps">
-			<li>
-				<?php
-				echo wp_kses(
-					sprintf(
-						/* translators: %s: MaxMind sign-up URL. */
-						__( 'Sign up for a free GeoLite2 account (<a href="%s" target="_blank" rel="noopener noreferrer">create an account</a>).', 'reactwoo-geocore' ),
-						esc_url( RWGC_MaxMind::GEO_LITE_SIGNUP_URL )
+		<div class="rwgc-card">
+			<?php
+			RWGC_Admin_UI::render_numbered_steps(
+				array(
+					array(
+						'label' => __( 'Sign up for a free GeoLite2 account', 'reactwoo-geocore' ),
+						'hint'  => sprintf(
+							/* translators: %s: MaxMind sign-up URL. */
+							__( '<a href="%s" target="_blank" rel="noopener noreferrer">Create an account</a>. No payment is required.', 'reactwoo-geocore' ),
+							esc_url( RWGC_MaxMind::GEO_LITE_SIGNUP_URL )
+						),
 					),
 					array(
-						'a' => array(
-							'href'   => true,
-							'target' => true,
-							'rel'    => true,
-						),
-					)
-				);
-				?>
-			</li>
-			<li><?php esc_html_e( 'Generate a license key under Account → Manage License Keys and copy it. MaxMind shows the full key only once.', 'reactwoo-geocore' ); ?></li>
-			<li>
-				<?php
-				echo wp_kses(
-					sprintf(
-						/* translators: %s: MaxMind screen URL. */
-						__( 'Paste the Account ID and key on the <a href="%s">MaxMind screen</a>, then click Save credentials.', 'reactwoo-geocore' ),
-						esc_url( $rwgc_maxmind_screen )
+						'label' => __( 'Generate a license key and copy it', 'reactwoo-geocore' ),
+						'hint'  => __( 'Open Account → Manage License Keys. MaxMind shows the full key only once.', 'reactwoo-geocore' ),
 					),
 					array(
-						'a' => array(
-							'href' => true,
+						'label' => __( 'Paste the Account ID and license key', 'reactwoo-geocore' ),
+						'hint'  => sprintf(
+							/* translators: %s: MaxMind screen URL. */
+							__( 'Enter both on the <a href="%s">MaxMind screen</a>, then click Save credentials.', 'reactwoo-geocore' ),
+							esc_url( $rwgc_maxmind_screen )
 						),
-					)
-				);
-				?>
-			</li>
-			<li><?php esc_html_e( 'Click Download / refresh database to fetch the file now. Saving credentials does not download it. With automatic updates left on, the first download is scheduled for about one to seven hours later, then about twice a week.', 'reactwoo-geocore' ); ?></li>
-		</ol>
+					),
+					array(
+						'label' => __( 'Download the country database', 'reactwoo-geocore' ),
+						'hint'  => __( 'Click Download / refresh database to fetch the file now. Saving credentials does not download it. With automatic updates left on, the first download is scheduled for about one to seven hours later, then about twice a week.', 'reactwoo-geocore' ),
+					),
+				)
+			);
+			?>
+		</div>
 		<div class="rwgc-suite-readiness">
 			<table class="widefat striped">
 				<thead>

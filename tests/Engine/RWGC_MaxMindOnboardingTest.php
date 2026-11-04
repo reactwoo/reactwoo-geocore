@@ -25,6 +25,7 @@ final class RWGC_MaxMindOnboardingTest extends TestCase {
 		$this->assertStringContainsString( 'RWGC_MaxMind::ACCOUNT_INFO_URL', $view );
 		$this->assertStringContainsString( 'MaxMind shows the full key only once.', $view );
 		$this->assertStringContainsString( 'Saving credentials does not download it.', $view );
+		$this->assertStringContainsString( 'RWGC_Admin_UI::render_numbered_steps(', $view );
 		$this->assertStringContainsString( 'rel="noopener noreferrer"', $view );
 		$this->assertStringContainsString( 'target="_blank"', $view );
 		$this->assertStringContainsString( 'wp_kses(', $view );
@@ -42,6 +43,7 @@ final class RWGC_MaxMindOnboardingTest extends TestCase {
 		$this->assertStringContainsString( 'MaxMind screen', $view );
 		$this->assertStringContainsString( 'rwgc_get_maxmind_admin_url', $view );
 		$this->assertStringContainsString( 'MaxMind shows the full key only once.', $view );
+		$this->assertStringContainsString( 'RWGC_Admin_UI::render_numbered_steps(', $view );
 		$registry = $this->source( 'includes/class-rwgc-module-registry.php' );
 		$this->assertStringContainsString( 'fallback_visitor_sentence()', $registry );
 		$this->assertStringContainsString( 'MaxMind shows it only once', $registry );
@@ -61,6 +63,11 @@ final class RWGC_MaxMindOnboardingTest extends TestCase {
 		$this->assertStringContainsString( "check_ajax_referer( 'rwgc_dismiss_maxmind_db_notice' )", $admin );
 		$this->assertStringContainsString( 'update_user_meta( $user_id, self::MAXMIND_DB_NOTICE_META, \'1\' )', $admin );
 		$this->assertStringContainsString( '! self::can_manage()', $admin );
+		$this->assertStringContainsString( 'class="button button-primary"', $admin );
+		$this->assertStringContainsString( 'rwgc-integrations-maxmind', $admin );
+		$ui = $this->source( 'includes/class-rwgc-admin-ui.php' );
+		$this->assertStringContainsString( 'rwgc-platform-overview__steps', $ui );
+		$this->assertStringContainsString( 'rwgc-suite-stepper__num', $ui );
 		$this->assertStringNotContainsString( 'Pro', $this->source( 'admin/js/rwgc-maxmind-db-notice.js' ) );
 	}
 
