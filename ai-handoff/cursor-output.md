@@ -3,6 +3,32 @@
 ## Status
 done
 
+MaxMind onboarding copy now matches the real download schedule. Version stays 1.9.25. Not tagged.
+
+## Files changed
+- `admin/views/integrations-maxmind-page.php` — numbered free-key steps, Account ID help, license-key link.
+- `admin/views/getting-started.php` and `includes/class-rwgc-module-registry.php` — short steps on wizard step 2, fallback country named.
+- `includes/class-rwgc-admin.php` and `admin/js/rwgc-maxmind-db-notice.js` — missing-database warning names the fallback country; one dismissible Dashboard/Plugins notice.
+- `admin/views/dashboard-page.php` — MaxMind checklist step is complete when a key is saved or a usable database exists.
+- `includes/class-rwgc-settings.php`, `includes/class-rwgc-maxmind.php` — fallback label and verified MaxMind URLs.
+- `readme.txt`, `CHANGELOG.md`, `README.md` — installation, FAQ, and external-services schedule. Unreleased heading only.
+- `tests/Engine/RWGC_MaxMindOnboardingTest.php` — source checks for the new copy.
+
+## Not changed
+- Plugin version, stable tag, download behaviour, and Pro code.
+
+## Commands
+- `composer test:all` — passed.
+- `python3 scripts/package_zip.py --target wporg` — zip has no `.c`/`.h`/`.m4`/`.w32` or `dev-bin`/`release.sh`.
+- Plugin Check 2.1.0, mode new and update, low severity included — 0 errors, 4 existing `PostNotIn_exclude` warnings.
+- Local WordPress 7.1.4 screenshots of the wizard, MaxMind screen, notices, and both checklist states. `debug.log` had no Geo Core notices.
+
+## Remaining errors
+- None from these checks.
+
+## Status
+done
+
 Failed-login flags now store an `expires_at` of `time() + 900` and use that same 900-second transient TTL. Offer flags use 3600 seconds. `RWGC_Platform_Client::get_access_token()` does not call `/api/v5/auth/login` unless the update path passes `$allow_remote_login`. Version stays 1.9.25.
 
 ## Files changed

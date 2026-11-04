@@ -294,6 +294,46 @@ class RWGC_Settings {
 	}
 
 	/**
+	 * Configured fallback country, or US when the stored value is not an ISO code.
+	 *
+	 * @return string
+	 */
+	public static function fallback_country_code() {
+		$code = strtoupper( substr( (string) self::get( 'fallback_country', 'US' ), 0, 2 ) );
+		return preg_match( '/^[A-Z]{2}$/', $code ) ? $code : 'US';
+	}
+
+	/**
+	 * Fallback country for admin copy, for example "United States (US)".
+	 *
+	 * @return string
+	 */
+	public static function fallback_country_label() {
+		$code = self::fallback_country_code();
+		$name = $code;
+		if ( class_exists( 'RWGC_Countries', false ) ) {
+			$options = RWGC_Countries::get_options();
+			if ( isset( $options[ $code ] ) && is_string( $options[ $code ] ) && '' !== $options[ $code ] ) {
+				$name = $options[ $code ];
+			}
+		}
+		return $name === $code ? $code : $name . ' (' . $code . ')';
+	}
+
+	/**
+	 * Plain sentence used when no country database is available yet.
+	 *
+	 * @return string
+	 */
+	public static function fallback_visitor_sentence() {
+		return sprintf(
+			/* translators: %s: fallback country, for example United States (US). */
+			__( 'Until a database is added, every visitor is treated as %s.', 'reactwoo-geocore' ),
+			self::fallback_country_label()
+		);
+	}
+
+	/**
 	 * Default settings.
 	 *
 	 * @return array

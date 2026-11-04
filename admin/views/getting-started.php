@@ -103,6 +103,47 @@ $rwgc_goal_label    = isset( $rwgc_goal_labels[ $rwgc_goal ] ) ? $rwgc_goal_labe
 	<section class="rwgc-suite-wizard-section" aria-labelledby="rwgc-wz-s2">
 		<h2 id="rwgc-wz-s2" class="rwgc-suite-wizard-section__title"><?php esc_html_e( 'Step 2 — Environment checklist', 'reactwoo-geocore' ); ?></h2>
 		<p class="description"><?php esc_html_e( 'Fix anything marked “needs setup” before relying on geo in production. Links open the right Geo Core screen.', 'reactwoo-geocore' ); ?></p>
+		<?php
+		$rwgc_maxmind_screen = function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' );
+		?>
+		<ol class="rwgc-steps">
+			<li>
+				<?php
+				echo wp_kses(
+					sprintf(
+						/* translators: %s: MaxMind sign-up URL. */
+						__( 'Sign up for a free GeoLite2 account (<a href="%s" target="_blank" rel="noopener noreferrer">create an account</a>).', 'reactwoo-geocore' ),
+						esc_url( RWGC_MaxMind::GEO_LITE_SIGNUP_URL )
+					),
+					array(
+						'a' => array(
+							'href'   => true,
+							'target' => true,
+							'rel'    => true,
+						),
+					)
+				);
+				?>
+			</li>
+			<li><?php esc_html_e( 'Generate a license key under Account → Manage License Keys and copy it. MaxMind shows the full key only once.', 'reactwoo-geocore' ); ?></li>
+			<li>
+				<?php
+				echo wp_kses(
+					sprintf(
+						/* translators: %s: MaxMind screen URL. */
+						__( 'Paste the Account ID and key on the <a href="%s">MaxMind screen</a>, then click Save credentials.', 'reactwoo-geocore' ),
+						esc_url( $rwgc_maxmind_screen )
+					),
+					array(
+						'a' => array(
+							'href' => true,
+						),
+					)
+				);
+				?>
+			</li>
+			<li><?php esc_html_e( 'Click Download / refresh database to fetch the file now. Saving credentials does not download it. With automatic updates left on, the first download is scheduled for about one to seven hours later, then about twice a week.', 'reactwoo-geocore' ); ?></li>
+		</ol>
 		<div class="rwgc-suite-readiness">
 			<table class="widefat striped">
 				<thead>

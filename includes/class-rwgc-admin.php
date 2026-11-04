@@ -10,6 +10,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 class RWGC_Admin {
 
 	/**
+	 * Per-user dismissal of the Dashboard / Plugins database setup notice.
+	 */
+	const MAXMIND_DB_NOTICE_META = 'rwgc_dismissed_maxmind_db_notice';
+
+	/**
 	 * Init hooks.
 	 *
 	 * @return void
@@ -23,6 +28,10 @@ class RWGC_Admin {
 		// Before any output, so the shell notices and the page see the result of the action.
 		add_action( 'admin_init', array( __CLASS__, 'handle_maxmind_maintenance_action' ) );
 		add_action( 'admin_notices', array( __CLASS__, 'maybe_show_page_version_notice' ) );
+		add_action( 'admin_notices', array( __CLASS__, 'maybe_show_maxmind_database_notice' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_maxmind_database_notice_script' ) );
+		add_action( 'admin_post_rwgc_dismiss_maxmind_db_notice', array( __CLASS__, 'handle_dismiss_maxmind_db_notice' ) );
+		add_action( 'wp_ajax_rwgc_dismiss_maxmind_db_notice', array( __CLASS__, 'ajax_dismiss_maxmind_db_notice' ) );
 	}
 
 	/**
@@ -1642,10 +1651,17 @@ class RWGC_Admin {
 		);
 
 		// auto_update_hint is shown on the MaxMind screen, not as a warning on every Geo page.
+		$rwgc_fallback_note = class_exists( 'RWGC_Settings', false ) ? RWGC_Settings::fallback_visitor_sentence() : '';
 		if ( 'no_database' === $notice_code ) {
 			printf(
 				'<div class="notice notice-warning rwgc-notice"><p>%1$s <a href="%2$s">%3$s</a></p></div>',
-				esc_html__( 'ReactWoo Geo Core: No country database is on this site, and no MaxMind license key is saved to download one. Lookups will use fallback values.', 'reactwoo-geocore' ),
+				esc_html(
+					sprintf(
+						/* translators: %s: sentence naming the fallback country. */
+						__( 'ReactWoo Geo Core: No country database is on this site, and no MaxMind license key is saved to download one. %s', 'reactwoo-geocore' ),
+						$rwgc_fallback_note
+					)
+				),
 				esc_url( $maxmind_url ),
 				esc_html__( 'Open MaxMind integration', 'reactwoo-geocore' )
 			);
@@ -1653,7 +1669,13 @@ class RWGC_Admin {
 			if ( ! empty( $status['last_error'] ) ) {
 				printf(
 					'<div class="notice notice-warning rwgc-notice"><p>%1$s <a href="%2$s">%3$s</a></p><p><code>%4$s</code></p></div>',
-					esc_html__( 'ReactWoo Geo Core: MaxMind database not found. Last error:', 'reactwoo-geocore' ),
+					esc_html(
+						sprintf(
+							/* translators: %s: sentence naming the fallback country. */
+							__( 'ReactWoo Geo Core: MaxMind country database not found. %s Last error:', 'reactwoo-geocore' ),
+							$rwgc_fallback_note
+						)
+					),
 					esc_url( $maxmind_url ),
 					esc_html__( 'Download or upload the database', 'reactwoo-geocore' ),
 					esc_html( $status['last_error'] )
@@ -1661,7 +1683,13 @@ class RWGC_Admin {
 			} else {
 				printf(
 					'<div class="notice notice-warning rwgc-notice"><p>%1$s <a href="%2$s">%3$s</a></p></div>',
-					esc_html__( 'ReactWoo Geo Core: MaxMind country database not found.', 'reactwoo-geocore' ),
+					esc_html(
+						sprintf(
+							/* translators: %s: sentence naming the fallback country. */
+							__( 'ReactWoo Geo Core: MaxMind country database not found. %s', 'reactwoo-geocore' ),
+							$rwgc_fallback_note
+						)
+					),
 					esc_url( $maxmind_url ),
 					esc_html__( 'Download or upload the database', 'reactwoo-geocore' )
 				);
@@ -1674,6 +1702,126 @@ class RWGC_Admin {
 				esc_html__( 'Refresh the database', 'reactwoo-geocore' )
 			);
 		}
+	}
+
+	/**
+	 * One setup notice on the Dashboard and Plugins screens while no usable database exists.
+	 *
+	 * Dismissal is stored per user and is not shown again.
+	 *
+	 * @return void
+	 */
+	public static function maybe_show_maxmind_database_notice() {
+		if ( ! self::should_show_maxmind_database_notice() ) {
+			return;
+		}
+		$maxmind_url = function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' );
+		$dismiss_url = wp_nonce_url(
+			admin_url( 'admin-post.php?action=rwgc_dismiss_maxmind_db_notice' ),
+			'rwgc_dismiss_maxmind_db_notice'
+		);
+		$fallback    = class_exists( 'RWGC_Settings', false ) ? RWGC_Settings::fallback_visitor_sentence() : '';
+		echo '<div class="notice notice-warning is-dismissible rwgc-maxmind-db-notice"><p>';
+		echo esc_html(
+			sprintf(
+				/* translators: %s: sentence naming the fallback country. */
+				__( 'ReactWoo Geo Core has no country database yet. %s', 'reactwoo-geocore' ),
+				$fallback
+			)
+		);
+		echo ' <a href="' . esc_url( $maxmind_url ) . '">' . esc_html__( 'Add the database', 'reactwoo-geocore' ) . '</a>';
+		echo ' <a href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss', 'reactwoo-geocore' ) . '</a>';
+		echo '</p></div>';
+	}
+
+	/**
+	 * Persist the Dashboard / Plugins notice when its dismiss button is used.
+	 *
+	 * @param string $hook Current admin page hook.
+	 * @return void
+	 */
+	public static function enqueue_maxmind_database_notice_script( $hook ) {
+		unset( $hook );
+		if ( ! self::should_show_maxmind_database_notice() ) {
+			return;
+		}
+		wp_enqueue_script(
+			'rwgc-maxmind-db-notice',
+			RWGC_URL . 'admin/js/rwgc-maxmind-db-notice.js',
+			array(),
+			RWGC_VERSION,
+			true
+		);
+		wp_localize_script(
+			'rwgc-maxmind-db-notice',
+			'rwgcMaxmindDbNotice',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( 'rwgc_dismiss_maxmind_db_notice' ),
+			)
+		);
+	}
+
+	/**
+	 * Dismiss the database setup notice from the Dismiss link.
+	 *
+	 * @return void
+	 */
+	public static function handle_dismiss_maxmind_db_notice() {
+		if ( ! self::can_manage() ) {
+			wp_die( esc_html__( 'Unauthorized', 'reactwoo-geocore' ), '', array( 'response' => 403 ) );
+		}
+		check_admin_referer( 'rwgc_dismiss_maxmind_db_notice' );
+		$user_id = get_current_user_id();
+		if ( $user_id > 0 ) {
+			update_user_meta( $user_id, self::MAXMIND_DB_NOTICE_META, '1' );
+		}
+		$redirect = wp_get_referer();
+		if ( ! is_string( $redirect ) || '' === $redirect ) {
+			$redirect = admin_url( 'index.php' );
+		}
+		wp_safe_redirect( $redirect );
+		exit;
+	}
+
+	/**
+	 * Dismiss the database setup notice from the notice dismiss button.
+	 *
+	 * @return void
+	 */
+	public static function ajax_dismiss_maxmind_db_notice() {
+		if ( ! self::can_manage() ) {
+			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'reactwoo-geocore' ) ), 403 );
+		}
+		check_ajax_referer( 'rwgc_dismiss_maxmind_db_notice' );
+		$user_id = get_current_user_id();
+		if ( $user_id > 0 ) {
+			update_user_meta( $user_id, self::MAXMIND_DB_NOTICE_META, '1' );
+		}
+		wp_send_json_success();
+	}
+
+	/**
+	 * Whether the one-time database setup notice should render.
+	 *
+	 * @return bool
+	 */
+	private static function should_show_maxmind_database_notice() {
+		if ( ! is_admin() || ! self::can_manage() ) {
+			return false;
+		}
+		$user_id = function_exists( 'get_current_user_id' ) ? (int) get_current_user_id() : 0;
+		if ( $user_id <= 0 || get_user_meta( $user_id, self::MAXMIND_DB_NOTICE_META, true ) ) {
+			return false;
+		}
+		if ( ! function_exists( 'get_current_screen' ) ) {
+			return false;
+		}
+		$screen = get_current_screen();
+		if ( ! $screen || ! in_array( (string) $screen->base, array( 'dashboard', 'plugins' ), true ) ) {
+			return false;
+		}
+		return class_exists( 'RWGC_MaxMind', false ) && ! RWGC_MaxMind::db_is_usable();
 	}
 
 	/**

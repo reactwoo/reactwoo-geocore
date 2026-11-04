@@ -58,7 +58,7 @@ Geo Core must be active before any satellite or GeoCore Pro feature runs. Satell
 
 1. Upload to `wp-content/plugins/reactwoo-geocore` or install the release zip via **Plugins → Add New**.
 2. Activate **ReactWoo Geo Core**.
-3. Open **Geo → Integrations → MaxMind (GeoLite2)** — enter MaxMind Account ID and license key, then download or upload the `.mmdb` database.
+3. Sign up for a free GeoLite2 account at [maxmind.com](https://www.maxmind.com/en/create-account), generate a license key (shown only once), then open **Geo → Integrations → MaxMind (GeoLite2)**. Paste the Account ID and license key and click **Save credentials**. Click **Download / refresh database** to fetch the `.mmdb` now, or upload one. Saving credentials schedules the download (about one to seven hours later, then about twice a week) when automatic updates stay on. It does not download immediately.
 4. Test visitor detection on the same screen.
 
 No `composer install`, SSH, or WP-CLI is required on customer sites.

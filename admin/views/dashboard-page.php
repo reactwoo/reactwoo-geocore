@@ -7,11 +7,13 @@ $rwgc_settings = isset( $rwgc_settings ) && is_array( $rwgc_settings ) ? $rwgc_s
 $rwgc_status   = isset( $rwgc_status ) && is_array( $rwgc_status ) ? $rwgc_status : array();
 $rwgc_data     = isset( $rwgc_data ) && is_array( $rwgc_data ) ? $rwgc_data : array();
 
-$rwgc_geo_enabled   = (bool) RWGC_Settings::get( 'enabled', 1 );
-$rwgc_maxmind_ok    = ! empty( $rwgc_settings['maxmind_license_key'] );
-$rwgc_db_ready      = ! empty( $rwgc_status['exists'] );
-$rwgc_rest_enabled  = (bool) RWGC_Settings::get( 'rest_enabled', 1 );
-$rwgc_overview_rows = class_exists( 'RWGC_Variant_Manager', false ) ? RWGC_Variant_Manager::get_routing_overview_rows() : array();
+$rwgc_geo_enabled      = (bool) RWGC_Settings::get( 'enabled', 1 );
+$rwgc_has_license_key  = ! empty( $rwgc_settings['maxmind_license_key'] );
+$rwgc_db_usable        = ! empty( $rwgc_status['usable'] );
+$rwgc_maxmind_ok       = $rwgc_has_license_key || $rwgc_db_usable;
+$rwgc_db_ready         = ! empty( $rwgc_status['exists'] );
+$rwgc_rest_enabled     = (bool) RWGC_Settings::get( 'rest_enabled', 1 );
+$rwgc_overview_rows    = class_exists( 'RWGC_Variant_Manager', false ) ? RWGC_Variant_Manager::get_routing_overview_rows() : array();
 
 $rwgc_stat_geo   = $rwgc_geo_enabled ? __( 'Active', 'reactwoo-geocore' ) : __( 'Needs setup', 'reactwoo-geocore' );
 $rwgc_stat_geo_t = __( 'Visitor country detection is running.', 'reactwoo-geocore' );
@@ -41,7 +43,7 @@ $rwgc_stat_rest          = (string) max( 0, $rwgc_rule_matches_count );
 $rwgc_stat_rest_t        = __( 'Times Geo Core matched visitor conditions.', 'reactwoo-geocore' );
 
 $rwgc_tone_geo   = $rwgc_geo_enabled ? 'success' : 'warning';
-$rwgc_tone_mm    = $rwgc_maxmind_ok ? 'success' : 'warning';
+$rwgc_tone_mm    = $rwgc_has_license_key ? 'success' : 'warning';
 $rwgc_tone_db    = $rwgc_db_ready ? 'success' : 'warning';
 $rwgc_tone_rest  = $rwgc_rule_matches_count > 0 ? 'success' : 'neutral';
 
@@ -147,7 +149,7 @@ $rwgc_setup_progress = class_exists( 'RWGC_Onboarding', false )
 			<?php
 			RWGC_Admin_UI::render_checklist_row(
 				$rwgc_maxmind_ok,
-				__( 'Save MaxMind (GeoLite2) credentials under Integrations.', 'reactwoo-geocore' ),
+				__( 'Save a MaxMind license key, or add a country database, under Integrations.', 'reactwoo-geocore' ),
 				function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ),
 				__( 'Open MaxMind integration', 'reactwoo-geocore' )
 			);

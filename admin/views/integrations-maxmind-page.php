@@ -35,7 +35,46 @@ settings_errors( 'rwgc_maxmind' );
 		__( 'MaxMind (GeoLite2)', 'reactwoo-geocore' ),
 		__( 'Connect your MaxMind account, refresh the country database, and verify visitor detection for targeting.', 'reactwoo-geocore' )
 	);
+	$rwgc_link_kses = array(
+		'a' => array(
+			'href'   => true,
+			'target' => true,
+			'rel'    => true,
+		),
+	);
 	?>
+
+	<div class="rwgc-card rwgc-card--full rwgc-card--highlight">
+		<h2><?php esc_html_e( 'How to get your free MaxMind key', 'reactwoo-geocore' ); ?></h2>
+		<ol class="rwgc-steps">
+			<li>
+				<?php
+				echo wp_kses(
+					sprintf(
+						/* translators: %s: MaxMind sign-up URL. */
+						__( 'Sign up for a free GeoLite2 account (<a href="%s" target="_blank" rel="noopener noreferrer">create an account</a>).', 'reactwoo-geocore' ),
+						esc_url( RWGC_MaxMind::GEO_LITE_SIGNUP_URL )
+					),
+					$rwgc_link_kses
+				);
+				?>
+			</li>
+			<li>
+				<?php
+				echo wp_kses(
+					sprintf(
+						/* translators: %s: MaxMind license key page URL. */
+						__( 'In your MaxMind account, open <a href="%s" target="_blank" rel="noopener noreferrer">Account → Manage License Keys</a>, generate a key, and copy it. MaxMind shows the full key only once.', 'reactwoo-geocore' ),
+						esc_url( RWGC_MaxMind::LICENSE_KEYS_URL )
+					),
+					$rwgc_link_kses
+				);
+				?>
+			</li>
+			<li><?php esc_html_e( 'Paste the Account ID and license key below, then click Save credentials.', 'reactwoo-geocore' ); ?></li>
+			<li><?php esc_html_e( 'Click Download / refresh database to fetch the country database now. Saving credentials does not download it. If Automatic updates stays checked, that save also schedules the first download for about one to seven hours later, then about twice a week.', 'reactwoo-geocore' ); ?></li>
+		</ol>
+	</div>
 
 	<div class="rwgc-card rwgc-card--full">
 		<h2><?php esc_html_e( 'Account credentials', 'reactwoo-geocore' ); ?></h2>
@@ -50,6 +89,24 @@ settings_errors( 'rwgc_maxmind' );
 					<th scope="row"><label for="rwgc_maxmind_account_id"><?php esc_html_e( 'Account ID', 'reactwoo-geocore' ); ?></label></th>
 					<td>
 						<input type="text" class="regular-text" id="rwgc_maxmind_account_id" name="maxmind_account_id" inputmode="numeric" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" value="<?php echo esc_attr( isset( $rwgc_settings['maxmind_account_id'] ) ? (string) $rwgc_settings['maxmind_account_id'] : '' ); ?>" />
+						<p class="description">
+							<?php
+							echo wp_kses(
+								sprintf(
+									/* translators: %s: MaxMind account information URL. */
+									__( 'The numeric Account ID shown under Account Information on <a href="%s" target="_blank" rel="noopener noreferrer">maxmind.com</a>.', 'reactwoo-geocore' ),
+									esc_url( RWGC_MaxMind::ACCOUNT_INFO_URL )
+								),
+								array(
+									'a' => array(
+										'href'   => true,
+										'target' => true,
+										'rel'    => true,
+									),
+								)
+							);
+							?>
+						</p>
 					</td>
 				</tr>
 				<tr>
@@ -61,7 +118,22 @@ settings_errors( 'rwgc_maxmind' );
 						?>
 						<input type="text" class="regular-text" id="rwgc_maxmind_license_key" name="maxmind_license_key" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" value="<?php echo esc_attr( $rwgc_license_shown ); ?>" />
 						<p class="description">
-							<?php esc_html_e( 'Create a free GeoLite2 license at maxmind.com (Account → Manage License Keys). Leave this field unchanged to keep the saved key.', 'reactwoo-geocore' ); ?>
+							<?php
+							echo wp_kses(
+								sprintf(
+									/* translators: %s: MaxMind license key page URL. */
+									__( 'Create a free GeoLite2 license key at <a href="%s" target="_blank" rel="noopener noreferrer">maxmind.com</a> (Account → Manage License Keys). MaxMind shows the full key only once. Leave this field unchanged to keep the saved key.', 'reactwoo-geocore' ),
+									esc_url( RWGC_MaxMind::LICENSE_KEYS_URL )
+								),
+								array(
+									'a' => array(
+										'href'   => true,
+										'target' => true,
+										'rel'    => true,
+									),
+								)
+							);
+							?>
 						</p>
 					</td>
 				</tr>
