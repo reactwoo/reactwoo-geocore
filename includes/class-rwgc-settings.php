@@ -317,7 +317,30 @@ class RWGC_Settings {
 				$name = $options[ $code ];
 			}
 		}
-		return $name === $code ? $code : $name . ' (' . $code . ')';
+		return self::format_country_label( $name, $code );
+	}
+
+	/**
+	 * Country name for admin copy. WooCommerce already appends "(US)" to names.
+	 *
+	 * @param string $name Country name, or the ISO code when no name is known.
+	 * @param string $code ISO 3166-1 alpha-2.
+	 * @return string
+	 */
+	public static function format_country_label( $name, $code ) {
+		$code = strtoupper( substr( (string) $code, 0, 2 ) );
+		$name = trim( (string) $name );
+		if ( ! preg_match( '/^[A-Z]{2}$/', $code ) ) {
+			return $name;
+		}
+		if ( '' === $name || 0 === strcasecmp( $name, $code ) ) {
+			return $code;
+		}
+		$suffix = '(' . $code . ')';
+		if ( preg_match( '/' . preg_quote( $suffix, '/' ) . '\s*$/', $name ) ) {
+			return $name;
+		}
+		return $name . ' ' . $suffix;
 	}
 
 	/**

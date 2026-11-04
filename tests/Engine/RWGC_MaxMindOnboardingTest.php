@@ -55,6 +55,46 @@ final class RWGC_MaxMindOnboardingTest extends TestCase {
 		$this->assertStringContainsString( 'Until a database is added, every visitor is treated as %s.', $this->source( 'includes/class-rwgc-settings.php' ) );
 	}
 
+	public function test_country_label_does_not_repeat_a_code_the_name_already_has(): void {
+		require_once dirname( __DIR__, 2 ) . '/includes/class-rwgc-settings.php';
+		$this->assertSame( 'United States (US)', RWGC_Settings::format_country_label( 'United States (US)', 'US' ) );
+		$this->assertSame( 'United States (US)', RWGC_Settings::format_country_label( 'United States', 'US' ) );
+		$this->assertSame( 'US', RWGC_Settings::format_country_label( 'US', 'US' ) );
+		$this->assertSame( 'Germany (DE)', RWGC_Settings::format_country_label( 'Germany', 'DE' ) );
+	}
+
+	public function test_setup_notice_targets_the_wordpress_dashboard_and_not_the_geo_hub(): void {
+		require_once dirname( __DIR__, 2 ) . '/includes/class-rwgc-admin.php';
+		require_once dirname( __DIR__, 2 ) . '/includes/class-rwgc-admin-platform.php';
+		$this->assertTrue( RWGC_Admin::is_maxmind_setup_notice_screen( 'index.php' ) );
+		$this->assertTrue( RWGC_Admin::is_maxmind_setup_notice_screen( 'plugins.php' ) );
+		$this->assertTrue( RWGC_Admin::is_maxmind_setup_notice_screen( 'admin.php', 'dashboard', 'dashboard' ) );
+		$this->assertFalse(
+			RWGC_Admin::is_maxmind_setup_notice_screen(
+				'admin.php',
+				'toplevel_page_rwgc-dashboard',
+				'toplevel_page_rwgc-dashboard'
+			)
+		);
+		$previous_pagenow = $GLOBALS['pagenow'] ?? null;
+		$GLOBALS['pagenow'] = 'index.php';
+		unset( $_GET['page'] );
+		$this->assertTrue( RWGC_Admin_Platform::is_wordpress_dashboard_request( 'index.php' ) );
+		$this->assertFalse( RWGC_Admin_Platform::is_hub_screen( 'index.php' ) );
+		$GLOBALS['pagenow'] = 'admin.php';
+		$this->assertTrue( RWGC_Admin_Platform::is_hub_screen( 'toplevel_page_rwgc-dashboard' ) );
+		if ( null === $previous_pagenow ) {
+			unset( $GLOBALS['pagenow'] );
+		} else {
+			$GLOBALS['pagenow'] = $previous_pagenow;
+		}
+		$admin = $this->source( 'includes/class-rwgc-admin.php' );
+		$this->assertStringContainsString( 'rwgc-notice rwgc-maxmind-db-notice', $admin );
+		$this->assertStringContainsString( 'has_usable_database()', $admin );
+		$this->assertStringNotContainsString( '#dashboard-widgets-wrap', $this->source( 'admin/css/rwgc-app-shell.css' ) );
+		$this->assertStringNotContainsString( '#dashboard-widgets-wrap', $this->source( 'admin/css/rwgc-suite.css' ) );
+	}
+
 	public function test_dashboard_and_plugins_notice_is_dismissed_per_user(): void {
 		$admin = $this->source( 'includes/class-rwgc-admin.php' );
 		$this->assertStringContainsString( "array( 'dashboard', 'plugins' )", $admin );
@@ -87,6 +127,6 @@ final class RWGC_MaxMindOnboardingTest extends TestCase {
 		$this->assertStringContainsString( 'https://www.maxmind.com/en/create-account', substr( (string) $faq, 0, 500 ) );
 		$this->assertStringContainsString( 'about one to seven hours', $readme );
 		$this->assertStringContainsString( 'Visitor page views do not contact MaxMind.', $readme );
-		$this->assertStringContainsString( 'Stable tag: 1.9.25', $readme );
+		$this->assertStringContainsString( 'Stable tag: 1.9.26', $readme );
 	}
 }

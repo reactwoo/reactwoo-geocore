@@ -3,6 +3,53 @@
 ## Status
 done
 
+Dashboard QA fixes are on the 1.9.26 branch. Not merged and not tagged.
+
+## Root cause
+The MaxMind setup notice runs on `admin_notices`, which WordPress fires in `admin-header.php` before `index.php` prints `#dashboard-widgets-wrap`. The check called `db_is_usable()` with no path, and that calls `get_db_path()`, which can copy a legacy database and write settings while the admin header is still open. A failure there stops the Dashboard body for an admin who has not dismissed the notice, whether or not the canonical GeoLite2 file is present. The notice also looked only at `WP_Screen::$base`, and it lacked the `rwgc-notice` class, so the Geo shell rule that hides `#wpbody-content > .notice` would hide it if the shell were active. `index.php` is now excluded from hub detection so the shell does not wrap the WordPress Dashboard.
+
+## Files changed
+- `includes/class-rwgc-admin.php` — notice uses `$pagenow` `index.php` / `plugins.php`, one complete HTML fragment, class `rwgc-notice`.
+- `includes/class-rwgc-maxmind.php` — `has_usable_database()` does not copy or save during the notice.
+- `includes/class-rwgc-admin-platform.php` — WordPress Dashboard is not a Geo hub screen.
+- `includes/class-rwgc-settings.php` — do not append `(CODE)` when the name already ends with it.
+- `admin/js/rwgc-visibility-rule-preview.js` — the only JavaScript syntax error in the tree. It loads on the visibility-rule editor, not on every admin page. `rwgc-admin-menu.js` and the notice script parse. No Geo Core inline script prints raw JSON on every admin page.
+- `scripts/package_zip.py` — fixed ZipInfo time (`SOURCE_DATE_EPOCH` or 1980-01-01), Unix creator, mode 0644.
+
+## Not changed
+- Plugin version 1.9.26. Not tagged.
+
+## Commands
+- `composer test:all` — passed. PHPUnit 191 tests, 1326 assertions. Zip-order checks passed, including two identical SHA-256s.
+- Two `python3 scripts/package_zip.py` runs matched. SHA-256 `7d5896c8e1fc5dc195c6eba873e7374a90bfda6e70f461ad8ceab8f9c9fa1630`. Entry 1 is the plugin file, entry 2 is `readme.txt`, no `.js` on entries 1, 2, 4, or 11–24. WordPress.org upload pre-check: 44 checks, 0 failed.
+
+## Remaining errors
+- None from these checks.
+
+## Status
+done
+
+Geo Core 1.9.26 is prepared as a pull request. Not merged and not tagged. `package.json` has no version field.
+
+## Files changed
+- Plugin header, `RWGC_VERSION`, readme Stable tag, changelog, upgrade notice, block asset versions, the MaxMind onboarding stable-tag check, and the WordPress.org build guard — 1.9.26.
+- `CHANGELOG.md` and `readme.txt` — the Unreleased MaxMind setup notes are the 1.9.26 entry. The upgrade notice summarizes the GeoLite2 account steps and the dismissible fallback-country notice.
+
+## Not changed
+- MaxMind download behaviour, notice screens, and `vendor/`.
+
+## Commands
+- `php -l` on the changed PHP files — no syntax errors.
+- `composer test:all` — passed. PHPUnit 189 tests, 1311 assertions. WordPress.org build guard reports 1.9.26. Zip order and satellite updater checks passed.
+- `python3 scripts/package_zip.py` — `reactwoo-geocore-1.9.26.zip`. Entry 1 is `reactwoo-geocore.php`, entry 2 is `readme.txt`, and no `.js` file is at entries 1, 2, 4, or 11–24. SHA-256 `f302c06011e98604d70a70f836fe7c816610c9a6792e4783e0253d20fef82652`.
+- `python3 scripts/package_zip.py --target wporg` — `reactwoo-geocore-wporg.zip`. Same entry order. Upload pre-check: 44 checks, 0 failed. Stable tag 1.9.26. SHA-256 `045e991e01d303b3f4efcfda4c4524be3e7cb8e4950667fe5c6f8eb3f9f5ff1c`.
+
+## Remaining errors
+- None from these checks.
+
+## Status
+done
+
 MaxMind setup steps now use the existing numbered step list and wizard badges. The Dashboard and Plugins notice uses standard WordPress buttons. Version stays 1.9.25. Not tagged.
 
 ## Files changed
