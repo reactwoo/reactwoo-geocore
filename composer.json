@@ -46,6 +46,8 @@
     "test:request-decision": "php tests/test-rwgc-request-decision.php",
     "test:entitlements": "php tests/test-rwgc-entitlements.php",
     "test:wporg-build": "php tests/test-rwgc-wporg-build.php && python3 tests/test-rwgc-wporg-zip-guard.py && python3 tests/test-rwgc-wporg-upload-precheck.py",
+    "test:zip-js-order": "python3 tests/test-rwgc-zip-js-order.py",
+    "test:satellite-updater": "php tests/test-rwgc-satellite-updater.php",
     "test:recommendations": "php tests/test-rwgc-recommendations.php",
     "test:all": [
       "@test",
@@ -77,7 +79,9 @@
       "@test:request-decision",
       "@test:entitlements",
       "@test:recommendations",
-      "@test:wporg-build"
+      "@test:wporg-build",
+      "@test:zip-js-order",
+      "@test:satellite-updater"
     ]
   },
   "config": {

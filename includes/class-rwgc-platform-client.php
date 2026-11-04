@@ -11,6 +11,13 @@ class RWGC_Platform_Client {
 
 	const TOKEN_TRANSIENT = 'rwgc_rw_jwt_cache';
 
+	/**
+	 * Absolute expiry for a failed /auth/login. Seconds, not minutes.
+	 */
+	const LOGIN_FAIL_TTL = 900;
+
+	const LOGIN_FAIL_TRANSIENT = 'rwgc_login_fail';
+
 	const LOGIN_PATH = '/api/v5/auth/login';
 
 	/**
@@ -90,17 +97,50 @@ class RWGC_Platform_Client {
 	 */
 	public static function clear_token_cache() {
 		delete_transient( self::TOKEN_TRANSIENT );
+		self::clear_login_failure_cache();
+	}
+
+	/**
+	 * Drop the 15-minute failed-login flag so the next update check can try again.
+	 *
+	 * @return void
+	 */
+	public static function clear_login_failure_cache() {
+		if ( function_exists( 'delete_transient' ) ) {
+			delete_transient( self::LOGIN_FAIL_TRANSIENT );
+		}
 	}
 
 	/**
 	 * Bearer JWT for Authorization header, refreshed via login when needed.
 	 *
+	 * Remote login is only for the plugin update path. Other callers use a cached token or a cached
+	 * failure. A failed login stays cached for 900 seconds.
+	 *
+	 * @param int  $timeout Login HTTP timeout in seconds. The update path passes 10; other callers keep 30.
+	 * @param bool $allow_remote_login Whether this call may POST /api/v5/auth/login.
 	 * @return string|\WP_Error
 	 */
-	public static function get_access_token() {
+	public static function get_access_token( $timeout = 30, $allow_remote_login = false ) {
+		$timeout = (int) $timeout;
+		if ( $timeout < 1 ) {
+			$timeout = 30;
+		}
 		$cached = get_transient( self::TOKEN_TRANSIENT );
 		if ( is_array( $cached ) && ! empty( $cached['token'] ) && isset( $cached['expires'] ) && (int) $cached['expires'] > time() + 120 ) {
 			return (string) $cached['token'];
+		}
+
+		$failed = self::cached_login_failure();
+		if ( is_wp_error( $failed ) ) {
+			return $failed;
+		}
+
+		if ( ! $allow_remote_login ) {
+			return new WP_Error(
+				'rwgc_login_not_cached',
+				__( 'ReactWoo license login runs from the plugin update check. No cached license token is available yet.', 'reactwoo-geocore' )
+			);
 		}
 
 		$license = self::get_effective_license_key();
@@ -137,13 +177,14 @@ class RWGC_Platform_Client {
 		$response = wp_remote_post(
 			$url,
 			array(
-				'timeout' => 30,
+				'timeout' => $timeout,
 				'headers' => self::base_headers(),
 				'body'    => wp_json_encode( $body ),
 			)
 		);
 
 		if ( is_wp_error( $response ) ) {
+			self::remember_login_failure( $response );
 			return $response;
 		}
 
@@ -152,14 +193,20 @@ class RWGC_Platform_Client {
 		$data = json_decode( $raw, true );
 
 		if ( $code < 200 || $code >= 300 || ! is_array( $data ) ) {
-			$msg = isset( $data['message'] ) ? (string) $data['message'] : __( 'License login failed.', 'reactwoo-geocore' );
-			return new WP_Error( 'rwgc_login_failed', $msg, array( 'status' => $code ) );
+			$msg   = isset( $data['message'] ) ? (string) $data['message'] : __( 'License login failed.', 'reactwoo-geocore' );
+			$error = new WP_Error( 'rwgc_login_failed', $msg, array( 'status' => $code ) );
+			self::remember_login_failure( $error );
+			return $error;
 		}
 
 		$token = isset( $data['access_token'] ) ? (string) $data['access_token'] : '';
 		if ( '' === $token ) {
-			return new WP_Error( 'rwgc_login_no_token', __( 'License login response did not include a token.', 'reactwoo-geocore' ) );
+			$error = new WP_Error( 'rwgc_login_no_token', __( 'License login response did not include a token.', 'reactwoo-geocore' ) );
+			self::remember_login_failure( $error );
+			return $error;
 		}
+
+		self::clear_login_failure_cache();
 
 		$ttl = self::parse_expires_in( isset( $data['expires_in'] ) ? $data['expires_in'] : null );
 		$ttl = min( $ttl, 23 * HOUR_IN_SECONDS );
@@ -174,6 +221,42 @@ class RWGC_Platform_Client {
 		);
 
 		return $token;
+	}
+
+	/**
+	 * @return \WP_Error|null Active failure, if the 900-second window has not elapsed.
+	 */
+	private static function cached_login_failure() {
+		if ( ! function_exists( 'get_transient' ) ) {
+			return null;
+		}
+		$cached = get_transient( self::LOGIN_FAIL_TRANSIENT );
+		if ( ! is_array( $cached ) || empty( $cached['expires_at'] ) || (int) $cached['expires_at'] <= time() ) {
+			return null;
+		}
+		$code    = isset( $cached['code'] ) ? (string) $cached['code'] : 'rwgc_login_failed';
+		$message = isset( $cached['message'] ) ? (string) $cached['message'] : __( 'License login failed.', 'reactwoo-geocore' );
+		return new WP_Error( $code, $message );
+	}
+
+	/**
+	 * @param \WP_Error $error Login error.
+	 * @return void
+	 */
+	private static function remember_login_failure( $error ) {
+		if ( ! function_exists( 'set_transient' ) || ! is_wp_error( $error ) ) {
+			return;
+		}
+		$ttl = self::LOGIN_FAIL_TTL;
+		set_transient(
+			self::LOGIN_FAIL_TRANSIENT,
+			array(
+				'expires_at' => time() + $ttl,
+				'code'       => $error->get_error_code(),
+				'message'    => $error->get_error_message(),
+			),
+			$ttl
+		);
 	}
 
 	/**

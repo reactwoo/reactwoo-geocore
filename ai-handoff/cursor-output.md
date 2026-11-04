@@ -1,6 +1,70 @@
 # Cursor output
 
 ## Status
+done
+
+Failed-login flags now store an `expires_at` of `time() + 900` and use that same 900-second transient TTL. Offer flags use 3600 seconds. `RWGC_Platform_Client::get_access_token()` does not call `/api/v5/auth/login` unless the update path passes `$allow_remote_login`. Version stays 1.9.25.
+
+## Files changed
+- `includes/class-rwgc-platform-client.php` — 900-second failed-login cache; no remote login from AI or other non-update callers.
+- `includes/class-rwgc-satellite-updater.php` — failed-login and offer caches record `expires_at` in seconds.
+- `tests/test-rwgc-satellite-updater.php` — TTL is 900 and 3600, and a non-update `request()` does not log in.
+
+## Not changed
+- Plugin version, readme stable tag, changelog.
+
+## Commands
+- `php tests/test-rwgc-satellite-updater.php` — passed.
+- `php tests/test-rwgc-wporg-build.php` — passed. Stable tag and `RWGC_VERSION` stay 1.9.25.
+
+## Remaining errors
+- None from these tests.
+
+## Status
+done
+
+Geo Core 1.9.25 is on PR #104 for QA. The branch already contained main `7564839` (1.9.24). Not merged and not tagged.
+
+## Files changed
+- Plugin header, `RWGC_VERSION`, readme Stable tag, changelog, upgrade notice, block asset versions, and the WordPress.org build guard — 1.9.25.
+
+## Not changed
+- Update and zip behaviour from the previous commit on this branch.
+
+## Commands
+- `php /tmp/composer.phar test:all` — passed. PHPUnit 182 tests, 1269 assertions. WordPress.org build guard reports 1.9.25. Zip order and satellite updater checks passed.
+
+## Remaining errors
+- None from these tests.
+
+## Status
+done
+
+Release zips no longer put a `.js` file on the ClamAV Foxhole entries, and the plugins screen no longer stores a ten-minute R2 URL or blocks on login plus an update check every time `update_plugins` is saved. Versions were not bumped. Not tagged and not merged.
+
+## Files changed
+- `scripts/package_zip.py` — write `reactwoo-geocore.php` and `readme.txt`, then other non-JS files, then `.js`, in a stable order. Both targets refuse a zip that matches `Sanesecurity.Foxhole.JS_Zip_1`, `_2`, `_4`, or `_11`–`_24`.
+- `tests/test-rwgc-zip-js-order.py` — applies those rules to synthetic zips and to the reactwoo and wporg trees.
+- `includes/class-rwgc-satellite-updater.php` — placeholder package, fresh signed URL in `upgrader_pre_download`, one-hour offer cache, 15-minute failed-login cache, skip when a save only changes `last_checked`. Check timeout 8s, install check 10s, login 10s.
+- `includes/class-rwgc-platform-client.php` — `get_access_token()` accepts a timeout. The default remains 30s.
+- `tests/test-rwgc-satellite-updater.php` — covers the placeholder, caches, timeouts, and install-time URL.
+- `composer.json`, `.github/workflows/test.yml` — run the new checks on pull requests.
+
+## Not changed
+- Plugin version, readme stable tag, and changelog.
+- WordPress.org distribution constant, `.distignore`, and the updater stub. The wporg zip still drops `includes/class-rwgc-satellite-updater.php`.
+- AI and other platform calls still use the 30s login timeout and the 45s API timeout.
+
+## Commands
+- `python3 tests/test-rwgc-zip-js-order.py` — passed, including both built zips and the wporg guard.
+- `php tests/test-rwgc-satellite-updater.php` — passed.
+- `php tests/test-rwgc-wporg-build.php` — all guards passed.
+- `python3 tests/test-rwgc-wporg-zip-guard.py` — passed.
+
+## Remaining errors
+- None from these tests.
+
+## Status
 needs-review
 
 Geo Core 1.9.24 is on PR #103 (`cursor/critical-bug-investigation-001c`), ready for review. Not merged, not tagged, and not published.
