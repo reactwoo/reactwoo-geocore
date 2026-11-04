@@ -897,7 +897,7 @@ class RWGC_Admin {
 				)
 			);
 		}
-		if ( preg_match( '/(rwgc-suite-home|rwgc-getting-started|rwgc-workflow-variant|rwgc-suite-variants)/', $hook ) ) {
+		if ( preg_match( '/(rwgc-suite-home|rwgc-getting-started|rwgc-workflow-variant|rwgc-suite-variants|rwgc-integrations-maxmind)/', $hook ) ) {
 			wp_enqueue_style(
 				'rwgc-suite-shell',
 				RWGC_URL . 'admin/css/suite-admin.css',
@@ -1721,17 +1721,17 @@ class RWGC_Admin {
 			'rwgc_dismiss_maxmind_db_notice'
 		);
 		$fallback    = class_exists( 'RWGC_Settings', false ) ? RWGC_Settings::fallback_visitor_sentence() : '';
-		echo '<div class="notice notice-warning is-dismissible rwgc-maxmind-db-notice"><p>';
-		echo esc_html(
+		echo '<div class="notice notice-warning is-dismissible rwgc-maxmind-db-notice">';
+		echo '<p>' . esc_html(
 			sprintf(
 				/* translators: %s: sentence naming the fallback country. */
 				__( 'ReactWoo Geo Core has no country database yet. %s', 'reactwoo-geocore' ),
 				$fallback
 			)
-		);
-		echo ' <a href="' . esc_url( $maxmind_url ) . '">' . esc_html__( 'Add the database', 'reactwoo-geocore' ) . '</a>';
-		echo ' <a href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss', 'reactwoo-geocore' ) . '</a>';
-		echo '</p></div>';
+		) . '</p>';
+		echo '<p><a class="button button-primary" href="' . esc_url( $maxmind_url ) . '">' . esc_html__( 'Add the database', 'reactwoo-geocore' ) . '</a> ';
+		echo '<a class="button" href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss', 'reactwoo-geocore' ) . '</a></p>';
+		echo '</div>';
 	}
 
 	/**

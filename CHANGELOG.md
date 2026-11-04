@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The MaxMind how-to and Getting Started step 2 use the same numbered step list as the rest of the admin. The Dashboard and Plugins setup notice uses standard WordPress notice buttons.
+
 ### Added
 - The MaxMind screen explains how to create a free GeoLite2 account, where the numeric Account ID is shown, and that MaxMind displays a new license key only once. Saving credentials does not download the database. With automatic updates left on, the first download is scheduled for about one to seven hours later, then about twice a week. Download / refresh database fetches it immediately.
 - Getting Started step 2 includes the same short steps and a link to the MaxMind screen.

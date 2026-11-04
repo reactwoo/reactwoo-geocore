@@ -3,6 +3,29 @@
 ## Status
 done
 
+MaxMind setup steps now use the existing numbered step list and wizard badges. The Dashboard and Plugins notice uses standard WordPress buttons. Version stays 1.9.25. Not tagged.
+
+## Files changed
+- `includes/class-rwgc-admin-ui.php` — `render_numbered_steps()` reuses platform step rows and wizard number badges.
+- `admin/views/integrations-maxmind-page.php` and `admin/views/getting-started.php` — how-to lists use that renderer inside the existing cards.
+- `admin/css/rwgc-suite.css` — lets those existing classes sit in a card without extra list indent, and keeps the badge from shrinking.
+- `includes/class-rwgc-admin.php` — wizard badge stylesheet also loads on the MaxMind screen. The Dashboard/Plugins notice uses `button` and `button-primary`.
+- `readme.txt`, `CHANGELOG.md`, `tests/Engine/RWGC_MaxMindOnboardingTest.php`.
+
+## Not changed
+- Plugin version, download behaviour, and the notice screens (still Dashboard and Plugins only, no Geo Core stylesheet there).
+
+## Commands
+- `vendor/bin/phpunit --filter RWGC_MaxMind` — 68 tests passed.
+- Plugin Check 2.1.0, new and update, low severity — 0 errors, 4 existing PostNotIn warnings.
+- Local screenshots at 1440 and 390. `debug.log` gained no new PHP notices.
+
+## Remaining errors
+- None from these checks.
+
+## Status
+done
+
 MaxMind onboarding copy now matches the real download schedule. Version stays 1.9.25. Not tagged.
 
 ## Files changed

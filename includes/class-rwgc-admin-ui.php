@@ -604,6 +604,42 @@ class RWGC_Admin_UI {
 	}
 
 	/**
+	 * Vertical instructions using the platform step list and wizard number badges.
+	 *
+	 * @param array<int, array{label: string, hint?: string}> $steps Each hint may contain links.
+	 * @return void
+	 */
+	public static function render_numbered_steps( array $steps ) {
+		if ( empty( $steps ) ) {
+			return;
+		}
+		$allowed = array(
+			'a' => array(
+				'href'   => true,
+				'target' => true,
+				'rel'    => true,
+			),
+		);
+		echo '<ol class="rwgc-platform-overview__steps">';
+		$number = 0;
+		foreach ( $steps as $step ) {
+			if ( empty( $step['label'] ) ) {
+				continue;
+			}
+			++$number;
+			echo '<li class="rwgc-platform-overview__step">';
+			echo '<span class="rwgc-suite-stepper__num" aria-hidden="true">' . esc_html( (string) $number ) . '</span>';
+			echo '<span class="rwgc-platform-overview__step-body">';
+			echo '<span class="rwgc-platform-overview__step-label">' . esc_html( (string) $step['label'] ) . '</span>';
+			if ( ! empty( $step['hint'] ) ) {
+				echo '<span class="rwgc-platform-overview__step-hint">' . wp_kses( (string) $step['hint'], $allowed ) . '</span>';
+			}
+			echo '</span></li>';
+		}
+		echo '</ol>';
+	}
+
+	/**
 	 * Onboarding checklist row.
 	 *
 	 * @param bool   $done    Whether step is complete.

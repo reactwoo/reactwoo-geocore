@@ -167,6 +167,7 @@ Off by default. An administrator must enable “Share anonymous experience event
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
 = Unreleased =
+* The MaxMind how-to and Getting Started step 2 use the same numbered steps as the rest of the admin. The Dashboard and Plugins setup notice uses standard WordPress buttons.
 * The MaxMind screen explains how to create a free GeoLite2 account and that a new license key is shown only once. Saving credentials schedules the country database download; Download / refresh database fetches it now.
 * Until a country database is added, notices say that every visitor is treated as the configured fallback country. One dismissible setup notice on the Dashboard and Plugins screens stays hidden after that user dismisses it.
 * The dashboard setup checklist counts the MaxMind step as done when a license key is saved or a usable database is already on the site.
