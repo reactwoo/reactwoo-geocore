@@ -5,7 +5,7 @@ All notable changes to **reactwoo-geocore** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.9.26] - 2026-11-04
 
 ### Changed
 - The MaxMind how-to and Getting Started step 2 use the same numbered step list as the rest of the admin. The Dashboard and Plugins setup notice uses standard WordPress notice buttons.

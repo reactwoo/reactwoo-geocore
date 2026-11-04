@@ -3,6 +3,27 @@
 ## Status
 done
 
+Geo Core 1.9.26 is prepared as a pull request. Not merged and not tagged. `package.json` has no version field.
+
+## Files changed
+- Plugin header, `RWGC_VERSION`, readme Stable tag, changelog, upgrade notice, block asset versions, the MaxMind onboarding stable-tag check, and the WordPress.org build guard — 1.9.26.
+- `CHANGELOG.md` and `readme.txt` — the Unreleased MaxMind setup notes are the 1.9.26 entry. The upgrade notice summarizes the GeoLite2 account steps and the dismissible fallback-country notice.
+
+## Not changed
+- MaxMind download behaviour, notice screens, and `vendor/`.
+
+## Commands
+- `php -l` on the changed PHP files — no syntax errors.
+- `composer test:all` — passed. PHPUnit 189 tests, 1311 assertions. WordPress.org build guard reports 1.9.26. Zip order and satellite updater checks passed.
+- `python3 scripts/package_zip.py` — `reactwoo-geocore-1.9.26.zip`. Entry 1 is `reactwoo-geocore.php`, entry 2 is `readme.txt`, and no `.js` file is at entries 1, 2, 4, or 11–24. SHA-256 `f302c06011e98604d70a70f836fe7c816610c9a6792e4783e0253d20fef82652`.
+- `python3 scripts/package_zip.py --target wporg` — `reactwoo-geocore-wporg.zip`. Same entry order. Upload pre-check: 44 checks, 0 failed. Stable tag 1.9.26. SHA-256 `045e991e01d303b3f4efcfda4c4524be3e7cb8e4950667fe5c6f8eb3f9f5ff1c`.
+
+## Remaining errors
+- None from these checks.
+
+## Status
+done
+
 MaxMind setup steps now use the existing numbered step list and wizard badges. The Dashboard and Plugins notice uses standard WordPress buttons. Version stays 1.9.25. Not tagged.
 
 ## Files changed
