@@ -3,9 +3,12 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import io
+import os
 import sys
+import tempfile
 import zipfile
 from pathlib import Path
 
@@ -193,10 +196,46 @@ def test_packaged_trees() -> None:
             check("reactwoo: distribution constant stays reactwoo", "define( 'RWGC_DISTRIBUTION', 'reactwoo' );" in main)
 
 
+def test_zip_bytes_are_reproducible() -> None:
+    members = [
+        ("readme.txt", b"readme\n"),
+        ("reactwoo-geocore.php", b"<?php\n"),
+        ("admin/js/admin.js", b"console.log(1);\n"),
+        ("includes/class-rwgc-plugin.php", b"<?php\n"),
+    ]
+    previous = os.environ.get("SOURCE_DATE_EPOCH")
+    os.environ["SOURCE_DATE_EPOCH"] = "1700000000"
+    hashes = []
+    try:
+        for _ in range(2):
+            handle = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
+            handle.close()
+            path = Path(handle.name)
+            try:
+                PACKAGE.write_ordered_zip(path, "reactwoo-geocore", members)
+                hashes.append(hashlib.sha256(path.read_bytes()).hexdigest())
+                with zipfile.ZipFile(path) as archive:
+                    info = archive.getinfo("reactwoo-geocore/reactwoo-geocore.php")
+                    check(
+                        "zip timestamp comes from SOURCE_DATE_EPOCH",
+                        info.date_time[:5] == (2023, 11, 14, 22, 13),
+                    )
+                    check("zip permissions are 0644", (info.external_attr >> 16) & 0o777 == 0o644)
+            finally:
+                path.unlink(missing_ok=True)
+    finally:
+        if previous is None:
+            os.environ.pop("SOURCE_DATE_EPOCH", None)
+        else:
+            os.environ["SOURCE_DATE_EPOCH"] = previous
+    check("two builds of the same bytes share a SHA-256", len(hashes) == 2 and hashes[0] == hashes[1])
+
+
 def main() -> None:
     test_rules_match_the_published_windows()
     test_order_is_stable_and_safe()
     test_packaged_trees()
+    test_zip_bytes_are_reproducible()
     if FAILED:
         print(f"{FAILED} failed")
         sys.exit(1)

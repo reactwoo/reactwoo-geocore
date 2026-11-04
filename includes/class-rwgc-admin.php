@@ -1721,17 +1721,20 @@ class RWGC_Admin {
 			'rwgc_dismiss_maxmind_db_notice'
 		);
 		$fallback    = class_exists( 'RWGC_Settings', false ) ? RWGC_Settings::fallback_visitor_sentence() : '';
-		echo '<div class="notice notice-warning is-dismissible rwgc-maxmind-db-notice">';
-		echo '<p>' . esc_html(
+		// One complete fragment. admin_notices runs before index.php prints
+		// #dashboard-widgets-wrap, so a partial echo would swallow that markup.
+		$html  = '<div class="notice notice-warning is-dismissible rwgc-notice rwgc-maxmind-db-notice">';
+		$html .= '<p>' . esc_html(
 			sprintf(
 				/* translators: %s: sentence naming the fallback country. */
 				__( 'ReactWoo Geo Core has no country database yet. %s', 'reactwoo-geocore' ),
 				$fallback
 			)
 		) . '</p>';
-		echo '<p><a class="button button-primary" href="' . esc_url( $maxmind_url ) . '">' . esc_html__( 'Add the database', 'reactwoo-geocore' ) . '</a> ';
-		echo '<a class="button" href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss', 'reactwoo-geocore' ) . '</a></p>';
-		echo '</div>';
+		$html .= '<p><a class="button button-primary" href="' . esc_url( $maxmind_url ) . '">' . esc_html__( 'Add the database', 'reactwoo-geocore' ) . '</a> ';
+		$html .= '<a class="button" href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss', 'reactwoo-geocore' ) . '</a></p>';
+		$html .= '</div>';
+		echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped above.
 	}
 
 	/**
@@ -1814,14 +1817,42 @@ class RWGC_Admin {
 		if ( $user_id <= 0 || get_user_meta( $user_id, self::MAXMIND_DB_NOTICE_META, true ) ) {
 			return false;
 		}
-		if ( ! function_exists( 'get_current_screen' ) ) {
+		$pagenow = isset( $GLOBALS['pagenow'] ) ? (string) $GLOBALS['pagenow'] : '';
+		$base    = '';
+		$id      = '';
+		if ( function_exists( 'get_current_screen' ) ) {
+			$screen = get_current_screen();
+			if ( $screen ) {
+				$base = isset( $screen->base ) ? (string) $screen->base : '';
+				$id   = isset( $screen->id ) ? (string) $screen->id : '';
+			}
+		}
+		if ( ! self::is_maxmind_setup_notice_screen( $pagenow, $base, $id ) ) {
 			return false;
 		}
-		$screen = get_current_screen();
-		if ( ! $screen || ! in_array( (string) $screen->base, array( 'dashboard', 'plugins' ), true ) ) {
-			return false;
+		// Read-only. db_is_usable() with no path adopts a legacy file and writes settings.
+		return class_exists( 'RWGC_MaxMind', false ) && ! RWGC_MaxMind::has_usable_database();
+	}
+
+	/**
+	 * Dashboard (index.php) and Plugins screens. Not the Geo hub page.
+	 *
+	 * The WordPress Dashboard screen id is "dashboard". The Geo hub id contains
+	 * "rwgc-dashboard" and must not match.
+	 *
+	 * @param string $pagenow     $GLOBALS['pagenow'].
+	 * @param string $screen_base WP_Screen::base.
+	 * @param string $screen_id   WP_Screen::id.
+	 * @return bool
+	 */
+	public static function is_maxmind_setup_notice_screen( $pagenow, $screen_base = '', $screen_id = '' ) {
+		if ( in_array( (string) $pagenow, array( 'index.php', 'plugins.php' ), true ) ) {
+			return true;
 		}
-		return class_exists( 'RWGC_MaxMind', false ) && ! RWGC_MaxMind::db_is_usable();
+		if ( in_array( (string) $screen_base, array( 'dashboard', 'plugins' ), true ) ) {
+			return true;
+		}
+		return in_array( (string) $screen_id, array( 'dashboard', 'plugins' ), true );
 	}
 
 	/**
@@ -1898,7 +1929,7 @@ class RWGC_Admin {
 				'<option value="%1$s"%2$s>%3$s</option>',
 				esc_attr( $code ),
 				selected( $selected, $code, false ),
-				esc_html( $label . ' (' . $code . ')' )
+				esc_html( class_exists( 'RWGC_Settings', false ) ? RWGC_Settings::format_country_label( (string) $label, $code ) : (string) $label . ' (' . $code . ')' )
 			);
 		}
 		echo '</select>';
@@ -1950,7 +1981,7 @@ class RWGC_Admin {
 				'<option value="%1$s"%2$s>%3$s</option>',
 				esc_attr( $code ),
 				isset( $selected_map[ $code ] ) ? ' selected="selected"' : '',
-				esc_html( $label . ' (' . $code . ')' )
+				esc_html( class_exists( 'RWGC_Settings', false ) ? RWGC_Settings::format_country_label( (string) $label, $code ) : (string) $label . ' (' . $code . ')' )
 			);
 		}
 		echo '</select>';

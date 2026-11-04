@@ -167,6 +167,8 @@ Off by default. An administrator must enable “Share anonymous experience event
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
 = 1.9.26 =
+* The WordPress Dashboard shows the MaxMind setup notice, and the Dashboard widgets render.
+* Country names that already include the code, such as United States (US), are not written twice.
 * The MaxMind how-to and Getting Started step 2 use the same numbered steps as the rest of the admin. The Dashboard and Plugins setup notice uses standard WordPress buttons.
 * The MaxMind screen explains how to create a free GeoLite2 account and that a new license key is shown only once. Saving credentials schedules the country database download; Download / refresh database fetches it now.
 * Until a country database is added, notices say that every visitor is treated as the configured fallback country. One dismissible setup notice on the Dashboard and Plugins screens stays hidden after that user dismisses it.
@@ -335,7 +337,7 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 == Upgrade Notice ==
 
 = 1.9.26 =
-The MaxMind screen explains how to create a free GeoLite2 account and when the country database downloads. Until that database is added, one dismissible notice says every visitor is treated as the fallback country.
+The MaxMind screen explains how to create a free GeoLite2 account and when the country database downloads. Until that database is added, one dismissible notice on the WordPress Dashboard says every visitor is treated as the fallback country.
 
 = 1.9.25 =
 Update now downloads a fresh ReactWoo release link. The Plugins screen no longer waits on a license login every time WordPress records that it checked for updates.

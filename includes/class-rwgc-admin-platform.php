@@ -264,6 +264,12 @@ class RWGC_Admin_Platform {
 	 * @return bool
 	 */
 	public static function is_hub_screen( $hook_suffix = null ) {
+		// wp-admin/index.php is the WordPress Dashboard. Its screen id is
+		// "dashboard", which must not be treated as the Geo hub (rwgc-dashboard).
+		// The hub shell opens before #wpbody and hides ordinary admin notices.
+		if ( self::is_wordpress_dashboard_request( $hook_suffix ) ) {
+			return false;
+		}
 		if ( is_string( $hook_suffix ) && '' !== $hook_suffix ) {
 			if ( false !== strpos( $hook_suffix, 'rwgc-' ) ) {
 				return true;
@@ -289,6 +295,27 @@ class RWGC_Admin_Platform {
 		}
 
 		return false;
+	}
+
+	/**
+	 * WordPress Dashboard (wp-admin/index.php), not the Geo Core hub.
+	 *
+	 * @param string|null $hook_suffix Optional admin hook.
+	 * @return bool
+	 */
+	public static function is_wordpress_dashboard_request( $hook_suffix = null ) {
+		$pagenow = isset( $GLOBALS['pagenow'] ) ? (string) $GLOBALS['pagenow'] : '';
+		if ( 'index.php' === $pagenow || 'index.php' === (string) $hook_suffix ) {
+			return true;
+		}
+		if ( ! function_exists( 'get_current_screen' ) ) {
+			return false;
+		}
+		$screen = get_current_screen();
+		return $screen
+			&& isset( $screen->id, $screen->base )
+			&& 'dashboard' === (string) $screen->id
+			&& 'dashboard' === (string) $screen->base;
 	}
 
 	/**

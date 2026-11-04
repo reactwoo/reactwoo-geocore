@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.9.26] - 2026-11-04
 
+### Fixed
+- The WordPress Dashboard (`index.php`) shows the MaxMind setup notice again, and the Dashboard widgets render. The notice no longer copies a database or writes settings while the admin header is still printing, and it is not treated as a Geo hub screen.
+- Country names that already end with the ISO code, such as WooCommerce's "United States (US)", are not given a second "(US)".
+
 ### Changed
 - The MaxMind how-to and Getting Started step 2 use the same numbered step list as the rest of the admin. The Dashboard and Plugins setup notice uses standard WordPress notice buttons.
 

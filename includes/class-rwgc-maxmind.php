@@ -449,6 +449,33 @@ class RWGC_MaxMind {
 	}
 
 	/**
+	 * Whether a usable database is already on disk.
+	 *
+	 * Unlike {@see get_db_path()}, this does not copy a legacy file or write
+	 * settings. The Dashboard notice runs inside admin-header.php, before
+	 * index.php prints the widgets, so a copy or option write there aborts
+	 * the rest of the screen.
+	 *
+	 * @return bool
+	 */
+	public static function has_usable_database() {
+		$configured = '';
+		if ( class_exists( 'RWGC_Settings', false ) ) {
+			$settings = RWGC_Settings::get_settings();
+			if ( isset( $settings['db_file_path'] ) && is_string( $settings['db_file_path'] ) ) {
+				$configured = $settings['db_file_path'];
+			}
+		}
+		if ( '' !== $configured && self::db_is_usable( $configured ) ) {
+			return true;
+		}
+		if ( self::db_is_usable( self::get_canonical_db_path() ) ) {
+			return true;
+		}
+		return null !== self::find_legacy_db_path();
+	}
+
+	/**
 	 * Whether a path is a readable MaxMind .mmdb (metadata marker present).
 	 *
 	 * A license key is not required. An uploaded test or production database counts.
