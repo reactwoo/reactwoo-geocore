@@ -27,6 +27,21 @@ class RWGC_MaxMind {
 	const SCHEDULE_VERSION_OPTION = 'rwgc_maxmind_schedule_version';
 
 	/**
+	 * Free GeoLite2 sign-up. https://www.maxmind.com/en/geolite2/signup redirects here.
+	 */
+	const GEO_LITE_SIGNUP_URL = 'https://www.maxmind.com/en/create-account';
+
+	/**
+	 * Account → Manage License Keys. Login required. A new key is shown only once.
+	 */
+	const LICENSE_KEYS_URL = 'https://www.maxmind.com/en/accounts/current/license-key';
+
+	/**
+	 * Account → Account Information, where the numeric Account ID is shown.
+	 */
+	const ACCOUNT_INFO_URL = 'https://www.maxmind.com/en/accounts/current/edit';
+
+	/**
 	 * Register the cron callback and schedule.
 	 *
 	 * @return void

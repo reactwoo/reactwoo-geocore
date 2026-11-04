@@ -5,6 +5,15 @@ All notable changes to **reactwoo-geocore** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- The MaxMind screen explains how to create a free GeoLite2 account, where the numeric Account ID is shown, and that MaxMind displays a new license key only once. Saving credentials does not download the database. With automatic updates left on, the first download is scheduled for about one to seven hours later, then about twice a week. Download / refresh database fetches it immediately.
+- Getting Started step 2 includes the same short steps and a link to the MaxMind screen.
+- While no usable country database exists, the Dashboard and Plugins screens show one dismissible notice. Dismissal is checked with a nonce and the Geo Core capability, and it stays dismissed for that user. The notice names the configured fallback country (US by default) and does not promote another product.
+- Geo admin warnings for a missing database state that every visitor is treated as that fallback country until a database is added.
+- The non-platform dashboard checklist treats the MaxMind step as complete when a license key is saved or a usable database is already on the site, so a manual upload is not left as unfinished setup.
+
 ## [1.9.25] - 2026-11-03
 
 ### Fixed

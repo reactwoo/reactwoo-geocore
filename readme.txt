@@ -33,8 +33,9 @@ Optional add-ons are separate plugins. Geo Core keeps working when they are not 
 
 1. Upload the plugin files to the `/wp-content/plugins/reactwoo-geocore` directory, or install via WordPress plugin upload.
 2. Activate the plugin through the 'Plugins' screen in WordPress.
-3. Go to **Geo → Integrations → MaxMind (GeoLite2)** and enter your **MaxMind** account credentials. This is a third-party MaxMind license for downloading the database — not a ReactWoo product license. Core geo works without any ReactWoo key.
-4. Download or upload the country database and test visitor detection on the same screen.
+3. Sign up for a free GeoLite2 account at https://www.maxmind.com/en/create-account . In that account, open Account → Manage License Keys (https://www.maxmind.com/en/accounts/current/license-key), generate a license key, and copy it. MaxMind shows the full key only once. Your numeric Account ID is under Account Information (https://www.maxmind.com/en/accounts/current/edit).
+4. Go to **Geo → Integrations → MaxMind (GeoLite2)**. Paste the Account ID and license key, then click **Save credentials**. This is a third-party MaxMind license for downloading the database — not a ReactWoo product license. Core geo works without any ReactWoo key. Click **Download / refresh database** to fetch the country database now, or upload a GeoLite2-Country.mmdb file. Saving credentials does not download the file immediately. With automatic updates left on, the first download is scheduled for about one to seven hours later, then about twice a week.
+5. Test visitor detection on the same screen.
 
 == Usage ==
 
@@ -63,7 +64,7 @@ No. ReactWoo Geo Core works with any theme and editor. It exposes helper functio
 
 = Does this plugin include MaxMind? =
 
-No. You must provide your own MaxMind license key and accept their terms of use. The plugin then downloads the GeoLite2 Country database to your site.
+No. You must provide your own MaxMind license key and accept their terms of use. Sign up for a free GeoLite2 account at https://www.maxmind.com/en/create-account . The plugin then downloads the GeoLite2 Country database to your site.
 
 = What is included without another plugin? =
 
@@ -108,7 +109,7 @@ An administrator can download the GeoLite2 Country database from Integrations �
 * Service: `https://download.maxmind.com/geoip/databases/GeoLite2-Country/download?suffix=tar.gz`
 * Sent: the MaxMind account ID and license key, as HTTP Basic authentication. This plugin does not send the visitor IP address to MaxMind. Country lookups use the database file stored on your server.
 * After that: MaxMind redirects to its file host (the host is chosen by MaxMind and can change). The plugin follows that one redirect and does not send the account ID or license key again.
-* When: only when an administrator starts the database update.
+* When: when an administrator clicks Download / refresh database, and on a schedule when automatic updates are on and both the Account ID and license key are saved. The first scheduled download runs about one to seven hours after those credentials are saved, then about twice a week. Saving credentials does not contact MaxMind by itself. Visitor page views do not contact MaxMind.
 * Terms: https://www.maxmind.com/en/geolite/eula
 * Privacy policy: https://www.maxmind.com/en/privacy-policy
 
@@ -164,6 +165,11 @@ Off by default. An administrator must enable “Share anonymous experience event
 == Changelog ==
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
+
+= Unreleased =
+* The MaxMind screen explains how to create a free GeoLite2 account and that a new license key is shown only once. Saving credentials schedules the country database download; Download / refresh database fetches it now.
+* Until a country database is added, notices say that every visitor is treated as the configured fallback country. One dismissible setup notice on the Dashboard and Plugins screens stays hidden after that user dismisses it.
+* The dashboard setup checklist counts the MaxMind step as done when a license key is saved or a usable database is already on the site.
 
 = 1.9.25 =
 * Update now on the Plugins screen downloads a fresh ReactWoo release link. A link that expired after ten minutes is no longer kept in the update list.

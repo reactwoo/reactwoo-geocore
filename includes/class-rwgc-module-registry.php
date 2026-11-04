@@ -204,9 +204,11 @@ class RWGC_Module_Registry {
 					$status_name = 'ready';
 					$consequence = '';
 				} else {
-					$detail      = __( 'Upload a country database, or add a MaxMind license key to download one.', 'reactwoo-geocore' );
+					$detail      = __( 'Sign up for a free GeoLite2 account, generate a license key (MaxMind shows it only once), paste the Account ID and key, then download the database.', 'reactwoo-geocore' );
 					$status_name = 'needs_setup';
-					$consequence = __( 'Without a database, lookups use fallback values.', 'reactwoo-geocore' );
+					$consequence = class_exists( 'RWGC_Settings', false )
+						? RWGC_Settings::fallback_visitor_sentence()
+						: __( 'Until a database is added, every visitor is treated as the fallback country.', 'reactwoo-geocore' );
 				}
 				return array_merge(
 					$defaults,
@@ -227,7 +229,7 @@ class RWGC_Module_Registry {
 						'status'        => $ok ? 'ready' : 'needs_setup',
 						'detail'        => $ok ? __( 'Country database is on disk.', 'reactwoo-geocore' ) : __( 'Download or upload the GeoLite2 Country database.', 'reactwoo-geocore' ),
 						'configure_url' => function_exists( 'rwgc_get_maxmind_admin_url' ) ? rwgc_get_maxmind_admin_url() : admin_url( 'admin.php?page=rwgc-integrations-maxmind' ),
-						'consequence'   => $ok ? '' : __( 'Visitor country may fall back until the database is available.', 'reactwoo-geocore' ),
+						'consequence'   => $ok ? '' : ( class_exists( 'RWGC_Settings', false ) ? RWGC_Settings::fallback_visitor_sentence() : __( 'Until a database is added, every visitor is treated as the fallback country.', 'reactwoo-geocore' ) ),
 					)
 				);
 
