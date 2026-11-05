@@ -57,5 +57,8 @@ jobs:
       - name: Zip entry order (ClamAV Foxhole JS rules)
         run: composer test:zip-js-order
 
+      - name: Publish zip matches package_zip.py twice
+        run: composer test:zip-reproducible
+
       - name: Satellite updater transient
         run: composer test:satellite-updater

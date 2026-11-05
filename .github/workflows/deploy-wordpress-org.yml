@@ -53,23 +53,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.2"
-          tools: composer:v2
-          coverage: none
-
-      - name: Composer install (production vendor)
-        run: composer install --no-dev --optimize-autoloader
-
+      # Same packager as the ReactWoo publish job, wporg target.
+      # Do not install Composer dependencies here. That rewrites vendor/
+      # and the directory zip no longer matches package_zip.py of this tree.
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.x"
+          python-version: "3.12"
 
       - name: Build WordPress.org zip
         run: python3 scripts/package_zip.py --target wporg
+
+      - name: Assert WordPress.org zip matches a second package_zip.py run
+        shell: bash
+        run: |
+          set -euo pipefail
+          zip_name="reactwoo-geocore-wporg.zip"
+          first="$(sha256sum "${zip_name}" | awk '{print $1}')"
+          python3 scripts/package_zip.py --target wporg
+          second="$(sha256sum "${zip_name}" | awk '{print $1}')"
+          if [[ "${first}" != "${second}" ]]; then
+            echo "package_zip.py --target wporg produced different zips for the same tree."
+            echo "${first}"
+            echo "${second}"
+            exit 1
+          fi
+          echo "WordPress.org zip SHA-256 ${first}"
 
       - name: Unpack WordPress.org build
         id: unpack
