@@ -3,6 +3,33 @@
 ## Status
 done
 
+Publish ReactWoo Geo Core Update packages the git tree with `scripts/package_zip.py`. It no longer runs Composer before the zip. Not merged and not tagged.
+
+## Root cause
+Tag v1.9.26 already called `python scripts/package_zip.py`. The uploaded zip still differed from a local `package_zip.py` of tree `228734a` because the job ran `composer install --no-dev` first. That rewrites committed `vendor/composer` files, including the checkout SHA stored in `installed.php`, so the bytes are no longer the git tree. CPython 3.12 and 3.15 produce the same zip when the tree is unchanged.
+
+## Files changed
+- `.github/workflows/publish-update.yml` — drop Composer, pin Python 3.12, call `package_zip.py`, then require a second run to share the SHA-256. Artifact keys stay `plugins/reactwoo-geocore/{version}/reactwoo-geocore.zip` and `plugins/reactwoo-geocore/latest/reactwoo-geocore.zip`.
+- `.github/workflows/deploy-wordpress-org.yml` — same for `package_zip.py --target wporg`.
+- `.github/workflows/test.yml`, `composer.json`, `tests/test-rwgc-zip-reproducible.py` — CI checks the workflow contract and two identical zips of `HEAD`.
+
+## Not changed
+- `scripts/package_zip.py` fixed timestamps, permissions, and entry order. Plugin version was not bumped.
+
+## Sibling repos
+Commerce and Optimise already call `package_zip.py` and do not run Composer. Their `write_ordered_zip` still uses `ZipFile.write`, which stores checkout mtimes. Geo AI and GeoElementor do the same. `reactwoo-geocore-pro` is not in the reactwoo org visible from this checkout. Those repos were not edited.
+
+## Commands
+- `python3 tests/test-rwgc-zip-reproducible.py` on tree `228734a` — two runs matched. SHA-256 `7d5896c8e1fc5dc195c6eba873e7374a90bfda6e70f461ad8ceab8f9c9fa1630`.
+- Working tree with the new Composer script — two `CI=true` runs matched. SHA-256 `464702af5742691b72d1170fc34f35052a5081c1227018adf4bf24d2ae72ec2e`.
+- `composer test:all` — passed. PHPUnit 191 tests, 1326 assertions. Zip reproducibility checks passed.
+
+## Remaining errors
+- None from these checks.
+
+## Status
+done
+
 Dashboard QA fixes are on the 1.9.26 branch. Not merged and not tagged.
 
 ## Root cause

@@ -32,22 +32,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.2"
-          tools: composer:v2
-
-      - name: Composer install (production vendor — no dev / PHPUnit)
-        run: composer install --no-dev --optimize-autoloader
-
+      # Package the committed tree with scripts/package_zip.py.
+      # Do not install Composer dependencies in this job. A fresh install
+      # rewrites vendor/composer (installed.php records this checkout) and
+      # the uploaded zip no longer matches package_zip.py of the git tree.
+      # Production vendor/ is already committed; package_zip.py refuses a
+      # dev autoload.
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.x"
+          python-version: "3.12"
 
       - name: Create plugin zip
         run: python scripts/package_zip.py
+
+      - name: Assert zip matches a second package_zip.py run
+        shell: bash
+        run: |
+          set -euo pipefail
+          first="$(sha256sum "${PLUGIN_SLUG}.zip" | awk '{print $1}')"
+          python scripts/package_zip.py
+          second="$(sha256sum "${PLUGIN_SLUG}.zip" | awk '{print $1}')"
+          if [[ "${first}" != "${second}" ]]; then
+            echo "package_zip.py produced different zips for the same tree."
+            echo "${first}"
+            echo "${second}"
+            exit 1
+          fi
+          echo "Publish zip SHA-256 ${first}"
 
       - name: Resolve release metadata
         id: meta
