@@ -155,6 +155,9 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-rule-tester-rendered-impacts.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-visibility-rule-copy-context.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-visibility-rules.php';
+		require_once RWGC_PATH . 'includes/ab/class-rwgc-ab-db.php';
+		require_once RWGC_PATH . 'includes/ab/class-rwgc-ab-tests.php';
+		require_once RWGC_PATH . 'includes/ab/class-rwgc-ab-admin.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-builder-request.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-elementor.php';
 		require_once RWGC_PATH . 'includes/integrations/class-rwgc-integrations-loader.php';
@@ -225,6 +228,8 @@ class RWGC_Plugin {
 		RWGC_Rule_Tester_Frontend_Preview::init();
 		RWGC_Rule_Tester_Rendered_Impacts::init();
 		RWGC_Visibility_Rule_CPT::init();
+		RWGC_AB_DB::init();
+		RWGC_AB_Tests::init();
 		RWGC_Variant_Rule_Applications::init();
 		RWGC_Visibility_Rule_Editor_Status::init();
 
@@ -239,6 +244,7 @@ class RWGC_Plugin {
 		// Elementor editor round-trip.
 		if ( is_admin() && ! $this->is_elementor_ajax() ) {
 			RWGC_Admin_Visibility_Rules::init();
+			RWGC_AB_Admin::init();
 			RWGC_Admin_Platform::init();
 			RWGC_Admin_Route_Registry::init();
 			RWGC_Admin_Settings_Nav::init();
@@ -308,6 +314,8 @@ class RWGC_Plugin {
 		if ( false === get_option( 'rwgc_country_groups', false ) ) {
 			add_option( 'rwgc_country_groups', array(), '', 'no' );
 		}
+		require_once RWGC_PATH . 'includes/ab/class-rwgc-ab-db.php';
+		RWGC_AB_DB::install();
 		RWGC_Onboarding::flag_activation_redirect();
 		if ( class_exists( 'RWGC_Page_Version_Routing', false ) ) {
 			RWGC_Page_Version_Routing::activation_flush();

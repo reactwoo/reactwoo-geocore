@@ -3,6 +3,50 @@
 ## Status
 done
 
+QA fix on the free A/B store branch. Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `includes/ab/class-rwgc-ab-tests.php` — `write_config()` passes `wp_slash( $json )` into `update_post_meta()`. `delete()` also removes that test's `rwgc_ab_daily` rows.
+- `includes/ab/class-rwgc-ab-db.php` — `delete_for_test()`.
+- `uninstall.php` — A/B cleanup runs once per site on multisite.
+- `tests/bootstrap.php` — `update_post_meta` unslashes, then runs `sanitize_stored_json`, matching core. `wp_unslash` / `wp_slash` strip and add slashes.
+- `tests/AB/RWGC_AB_StoreTest.php` — round trip for quotes, `café`, and backslashes; daily-row delete.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 200 tests, 1452 assertions, OK.
+
+## Not changed
+- Plugin version. No front-end render, cookie, or counting.
+
+## Status
+done
+
+Free A/B test store for PR 1. Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `includes/ab/class-rwgc-ab-tests.php` — non-public `rwgc_ab_test` CPT and repository. `_rwgc_ab` parses with `RWGC_Contract_Experiment::from_array()`.
+- `includes/ab/class-rwgc-ab-db.php` — `{prefix}rwgc_ab_daily` via dbDelta, option `rwgc_ab_db_version`.
+- `includes/ab/class-rwgc-ab-admin.php`, `admin/views/ab-tests-list.php` — Experiences list. End and delete use a nonce and `manage_options`.
+- `includes/class-rwgc-plugin.php`, `includes/class-rwgc-admin-route-registry.php`, `includes/class-rwgc-admin-experiences-nav.php`, `includes/class-rwgc-admin-section-hubs.php` — load, init, and shell route.
+- `uninstall.php` — drops only the Core daily table and deletes `rwgc_ab_test` posts.
+- `tests/AB/RWGC_AB_StoreTest.php`, `tests/bootstrap.php` — repository round trip, contract parse, table creation.
+
+## Not changed
+- Plugin version, readme, and changelog. The WordPress.org guard still requires 1.9.26.
+- No front-end render, cookie, counting, or results.
+- No licence, cap, or upsell check in `includes/ab`.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 198 tests, 1433 assertions, OK.
+- `php tests/test-rwgc-wporg-build.php` — passed. Stable tag and `RWGC_VERSION` stay 1.9.26.
+- `python3 scripts/package_zip.py --target wporg` — `_assert_wporg_zip` passed. A/B classes are in the zip.
+
+## Remaining errors
+- None from these checks.
+
+## Status
+done
+
 Publish ReactWoo Geo Core Update packages the git tree with `scripts/package_zip.py`. It no longer runs Composer before the zip. Not merged and not tagged.
 
 ## Root cause

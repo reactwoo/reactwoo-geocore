@@ -350,6 +350,13 @@ class RWGC_Admin_Route_Registry {
 				'order'     => 5,
 			),
 			array(
+				'menu_slug' => 'rwgc-ab-tests',
+				'section'   => 'experiences',
+				'route'     => 'ab-tests',
+				'label'     => __( 'A/B tests', 'reactwoo-geocore' ),
+				'order'     => 10,
+			),
+			array(
 				'menu_slug' => 'rwgc-insights-hub',
 				'section'   => 'insights',
 				'route'     => 'insights-home',
@@ -618,7 +625,7 @@ class RWGC_Admin_Route_Registry {
 		if ( in_array( $slug, array( 'rwgc-target-types', 'rwgc-visibility-rules', 'rwgc-targeting-hub', 'rwgc-targeting-audiences', 'rwgc-targeting-campaigns', 'rwgc-suite-variants', 'rwgc-targeting-advanced', 'rwgc-workflow-variant' ), true ) ) {
 			return 'targeting';
 		}
-		if ( in_array( $slug, array( 'rwgc-experiences-hub' ), true ) ) {
+		if ( in_array( $slug, array( 'rwgc-experiences-hub', 'rwgc-ab-tests' ), true ) ) {
 			return 'experiences';
 		}
 		if ( in_array( $slug, array( 'rwgc-getting-started', 'rwgc-suite-home' ), true ) ) {

@@ -21,6 +21,7 @@ class RWGC_Admin_Experiences_Nav {
 	 */
 	public static function get_hub_slugs() {
 		$slugs = array(
+			'rwgc-ab-tests',
 			'geo-content',
 			'rwgo-dashboard',
 			'rwgo-reports',
@@ -82,9 +83,10 @@ class RWGC_Admin_Experiences_Nav {
 		}
 
 		$labels = array(
-			'geo-content'         => __( 'Geo content', 'reactwoo-geocore' ),
-			'rwgo-dashboard'      => __( 'Experiments', 'reactwoo-geocore' ),
-			'rwgo-reports'        => __( 'Reports', 'reactwoo-geocore' ),
+			'rwgc-ab-tests'  => __( 'A/B tests', 'reactwoo-geocore' ),
+			'geo-content'    => __( 'Geo content', 'reactwoo-geocore' ),
+			'rwgo-dashboard' => __( 'Experiments', 'reactwoo-geocore' ),
+			'rwgo-reports'   => __( 'Reports', 'reactwoo-geocore' ),
 		);
 
 		foreach ( $routes as $slug => $route ) {
