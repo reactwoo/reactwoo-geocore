@@ -14,3 +14,41 @@ delete_option( 'rwgc_settings' );
 delete_option( 'rwgc_cache_version' );
 delete_option( 'rwgc_maxmind_schedule_version' );
 
+/**
+ * Remove Geo Core A/B tests.
+ *
+ * Drops only `{prefix}rwgc_ab_daily` and deletes `rwgc_ab_test` posts and their meta.
+ * No other plugin table is queried or dropped.
+ *
+ * @return void
+ */
+function rwgc_uninstall_ab_tests() {
+	global $wpdb;
+
+	require_once __DIR__ . '/includes/ab/class-rwgc-ab-db.php';
+	require_once __DIR__ . '/includes/ab/class-rwgc-ab-tests.php';
+
+	$table = RWGC_AB_DB::table_name();
+	if ( preg_match( '/^[A-Za-z0-9_]+$/', $table ) ) {
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Fixed Core table name, checked above.
+		$wpdb->query( "DROP TABLE IF EXISTS `{$table}`" );
+	}
+	delete_option( RWGC_AB_DB::OPTION );
+
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	$post_ids = $wpdb->get_col(
+		$wpdb->prepare(
+			"SELECT ID FROM {$wpdb->posts} WHERE post_type = %s",
+			RWGC_AB_Tests::POST_TYPE
+		)
+	);
+	if ( ! is_array( $post_ids ) ) {
+		return;
+	}
+	foreach ( $post_ids as $post_id ) {
+		wp_delete_post( (int) $post_id, true );
+	}
+}
+
+rwgc_uninstall_ab_tests();
+

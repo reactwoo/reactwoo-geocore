@@ -113,6 +113,8 @@ if ( ! class_exists( 'WP_Post', false ) ) {
 		/** @var int */
 		public $ID;
 		/** @var string */
+		public $post_type = '';
+		/** @var string */
 		public $post_status;
 		/** @var string */
 		public $post_title;
@@ -215,10 +217,12 @@ if ( ! class_exists( 'WP_Filesystem_Direct', false ) ) {
 
 if ( ! function_exists( '__' ) ) {
 	/**
-	 * @param string $text Text.
+	 * @param string $text   Text.
+	 * @param string $domain Text domain.
 	 * @return string
 	 */
-	function __( $text ) {
+	function __( $text, $domain = 'default' ) {
+		unset( $domain );
 		return $text;
 	}
 }

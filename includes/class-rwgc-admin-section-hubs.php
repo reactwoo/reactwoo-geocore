@@ -188,6 +188,7 @@ class RWGC_Admin_Section_Hubs {
 			'rwgc-targeting-campaigns'=> __( 'Campaign references used by targeting and attribution workflows.', 'reactwoo-geocore' ),
 			'rwgc-target-types'       => __( 'Condition catalog and targeting simulation reference.', 'reactwoo-geocore' ),
 			'rwgc-suite-variants'     => __( 'Experiment variants created by a separate optimise plugin.', 'reactwoo-geocore' ),
+			'rwgc-ab-tests'           => __( 'Element A/B tests with two variants and one goal.', 'reactwoo-geocore' ),
 			'geo-content'             => __( 'Geo Content blocks and shortcode-driven experiences.', 'reactwoo-geocore' ),
 			'rwgo-dashboard'          => __( 'A/B tests, variants, and experiment workflows.', 'reactwoo-geocore' ),
 			'rwgo-create-test'        => __( 'Wizard to launch a new page or popup experiment.', 'reactwoo-geocore' ),
