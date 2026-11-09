@@ -3,6 +3,24 @@
 ## Status
 done
 
+A/B config writes slash JSON before `update_post_meta()`, so a quoted or non-ASCII goal selector is not wiped. Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `includes/ab/class-rwgc-ab-tests.php` — `write_config()` passes `wp_slash()` around the JSON string.
+- `tests/AB/RWGC_AB_StoreTest.php` — meta stub unslashes, then runs `sanitize_stored_json()`. New test covers `[data-goal="café"]` on create and end.
+
+## Not changed
+- Schema, admin caps, uninstall, and version.
+
+## Commands
+- `php /tmp/phpunit.phar --bootstrap tests/bootstrap.php --stderr tests/AB/RWGC_AB_StoreTest.php`
+
+## Remaining errors
+- None from this check.
+
+## Status
+done
+
 Free A/B test store for PR 1. Not tagged. Version stays 1.9.26.
 
 ## Files changed

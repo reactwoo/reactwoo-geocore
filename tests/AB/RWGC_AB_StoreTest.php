@@ -176,8 +176,23 @@ if ( ! function_exists( 'get_post_meta' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_slash' ) ) {
+	/**
+	 * @param mixed $value Value.
+	 * @return mixed
+	 */
+	function wp_slash( $value ) {
+		if ( is_array( $value ) ) {
+			return array_map( 'wp_slash', $value );
+		}
+		return is_string( $value ) ? addslashes( $value ) : $value;
+	}
+}
+
 if ( ! function_exists( 'update_post_meta' ) ) {
 	/**
+	 * Store meta. `_rwgc_ab` is unslashed and sanitized, matching update_metadata().
+	 *
 	 * @param int    $post_id    Post ID.
 	 * @param string $meta_key   Key.
 	 * @param mixed  $meta_value Value.
@@ -185,6 +200,11 @@ if ( ! function_exists( 'update_post_meta' ) ) {
 	 */
 	function update_post_meta( $post_id, $meta_key, $meta_value ) {
 		$post_id = (int) $post_id;
+		if ( class_exists( 'RWGC_AB_Tests', false ) && RWGC_AB_Tests::META_KEY === (string) $meta_key && is_string( $meta_value ) ) {
+			// Core unslashes, then runs the registered sanitize_callback.
+			$meta_value = stripslashes( $meta_value );
+			$meta_value = RWGC_AB_Tests::sanitize_stored_json( $meta_value );
+		}
 		if ( ! isset( $GLOBALS['rwgc_ab_test_meta'][ $post_id ] ) || ! is_array( $GLOBALS['rwgc_ab_test_meta'][ $post_id ] ) ) {
 			$GLOBALS['rwgc_ab_test_meta'][ $post_id ] = array();
 		}
@@ -400,6 +420,41 @@ final class RWGC_AB_StoreTest extends TestCase {
 		$this->assertNull( RWGC_AB_Tests::get( 80 ) );
 		$this->assertFalse( RWGC_AB_Tests::delete( 80 ) );
 		$this->assertNotNull( get_post( 80 ) );
+	}
+
+	public function test_quoted_and_unicode_goal_survives_meta_unslash(): void {
+		$selector = '[data-goal="café"]';
+		$id       = RWGC_AB_Tests::create(
+			array(
+				'title'  => 'Quoted goal',
+				'status' => 'publish',
+				'config' => array(
+					'adapter'        => 'elementor',
+					'source_post_id' => 7,
+					'goal'           => array(
+						'type'     => 'click',
+						'selector' => $selector,
+					),
+					'managed_by'     => 'optimise',
+				),
+			)
+		);
+
+		$this->assertGreaterThan( 0, $id );
+		$saved = RWGC_AB_Tests::get( $id );
+		$this->assertNotNull( $saved );
+		$this->assertSame( $selector, $saved['config']['goal']['selector'] );
+		$this->assertSame( 7, $saved['config']['source_post_id'] );
+		$this->assertSame( 'elementor', $saved['config']['adapter'] );
+		$this->assertSame( 'optimise', $saved['config']['managed_by'] );
+		$this->assertNotSame( '', $saved['config']['started_at'] );
+
+		$this->assertTrue( RWGC_AB_Tests::end( $id, 'a' ) );
+		$ended = RWGC_AB_Tests::get( $id );
+		$this->assertSame( $selector, $ended['config']['goal']['selector'] );
+		$this->assertSame( 7, $ended['config']['source_post_id'] );
+		$this->assertSame( 'optimise', $ended['config']['managed_by'] );
+		$this->assertSame( 'a', $ended['config']['kept'] );
 	}
 
 	public function test_stored_config_parses_as_experiment_contract(): void {

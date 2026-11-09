@@ -484,7 +484,12 @@ class RWGC_AB_Tests {
 		if ( ! is_string( $json ) || '' === $json ) {
 			return;
 		}
-		update_post_meta( absint( $post_id ), self::META_KEY, $json );
+		/*
+		 * update_post_meta() stripslashes before sanitize_stored_json().
+		 * JSON escapes (\", \\, \u) must be slashed here or a quoted selector
+		 * fails json_decode and the sanitizer stores an empty config.
+		 */
+		update_post_meta( absint( $post_id ), self::META_KEY, wp_slash( $json ) );
 	}
 
 	/**
