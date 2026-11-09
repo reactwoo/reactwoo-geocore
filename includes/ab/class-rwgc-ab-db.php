@@ -104,6 +104,27 @@ class RWGC_AB_DB {
 	}
 
 	/**
+	 * Remove aggregate rows for one test. Other tests are left in place.
+	 *
+	 * @param int $test_id Test post ID.
+	 * @return void
+	 */
+	public static function delete_for_test( $test_id ) {
+		global $wpdb;
+
+		$test_id = absint( $test_id );
+		if ( $test_id <= 0 || ! is_object( $wpdb ) || ! method_exists( $wpdb, 'query' ) || ! method_exists( $wpdb, 'prepare' ) ) {
+			return;
+		}
+		$table = self::table_name();
+		if ( ! preg_match( '/^[A-Za-z0-9_]+$/', $table ) ) {
+			return;
+		}
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is the fixed Core daily table, checked above.
+		$wpdb->query( $wpdb->prepare( "DELETE FROM `{$table}` WHERE test_id = %d", $test_id ) );
+	}
+
+	/**
 	 * @return void
 	 */
 	private static function create_table() {

@@ -3,6 +3,24 @@
 ## Status
 done
 
+QA fix on the free A/B store branch. Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `includes/ab/class-rwgc-ab-tests.php` — `write_config()` passes `wp_slash( $json )` into `update_post_meta()`. `delete()` also removes that test's `rwgc_ab_daily` rows.
+- `includes/ab/class-rwgc-ab-db.php` — `delete_for_test()`.
+- `uninstall.php` — A/B cleanup runs once per site on multisite.
+- `tests/bootstrap.php` — `update_post_meta` unslashes, then runs `sanitize_stored_json`, matching core. `wp_unslash` / `wp_slash` strip and add slashes.
+- `tests/AB/RWGC_AB_StoreTest.php` — round trip for quotes, `café`, and backslashes; daily-row delete.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 200 tests, 1452 assertions, OK.
+
+## Not changed
+- Plugin version. No front-end render, cookie, or counting.
+
+## Status
+done
+
 Free A/B test store for PR 1. Not tagged. Version stays 1.9.26.
 
 ## Files changed

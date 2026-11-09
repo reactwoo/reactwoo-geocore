@@ -304,8 +304,15 @@ class RWGC_AB_Tests {
 		if ( ! $post || ! function_exists( 'wp_delete_post' ) ) {
 			return false;
 		}
-		$result = wp_delete_post( (int) $post->ID, true );
-		return false !== $result && null !== $result;
+		$post_id = (int) $post->ID;
+		$result  = wp_delete_post( $post_id, true );
+		if ( false === $result || null === $result ) {
+			return false;
+		}
+		if ( class_exists( 'RWGC_AB_DB', false ) ) {
+			RWGC_AB_DB::delete_for_test( $post_id );
+		}
+		return true;
 	}
 
 	/**
@@ -484,7 +491,9 @@ class RWGC_AB_Tests {
 		if ( ! is_string( $json ) || '' === $json ) {
 			return;
 		}
-		update_post_meta( absint( $post_id ), self::META_KEY, $json );
+		// update_metadata() unslashes before the sanitize callback. Slash first so
+		// JSON escapes (quotes, \uXXXX, backslashes) survive that pass.
+		update_post_meta( absint( $post_id ), self::META_KEY, wp_slash( $json ) );
 	}
 
 	/**

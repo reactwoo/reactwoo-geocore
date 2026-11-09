@@ -53,11 +53,69 @@ if ( ! function_exists( 'apply_filters' ) ) {
 
 if ( ! function_exists( 'wp_unslash' ) ) {
 	/**
+	 * Same contract as core: strip slashes from strings and arrays.
+	 *
+	 * update_metadata() does this before the registered sanitize callback.
+	 *
 	 * @param mixed $value Value.
 	 * @return mixed
 	 */
 	function wp_unslash( $value ) {
+		if ( is_array( $value ) ) {
+			foreach ( $value as $key => $item ) {
+				$value[ $key ] = wp_unslash( $item );
+			}
+			return $value;
+		}
+		if ( is_string( $value ) ) {
+			return stripslashes( $value );
+		}
 		return $value;
+	}
+}
+
+if ( ! function_exists( 'wp_slash' ) ) {
+	/**
+	 * Same contract as core: add slashes so a later wp_unslash restores the value.
+	 *
+	 * @param mixed $value Value.
+	 * @return mixed
+	 */
+	function wp_slash( $value ) {
+		if ( is_array( $value ) ) {
+			foreach ( $value as $key => $item ) {
+				$value[ $key ] = wp_slash( $item );
+			}
+			return $value;
+		}
+		if ( is_string( $value ) ) {
+			return addslashes( $value );
+		}
+		return $value;
+	}
+}
+
+if ( ! function_exists( 'update_post_meta' ) ) {
+	/**
+	 * Core update_metadata() unslashes, then runs the registered sanitize callback.
+	 *
+	 * @param int    $post_id    Post ID.
+	 * @param string $meta_key   Key.
+	 * @param mixed  $meta_value Value.
+	 * @return bool
+	 */
+	function update_post_meta( $post_id, $meta_key, $meta_value ) {
+		$post_id    = (int) $post_id;
+		$meta_key   = (string) $meta_key;
+		$meta_value = wp_unslash( $meta_value );
+		if ( class_exists( 'RWGC_AB_Tests', false ) && RWGC_AB_Tests::META_KEY === $meta_key ) {
+			$meta_value = RWGC_AB_Tests::sanitize_stored_json( $meta_value );
+		}
+		if ( ! isset( $GLOBALS['rwgc_ab_test_meta'][ $post_id ] ) || ! is_array( $GLOBALS['rwgc_ab_test_meta'][ $post_id ] ) ) {
+			$GLOBALS['rwgc_ab_test_meta'][ $post_id ] = array();
+		}
+		$GLOBALS['rwgc_ab_test_meta'][ $post_id ][ $meta_key ] = $meta_value;
+		return true;
 	}
 }
 

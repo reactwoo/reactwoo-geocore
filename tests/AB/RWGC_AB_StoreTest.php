@@ -176,23 +176,6 @@ if ( ! function_exists( 'get_post_meta' ) ) {
 	}
 }
 
-if ( ! function_exists( 'update_post_meta' ) ) {
-	/**
-	 * @param int    $post_id    Post ID.
-	 * @param string $meta_key   Key.
-	 * @param mixed  $meta_value Value.
-	 * @return bool
-	 */
-	function update_post_meta( $post_id, $meta_key, $meta_value ) {
-		$post_id = (int) $post_id;
-		if ( ! isset( $GLOBALS['rwgc_ab_test_meta'][ $post_id ] ) || ! is_array( $GLOBALS['rwgc_ab_test_meta'][ $post_id ] ) ) {
-			$GLOBALS['rwgc_ab_test_meta'][ $post_id ] = array();
-		}
-		$GLOBALS['rwgc_ab_test_meta'][ $post_id ][ (string) $meta_key ] = $meta_value;
-		return true;
-	}
-}
-
 if ( ! function_exists( 'wp_delete_post' ) ) {
 	/**
 	 * @param int  $postid       Post ID.
@@ -223,10 +206,53 @@ class RWGC_AB_Test_Wpdb {
 	public $posts = 'wp_posts';
 
 	/**
+	 * Daily rows keyed for the delete test.
+	 *
+	 * @var array<int, array{test_id:int,variant:string,day:string}>
+	 */
+	public $daily = array();
+
+	/**
 	 * @return string
 	 */
 	public function get_charset_collate() {
 		return 'DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
+	}
+
+	/**
+	 * @param string $query SQL with placeholders.
+	 * @param mixed  ...$args Values.
+	 * @return string
+	 */
+	public function prepare( $query, ...$args ) {
+		$prepared = (string) $query;
+		foreach ( $args as $arg ) {
+			if ( is_int( $arg ) || ( is_string( $arg ) && preg_match( '/^-?\d+$/', $arg ) ) ) {
+				$prepared = preg_replace( '/%d/', (string) (int) $arg, $prepared, 1 );
+				continue;
+			}
+			$prepared = preg_replace( '/%s/', "'" . addslashes( (string) $arg ) . "'", $prepared, 1 );
+		}
+		return $prepared;
+	}
+
+	/**
+	 * @param string $sql SQL.
+	 * @return int
+	 */
+	public function query( $sql ) {
+		if ( preg_match( '/DELETE FROM `[^`]+` WHERE test_id = (\d+)/', (string) $sql, $match ) ) {
+			$id          = (int) $match[1];
+			$this->daily = array_values(
+				array_filter(
+					$this->daily,
+					static function ( $row ) use ( $id ) {
+						return (int) $row['test_id'] !== $id;
+					}
+				)
+			);
+		}
+		return 1;
 	}
 }
 
@@ -451,6 +477,75 @@ final class RWGC_AB_StoreTest extends TestCase {
 		$this->assertSame( 'gutenberg', $round->extras()['adapter'] );
 	}
 
+	public function test_config_round_trip_keeps_quotes_unicode_and_backslashes(): void {
+		$selector = 'a[data-x="y"]\\café';
+		$id       = RWGC_AB_Tests::create(
+			array(
+				'title'  => 'Escapes',
+				'status' => 'draft',
+				'config' => array(
+					'adapter' => 'elementor',
+					'goal'    => array(
+						'type'     => 'click',
+						'selector' => $selector,
+					),
+					'note'    => 'café',
+					'path'    => 'c:\\temp\\file',
+				),
+			)
+		);
+
+		$raw = get_post_meta( $id, RWGC_AB_Tests::META_KEY, true );
+		$this->assertIsString( $raw );
+		$this->assertNotSame( '', $raw );
+		$decoded = json_decode( $raw, true );
+		$this->assertIsArray( $decoded );
+		$this->assertSame( $selector, $decoded['goal']['selector'] );
+		$this->assertSame( 'café', $decoded['note'] );
+		$this->assertSame( 'c:\\temp\\file', $decoded['path'] );
+
+		$saved = RWGC_AB_Tests::get( $id );
+		$this->assertSame( 'elementor', $saved['config']['adapter'] );
+		$this->assertSame( $selector, $saved['config']['goal']['selector'] );
+		$this->assertSame( 'café', $saved['config']['note'] );
+		$this->assertSame( 'c:\\temp\\file', $saved['config']['path'] );
+	}
+
+	public function test_delete_removes_daily_rows_for_that_test_only(): void {
+		$first  = RWGC_AB_Tests::create( array( 'title' => 'First' ) );
+		$second = RWGC_AB_Tests::create( array( 'title' => 'Second' ) );
+		$wpdb   = $GLOBALS['wpdb'];
+		$wpdb->daily = array(
+			array(
+				'test_id' => $first,
+				'variant' => 'a',
+				'day'     => '2026-11-09',
+			),
+			array(
+				'test_id' => $first,
+				'variant' => 'b',
+				'day'     => '2026-11-09',
+			),
+			array(
+				'test_id' => $second,
+				'variant' => 'a',
+				'day'     => '2026-11-09',
+			),
+		);
+
+		$this->assertTrue( RWGC_AB_Tests::delete( $first ) );
+		$this->assertNull( RWGC_AB_Tests::get( $first ) );
+		$left = array();
+		foreach ( $wpdb->daily as $row ) {
+			$left[] = (int) $row['test_id'];
+		}
+		$this->assertNotContains( $first, $left );
+		$this->assertSame( array( $second ), $left );
+
+		$this->assertFalse( RWGC_AB_Tests::delete( $first ) );
+		$this->assertSame( array( $second ), $left );
+	}
+
 	public function test_contract_rejects_a_config_without_an_id(): void {
 		$this->expectException( RWGC_Contract_Exception::class );
 		RWGC_Contract_Experiment::from_array( RWGC_AB_Tests::sanitize_config( array(), 0 ) );
@@ -542,6 +637,9 @@ final class RWGC_AB_StoreTest extends TestCase {
 		$this->assertStringContainsString( 'RWGC_AB_DB::OPTION', $uninstall );
 		$this->assertSame( 1, substr_count( $uninstall, 'DROP TABLE' ) );
 		$this->assertStringNotContainsString( 'rwgo_', $uninstall );
+		$this->assertStringContainsString( 'is_multisite()', $uninstall );
+		$this->assertStringContainsString( 'switch_to_blog(', $uninstall );
+		$this->assertStringContainsString( 'restore_current_blog()', $uninstall );
 
 		foreach ( glob( $root . '/includes/ab/*.php' ) as $file ) {
 			$src = strtolower( (string) file_get_contents( $file ) );
