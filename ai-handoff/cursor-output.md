@@ -3,6 +3,23 @@
 ## Status
 done
 
+Free A/B visitor assignment (PR 2). Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `includes/ab/class-rwgc-ab-assignment.php` — HMAC-signed `rwgc_ab` cookie, 50/50 via `RWGC_Decision_Experiment_Assigner::bucket()`, bot and preview skips, `rwgc_ab_can_track` consent veto. Written on `send_headers`.
+- `includes/class-rwgc-plugin.php` — require and init on the front end.
+- `tests/AB/RWGC_AB_AssignmentTest.php` — distribution, tamper reset, bot skip, consent, REST, and AJAX.
+
+## Not changed
+- Plugin version, readme, changelog, and release workflows.
+- No rendering, cache vary, or counting. That is PR 3 and PR 7.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 213 tests, 21543 assertions, OK.
+
+## Status
+done
+
 QA fix on the free A/B store branch. Not tagged. Version stays 1.9.26.
 
 ## Files changed
