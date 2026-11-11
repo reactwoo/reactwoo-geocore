@@ -200,6 +200,11 @@ class RWGC_Settings {
 		$currency_opts              = class_exists( 'RWGC_Countries', false ) ? RWGC_Countries::get_currency_options() : array();
 		$out['fallback_currency']     = isset( $currency_opts[ $fcur ] ) ? $fcur : $defaults['fallback_currency'];
 		$out['rest_enabled']        = ! empty( $settings['rest_enabled'] ) ? 1 : 0;
+		$ab_mode                    = 'server';
+		if ( isset( $settings['ab_cache_mode'] ) && is_scalar( $settings['ab_cache_mode'] ) ) {
+			$ab_mode = strtolower( trim( (string) $settings['ab_cache_mode'] ) );
+		}
+		$out['ab_cache_mode']       = ( 'fragment' === $ab_mode ) ? 'fragment' : 'server';
 		$out['debug_mode']          = ! empty( $settings['debug_mode'] ) ? 1 : 0;
 		$out['db_last_updated']     = isset( $settings['db_last_updated'] ) ? sanitize_text_field( $settings['db_last_updated'] ) : '';
 		$out['db_last_success_at']  = isset( $settings['db_last_success_at'] ) ? sanitize_text_field( $settings['db_last_success_at'] ) : '';
@@ -375,6 +380,7 @@ class RWGC_Settings {
 			'fallback_country'    => 'US',
 			'fallback_currency'   => 'USD',
 			'rest_enabled'        => 1,
+			'ab_cache_mode'       => 'server',
 			'debug_mode'          => 0,
 			'db_last_updated'     => '',
 			'db_last_success_at'  => '',

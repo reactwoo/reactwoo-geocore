@@ -68,6 +68,24 @@ $rwgc_wporg = function_exists( 'rwgc_is_wordpress_org_distribution' ) && rwgc_is
 				</td>
 			</tr>
 			<tr>
+				<th scope="row"><label for="rwgc_ab_cache_mode"><?php esc_html_e( 'A/B cache', 'reactwoo-geocore' ); ?></label></th>
+				<td>
+					<?php
+					$rwgc_ab_mode = isset( $rwgc_settings['ab_cache_mode'] ) ? (string) $rwgc_settings['ab_cache_mode'] : 'server';
+					if ( 'fragment' !== $rwgc_ab_mode ) {
+						$rwgc_ab_mode = 'server';
+					}
+					?>
+					<select id="rwgc_ab_cache_mode" name="<?php echo esc_attr( $rwgc_option_key ); ?>[ab_cache_mode]">
+						<option value="server" <?php selected( $rwgc_ab_mode, 'server' ); ?>><?php esc_html_e( 'Server', 'reactwoo-geocore' ); ?></option>
+						<option value="fragment" <?php selected( $rwgc_ab_mode, 'fragment' ); ?>><?php esc_html_e( 'Fragment', 'reactwoo-geocore' ); ?></option>
+					</select>
+					<p class="description">
+						<?php esc_html_e( 'Server prints the assigned arm on the page. Caches that cannot keep visitors apart are told not to store that page. LiteSpeed keeps a separate copy for each arm. Fragment leaves variant A in the page, which can be cached, and a script on this site swaps in the assigned arm. Use Fragment when the host cache cannot vary. The script calls this site only.', 'reactwoo-geocore' ); ?>
+					</p>
+				</td>
+			</tr>
+			<tr>
 				<th scope="row"><?php esc_html_e( 'Cache results', 'reactwoo-geocore' ); ?></th>
 				<td>
 					<label>

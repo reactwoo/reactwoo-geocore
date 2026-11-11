@@ -14,7 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * LiteSpeed vary groups are derived from server-side GeoIP / Page Version context — never from
  * client-supplied cookie values — so a forged `rwgc_cc` / `rwgc_pv` cookie cannot poison another
- * country's (or version's) cache bucket.
+ * country's (or version's) cache bucket. A/B arms use the same rule: the group name comes from
+ * the verified assignment, not from the raw `rwgc_ab` cookie.
  */
 class RWGC_Cache_Compat {
 
@@ -38,6 +39,8 @@ class RWGC_Cache_Compat {
 		add_action( 'send_headers', array( __CLASS__, 'maybe_set_country_cookie' ), 0 );
 		add_action( 'send_headers', array( __CLASS__, 'maybe_set_page_version_cookie' ), 5 );
 		add_action( 'litespeed_init', array( __CLASS__, 'litespeed_vary_groups' ) );
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- LiteSpeed Cache public vary API.
+		add_filter( 'litespeed_vary', array( __CLASS__, 'filter_litespeed_ab' ) );
 	}
 
 	/**
@@ -99,6 +102,58 @@ class RWGC_Cache_Compat {
 			$version_key = self::VERSION_COOKIE_BASE;
 		}
 		return 'rwgc_pv_' . $version_key;
+	}
+
+	/**
+	 * LiteSpeed vary group for one verified A/B arm.
+	 *
+	 * The arm must already have been checked against the signed cookie. The raw
+	 * cookie is not a group name, so a forged value cannot open a new bucket.
+	 *
+	 * @param int|string $test_id Test post ID.
+	 * @param string     $arm     Variant id, such as `a` or `b`.
+	 * @return string Empty when the id or arm is not safe to use as a group.
+	 */
+	public static function ab_vary_group( $test_id, $arm ) {
+		$test_id = absint( $test_id );
+		$arm     = sanitize_key( (string) $arm );
+		if ( $test_id <= 0 || ! preg_match( '/^[a-z0-9_\-]{1,16}$/', $arm ) ) {
+			return '';
+		}
+		return 'rwgc_ab_' . $test_id . '_' . $arm;
+	}
+
+	/**
+	 * Vary groups for tests this request has rendered.
+	 *
+	 * Empty until a renderer calls `rwgc_ab_render_test()`. Pages without a test
+	 * do not vary.
+	 *
+	 * @return string[]
+	 */
+	public static function ab_vary_groups_for_request() {
+		if ( ! class_exists( 'RWGC_AB_Cache', false ) ) {
+			return array();
+		}
+		$groups = RWGC_AB_Cache::rendered_vary_groups();
+		return is_array( $groups ) ? $groups : array();
+	}
+
+	/**
+	 * Add rendered A/B arms to LiteSpeed's hashed vary map.
+	 *
+	 * Current LiteSpeed reads this filter. `litespeed_vary_add` is still fired
+	 * for the same groups.
+	 *
+	 * @param mixed $vary Vary map.
+	 * @return mixed
+	 */
+	public static function filter_litespeed_ab( $vary ) {
+		if ( ! is_array( $vary ) || ! class_exists( 'RWGC_AB_Cache', false ) ) {
+			return $vary;
+		}
+		$updated = RWGC_AB_Cache::filter_litespeed_vary( $vary );
+		return is_array( $updated ) ? $updated : $vary;
 	}
 
 	/**
@@ -175,5 +230,11 @@ class RWGC_Cache_Compat {
 		}
 
 		do_action( 'litespeed_vary_add', self::page_version_vary_group( self::resolve_page_version_vary_key() ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- LiteSpeed Cache public vary API.
+
+		foreach ( self::ab_vary_groups_for_request() as $group ) {
+			if ( is_string( $group ) && '' !== $group ) {
+				do_action( 'litespeed_vary_add', $group ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- LiteSpeed Cache public vary API.
+			}
+		}
 	}
 }

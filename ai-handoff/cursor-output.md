@@ -3,6 +3,45 @@
 ## Status
 done
 
+QA fixes on free A/B cache-safe rendering (PR 3, #112). Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `includes/ab/class-rwgc-ab-assignment.php` — `rwgc_ab` is set only when a test is rendered, not on `send_headers` for every public page.
+- `includes/ab/class-rwgc-ab-cache.php` — positive-integer test ids return 400; rate limit uses `wp_cache_incr` when a persistent object cache exists, otherwise a transient. `Cache-Control` is sent only while headers are open.
+- `includes/class-rwgc-rest.php` — render route validates `test` before absint.
+- `tests/AB/RWGC_AB_AssignmentTest.php`, `tests/AB/RWGC_AB_CacheTest.php` — a page with no rendered test sends no cookie and stays cacheable.
+- `CHANGELOG.md`, `readme.txt` — the header timing and the transient race.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 240 tests, 21784 assertions, OK.
+
+## Status
+done
+
+Free A/B cache-safe rendering (PR 3). Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `includes/ab/class-rwgc-ab-cache.php` — Server and Fragment modes. `rwgc_ab_render_test()` is what a renderer calls. Server mode bypasses shared caches, and LiteSpeed varies on the verified arm. Fragment mode prints A and enqueues `assets/js/rwgc-ab.js`.
+- `includes/ab/class-rwgc-ab-assignment.php` — the fragment render route may set `rwgc_ab`. Other REST requests still do not.
+- `includes/integrations/class-rwgc-cache-compat.php` — `rwgc_ab_{id}_{arm}` vary groups from the verified arm, via `litespeed_vary_add` and `litespeed_vary`.
+- `includes/class-rwgc-rest.php` — `GET /reactwoo-geocore/v1/ab/render?test=`, no-store, 40/minute per IP.
+- `includes/class-rwgc-settings.php`, `admin/views/settings-page.php` — Settings → Detection, A/B cache, default Server.
+- `includes/class-rwgc-plugin.php` — load and init.
+- `tests/AB/RWGC_AB_CacheTest.php`, `tests/Integrations/RWGCCacheCompatTest.php` — policy, placeholder, vary group, rate limit.
+- `CHANGELOG.md`, `readme.txt` — Unreleased notes.
+
+## Not changed
+- Plugin version. No block, Elementor, or shortcode rendering (PRs 4–6). No view counting (PR 7).
+- The raw `rwgc_ab` cookie is not a LiteSpeed vary cookie.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 236 tests, 21701 assertions, OK.
+- `composer test:geoip-ip`, `composer test:wporg-build`, `composer test:zip-js-order`, `composer test:zip-reproducible` — passed.
+- PHPCS is not configured in this repo.
+
+## Status
+done
+
 Free A/B visitor assignment (PR 2). Not tagged. Version stays 1.9.26.
 
 ## Files changed

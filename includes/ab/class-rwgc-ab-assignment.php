@@ -12,10 +12,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * 50/50 assignment stored in a signed first-party cookie.
  *
- * The cookie is written on `send_headers`, before output buffering, on public
- * front-end GET requests. Bots, logged-in editor previews, REST, and AJAX
- * never receive a Set-Cookie. A consent check can veto the same way and the
- * visitor is then shown variant A.
+ * The cookie is written only when a response renders a test (`variant()` from
+ * `rwgc_ab_render_test()`, or `variant_for_fragment()` on the render route).
+ * A page with no test does not send Set-Cookie and can stay in a shared cache.
+ * Bots, logged-in editor previews, other REST requests, and AJAX never receive
+ * a Set-Cookie. The fragment render route is the REST exception: a cached page
+ * does not run PHP, so that one GET may assign. A consent check can veto the
+ * same way and the visitor is then shown variant A.
  */
 class RWGC_AB_Assignment {
 
@@ -49,22 +52,26 @@ class RWGC_AB_Assignment {
 	private static $last_emit = null;
 
 	/**
+	 * True while the fragment render route is allowed to assign during REST.
+	 *
+	 * @var bool
+	 */
+	private static $fragment_write = false;
+
+	/**
 	 * @return void
 	 */
 	public static function init() {
-		if ( function_exists( 'is_admin' ) && is_admin() ) {
-			return;
-		}
-		if ( ! function_exists( 'add_action' ) ) {
-			return;
-		}
-		add_action( 'send_headers', array( __CLASS__, 'maybe_set_cookie' ), 0 );
+		// Do not assign on send_headers. That hook runs for every public page,
+		// before this request knows whether it will render a test, and the
+		// Set-Cookie would be stored by a cache that does not vary.
 	}
 
 	/**
-	 * Assign running tests and send the cookie when this request may do so.
+	 * Flush a cookie this request has already assigned.
 	 *
-	 * Hooked to send_headers so the Set-Cookie lands before render.
+	 * Does not assign running tests. Call `variant()` for each test the
+	 * response actually renders.
 	 *
 	 * @return void
 	 */
@@ -72,11 +79,6 @@ class RWGC_AB_Assignment {
 		if ( ! self::can_write_cookie() ) {
 			return;
 		}
-		foreach ( self::running_test_ids() as $test_id ) {
-			self::assign_test( $test_id );
-		}
-		// A tampered cookie is replaced even when nothing new is assigned.
-		self::load_state( true );
 		self::flush_cookie();
 	}
 
@@ -105,6 +107,24 @@ class RWGC_AB_Assignment {
 			return self::CONTROL;
 		}
 		return (string) $row['variant'];
+	}
+
+	/**
+	 * Assign during the fragment render request.
+	 *
+	 * Other REST requests still only read a valid cookie. This route may write
+	 * because a cached fragment page never reaches `send_headers`.
+	 *
+	 * @param int|string $test_id Test post ID.
+	 * @return string
+	 */
+	public static function variant_for_fragment( $test_id ) {
+		self::$fragment_write = true;
+		try {
+			return self::variant( $test_id );
+		} finally {
+			self::$fragment_write = false;
+		}
 	}
 
 	/**
@@ -301,17 +321,43 @@ class RWGC_AB_Assignment {
 	 * @return void
 	 */
 	public static function reset_request_state() {
-		self::$memo      = null;
-		self::$dirty     = false;
-		self::$can_track = null;
-		self::$last_emit = null;
+		self::$memo           = null;
+		self::$dirty          = false;
+		self::$can_track      = null;
+		self::$last_emit      = null;
+		self::$fragment_write = false;
 	}
 
 	/**
 	 * @return bool
 	 */
 	private static function can_write_cookie() {
-		return self::tracking_allowed() && ! self::request_skips_assignment( self::current_request_flags() );
+		if ( ! self::tracking_allowed() ) {
+			return false;
+		}
+		$flags = self::current_request_flags();
+		if ( self::$fragment_write || self::is_fragment_render_request() ) {
+			$flags['rest'] = false;
+		}
+		return ! self::request_skips_assignment( $flags );
+	}
+
+	/**
+	 * The no-store fragment route. A normal REST request does not match.
+	 *
+	 * @return bool
+	 */
+	private static function is_fragment_render_request() {
+		$uri = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Only searched for a fixed route.
+		$uri = is_string( $uri ) ? $uri : '';
+		if ( false !== strpos( $uri, 'reactwoo-geocore/v1/ab/render' ) ) {
+			return true;
+		}
+		if ( ! isset( $_GET['rest_route'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Route detection, not a form.
+			return false;
+		}
+		$route = wp_unslash( $_GET['rest_route'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		return is_string( $route ) && false !== strpos( $route, 'reactwoo-geocore/v1/ab/render' );
 	}
 
 	/**

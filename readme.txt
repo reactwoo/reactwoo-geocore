@@ -166,6 +166,12 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= Unreleased =
+* A/B tests can render without one visitor's arm being cached for another. Server mode tells caches that cannot vary not to store a page that renders an active test. LiteSpeed keeps a separate copy per arm. Fragment mode (Settings → Detection) shows variant A without JavaScript and loads the assigned arm from this site. That request is not stored.
+* The A/B cookie is set only on a response that renders a test. A page with no test does not send that cookie and can stay cached.
+* The render address expects a positive integer test id. Anything else is rejected. With a persistent object cache the per-minute limit is an atomic counter. Without one, a transient is used and two requests at the same moment can both be counted, so a short burst can go over the limit.
+* Cache-Control is sent only when the response headers are still open. DONOTCACHEPAGE, and LiteSpeed's no-cache flag, still apply after the page has started sending output.
+
 = 1.9.26 =
 * The WordPress Dashboard shows the MaxMind setup notice, and the Dashboard widgets render.
 * Country names that already include the code, such as United States (US), are not written twice.
