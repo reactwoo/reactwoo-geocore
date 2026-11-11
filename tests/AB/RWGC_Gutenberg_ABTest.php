@@ -186,6 +186,38 @@ if ( ! function_exists( 'wp_is_post_autosave' ) ) {
 	}
 }
 
+if ( ! function_exists( 'render_block' ) ) {
+	/**
+	 * Render parsed inner blocks the way the block tests expect.
+	 *
+	 * Records block names so the fragment provider can be checked for rendering
+	 * the test block itself, which would re-enter server-mode cache rules.
+	 *
+	 * @param array<string, mixed> $parsed_block Parsed block.
+	 * @return string
+	 */
+	function render_block( $parsed_block ) {
+		$parsed_block = is_array( $parsed_block ) ? $parsed_block : array();
+		$name         = isset( $parsed_block['blockName'] ) ? (string) $parsed_block['blockName'] : '';
+		if ( ! isset( $GLOBALS['rwgc_test_rendered_blocks'] ) || ! is_array( $GLOBALS['rwgc_test_rendered_blocks'] ) ) {
+			$GLOBALS['rwgc_test_rendered_blocks'] = array();
+		}
+		$GLOBALS['rwgc_test_rendered_blocks'][] = $name;
+		$html = '';
+		if ( ! empty( $parsed_block['innerBlocks'] ) && is_array( $parsed_block['innerBlocks'] ) ) {
+			foreach ( $parsed_block['innerBlocks'] as $inner ) {
+				if ( is_array( $inner ) ) {
+					$html .= render_block( $inner );
+				}
+			}
+		}
+		if ( '' !== $html ) {
+			return $html;
+		}
+		return isset( $parsed_block['innerHTML'] ) && is_string( $parsed_block['innerHTML'] ) ? $parsed_block['innerHTML'] : '';
+	}
+}
+
 /**
  * @covers RWGC_Gutenberg_AB
  */
@@ -254,10 +286,12 @@ final class RWGC_Gutenberg_ABTest extends TestCase {
 				return false;
 			},
 		);
-		$GLOBALS['rwgc_ab_test_posts'] = array();
-		$GLOBALS['rwgc_ab_test_meta']  = array();
-		$GLOBALS['rwgc_ab_test_seq']   = 0;
-		$GLOBALS['rwgc_test_scripts']  = array();
+		$GLOBALS['rwgc_ab_test_posts']        = array();
+		$GLOBALS['rwgc_ab_test_meta']         = array();
+		$GLOBALS['rwgc_ab_test_seq']          = 0;
+		$GLOBALS['rwgc_test_scripts']         = array();
+		$GLOBALS['rwgc_test_rendered_blocks'] = array();
+		$GLOBALS['rwgc_test_transients']      = array();
 		RWGC_AB_Assignment::reset_request_state();
 		RWGC_AB_Cache::reset_request_state();
 	}
@@ -524,6 +558,91 @@ final class RWGC_Gutenberg_ABTest extends TestCase {
 		$this->assertStringNotContainsString( 'data-rwgc-arm="b"', $html );
 		$this->assertFalse( RWGC_AB_Cache::last_directives()['donotcachepage'] );
 		$this->assertTrue( RWGC_AB_Cache::fragment_script_queued() );
+	}
+
+	public function test_fragment_route_returns_each_block_arm_and_unknown_tests_stay_404(): void {
+		$post_id = $this->insert_page(
+			array(
+				$this->ab_block(
+					array(
+						'testName' => 'Fragment',
+						'goalType' => 'click',
+					)
+				),
+			)
+		);
+		RWGC_Gutenberg_AB::sync_on_save( $post_id );
+		$test_id = (int) $this->blocks_of( $post_id )[0]['attrs']['testId'];
+		$this->assertGreaterThan( 0, $test_id );
+
+		$src = (string) file_get_contents( dirname( __DIR__, 2 ) . '/includes/integrations/gutenberg/class-rwgc-gutenberg-ab.php' );
+		$this->assertStringContainsString( "add_filter( 'rwgc_ab_variant_html'", $src );
+		$GLOBALS['rwgc_test_filters']['rwgc_ab_variant_html'] = array( 'RWGC_Gutenberg_AB', 'filter_variant_html' );
+
+		$GLOBALS['rwgc_test_rendered_blocks'] = array();
+		RWGC_AB_Cache::reset_request_state();
+		$this->seed( $test_id, 'b' );
+		$arm_b = RWGC_AB_Cache::build_render_response( $test_id, '203.0.113.80' );
+		$this->assertSame( 200, $arm_b['status'] );
+		$this->assertSame( 'b', $arm_b['body']['arm'] );
+		$this->assertSame( $test_id, $arm_b['body']['test'] );
+		$this->assertNotSame( '', $arm_b['body']['html'] );
+		$this->assertStringContainsString( 'ARM-B-ONLY', $arm_b['body']['html'] );
+		$this->assertStringNotContainsString( 'ARM-A-ONLY', $arm_b['body']['html'] );
+		$this->assertStringNotContainsString( 'data-rwgc-ab=', $arm_b['body']['html'] );
+		$this->assertNotContains( RWGC_Gutenberg_AB::BLOCK, $GLOBALS['rwgc_test_rendered_blocks'] );
+		$this->assertContains( 'core/paragraph', $GLOBALS['rwgc_test_rendered_blocks'] );
+		$this->assertFalse( RWGC_AB_Cache::last_directives()['donotcachepage'] );
+		$this->assertSame( '', RWGC_AB_Cache::last_directives()['cache_control'] );
+
+		$GLOBALS['rwgc_test_rendered_blocks'] = array();
+		RWGC_AB_Cache::reset_request_state();
+		$this->seed( $test_id, 'a' );
+		$arm_a = RWGC_AB_Cache::build_render_response( $test_id, '203.0.113.81' );
+		$this->assertSame( 200, $arm_a['status'] );
+		$this->assertSame( 'a', $arm_a['body']['arm'] );
+		$this->assertNotSame( '', $arm_a['body']['html'] );
+		$this->assertStringContainsString( 'ARM-A-ONLY', $arm_a['body']['html'] );
+		$this->assertStringNotContainsString( 'ARM-B-ONLY', $arm_a['body']['html'] );
+		$this->assertNotContains( RWGC_Gutenberg_AB::BLOCK, $GLOBALS['rwgc_test_rendered_blocks'] );
+		$this->assertFalse( RWGC_AB_Cache::last_directives()['donotcachepage'] );
+
+		$missing = RWGC_AB_Cache::build_render_response( 99, '203.0.113.82' );
+		$this->assertSame( 404, $missing['status'] );
+		$this->assertSame( 'rwgc_ab_not_running', $missing['body']['code'] );
+		$invalid = RWGC_AB_Cache::build_render_response( 'abc', '203.0.113.83' );
+		$this->assertSame( 400, $invalid['status'] );
+		$this->assertSame( 'rwgc_ab_invalid_test', $invalid['body']['code'] );
+	}
+
+	public function test_auto_excerpt_uses_the_control_arm_only(): void {
+		$post_id = $this->insert_page(
+			array(
+				array(
+					'blockName'   => 'core/paragraph',
+					'attrs'       => array(),
+					'innerBlocks' => array(),
+					'innerHTML'   => '<p>Intro line</p>',
+				),
+				$this->ab_block(
+					array(
+						'testName' => 'Excerpt',
+						'goalType' => 'click',
+					)
+				),
+			)
+		);
+		RWGC_Gutenberg_AB::sync_on_save( $post_id );
+		$post    = get_post( $post_id );
+		$excerpt = RWGC_Gutenberg_AB::filter_get_the_excerpt( '', $post );
+		$this->assertStringContainsString( 'Intro line', $excerpt );
+		$this->assertStringContainsString( 'ARM-A-ONLY', $excerpt );
+		$this->assertStringNotContainsString( 'ARM-B-ONLY', $excerpt );
+		$this->assertSame( 'Written by hand', RWGC_Gutenberg_AB::filter_get_the_excerpt( 'Written by hand', $post ) );
+
+		$plain = new WP_Post();
+		$plain->post_content = '<p>No test</p>';
+		$this->assertSame( '', RWGC_Gutenberg_AB::filter_get_the_excerpt( '', $plain ) );
 	}
 
 	public function test_other_blocks_and_pages_without_a_test_do_not_set_cache_headers(): void {

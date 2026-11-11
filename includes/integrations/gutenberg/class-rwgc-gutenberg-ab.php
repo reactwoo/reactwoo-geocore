@@ -14,7 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Front-end HTML for a running test comes from rwgc_ab_render_test(), so the
  * cookie and cache headers follow that helper. A missing or ended test does
- * not call it.
+ * not call it. Fragment mode loads one arm from the render route through
+ * rwgc_ab_variant_html, which reads the block and does not call that helper.
  */
 final class RWGC_Gutenberg_AB {
 
@@ -28,11 +29,22 @@ final class RWGC_Gutenberg_AB {
 	private static $updating = false;
 
 	/**
+	 * True while the fragment route is rendering one arm.
+	 *
+	 * render_block on a nested test must not call rwgc_ab_render_test().
+	 *
+	 * @var int
+	 */
+	private static $supplying_variant_html = 0;
+
+	/**
 	 * @return void
 	 */
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'register_block' ), 30 );
 		add_filter( 'render_block', array( __CLASS__, 'filter_render_block' ), 12, 2 );
+		add_filter( 'rwgc_ab_variant_html', array( __CLASS__, 'filter_variant_html' ), 10, 3 );
+		add_filter( 'get_the_excerpt', array( __CLASS__, 'filter_get_the_excerpt' ), 9, 2 );
 		add_action( 'save_post', array( __CLASS__, 'sync_on_save' ), 25, 2 );
 	}
 
@@ -67,8 +79,63 @@ final class RWGC_Gutenberg_AB {
 			return is_string( $block_content ) ? $block_content : '';
 		}
 
+		if ( self::$supplying_variant_html > 0 ) {
+			return self::escape_variant_html( self::static_variant_html( $block, 'a' ) );
+		}
+
 		$attrs = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
 		return self::render_from_arms( $attrs, self::arms_from_block( $block ) );
+	}
+
+	/**
+	 * HTML for one arm on the fragment render route.
+	 *
+	 * Another provider may already have filled $html. A Gutenberg test is read
+	 * from its source post. This does not call rwgc_ab_render_test().
+	 *
+	 * @param mixed      $html    HTML from earlier filters.
+	 * @param int|string $test_id Test post ID.
+	 * @param string     $arm     Requested arm.
+	 * @return string
+	 */
+	public static function filter_variant_html( $html, $test_id, $arm ) {
+		if ( is_string( $html ) && '' !== trim( $html ) ) {
+			return $html;
+		}
+		$rendered = self::variant_html_for_test( $test_id, $arm );
+		if ( '' === $rendered ) {
+			return is_string( $html ) ? $html : '';
+		}
+		return $rendered;
+	}
+
+	/**
+	 * Auto excerpts use variant A only.
+	 *
+	 * Runs before wp_trim_excerpt (priority 10). A manual excerpt is left as
+	 * saved. Plugins that read raw post_content still see both arms in the
+	 * stored markup; the rendered page does not.
+	 *
+	 * @param mixed         $excerpt Excerpt text.
+	 * @param WP_Post|mixed $post    Post.
+	 * @return string
+	 */
+	public static function filter_get_the_excerpt( $excerpt, $post = null ) {
+		$excerpt = is_string( $excerpt ) ? $excerpt : '';
+		if ( '' !== trim( $excerpt ) ) {
+			return $excerpt;
+		}
+		if ( ! $post instanceof WP_Post && is_numeric( $post ) && function_exists( 'get_post' ) ) {
+			$post = get_post( (int) $post );
+		}
+		if ( ! $post instanceof WP_Post || false === strpos( (string) $post->post_content, self::BLOCK ) ) {
+			return $excerpt;
+		}
+		$text = self::control_plain_text( (string) $post->post_content );
+		if ( '' === $text ) {
+			return $excerpt;
+		}
+		return $text;
 	}
 
 	/**
@@ -462,11 +529,239 @@ final class RWGC_Gutenberg_AB {
 	 * @return string
 	 */
 	private static function render_inner_block( array $block ) {
+		$name = isset( $block['blockName'] ) ? (string) $block['blockName'] : '';
+		if ( self::$supplying_variant_html > 0 && self::BLOCK === $name ) {
+			return self::escape_variant_html( self::static_variant_html( $block, 'a' ) );
+		}
 		if ( function_exists( 'render_block' ) ) {
 			$html = render_block( $block );
 			return is_string( $html ) ? $html : '';
 		}
 		return self::static_block_html( $block );
+	}
+
+	/**
+	 * Inner HTML of one saved arm, without rendering the test block.
+	 *
+	 * @param int|string $test_id Test post ID.
+	 * @param string     $arm     a|b.
+	 * @return string
+	 */
+	private static function variant_html_for_test( $test_id, $arm ) {
+		$row = self::stored_test( $test_id );
+		if ( ! is_array( $row ) ) {
+			return '';
+		}
+		$config  = isset( $row['config'] ) && is_array( $row['config'] ) ? $row['config'] : array();
+		$adapter = isset( $config['adapter'] ) ? sanitize_key( (string) $config['adapter'] ) : '';
+		if ( '' !== $adapter && 'gutenberg' !== $adapter ) {
+			return '';
+		}
+		$post_id  = isset( $config['source_post_id'] ) ? absint( $config['source_post_id'] ) : 0;
+		$instance = self::sanitize_instance_id( isset( $config['instance_id'] ) ? $config['instance_id'] : '' );
+		if ( $post_id <= 0 || '' === $instance || ! function_exists( 'get_post' ) || ! function_exists( 'parse_blocks' ) ) {
+			return '';
+		}
+		$post = get_post( $post_id );
+		if ( ! $post instanceof WP_Post ) {
+			return '';
+		}
+		$blocks = parse_blocks( (string) $post->post_content );
+		if ( ! is_array( $blocks ) ) {
+			return '';
+		}
+		$block = self::find_test_block( $blocks, $instance );
+		if ( ! is_array( $block ) ) {
+			return '';
+		}
+		$arm      = ( 'b' === sanitize_key( (string) $arm ) ) ? 'b' : 'a';
+		$children = self::variant_children( $block, $arm );
+		if ( ! is_array( $children ) ) {
+			return '';
+		}
+		return self::render_variant_children( $children );
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $blocks   Parsed blocks.
+	 * @param string                           $instance Instance id.
+	 * @return array<string, mixed>|null
+	 */
+	private static function find_test_block( array $blocks, $instance ) {
+		foreach ( $blocks as $block ) {
+			if ( ! is_array( $block ) ) {
+				continue;
+			}
+			if ( isset( $block['blockName'] ) && self::BLOCK === $block['blockName'] ) {
+				$attrs = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
+				$found = self::sanitize_instance_id( isset( $attrs['instanceId'] ) ? $attrs['instanceId'] : '' );
+				if ( $found === $instance ) {
+					return $block;
+				}
+			}
+			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
+				$nested = self::find_test_block( $block['innerBlocks'], $instance );
+				if ( is_array( $nested ) ) {
+					return $nested;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Inner blocks of the requested variant, or null when that variant is absent.
+	 *
+	 * @param array<string, mixed> $block Parsed test block.
+	 * @param string               $arm   a|b.
+	 * @return array<int, array<string, mixed>>|null
+	 */
+	private static function variant_children( array $block, $arm ) {
+		$inners = isset( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ? $block['innerBlocks'] : array();
+		foreach ( $inners as $inner ) {
+			if ( ! is_array( $inner ) ) {
+				continue;
+			}
+			$name = isset( $inner['blockName'] ) ? (string) $inner['blockName'] : '';
+			if ( self::VARIANT !== $name ) {
+				continue;
+			}
+			$attrs = isset( $inner['attrs'] ) && is_array( $inner['attrs'] ) ? $inner['attrs'] : array();
+			if ( self::variant_attr( $attrs ) !== $arm ) {
+				continue;
+			}
+			$children = isset( $inner['innerBlocks'] ) && is_array( $inner['innerBlocks'] ) ? $inner['innerBlocks'] : array();
+			return $children;
+		}
+		return null;
+	}
+
+	/**
+	 * Render one variant's inner blocks. The test block itself is not rendered.
+	 *
+	 * @param array<int, mixed> $children Inner blocks.
+	 * @return string
+	 */
+	private static function render_variant_children( array $children ) {
+		$html = '';
+		++self::$supplying_variant_html;
+		try {
+			if ( array() === $children ) {
+				return '';
+			}
+			foreach ( $children as $child ) {
+				if ( is_array( $child ) ) {
+					$html .= self::render_inner_block( $child );
+				}
+			}
+		} finally {
+			--self::$supplying_variant_html;
+		}
+		return self::escape_variant_html( $html );
+	}
+
+	/**
+	 * Saved HTML of one arm, without render_block.
+	 *
+	 * @param array<string, mixed> $block Parsed test block.
+	 * @param string               $arm   a|b.
+	 * @return string
+	 */
+	private static function static_variant_html( array $block, $arm ) {
+		$children = self::variant_children( $block, ( 'b' === $arm ) ? 'b' : 'a' );
+		if ( ! is_array( $children ) ) {
+			return '';
+		}
+		$html = '';
+		foreach ( $children as $child ) {
+			if ( is_array( $child ) ) {
+				$html .= self::static_block_html( $child );
+			}
+		}
+		return $html;
+	}
+
+	/**
+	 * Plain text for an auto excerpt: normal blocks, plus variant A only.
+	 *
+	 * @param string $content Post content.
+	 * @return string
+	 */
+	private static function control_plain_text( $content ) {
+		if ( ! function_exists( 'parse_blocks' ) ) {
+			return '';
+		}
+		$blocks = parse_blocks( (string) $content );
+		if ( ! is_array( $blocks ) ) {
+			return '';
+		}
+		return self::trim_excerpt_words( self::plain_text_from_blocks( $blocks ) );
+	}
+
+	/**
+	 * @param array<int, mixed> $blocks Parsed blocks.
+	 * @return string
+	 */
+	private static function plain_text_from_blocks( array $blocks ) {
+		$parts = array();
+		foreach ( $blocks as $block ) {
+			if ( ! is_array( $block ) ) {
+				continue;
+			}
+			$name = isset( $block['blockName'] ) ? (string) $block['blockName'] : '';
+			if ( self::BLOCK === $name ) {
+				$parts[] = self::plain_line( self::static_variant_html( $block, 'a' ) );
+				continue;
+			}
+			$attrs = isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array();
+			if ( self::VARIANT === $name && 'b' === self::variant_attr( $attrs ) ) {
+				continue;
+			}
+			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
+				$parts[] = self::plain_text_from_blocks( $block['innerBlocks'] );
+				continue;
+			}
+			if ( isset( $block['innerHTML'] ) && is_string( $block['innerHTML'] ) ) {
+				$parts[] = self::plain_line( $block['innerHTML'] );
+			}
+		}
+		$text = trim( (string) preg_replace( '/\s+/', ' ', implode( ' ', $parts ) ) );
+		return $text;
+	}
+
+	/**
+	 * @param string $html HTML.
+	 * @return string
+	 */
+	private static function plain_line( $html ) {
+		$html = function_exists( 'wp_strip_all_tags' ) ? wp_strip_all_tags( (string) $html ) : strip_tags( (string) $html );
+		return trim( (string) preg_replace( '/\s+/', ' ', $html ) );
+	}
+
+	/**
+	 * @param string $text Plain text.
+	 * @return string
+	 */
+	private static function trim_excerpt_words( $text ) {
+		$text = trim( (string) $text );
+		if ( '' === $text ) {
+			return '';
+		}
+		$length = 55;
+		if ( function_exists( 'apply_filters' ) ) {
+			$filtered = apply_filters( 'excerpt_length', 55 );
+			if ( is_numeric( $filtered ) && (int) $filtered > 0 ) {
+				$length = (int) $filtered;
+			}
+		}
+		if ( function_exists( 'wp_trim_words' ) ) {
+			return wp_trim_words( $text, $length, ' [&hellip;]' );
+		}
+		$words = preg_split( '/\s+/', $text );
+		if ( ! is_array( $words ) || count( $words ) <= $length ) {
+			return $text;
+		}
+		return implode( ' ', array_slice( $words, 0, $length ) ) . ' [&hellip;]';
 	}
 
 	/**
@@ -500,6 +795,20 @@ final class RWGC_Gutenberg_AB {
 		$arm = ( 'b' === $arm ) ? 'b' : 'a';
 		$out = '<div class="rwgc-ab" data-rwgc-ab="' . esc_attr( (string) absint( $test_id ) ) . '" data-rwgc-arm="' . esc_attr( $arm ) . '">' . (string) $html . '</div>';
 		return self::escape_block_html( $out );
+	}
+
+	/**
+	 * Escape one arm. The fragment route does this again.
+	 *
+	 * @param string $html HTML.
+	 * @return string
+	 */
+	private static function escape_variant_html( $html ) {
+		$html = (string) $html;
+		if ( function_exists( 'rwgc_kses_geo_content_html' ) ) {
+			return rwgc_kses_geo_content_html( $html );
+		}
+		return $html;
 	}
 
 	/**
