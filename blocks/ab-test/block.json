@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "reactwoo-geocore/ab-test",
+  "title": "A/B Test",
+  "category": "widgets",
+  "icon": "randomize",
+  "description": "Show one of two variants to each visitor. Variant A is the original.",
+  "keywords": [ "ab", "test", "experiment", "reactwoo" ],
+  "textdomain": "reactwoo-geocore",
+  "attributes": {
+    "testId": {
+      "type": "number",
+      "default": 0
+    },
+    "instanceId": {
+      "type": "string",
+      "default": ""
+    },
+    "testName": {
+      "type": "string",
+      "default": ""
+    },
+    "goalType": {
+      "type": "string",
+      "default": "click"
+    },
+    "goalSelector": {
+      "type": "string",
+      "default": ""
+    },
+    "goalUrl": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "supports": {
+    "html": false
+  },
+  "editorScript": "file:./editor.js",
+  "editorStyle": "file:./editor.css"
+}

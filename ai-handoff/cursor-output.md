@@ -3,6 +3,38 @@
 ## Status
 done
 
+Fragment render route now returns the Gutenberg arm. Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `includes/integrations/gutenberg/class-rwgc-gutenberg-ab.php` — `rwgc_ab_variant_html` renders the matching variant's inner blocks and does not call `rwgc_ab_render_test()`. Auto excerpts use variant A only.
+- `tests/AB/RWGC_Gutenberg_ABTest.php` — render route arms A and B, unknown test still 404, excerpt excludes B.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 254 tests, 21902 assertions, OK.
+
+## D2
+Core `get_the_excerpt` uses arm A. Rank Math still reads raw `post_content`, so both arms can appear in OG/JSON-LD. No Rank Math code.
+
+## Status
+done
+
+Gutenberg A/B block (PR 4). Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `blocks/ab-test/`, `blocks/ab-variant/` — locked two-variant block. `save()` returns InnerBlocks content only.
+- `includes/integrations/gutenberg/class-rwgc-gutenberg-ab.php` — `render_block` calls `rwgc_ab_render_test()`; `save_post` creates one test per instance and is clone-safe.
+- `tests/AB/RWGC_Gutenberg_ABTest.php`, `tests/test-rwgc-ab-block.js` — render, sync, clone, and the editor contract.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 252 tests, 21873 assertions, OK.
+- `node tests/test-rwgc-ab-block.js` — OK. Plain Node script, same setup as the Geo Content block. No Jest.
+
+## Not changed
+- Plugin version (1.9.26). No tag.
+
+## Status
+done
+
 QA fixes on free A/B cache-safe rendering (PR 3, #112). Not tagged. Version stays 1.9.26.
 
 ## Files changed
