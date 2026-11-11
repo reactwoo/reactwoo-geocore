@@ -78,6 +78,7 @@ if ( ! function_exists( 'wp_insert_post' ) ) {
 		$post->post_type               = isset( $postarr['post_type'] ) ? (string) $postarr['post_type'] : '';
 		$post->post_status             = isset( $postarr['post_status'] ) ? (string) $postarr['post_status'] : 'draft';
 		$post->post_title              = isset( $postarr['post_title'] ) ? (string) $postarr['post_title'] : '';
+		$post->post_content            = isset( $postarr['post_content'] ) ? (string) $postarr['post_content'] : '';
 		$GLOBALS['rwgc_ab_test_posts'][ $id ] = $post;
 		return $id;
 	}
@@ -102,6 +103,9 @@ if ( ! function_exists( 'wp_update_post' ) ) {
 		}
 		if ( isset( $postarr['post_status'] ) ) {
 			$post->post_status = (string) $postarr['post_status'];
+		}
+		if ( isset( $postarr['post_content'] ) ) {
+			$post->post_content = (string) $postarr['post_content'];
 		}
 		return $id;
 	}

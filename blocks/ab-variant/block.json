@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "reactwoo-geocore/ab-variant",
+  "title": "A/B Variant",
+  "category": "widgets",
+  "icon": "randomize",
+  "description": "One arm of an A/B test. Used only inside the A/B Test block.",
+  "keywords": [ "ab", "variant", "reactwoo" ],
+  "textdomain": "reactwoo-geocore",
+  "parent": [ "reactwoo-geocore/ab-test" ],
+  "attributes": {
+    "variant": {
+      "type": "string",
+      "default": "a"
+    }
+  },
+  "supports": {
+    "html": false,
+    "inserter": false
+  },
+  "editorScript": "file:./editor.js",
+  "editorStyle": "file:./editor.css"
+}

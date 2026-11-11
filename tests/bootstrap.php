@@ -176,6 +176,9 @@ if ( ! class_exists( 'WP_Post', false ) ) {
 		public $post_status;
 		/** @var string */
 		public $post_title;
+
+		/** @var string */
+		public $post_content = '';
 	}
 }
 

@@ -16,7 +16,7 @@ $rwgc_has_block = class_exists( 'RWGC_Gutenberg', false );
 	<div class="rwgc-card">
 		<?php if ( $rwgc_has_block ) : ?>
 			<p class="description">
-				<?php esc_html_e( 'Geo Core registers the Geo Content block and portable targeting context in the block editor. Create posts or pages and add geo-aware blocks from the inserter.', 'reactwoo-geocore' ); ?>
+				<?php esc_html_e( 'Geo Core registers the Geo Content block, the A/B Test block, and portable targeting context in the block editor. Create posts or pages and add geo-aware blocks from the inserter.', 'reactwoo-geocore' ); ?>
 			</p>
 			<p>
 				<a class="button button-primary" href="<?php echo esc_url( admin_url( 'post-new.php' ) ); ?>">
