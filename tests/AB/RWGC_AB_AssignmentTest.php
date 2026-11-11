@@ -146,7 +146,7 @@ final class RWGC_AB_AssignmentTest extends TestCase {
 
 	public function test_same_cookie_keeps_the_same_variant(): void {
 		$this->running( array( 42 ) );
-		RWGC_AB_Assignment::maybe_set_cookie();
+		RWGC_AB_Assignment::variant( 42 );
 		$first = $this->cookie_value();
 		$decoded = RWGC_AB_Assignment::decode_cookie( $first );
 		$this->assertIsArray( $decoded );
@@ -154,12 +154,11 @@ final class RWGC_AB_AssignmentTest extends TestCase {
 		$this->assertSame( RWGC_AB_Assignment::variant_for_visitor( '42', $decoded['visitor_id'] ), $arm );
 
 		RWGC_AB_Assignment::reset_request_state();
-		RWGC_AB_Assignment::maybe_set_cookie();
+		$this->assertSame( $arm, RWGC_AB_Assignment::variant( 42 ) );
 		$second = RWGC_AB_Assignment::decode_cookie( $this->cookie_value() );
 		$this->assertIsArray( $second );
 		$this->assertSame( $decoded['visitor_id'], $second['visitor_id'] );
 		$this->assertSame( $arm, $second['assignments'][42]['variant'] );
-		$this->assertSame( $arm, RWGC_AB_Assignment::variant( 42 ) );
 		$this->assertNull( RWGC_AB_Assignment::last_cookie_header() );
 	}
 
@@ -181,7 +180,7 @@ final class RWGC_AB_AssignmentTest extends TestCase {
 		$this->assertNull( RWGC_AB_Assignment::decode_cookie( $forged ) );
 		$_COOKIE[ RWGC_AB_Assignment::COOKIE ] = $forged;
 
-		RWGC_AB_Assignment::maybe_set_cookie();
+		RWGC_AB_Assignment::variant( 42 );
 
 		$fresh = RWGC_AB_Assignment::decode_cookie( $this->cookie_value() );
 		$this->assertIsArray( $fresh );
@@ -215,7 +214,7 @@ final class RWGC_AB_AssignmentTest extends TestCase {
 		);
 		$this->running( array( 7, 8 ) );
 
-		RWGC_AB_Assignment::maybe_set_cookie();
+		RWGC_AB_Assignment::variant( 8 );
 
 		$decoded = RWGC_AB_Assignment::decode_cookie( $this->cookie_value() );
 		$this->assertIsArray( $decoded );
@@ -328,7 +327,7 @@ final class RWGC_AB_AssignmentTest extends TestCase {
 		$GLOBALS['rwgc_test_is_admin'] = false;
 		$_GET['preview']               = 'true';
 		RWGC_AB_Assignment::reset_request_state();
-		RWGC_AB_Assignment::maybe_set_cookie();
+		RWGC_AB_Assignment::variant( 42 );
 		$this->assertArrayHasKey( RWGC_AB_Assignment::COOKIE, $_COOKIE );
 	}
 
@@ -366,12 +365,21 @@ final class RWGC_AB_AssignmentTest extends TestCase {
 		$this->assertNull( RWGC_AB_Assignment::last_cookie_header() );
 	}
 
-	public function test_plugin_registers_assignment_on_send_headers(): void {
+	public function test_a_page_without_a_rendered_test_does_not_set_the_cookie(): void {
+		$this->running( array( 42, 43 ) );
+		RWGC_AB_Assignment::init();
+		RWGC_AB_Assignment::maybe_set_cookie();
+
+		$this->assertArrayNotHasKey( RWGC_AB_Assignment::COOKIE, $_COOKIE );
+		$this->assertNull( RWGC_AB_Assignment::last_cookie_header() );
+	}
+
+	public function test_plugin_assigns_when_a_test_is_rendered_not_on_send_headers(): void {
 		$root = dirname( __DIR__, 2 );
 		$src  = (string) file_get_contents( $root . '/includes/ab/class-rwgc-ab-assignment.php' );
 		$plugin = (string) file_get_contents( $root . '/includes/class-rwgc-plugin.php' );
 
-		$this->assertStringContainsString( "add_action( 'send_headers', array( __CLASS__, 'maybe_set_cookie' ), 0 )", $src );
+		$this->assertStringNotContainsString( "add_action( 'send_headers', array( __CLASS__, 'maybe_set_cookie' )", $src );
 		$this->assertStringContainsString( 'RWGC_Decision_Experiment_Assigner::bucket(', $src );
 		$this->assertStringContainsString( "apply_filters( 'rwgc_ab_can_track'", $src );
 		$this->assertStringContainsString( 'includes/ab/class-rwgc-ab-assignment.php', $plugin );

@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Free A/B tests can render without one visitor's arm being stored for another. Server mode (Settings → Detection, the default) sends `Cache-Control: private, no-store` and defines `DONOTCACHEPAGE` when a page renders an active test and the response is not safe to share. LiteSpeed gets a server-derived `rwgc_ab` vary group for a visitor who already has an assignment, so A and B are separate cache entries. A response that sets the `rwgc_ab` cookie stays private. Fragment mode leaves variant A in the page and loads the assigned arm from `GET /reactwoo-geocore/v1/ab/render`, which is not stored and is limited to 40 requests a minute per IP. Without JavaScript the page stays on A. Renderers call `rwgc_ab_render_test()`.
 
+### Fixed
+- The `rwgc_ab` cookie is set only when a response renders a test (`rwgc_ab_render_test()` or the fragment render route). A public page with no test does not send `Set-Cookie` and is not marked uncacheable.
+- `GET /ab/render?test=` returns 400 `rwgc_ab_invalid_test` unless `test` is a positive integer. A positive id that is not a running test is still 404.
+- The render rate limit uses `wp_cache_incr` when a persistent object cache is active, and a transient otherwise. The transient update is not atomic, so a short burst can exceed 40 requests a minute. `Cache-Control` is sent only while headers are still open. `DONOTCACHEPAGE` and LiteSpeed's nocache action still apply after output has started.
+
 ## [1.9.26] - 2026-11-04
 
 ### Fixed

@@ -272,10 +272,10 @@ class RWGC_REST {
 				'permission_callback' => array( __CLASS__, 'permissions_ab_render' ),
 				'args'                => array(
 					'test' => array(
+						'description'       => __( 'A/B test id. A positive integer.', 'reactwoo-geocore' ),
 						'required'          => true,
-						'type'              => 'integer',
-						'minimum'           => 1,
-						'sanitize_callback' => 'absint',
+						'type'              => 'string',
+						'validate_callback' => array( 'RWGC_AB_Cache', 'rest_validate_test_param' ),
 					),
 				),
 			)
@@ -300,9 +300,9 @@ class RWGC_REST {
 	 * @return \WP_REST_Response|array<string, mixed>
 	 */
 	public static function get_ab_render( $request ) {
-		$test_id = 0;
+		$test_id = null;
 		if ( is_object( $request ) && method_exists( $request, 'get_param' ) ) {
-			$test_id = absint( $request->get_param( 'test' ) );
+			$test_id = $request->get_param( 'test' );
 		}
 		$built = class_exists( 'RWGC_AB_Cache', false )
 			? RWGC_AB_Cache::build_render_response( $test_id )

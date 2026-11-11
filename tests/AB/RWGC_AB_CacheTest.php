@@ -154,6 +154,40 @@ if ( ! function_exists( 'set_transient' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_cache_incr' ) ) {
+	/**
+	 * @param string $key    Key.
+	 * @param int    $offset Offset.
+	 * @param string $group  Group.
+	 * @return int|false
+	 */
+	function wp_cache_incr( $key, $offset = 1, $group = '' ) {
+		if ( ! isset( $GLOBALS['rwgc_test_object_cache'][ $group ][ $key ] ) ) {
+			return false;
+		}
+		$GLOBALS['rwgc_test_object_cache'][ $group ][ $key ] += (int) $offset;
+		return $GLOBALS['rwgc_test_object_cache'][ $group ][ $key ];
+	}
+}
+
+if ( ! function_exists( 'wp_cache_add' ) ) {
+	/**
+	 * @param string $key    Key.
+	 * @param mixed  $data   Value.
+	 * @param string $group  Group.
+	 * @param int    $expire TTL.
+	 * @return bool
+	 */
+	function wp_cache_add( $key, $data, $group = '', $expire = 0 ) {
+		unset( $expire );
+		if ( isset( $GLOBALS['rwgc_test_object_cache'][ $group ][ $key ] ) ) {
+			return false;
+		}
+		$GLOBALS['rwgc_test_object_cache'][ $group ][ $key ] = $data;
+		return true;
+	}
+}
+
 if ( ! function_exists( 'register_rest_route' ) ) {
 	/**
 	 * @param string               $namespace Namespace.
@@ -540,6 +574,81 @@ final class RWGC_AB_CacheTest extends TestCase {
 		$missing = RWGC_AB_Cache::build_render_response( 99, '203.0.113.9' );
 		$this->assertSame( 404, $missing['status'] );
 		$this->assertStringContainsString( 'no-store', $missing['headers']['Cache-Control'] );
+	}
+
+	public function test_a_page_that_does_not_render_a_test_sends_no_cookie_and_stays_cacheable(): void {
+		$GLOBALS['rwgc_test_filters']['rwgc_ab_running_test_ids'] = static function () {
+			return array( 42, 43 );
+		};
+		RWGC_AB_Assignment::init();
+		RWGC_AB_Assignment::maybe_set_cookie();
+
+		$this->assertArrayNotHasKey( RWGC_AB_Assignment::COOKIE, $_COOKIE );
+		$this->assertNull( RWGC_AB_Assignment::last_cookie_header() );
+		$this->assertSame( '', RWGC_AB_Cache::last_directives()['cache_control'] );
+		$this->assertFalse( RWGC_AB_Cache::last_directives()['donotcachepage'] );
+		$this->assertFalse( RWGC_AB_Cache::last_directives()['vary'] );
+
+		$html = rwgc_ab_render_test(
+			42,
+			array(
+				'a' => '<p>ARM-A-ONLY</p>',
+				'b' => '<p>ARM-B-ONLY</p>',
+			)
+		);
+		$this->assertArrayHasKey( RWGC_AB_Assignment::COOKIE, $_COOKIE );
+		$this->assertNotNull( RWGC_AB_Assignment::last_cookie_header() );
+		$decoded = RWGC_AB_Assignment::decode_cookie( $_COOKIE[ RWGC_AB_Assignment::COOKIE ] );
+		$this->assertIsArray( $decoded );
+		$this->assertArrayHasKey( 42, $decoded['assignments'] );
+		$this->assertArrayNotHasKey( 43, $decoded['assignments'] );
+		$this->assertSame( 'private, no-store', RWGC_AB_Cache::last_directives()['cache_control'] );
+		$this->assertTrue( RWGC_AB_Cache::last_directives()['donotcachepage'] );
+		$this->assertStringContainsString( 'data-rwgc-ab="42"', $html );
+	}
+
+	public function test_render_route_rejects_a_non_integer_test_id(): void {
+		foreach ( array( 'abc', '0', '-3', '12abc', '42.5', '' ) as $raw ) {
+			$built = RWGC_AB_Cache::build_render_response( $raw, '203.0.113.50' );
+			$this->assertSame( 400, $built['status'], (string) $raw );
+			$this->assertSame( 'rwgc_ab_invalid_test', $built['body']['code'] );
+			$this->assertStringContainsString( 'no-store', $built['headers']['Cache-Control'] );
+		}
+		$via = RWGC_REST::get_ab_render( new RWGC_AB_Cache_Request( array( 'test' => 'abc' ) ) );
+		$this->assertSame( 400, $via['status'] );
+		$this->assertSame( 'rwgc_ab_invalid_test', $via['body']['code'] );
+		$invalid = RWGC_AB_Cache::rest_validate_test_param( 'abc' );
+		if ( is_object( $invalid ) && method_exists( $invalid, 'get_error_code' ) ) {
+			$this->assertSame( 'rwgc_ab_invalid_test', $invalid->get_error_code() );
+		} else {
+			$this->assertFalse( $invalid );
+		}
+		$this->assertTrue( RWGC_AB_Cache::rest_validate_test_param( '42' ) );
+		$this->assertTrue( RWGC_AB_Cache::rest_validate_test_param( 42 ) );
+		$missing = RWGC_AB_Cache::build_render_response( 99, '203.0.113.51' );
+		$this->assertSame( 404, $missing['status'] );
+		$this->assertSame( 'rwgc_ab_not_running', $missing['body']['code'] );
+	}
+
+	public function test_object_cache_rate_limit_resets_on_the_next_minute(): void {
+		$GLOBALS['rwgc_test_object_cache'] = array();
+		$GLOBALS['rwgc_test_filters']['rwgc_ab_rate_limit_use_object_cache'] = static function () {
+			return true;
+		};
+		$GLOBALS['rwgc_test_filters']['rwgc_ab_render_rate_now'] = static function () {
+			return 1700000000;
+		};
+		$ip = '203.0.113.40';
+		for ( $i = 0; $i < 40; $i++ ) {
+			$this->assertTrue( RWGC_AB_Cache::consume_rate_limit( $ip )['allowed'] );
+		}
+		$blocked = RWGC_AB_Cache::consume_rate_limit( $ip );
+		$this->assertFalse( $blocked['allowed'] );
+		$this->assertGreaterThan( 0, $blocked['retry_after'] );
+		$GLOBALS['rwgc_test_filters']['rwgc_ab_render_rate_now'] = static function () {
+			return 1700000060;
+		};
+		$this->assertTrue( RWGC_AB_Cache::consume_rate_limit( $ip )['allowed'] );
 	}
 
 	public function test_render_route_allows_forty_requests_per_ip_each_minute(): void {

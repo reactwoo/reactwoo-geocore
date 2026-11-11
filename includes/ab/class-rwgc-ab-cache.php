@@ -7,7 +7,10 @@
  * DONOTCACHEPAGE. LiteSpeed, which can vary, gets a server-derived rwgc_ab
  * group for a visitor whose assignment cookie was already set, so A and B are
  * stored separately. A response that is setting that cookie stays private, so
- * one visitor's Set-Cookie is not replayed for someone else.
+ * one visitor's Set-Cookie is not replayed for someone else. The cookie is set
+ * only for a test this response renders, not for every public page.
+ * `Cache-Control` is sent only while headers are still open. `DONOTCACHEPAGE`
+ * and LiteSpeed's nocache action still run after output has started.
  *
  * Fragment mode prints variant A inside a placeholder. The page can be cached.
  * assets/js/rwgc-ab.js loads the assigned arm from the no-store render route
@@ -341,8 +344,19 @@ class RWGC_AB_Cache {
 			);
 		}
 
-		$test_id = absint( $test_id );
-		if ( $test_id <= 0 || ! self::test_is_running( $test_id ) ) {
+		$parsed = self::positive_test_id( $test_id );
+		if ( $parsed <= 0 ) {
+			return array(
+				'status'  => 400,
+				'headers' => $headers,
+				'body'    => array(
+					'code'    => 'rwgc_ab_invalid_test',
+					'message' => __( 'The test id must be a positive integer.', 'reactwoo-geocore' ),
+				),
+			);
+		}
+		$test_id = $parsed;
+		if ( ! self::test_is_running( $test_id ) ) {
 			return array(
 				'status'  => 404,
 				'headers' => $headers,
@@ -370,7 +384,63 @@ class RWGC_AB_Cache {
 	}
 
 	/**
-	 * Forty requests a minute per IP, same window as Geo Commerce prices.
+	 * A query value that is a positive integer, or 0 when it is not.
+	 *
+	 * `absint( 'abc' )` is 0, which must not be reported as "not running".
+	 *
+	 * @param mixed $value Raw test id.
+	 * @return int
+	 */
+	public static function positive_test_id( $value ) {
+		if ( is_int( $value ) ) {
+			return $value > 0 ? $value : 0;
+		}
+		if ( is_string( $value ) && preg_match( '/^[1-9][0-9]{0,18}$/', $value ) ) {
+			$id = (int) $value;
+			return (string) $id === $value ? $id : 0;
+		}
+		return 0;
+	}
+
+	/**
+	 * REST validate_callback for `test`. Invalid values are HTTP 400.
+	 *
+	 * @param mixed           $value   Raw query value, before absint.
+	 * @param WP_REST_Request $request Request.
+	 * @param string          $param   Parameter name.
+	 * @return bool|WP_Error
+	 */
+	public static function rest_validate_test_param( $value, $request = null, $param = '' ) {
+		unset( $request, $param );
+		if ( self::positive_test_id( $value ) > 0 ) {
+			return true;
+		}
+		if ( class_exists( 'WP_Error' ) ) {
+			$error = new WP_Error(
+				'rwgc_ab_invalid_test',
+				__( 'The test id must be a positive integer.', 'reactwoo-geocore' )
+			);
+			if ( is_object( $error ) && method_exists( $error, 'add_data' ) ) {
+				$error->add_data( array( 'status' => 400 ) );
+			}
+			return $error;
+		}
+		return false;
+	}
+
+	/**
+	 * Forty requests a minute per resolved visitor IP.
+	 *
+	 * A persistent object cache uses `wp_cache_incr`, which is atomic on Redis
+	 * and Memcached. The key includes the clock minute. The first hit in that
+	 * minute sets a two-minute TTL; a backend that drops TTL on increment can
+	 * keep the old key, and the next minute still starts a new one.
+	 *
+	 * Without a persistent object cache the count is a transient. That update
+	 * is read-modify-write, so two requests at the same moment can both read
+	 * the same count and a short burst can pass 40. The limit slows one client.
+	 * It does not stop many addresses, and visitors who share an address share
+	 * one allowance. It is not a nonce and it does not authenticate the caller.
 	 *
 	 * @param string $ip Client IP.
 	 * @return array{allowed:bool,limit:int,remaining:int,retry_after:int}
@@ -380,7 +450,74 @@ class RWGC_AB_Cache {
 		if ( $limit < 1 ) {
 			$limit = self::RATE_LIMIT;
 		}
-		$now    = (int) apply_filters( 'rwgc_ab_render_rate_now', time() );
+		$now = (int) apply_filters( 'rwgc_ab_render_rate_now', time() );
+		if ( self::rate_limit_uses_object_cache() ) {
+			return self::consume_object_cache_limit( $ip, $limit, $now );
+		}
+		return self::consume_transient_limit( $ip, $limit, $now );
+	}
+
+	/**
+	 * True when the rate limit should use an atomic object-cache increment.
+	 *
+	 * The default in-memory object cache does not survive the request, so it
+	 * is not used. `rwgc_ab_rate_limit_use_object_cache` forces either path.
+	 *
+	 * @return bool
+	 */
+	private static function rate_limit_uses_object_cache() {
+		$forced = apply_filters( 'rwgc_ab_rate_limit_use_object_cache', null );
+		if ( null !== $forced ) {
+			return (bool) $forced && function_exists( 'wp_cache_incr' ) && function_exists( 'wp_cache_add' );
+		}
+		if ( ! function_exists( 'wp_using_ext_object_cache' ) || ! wp_using_ext_object_cache() ) {
+			return false;
+		}
+		return function_exists( 'wp_cache_incr' ) && function_exists( 'wp_cache_add' );
+	}
+
+	/**
+	 * @param string $ip    Client IP.
+	 * @param int    $limit Maximum requests in the minute.
+	 * @param int    $now   Unix time.
+	 * @return array{allowed:bool,limit:int,remaining:int,retry_after:int}
+	 */
+	private static function consume_object_cache_limit( $ip, $limit, $now ) {
+		$window = (int) floor( $now / 60 );
+		$key    = md5( self::normal_ip( $ip ) . '|' . $window );
+		$group  = 'rwgc_ab_rl';
+		$count  = wp_cache_incr( $key, 1, $group );
+		if ( false === $count ) {
+			if ( wp_cache_add( $key, 1, $group, 120 ) ) {
+				$count = 1;
+			} else {
+				$count = wp_cache_incr( $key, 1, $group );
+				if ( false === $count ) {
+					$count = 1;
+				}
+			}
+		}
+		$count   = (int) $count;
+		$allowed = $count <= $limit;
+		$retry   = 60 - ( $now % 60 );
+		if ( $retry < 1 ) {
+			$retry = 1;
+		}
+		return array(
+			'allowed'     => $allowed,
+			'limit'       => $limit,
+			'remaining'   => max( 0, $limit - $count ),
+			'retry_after' => $allowed ? 0 : $retry,
+		);
+	}
+
+	/**
+	 * @param string $ip    Client IP.
+	 * @param int    $limit Maximum requests in the window.
+	 * @param int    $now   Unix time.
+	 * @return array{allowed:bool,limit:int,remaining:int,retry_after:int}
+	 */
+	private static function consume_transient_limit( $ip, $limit, $now ) {
 		$key    = 'rwgc_ab_rl_' . md5( self::normal_ip( $ip ) );
 		$bucket = function_exists( 'get_transient' ) ? get_transient( $key ) : false;
 		if ( ! is_array( $bucket ) || ! isset( $bucket['start'], $bucket['count'] ) || ( $now - (int) $bucket['start'] ) >= 60 ) {
@@ -444,6 +581,13 @@ class RWGC_AB_Cache {
 	}
 
 	/**
+	 * Send cache directives for this response.
+	 *
+	 * `Cache-Control` can only be sent before the first byte of output. Page
+	 * caches that have already started a buffer still see `DONOTCACHEPAGE`, and
+	 * LiteSpeed still receives its nocache action, because both are checked at
+	 * the end of the request rather than from the header line alone.
+	 *
 	 * @param array{cache_control:string,donotcachepage:bool,vary:bool} $directives Directives.
 	 * @return void
 	 */

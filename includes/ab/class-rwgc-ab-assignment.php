@@ -12,11 +12,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * 50/50 assignment stored in a signed first-party cookie.
  *
- * The cookie is written on `send_headers`, before output buffering, on public
- * front-end GET requests. Bots, logged-in editor previews, REST, and AJAX
- * never receive a Set-Cookie. The fragment render route is the exception: a
- * cached page does not run PHP, so that one GET may assign and set the cookie.
- * A consent check can veto the same way and the visitor is then shown variant A.
+ * The cookie is written only when a response renders a test (`variant()` from
+ * `rwgc_ab_render_test()`, or `variant_for_fragment()` on the render route).
+ * A page with no test does not send Set-Cookie and can stay in a shared cache.
+ * Bots, logged-in editor previews, other REST requests, and AJAX never receive
+ * a Set-Cookie. The fragment render route is the REST exception: a cached page
+ * does not run PHP, so that one GET may assign. A consent check can veto the
+ * same way and the visitor is then shown variant A.
  */
 class RWGC_AB_Assignment {
 
@@ -60,19 +62,16 @@ class RWGC_AB_Assignment {
 	 * @return void
 	 */
 	public static function init() {
-		if ( function_exists( 'is_admin' ) && is_admin() ) {
-			return;
-		}
-		if ( ! function_exists( 'add_action' ) ) {
-			return;
-		}
-		add_action( 'send_headers', array( __CLASS__, 'maybe_set_cookie' ), 0 );
+		// Do not assign on send_headers. That hook runs for every public page,
+		// before this request knows whether it will render a test, and the
+		// Set-Cookie would be stored by a cache that does not vary.
 	}
 
 	/**
-	 * Assign running tests and send the cookie when this request may do so.
+	 * Flush a cookie this request has already assigned.
 	 *
-	 * Hooked to send_headers so the Set-Cookie lands before render.
+	 * Does not assign running tests. Call `variant()` for each test the
+	 * response actually renders.
 	 *
 	 * @return void
 	 */
@@ -80,11 +79,6 @@ class RWGC_AB_Assignment {
 		if ( ! self::can_write_cookie() ) {
 			return;
 		}
-		foreach ( self::running_test_ids() as $test_id ) {
-			self::assign_test( $test_id );
-		}
-		// A tampered cookie is replaced even when nothing new is assigned.
-		self::load_state( true );
 		self::flush_cookie();
 	}
 

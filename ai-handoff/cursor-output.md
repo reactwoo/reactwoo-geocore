@@ -3,6 +3,21 @@
 ## Status
 done
 
+QA fixes on free A/B cache-safe rendering (PR 3, #112). Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `includes/ab/class-rwgc-ab-assignment.php` — `rwgc_ab` is set only when a test is rendered, not on `send_headers` for every public page.
+- `includes/ab/class-rwgc-ab-cache.php` — positive-integer test ids return 400; rate limit uses `wp_cache_incr` when a persistent object cache exists, otherwise a transient. `Cache-Control` is sent only while headers are open.
+- `includes/class-rwgc-rest.php` — render route validates `test` before absint.
+- `tests/AB/RWGC_AB_AssignmentTest.php`, `tests/AB/RWGC_AB_CacheTest.php` — a page with no rendered test sends no cookie and stays cacheable.
+- `CHANGELOG.md`, `readme.txt` — the header timing and the transient race.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 240 tests, 21784 assertions, OK.
+
+## Status
+done
+
 Free A/B cache-safe rendering (PR 3). Not tagged. Version stays 1.9.26.
 
 ## Files changed
