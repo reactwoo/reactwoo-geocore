@@ -5,6 +5,11 @@ All notable changes to **reactwoo-geocore** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Free A/B tests can render without one visitor's arm being stored for another. Server mode (Settings → Detection, the default) sends `Cache-Control: private, no-store` and defines `DONOTCACHEPAGE` when a page renders an active test and the response is not safe to share. LiteSpeed gets a server-derived `rwgc_ab` vary group for a visitor who already has an assignment, so A and B are separate cache entries. A response that sets the `rwgc_ab` cookie stays private. Fragment mode leaves variant A in the page and loads the assigned arm from `GET /reactwoo-geocore/v1/ab/render`, which is not stored and is limited to 40 requests a minute per IP. Without JavaScript the page stays on A. Renderers call `rwgc_ab_render_test()`.
+
 ## [1.9.26] - 2026-11-04
 
 ### Fixed

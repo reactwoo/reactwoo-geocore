@@ -24,6 +24,8 @@ class RWGC_REST {
 	 * @return void
 	 */
 	public static function register_routes() {
+		self::register_ab_routes();
+
 		if ( ! RWGC_Settings::get( 'rest_enabled', 1 ) ) {
 			return;
 		}
@@ -246,6 +248,90 @@ class RWGC_REST {
 				'args'                => array(),
 			)
 		);
+	}
+
+	/**
+	 * Fragment mode reads the visitor's arm from this site. No other server is called.
+	 *
+	 * Registered even when the public location route is switched off. The route is
+	 * read-only and rate-limited. It has no nonce: a cached page would keep a stale one.
+	 *
+	 * @return void
+	 */
+	public static function register_ab_routes() {
+		if ( ! function_exists( 'register_rest_route' ) ) {
+			return;
+		}
+
+		register_rest_route(
+			'reactwoo-geocore/v1',
+			'/ab/render',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( __CLASS__, 'get_ab_render' ),
+				'permission_callback' => array( __CLASS__, 'permissions_ab_render' ),
+				'args'                => array(
+					'test' => array(
+						'required'          => true,
+						'type'              => 'integer',
+						'minimum'           => 1,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Public read. The signed cookie selects the arm; the client cannot pass one.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return bool
+	 */
+	public static function permissions_ab_render( $request ) {
+		unset( $request );
+		return true;
+	}
+
+	/**
+	 * GET /ab/render?test= — no-store HTML for the assigned arm.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|array<string, mixed>
+	 */
+	public static function get_ab_render( $request ) {
+		$test_id = 0;
+		if ( is_object( $request ) && method_exists( $request, 'get_param' ) ) {
+			$test_id = absint( $request->get_param( 'test' ) );
+		}
+		$built = class_exists( 'RWGC_AB_Cache', false )
+			? RWGC_AB_Cache::build_render_response( $test_id )
+			: array(
+				'status'  => 404,
+				'headers' => array(
+					'Cache-Control' => 'no-store, private',
+				),
+				'body'    => array(
+					'code'    => 'rwgc_ab_not_running',
+					'message' => __( 'That A/B test is not running.', 'reactwoo-geocore' ),
+				),
+			);
+
+		if ( function_exists( 'do_action' ) ) {
+			do_action( 'litespeed_control_set_nocache', 'reactwoo-geocore A/B render' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- LiteSpeed Cache public nocache API.
+		}
+
+		if ( class_exists( 'WP_REST_Response' ) ) {
+			$response = new \WP_REST_Response( $built['body'], (int) $built['status'] );
+			if ( method_exists( $response, 'header' ) && isset( $built['headers'] ) && is_array( $built['headers'] ) ) {
+				foreach ( $built['headers'] as $name => $value ) {
+					$response->header( $name, $value );
+				}
+			}
+			return $response;
+		}
+
+		return $built;
 	}
 
 	/**

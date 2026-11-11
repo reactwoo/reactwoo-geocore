@@ -14,8 +14,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * The cookie is written on `send_headers`, before output buffering, on public
  * front-end GET requests. Bots, logged-in editor previews, REST, and AJAX
- * never receive a Set-Cookie. A consent check can veto the same way and the
- * visitor is then shown variant A.
+ * never receive a Set-Cookie. The fragment render route is the exception: a
+ * cached page does not run PHP, so that one GET may assign and set the cookie.
+ * A consent check can veto the same way and the visitor is then shown variant A.
  */
 class RWGC_AB_Assignment {
 
@@ -47,6 +48,13 @@ class RWGC_AB_Assignment {
 	 * @var array<string, mixed>|null
 	 */
 	private static $last_emit = null;
+
+	/**
+	 * True while the fragment render route is allowed to assign during REST.
+	 *
+	 * @var bool
+	 */
+	private static $fragment_write = false;
 
 	/**
 	 * @return void
@@ -105,6 +113,24 @@ class RWGC_AB_Assignment {
 			return self::CONTROL;
 		}
 		return (string) $row['variant'];
+	}
+
+	/**
+	 * Assign during the fragment render request.
+	 *
+	 * Other REST requests still only read a valid cookie. This route may write
+	 * because a cached fragment page never reaches `send_headers`.
+	 *
+	 * @param int|string $test_id Test post ID.
+	 * @return string
+	 */
+	public static function variant_for_fragment( $test_id ) {
+		self::$fragment_write = true;
+		try {
+			return self::variant( $test_id );
+		} finally {
+			self::$fragment_write = false;
+		}
 	}
 
 	/**
@@ -301,17 +327,43 @@ class RWGC_AB_Assignment {
 	 * @return void
 	 */
 	public static function reset_request_state() {
-		self::$memo      = null;
-		self::$dirty     = false;
-		self::$can_track = null;
-		self::$last_emit = null;
+		self::$memo           = null;
+		self::$dirty          = false;
+		self::$can_track      = null;
+		self::$last_emit      = null;
+		self::$fragment_write = false;
 	}
 
 	/**
 	 * @return bool
 	 */
 	private static function can_write_cookie() {
-		return self::tracking_allowed() && ! self::request_skips_assignment( self::current_request_flags() );
+		if ( ! self::tracking_allowed() ) {
+			return false;
+		}
+		$flags = self::current_request_flags();
+		if ( self::$fragment_write || self::is_fragment_render_request() ) {
+			$flags['rest'] = false;
+		}
+		return ! self::request_skips_assignment( $flags );
+	}
+
+	/**
+	 * The no-store fragment route. A normal REST request does not match.
+	 *
+	 * @return bool
+	 */
+	private static function is_fragment_render_request() {
+		$uri = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Only searched for a fixed route.
+		$uri = is_string( $uri ) ? $uri : '';
+		if ( false !== strpos( $uri, 'reactwoo-geocore/v1/ab/render' ) ) {
+			return true;
+		}
+		if ( ! isset( $_GET['rest_route'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Route detection, not a form.
+			return false;
+		}
+		$route = wp_unslash( $_GET['rest_route'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		return is_string( $route ) && false !== strpos( $route, 'reactwoo-geocore/v1/ab/render' );
 	}
 
 	/**

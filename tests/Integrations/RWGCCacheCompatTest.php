@@ -34,4 +34,19 @@ final class RWGCCacheCompatTest extends TestCase {
 			RWGC_Cache_Compat::resolve_page_version_vary_key()
 		);
 	}
+
+	public function test_ab_vary_group_uses_the_verified_arm_only(): void {
+		$this->assertSame( 'rwgc_ab_42_b', RWGC_Cache_Compat::ab_vary_group( 42, 'b' ) );
+		$this->assertSame( 'rwgc_ab_42_a', RWGC_Cache_Compat::ab_vary_group( '42', 'A' ) );
+		$this->assertSame( '', RWGC_Cache_Compat::ab_vary_group( 0, 'b' ) );
+		$this->assertSame( '', RWGC_Cache_Compat::ab_vary_group( 42, '' ) );
+		$this->assertSame( '', RWGC_Cache_Compat::ab_vary_group( 42, '1|visitor|7:b|deadbeef' ) );
+		$this->assertSame( '', RWGC_Cache_Compat::ab_vary_group( 42, '!!!' ) );
+		// Dots and slashes are removed, leaving the arm id. The raw cookie above is not.
+		$this->assertSame( 'rwgc_ab_42_b', RWGC_Cache_Compat::ab_vary_group( 42, '../b' ) );
+	}
+
+	public function test_ab_vary_groups_are_empty_until_a_test_is_rendered(): void {
+		$this->assertSame( array(), RWGC_Cache_Compat::ab_vary_groups_for_request() );
+	}
 }
