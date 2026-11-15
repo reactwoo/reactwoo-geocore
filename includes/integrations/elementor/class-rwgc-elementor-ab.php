@@ -65,6 +65,15 @@ final class RWGC_Elementor_AB {
 	private static $buffers = array();
 
 	/**
+	 * Elements already handled by before_render this print.
+	 *
+	 * Generic and per-type hooks both fire. The second call must not open another buffer.
+	 *
+	 * @var array<string, bool>
+	 */
+	private static $handled = array();
+
+	/**
 	 * @var int
 	 */
 	private static $render_depth = 0;
@@ -176,6 +185,11 @@ final class RWGC_Elementor_AB {
 		}
 		self::$should_render_types[ $type ] = true;
 		add_filter( "elementor/frontend/{$type}/should_render", array( __CLASS__, 'filter_should_render' ), 12, 2 );
+		if ( function_exists( 'add_action' ) ) {
+			// Atomic Twig types often skip the generic before_render hook. Classic types also fire it; before_render ignores the second call.
+			add_action( "elementor/frontend/{$type}/before_render", array( __CLASS__, 'before_render' ), 5, 1 );
+			add_action( "elementor/frontend/{$type}/after_render", array( __CLASS__, 'after_render' ), 999, 1 );
+		}
 	}
 
 	/**
@@ -432,12 +446,16 @@ final class RWGC_Elementor_AB {
 			return;
 		}
 		$key = self::buffer_key( $element );
-		if ( isset( self::$buffers[ $key ] ) ) {
+		if ( '' === $key || isset( self::$handled[ $key ] ) || isset( self::$buffers[ $key ] ) ) {
 			return;
 		}
+		self::$handled[ $key ] = true;
 		$decision = self::decision_for_element( $element );
 		if ( 'label' === $decision['action'] ) {
 			self::label_element( $element, $decision );
+			if ( self::is_atomic_element( $element ) ) {
+				echo self::editor_badge_html( $decision ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- editor_badge_html() escapes the label.
+			}
 			return;
 		}
 		if ( 'passthrough' === $decision['action'] ) {
@@ -456,12 +474,14 @@ final class RWGC_Elementor_AB {
 		if ( ! is_object( $element ) ) {
 			return;
 		}
-		$key = self::buffer_key( $element );
-		if ( ! isset( self::$buffers[ $key ] ) ) {
+		$key      = self::buffer_key( $element );
+		$decision = ( '' !== $key && isset( self::$buffers[ $key ] ) ) ? self::$buffers[ $key ] : null;
+		if ( '' !== $key ) {
+			unset( self::$handled[ $key ], self::$buffers[ $key ] );
+		}
+		if ( null === $decision ) {
 			return;
 		}
-		$decision = self::$buffers[ $key ];
-		unset( self::$buffers[ $key ] );
 		if ( self::$render_depth > 0 ) {
 			--self::$render_depth;
 		}
@@ -671,6 +691,7 @@ final class RWGC_Elementor_AB {
 	 */
 	public static function reset_for_tests() {
 		self::$buffers            = array();
+		self::$handled            = array();
 		self::$render_depth       = 0;
 		self::$supplying          = 0;
 		self::$hooks_registered   = false;
@@ -1724,30 +1745,160 @@ final class RWGC_Elementor_AB {
 	}
 
 	/**
-	 * @return string
+	 * Editor, preview, or the public page.
+	 *
+	 * Elementor 4 can report edit or preview mode on a normal front-end render
+	 * of classic elements while Atomic experiments are on. Labels are only for
+	 * someone who can edit, and preview also needs the preview query.
+	 *
+	 * @return string frontend|editor|preview
 	 */
-	private static function detect_surface() {
+	public static function detect_surface() {
 		try {
-			if ( class_exists( '\Elementor\Plugin', false ) ) {
-				$plugin = \Elementor\Plugin::$instance;
-				if ( is_object( $plugin ) && isset( $plugin->editor ) && is_object( $plugin->editor ) && method_exists( $plugin->editor, 'is_edit_mode' ) && $plugin->editor->is_edit_mode() ) {
-					return 'editor';
-				}
-				if ( is_object( $plugin ) && isset( $plugin->preview ) && is_object( $plugin->preview ) && method_exists( $plugin->preview, 'is_preview_mode' ) && $plugin->preview->is_preview_mode() ) {
-					return 'preview';
-				}
+			if ( self::editor_reports_edit_mode() && self::current_user_can_edit() ) {
+				return 'editor';
+			}
+			if ( self::preview_reports_preview_mode() && self::valid_preview_query() && self::current_user_can_edit() ) {
+				return 'preview';
 			}
 		} catch ( \Throwable $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
 			return 'frontend';
 		}
-		if ( isset( $_GET['elementor-preview'] ) && '' !== (string) wp_unslash( $_GET['elementor-preview'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			return 'preview';
-		}
-		$action = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( 'elementor' === $action ) {
+		if ( self::is_admin_or_rest_editor() ) {
 			return 'editor';
 		}
 		return 'frontend';
+	}
+
+	/**
+	 * @return bool
+	 */
+	private static function editor_reports_edit_mode() {
+		if ( ! class_exists( '\Elementor\Plugin', false ) ) {
+			return false;
+		}
+		$plugin = \Elementor\Plugin::$instance;
+		return is_object( $plugin )
+			&& isset( $plugin->editor )
+			&& is_object( $plugin->editor )
+			&& method_exists( $plugin->editor, 'is_edit_mode' )
+			&& $plugin->editor->is_edit_mode();
+	}
+
+	/**
+	 * @return bool
+	 */
+	private static function preview_reports_preview_mode() {
+		if ( ! class_exists( '\Elementor\Plugin', false ) ) {
+			return false;
+		}
+		$plugin = \Elementor\Plugin::$instance;
+		return is_object( $plugin )
+			&& isset( $plugin->preview )
+			&& is_object( $plugin->preview )
+			&& method_exists( $plugin->preview, 'is_preview_mode' )
+			&& $plugin->preview->is_preview_mode();
+	}
+
+	/**
+	 * Preview iframe query: a positive document id, matching the current post when one is set.
+	 *
+	 * @return bool
+	 */
+	private static function valid_preview_query() {
+		if ( ! isset( $_GET['elementor-preview'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return false;
+		}
+		$raw = wp_unslash( $_GET['elementor-preview'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		if ( is_array( $raw ) ) {
+			return false;
+		}
+		$preview_id = absint( $raw );
+		if ( $preview_id <= 0 ) {
+			return false;
+		}
+		if ( function_exists( 'get_the_ID' ) ) {
+			$current = absint( get_the_ID() );
+			if ( $current > 0 && $current !== $preview_id ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * wp-admin Elementor editor/ajax, or a REST request whose route is Elementor's editor.
+	 *
+	 * @return bool
+	 */
+	private static function is_admin_or_rest_editor() {
+		if ( ! self::current_user_can_edit() ) {
+			return false;
+		}
+		$action = '';
+		if ( isset( $_REQUEST['action'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$action = sanitize_key( wp_unslash( $_REQUEST['action'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		}
+		$editor_actions = array(
+			'elementor',
+			'elementor_ajax',
+			'elementor_get_templates',
+			'elementor_save_template',
+			'elementor_get_template',
+			'elementor_delete_template',
+			'elementor_import_template',
+			'elementor_library_direct_actions',
+		);
+		if ( function_exists( 'is_admin' ) && is_admin() && in_array( $action, $editor_actions, true ) ) {
+			return true;
+		}
+		if ( defined( 'REST_REQUEST' ) && REST_REQUEST && self::rest_route_is_elementor_editor() ) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * @return bool
+	 */
+	private static function rest_route_is_elementor_editor() {
+		$route = '';
+		if ( isset( $_REQUEST['rest_route'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$raw = wp_unslash( $_REQUEST['rest_route'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$route = is_string( $raw ) ? $raw : '';
+		} elseif ( isset( $_SERVER['REQUEST_URI'] ) ) {
+			$raw = wp_unslash( $_SERVER['REQUEST_URI'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$route = is_string( $raw ) ? $raw : '';
+		}
+		return false !== strpos( $route, '/elementor/v1/' ) || false !== strpos( $route, '/elementor-pro/v1/' );
+	}
+
+	/**
+	 * Logged-out visitors, and anyone who cannot edit, stay on the public render.
+	 *
+	 * @return bool
+	 */
+	private static function current_user_can_edit() {
+		if ( function_exists( 'is_user_logged_in' ) && ! is_user_logged_in() ) {
+			return false;
+		}
+		if ( ! function_exists( 'current_user_can' ) ) {
+			return false;
+		}
+		$post_id = 0;
+		if ( isset( $_GET['elementor-preview'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$raw = wp_unslash( $_GET['elementor-preview'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			if ( ! is_array( $raw ) ) {
+				$post_id = absint( $raw );
+			}
+		}
+		if ( $post_id <= 0 && function_exists( 'get_the_ID' ) ) {
+			$post_id = absint( get_the_ID() );
+		}
+		if ( $post_id > 0 ) {
+			return current_user_can( 'edit_post', $post_id );
+		}
+		return current_user_can( 'edit_posts' ) || current_user_can( 'edit_pages' );
 	}
 
 	/**
@@ -1769,6 +1920,29 @@ final class RWGC_Elementor_AB {
 	}
 
 	/**
+	 * Visible badge for Atomic elements, whose root does not print _wrapper classes.
+	 *
+	 * @param array<string, mixed> $decision Decision.
+	 * @return string
+	 */
+	private static function editor_badge_html( array $decision ) {
+		$warning = isset( $decision['warning'] ) && '' !== (string) $decision['warning'];
+		$arm     = ( isset( $decision['arm'] ) && 'b' === $decision['arm'] ) ? 'B' : 'A';
+		if ( $warning ) {
+			$label = __( 'A/B unpaired', 'reactwoo-geocore' );
+			$class = 'rwgc-ab-badge rwgc-ab-badge-warning';
+			$arm   = 'unpaired';
+		} elseif ( 'B' === $arm ) {
+			$label = __( 'Variant B', 'reactwoo-geocore' );
+			$class = 'rwgc-ab-badge';
+		} else {
+			$label = __( 'Variant A', 'reactwoo-geocore' );
+			$class = 'rwgc-ab-badge';
+		}
+		return '<span class="' . esc_attr( $class ) . '" data-rwgc-ab-label="' . esc_attr( $arm ) . '">' . esc_html( $label ) . '</span>';
+	}
+
+	/**
 	 * @return string
 	 */
 	private static function editor_css() {
@@ -1777,6 +1951,8 @@ final class RWGC_Elementor_AB {
 			. '.rwgc-ab-arm[data-rwgc-ab-label="B"]::before{content:"Variant B"}'
 			. '.rwgc-ab-arm::before{position:absolute;z-index:20;top:0;left:0;padding:2px 6px;font:600 11px/1.4 sans-serif;color:#fff;background:#1d4ed8}'
 			. '.rwgc-ab-arm.rwgc-ab-warning{outline-color:#b45309}'
-			. '.rwgc-ab-arm.rwgc-ab-warning::before{content:"A/B unpaired";background:#b45309}';
+			. '.rwgc-ab-arm.rwgc-ab-warning::before{content:"A/B unpaired";background:#b45309}'
+			. '.rwgc-ab-badge{display:inline-block;margin:0 0 6px;padding:2px 6px;font:600 11px/1.4 sans-serif;color:#fff;background:#1d4ed8}'
+			. '.rwgc-ab-badge-warning{background:#b45309}';
 	}
 }

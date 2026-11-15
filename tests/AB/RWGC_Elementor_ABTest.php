@@ -31,6 +31,64 @@ if ( ! function_exists( 'wp_salt' ) ) {
 /**
  * Element stand-in. Records wrapper attributes and exposes settings.
  */
+/**
+ * Editor or preview flag for the surface stub.
+ */
+class RWGC_AB_Elementor_Mode {
+
+	/** @var bool */
+	public $on;
+
+	/**
+	 * @param bool $on Whether the mode reports active.
+	 */
+	public function __construct( $on ) {
+		$this->on = (bool) $on;
+	}
+
+	/**
+	 * @param int|null $post_id Post ID.
+	 * @return bool
+	 */
+	public function is_edit_mode( $post_id = null ) {
+		unset( $post_id );
+		return $this->on;
+	}
+
+	/**
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public function is_preview_mode( $post_id = 0 ) {
+		unset( $post_id );
+		return $this->on;
+	}
+}
+
+/**
+ * V4 experiment flags.
+ */
+class RWGC_AB_Elementor_Experiments {
+
+	/** @var string[] */
+	public $active;
+
+	/**
+	 * @param string[] $active Active feature ids.
+	 */
+	public function __construct( array $active ) {
+		$this->active = $active;
+	}
+
+	/**
+	 * @param string $feature Feature id.
+	 * @return bool
+	 */
+	public function is_feature_active( $feature ) {
+		return in_array( (string) $feature, $this->active, true );
+	}
+}
+
 class RWGC_Elementor_AB_Element {
 
 	/** @var string */
@@ -78,6 +136,19 @@ class RWGC_Elementor_AB_Element {
 }
 
 /**
+ * Atomic element. get_atomic_settings() marks it as V4.
+ */
+class RWGC_Elementor_AB_Atomic_Element extends RWGC_Elementor_AB_Element {
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	public function get_atomic_settings() {
+		return $this->settings;
+	}
+}
+
+/**
  * @covers RWGC_Elementor_AB
  */
 final class RWGC_Elementor_ABTest extends TestCase {
@@ -102,6 +173,15 @@ final class RWGC_Elementor_ABTest extends TestCase {
 
 	/** @var int */
 	private $seq = 0;
+
+	/** @var array<string, mixed> */
+	private $query = array();
+
+	/** @var mixed */
+	private $request_action = null;
+
+	/** @var bool */
+	private $had_request_action = false;
 
 	/**
 	 * @return void
@@ -134,14 +214,19 @@ final class RWGC_Elementor_ABTest extends TestCase {
 		$this->cookie      = $_COOKIE;
 		$this->had_filters = isset( $GLOBALS['rwgc_test_filters'] );
 		$this->filters     = $this->had_filters && is_array( $GLOBALS['rwgc_test_filters'] ) ? $GLOBALS['rwgc_test_filters'] : null;
+		$this->query       = $_GET;
+		$this->had_request_action = array_key_exists( 'action', $_REQUEST );
+		$this->request_action     = $this->had_request_action ? $_REQUEST['action'] : null;
 		$this->posts       = isset( $GLOBALS['rwgc_ab_test_posts'] ) && is_array( $GLOBALS['rwgc_ab_test_posts'] ) ? $GLOBALS['rwgc_ab_test_posts'] : array();
 		$this->meta        = isset( $GLOBALS['rwgc_ab_test_meta'] ) && is_array( $GLOBALS['rwgc_ab_test_meta'] ) ? $GLOBALS['rwgc_ab_test_meta'] : array();
 		$this->seq         = isset( $GLOBALS['rwgc_ab_test_seq'] ) ? (int) $GLOBALS['rwgc_ab_test_seq'] : 0;
 		$_SERVER['REQUEST_METHOD']  = 'GET';
 		$_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 Chrome/120.0.0.0';
 		unset( $_COOKIE[ RWGC_AB_Assignment::COOKIE ] );
-		$GLOBALS['rwgc_test_is_admin'] = false;
-		$GLOBALS['rwgc_test_filters']  = array(
+		$GLOBALS['rwgc_test_is_admin']  = false;
+		$GLOBALS['rwgc_test_logged_in'] = false;
+		$GLOBALS['rwgc_test_caps']      = array();
+		$GLOBALS['rwgc_test_filters']   = array(
 			'rwgc_ab_emit_http_headers' => static function () {
 				return false;
 			},
@@ -158,8 +243,14 @@ final class RWGC_Elementor_ABTest extends TestCase {
 	 * @return void
 	 */
 	protected function tearDown(): void {
-		$_SERVER = $this->server;
-		$_COOKIE = $this->cookie;
+		$_SERVER  = $this->server;
+		$_COOKIE  = $this->cookie;
+		$_GET     = $this->query;
+		if ( $this->had_request_action ) {
+			$_REQUEST['action'] = $this->request_action;
+		} else {
+			unset( $_REQUEST['action'] );
+		}
 		if ( $this->had_filters ) {
 			$GLOBALS['rwgc_test_filters'] = $this->filters;
 		} else {
@@ -181,7 +272,6 @@ final class RWGC_Elementor_ABTest extends TestCase {
 		$element = new RWGC_Elementor_AB_Element( 'abc', array() );
 		RWGC_Elementor_AB::register_controls( $element );
 		$this->assertSame( array(), $element->attrs );
-		$this->assertFalse( class_exists( '\Elementor\Plugin', false ) );
 	}
 
 	public function test_new_sibling_pair_creates_one_elementor_test(): void {
@@ -591,6 +681,152 @@ final class RWGC_Elementor_ABTest extends TestCase {
 		$loader = (string) file_get_contents( dirname( __DIR__, 2 ) . '/includes/integrations/class-rwgc-integrations-loader.php' );
 		$this->assertStringContainsString( 'class-rwgc-elementor-ab.php', $loader );
 		$this->assertStringContainsString( 'RWGC_Elementor_AB::init()', $loader );
+	}
+
+	public function test_logged_out_classic_frontend_with_v4_experiments_does_not_label(): void {
+		$this->load_surface_stub( true, true );
+		$_GET['elementor-preview'] = '55';
+		$_GET['action']            = 'elementor';
+		$_REQUEST['action']        = 'elementor';
+		$this->assertTrue( \Elementor\Plugin::$instance->experiments->is_feature_active( 'e_atomic_elements' ) );
+		$this->assertTrue( \Elementor\Plugin::$instance->experiments->is_feature_active( 'e_opt_in_v4' ) );
+		$this->assertSame( 'frontend', RWGC_Elementor_AB::detect_surface() );
+
+		$id = $this->running_pair_id();
+		$this->seed_arm( $id, 'b' );
+		$section = new RWGC_Elementor_AB_Element( 'secA', $this->arm_settings( 'a', $id ) );
+		$widget  = new RWGC_Elementor_AB_Element( 'widB', $this->arm_settings( 'b', $id ) );
+		ob_start();
+		$this->print_element( $section, '<section>ARM-A</section>' );
+		$this->print_element( $widget, '<div>ARM-B</div>' );
+		$html = (string) ob_get_clean();
+		$this->assertStringContainsString( 'ARM-B', $html );
+		$this->assertStringNotContainsString( 'ARM-A', $html );
+		$this->assertStringContainsString( 'class="rwgc-ab"', $html );
+		$this->assertStringContainsString( 'data-rwgc-ab-mode="server"', $html );
+		$this->assertStringNotContainsString( 'rwgc-ab-arm', $html );
+		$this->assertStringNotContainsString( 'data-rwgc-ab-label', $html );
+		$this->assertStringNotContainsString( 'rwgc-ab-warning', $html );
+
+		$solo = new RWGC_Elementor_AB_Element(
+			'solo',
+			array(
+				'rwgc_ab_role'    => 'a',
+				'rwgc_ab_test'    => 'new',
+				'rwgc_ab_pair_ok' => '',
+				'rwgc_ab_notice'  => RWGC_Elementor_AB::notice_unpaired(),
+			)
+		);
+		ob_start();
+		$this->print_element( $solo, '<div>SOLO</div>' );
+		$solo_html = (string) ob_get_clean();
+		$this->assertStringContainsString( 'SOLO', $solo_html );
+		$this->assertStringNotContainsString( 'rwgc-ab-warning', $solo_html );
+		$this->assertSame( 'passthrough', RWGC_Elementor_AB::render_decision(
+			$solo->settings,
+			array(
+				'surface'  => RWGC_Elementor_AB::detect_surface(),
+				'running'  => true,
+				'assigned' => 'b',
+				'mode'     => 'server',
+			)
+		)['action'] );
+	}
+
+	public function test_edit_mode_and_preview_require_someone_who_can_edit(): void {
+		$this->load_surface_stub( true, false );
+		$this->grant_edit();
+		$this->assertSame( 'editor', RWGC_Elementor_AB::detect_surface() );
+
+		$this->load_surface_stub( false, true );
+		$this->grant_edit();
+		$this->assertSame( 'frontend', RWGC_Elementor_AB::detect_surface() );
+		$_GET['elementor-preview'] = '55';
+		$this->assertSame( 'preview', RWGC_Elementor_AB::detect_surface() );
+
+		$GLOBALS['rwgc_test_logged_in'] = false;
+		$GLOBALS['rwgc_test_caps']      = array();
+		$this->assertSame( 'frontend', RWGC_Elementor_AB::detect_surface() );
+	}
+
+	public function test_admin_and_rest_editor_contexts_label_only_for_an_editor(): void {
+		$this->load_surface_stub( false, false );
+		$this->grant_edit();
+		$GLOBALS['rwgc_test_is_admin'] = true;
+		$_REQUEST['action']            = 'elementor_ajax';
+		$this->assertSame( 'editor', RWGC_Elementor_AB::detect_surface() );
+
+		$GLOBALS['rwgc_test_is_admin'] = false;
+		unset( $_REQUEST['action'] );
+		$_SERVER['REQUEST_URI'] = '/wp-json/elementor/v1/editor-documents/10';
+		if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+			$this->assertSame( 'editor', RWGC_Elementor_AB::detect_surface() );
+		}
+		$GLOBALS['rwgc_test_logged_in'] = false;
+		$this->assertSame( 'frontend', RWGC_Elementor_AB::detect_surface() );
+	}
+
+	public function test_atomic_preview_prints_a_visible_badge(): void {
+		$GLOBALS['rwgc_test_filters']['rwgc_ab_elementor_surface'] = static function () {
+			return 'preview';
+		};
+		$element = new RWGC_Elementor_AB_Atomic_Element( 'flexA', $this->arm_settings( 'a', 4 ) );
+		ob_start();
+		$this->print_element( $element, '<div class="e-flexbox">ATOM</div>' );
+		$html = (string) ob_get_clean();
+		$this->assertStringContainsString( 'ATOM', $html );
+		$this->assertStringContainsString( 'rwgc-ab-badge', $html );
+		$this->assertStringContainsString( 'Variant A', $html );
+		$this->assertStringContainsString( 'data-rwgc-ab-label="A"', $html );
+	}
+
+	public function test_install_does_not_store_the_ab_cache_default(): void {
+		require_once dirname( __DIR__, 2 ) . '/includes/class-rwgc-settings.php';
+		$previous = isset( $GLOBALS['rwgc_test_options'] ) && is_array( $GLOBALS['rwgc_test_options'] ) ? $GLOBALS['rwgc_test_options'] : null;
+		$GLOBALS['rwgc_test_options'] = array(
+			'rwgc_settings' => array(),
+		);
+		RWGC_Settings::ensure_defaults();
+		$stored = $GLOBALS['rwgc_test_options']['rwgc_settings'];
+		$this->assertIsArray( $stored );
+		$this->assertArrayNotHasKey( 'ab_cache_mode', $stored );
+		$this->assertArrayNotHasKey( 'ab_cache_mode', RWGC_Settings::stored_defaults() );
+		$this->assertSame( 'server', RWGC_Settings::get( 'ab_cache_mode', 'server' ) );
+		$plain = RWGC_Settings::sanitize_settings( array( 'enabled' => 1 ) );
+		$this->assertArrayNotHasKey( 'ab_cache_mode', $plain );
+		$chosen = RWGC_Settings::sanitize_settings( array( 'ab_cache_mode' => 'fragment' ) );
+		$this->assertSame( 'fragment', $chosen['ab_cache_mode'] );
+		if ( null === $previous ) {
+			unset( $GLOBALS['rwgc_test_options'] );
+		} else {
+			$GLOBALS['rwgc_test_options'] = $previous;
+		}
+	}
+
+	/**
+	 * @param bool $edit    Editor is_edit_mode().
+	 * @param bool $preview Preview is_preview_mode().
+	 * @return void
+	 */
+	private function load_surface_stub( $edit, $preview ) {
+		require_once __DIR__ . '/elementor-surface-stub.php';
+		$plugin               = new \Elementor\Plugin();
+		$plugin->editor       = new RWGC_AB_Elementor_Mode( $edit );
+		$plugin->preview      = new RWGC_AB_Elementor_Mode( $preview );
+		$plugin->experiments  = new RWGC_AB_Elementor_Experiments( array( 'e_atomic_elements', 'e_opt_in_v4' ) );
+		\Elementor\Plugin::$instance = $plugin;
+	}
+
+	/**
+	 * @return void
+	 */
+	private function grant_edit() {
+		$GLOBALS['rwgc_test_logged_in'] = true;
+		$GLOBALS['rwgc_test_caps']      = array(
+			'edit_post'  => true,
+			'edit_posts' => true,
+			'edit_pages' => true,
+		);
 	}
 
 	/**

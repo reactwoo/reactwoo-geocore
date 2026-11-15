@@ -3,6 +3,19 @@
 ## Status
 done
 
+QA fix for the Elementor A/B control. Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `includes/integrations/elementor/class-rwgc-elementor-ab.php` — public pages stay on the frontend unless the visitor can edit and Elementor reports the editor, a real preview query, or an admin/REST editor request. Atomic preview prints a badge.
+- `includes/class-rwgc-settings.php` — install does not store `ab_cache_mode`. Reading it still defaults to server.
+- `tests/AB/RWGC_Elementor_ABTest.php` — logged-out classic render with V4 experiments on, and the install default.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 277 tests, 22051 assertions, OK.
+
+## Status
+done
+
 Elementor A/B control (step 5). Not tagged. Version stays 1.9.26.
 
 ## Files changed
