@@ -3,6 +3,51 @@
 ## Status
 done
 
+Elementor element-cache fix for classic A/B pairs. Not tagged. Version stays 1.9.26.
+
+## Root cause
+Elementor 3.24+ stores the first classic render in `_elementor_element_cache` when `elementor_element_cache_ttl` is not `disable`. Later requests echo that HTML and never run `before_render` / `after_render`, so the cookie and no-store headers are skipped. Atomic V4 and Gutenberg do not use that cache.
+
+## Files changed
+- `includes/integrations/elementor/class-rwgc-elementor-ab.php` — `elementor/element/is_dynamic_content` is true for an A/B element and any parent. A cache of frozen HTML is deleted. Every render sends `private, no-store` and prints `data-rwgc-ab-decision`.
+- `tests/AB/RWGC_Elementor_ABTest.php` — dynamic content, stale cache, and a second request with the other arm.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 280 tests, 22069 assertions, OK.
+
+## Status
+done
+
+QA fix for the Elementor A/B control. Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `includes/integrations/elementor/class-rwgc-elementor-ab.php` — public pages stay on the frontend unless the visitor can edit and Elementor reports the editor, a real preview query, or an admin/REST editor request. Atomic preview prints a badge.
+- `includes/class-rwgc-settings.php` — install does not store `ab_cache_mode`. Reading it still defaults to server.
+- `tests/AB/RWGC_Elementor_ABTest.php` — logged-out classic render with V4 experiments on, and the install default.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 277 tests, 22051 assertions, OK.
+
+## Status
+done
+
+Elementor A/B control (step 5). Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `includes/integrations/elementor/class-rwgc-elementor-ab.php` — Advanced-tab section (Off, Variant A, Variant B, test, goal). Sibling pairs sync on `elementor/editor/after_save`. Front end prints one arm. `rwgc_ab_variant_html` returns the Elementor arm and does not call `rwgc_ab_render_test()`.
+- `includes/integrations/elementor/class-rwgc-elementor-atomic-geo.php` — Atomic V4 sibling section and props, skipped when that API is missing.
+- `includes/integrations/class-rwgc-integrations-loader.php` — load and init. Inactive Elementor does not fatal.
+- `tests/AB/RWGC_Elementor_ABTest.php` — pairing, nested pairs, and which element is rendered.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 272 tests, 22023 assertions, OK.
+
+## Not changed
+- Plugin version (1.9.26). No tag. No release.
+
+## Status
+done
+
 Fragment render route now returns the Gutenberg arm. Not tagged. Version stays 1.9.26.
 
 ## Files changed
