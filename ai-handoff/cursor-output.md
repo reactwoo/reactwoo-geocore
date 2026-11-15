@@ -3,6 +3,23 @@
 ## Status
 done
 
+Elementor A/B control (step 5). Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `includes/integrations/elementor/class-rwgc-elementor-ab.php` — Advanced-tab section (Off, Variant A, Variant B, test, goal). Sibling pairs sync on `elementor/editor/after_save`. Front end prints one arm. `rwgc_ab_variant_html` returns the Elementor arm and does not call `rwgc_ab_render_test()`.
+- `includes/integrations/elementor/class-rwgc-elementor-atomic-geo.php` — Atomic V4 sibling section and props, skipped when that API is missing.
+- `includes/integrations/class-rwgc-integrations-loader.php` — load and init. Inactive Elementor does not fatal.
+- `tests/AB/RWGC_Elementor_ABTest.php` — pairing, nested pairs, and which element is rendered.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 272 tests, 22023 assertions, OK.
+
+## Not changed
+- Plugin version (1.9.26). No tag. No release.
+
+## Status
+done
+
 Fragment render route now returns the Gutenberg arm. Not tagged. Version stays 1.9.26.
 
 ## Files changed
