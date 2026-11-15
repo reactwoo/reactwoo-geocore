@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Divi, Bricks, and the classic editor can run a free A/B test with `[rwgc_ab id="123"]` and two `[rwgc_ab_variant]` blocks. The A/B tests list has a Copy shortcode action. The shortcode uses the same server and fragment rendering as the block. An unknown or inactive id shows the first variant.
 - Elementor elements (containers, sections, columns, and widgets, including Atomic V4) can be an A/B pair. Set one sibling to Variant A and another to Variant B, and choose the same test or a new one. The editor and preview show both, labelled. Visitors see the assigned element. An element without its pair renders normally and shows a warning in the editor. Fragment mode still loads the arm from the render route.
 - Free A/B tests can render without one visitor's arm being stored for another. Server mode (Settings → Detection, the default) sends `Cache-Control: private, no-store` and defines `DONOTCACHEPAGE` when a page renders an active test and the response is not safe to share. LiteSpeed gets a server-derived `rwgc_ab` vary group for a visitor who already has an assignment, so A and B are separate cache entries. A response that sets the `rwgc_ab` cookie stays private. Fragment mode leaves variant A in the page and loads the assigned arm from `GET /reactwoo-geocore/v1/ab/render`, which is not stored and is limited to 40 requests a minute per IP. Without JavaScript the page stays on A. Renderers call `rwgc_ab_render_test()`.
 
