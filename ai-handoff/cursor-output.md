@@ -3,6 +3,21 @@
 ## Status
 done
 
+Elementor element-cache fix for classic A/B pairs. Not tagged. Version stays 1.9.26.
+
+## Root cause
+Elementor 3.24+ stores the first classic render in `_elementor_element_cache` when `elementor_element_cache_ttl` is not `disable`. Later requests echo that HTML and never run `before_render` / `after_render`, so the cookie and no-store headers are skipped. Atomic V4 and Gutenberg do not use that cache.
+
+## Files changed
+- `includes/integrations/elementor/class-rwgc-elementor-ab.php` — `elementor/element/is_dynamic_content` is true for an A/B element and any parent. A cache of frozen HTML is deleted. Every render sends `private, no-store` and prints `data-rwgc-ab-decision`.
+- `tests/AB/RWGC_Elementor_ABTest.php` — dynamic content, stale cache, and a second request with the other arm.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 280 tests, 22069 assertions, OK.
+
+## Status
+done
+
 QA fix for the Elementor A/B control. Not tagged. Version stays 1.9.26.
 
 ## Files changed

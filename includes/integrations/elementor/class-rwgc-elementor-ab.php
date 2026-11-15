@@ -94,6 +94,9 @@ final class RWGC_Elementor_AB {
 	public static function init() {
 		if ( function_exists( 'add_filter' ) ) {
 			add_filter( 'rwgc_ab_variant_html', array( __CLASS__, 'filter_variant_html' ), 10, 3 );
+			// Elementor 3.24+ stores classic element HTML in _elementor_element_cache.
+			// A/B output must stay a shortcode so each request runs the decision again.
+			add_filter( 'elementor/element/is_dynamic_content', array( __CLASS__, 'filter_is_dynamic_content' ), 10, 3 );
 		}
 		if ( ! function_exists( 'add_action' ) ) {
 			return;
@@ -128,6 +131,7 @@ final class RWGC_Elementor_AB {
 		add_action( 'elementor/frontend/before_render', array( __CLASS__, 'before_render' ), 5, 1 );
 		add_action( 'elementor/frontend/after_render', array( __CLASS__, 'after_render' ), 999, 1 );
 		add_action( 'elementor/editor/after_save', array( __CLASS__, 'after_editor_save' ), 30, 2 );
+		add_action( 'elementor/frontend/before_get_builder_content', array( __CLASS__, 'prepare_element_cache' ), 0, 2 );
 		add_action( 'elementor/editor/after_enqueue_styles', array( __CLASS__, 'enqueue_editor_styles' ) );
 		add_action( 'elementor/preview/enqueue_styles', array( __CLASS__, 'enqueue_editor_styles' ) );
 
@@ -451,6 +455,12 @@ final class RWGC_Elementor_AB {
 		}
 		self::$handled[ $key ] = true;
 		$decision = self::decision_for_element( $element );
+		if ( 'emit' === $decision['action'] || 'suppress' === $decision['action'] ) {
+			self::send_request_nocache();
+		}
+		if ( 'emit' === $decision['action'] ) {
+			self::tag_live_decision( $element, $decision );
+		}
 		if ( 'label' === $decision['action'] ) {
 			self::label_element( $element, $decision );
 			if ( self::is_atomic_element( $element ) ) {
@@ -493,6 +503,61 @@ final class RWGC_Elementor_AB {
 			return;
 		}
 		echo self::emit_html( $decision, $html ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Wrapper attributes are escaped. The arm is Elementor's own HTML.
+	}
+
+	/**
+	 * Keep an A/B element, and any parent that contains one, out of Elementor's element cache.
+	 *
+	 * @param mixed $is_dynamic Already dynamic.
+	 * @param mixed $raw_data   Element raw data, including descendants.
+	 * @param mixed $element    Element instance. Unused.
+	 * @return bool
+	 */
+	public static function filter_is_dynamic_content( $is_dynamic, $raw_data = null, $element = null ) {
+		unset( $element );
+		if ( $is_dynamic ) {
+			return true;
+		}
+		return self::tree_has_ab_role( $raw_data );
+	}
+
+	/**
+	 * Drop a document cache that froze an A/B arm as HTML.
+	 *
+	 * A cache that already stores `[elementor-element]` shortcodes is kept.
+	 * Those shortcodes render again on each request.
+	 *
+	 * @param mixed $document  Elementor document or post ID.
+	 * @param mixed $is_excerpt Unused.
+	 * @return void
+	 */
+	public static function prepare_element_cache( $document = null, $is_excerpt = null ) {
+		unset( $is_excerpt );
+		$post_id = self::document_post_id( $document );
+		if ( $post_id <= 0 || ! function_exists( 'get_post_meta' ) || ! function_exists( 'delete_post_meta' ) ) {
+			return;
+		}
+		$cached = get_post_meta( $post_id, '_elementor_element_cache', true );
+		if ( self::element_cache_is_stale( self::document_elements( $post_id ), self::element_cache_content( $cached ) ) ) {
+			delete_post_meta( $post_id, '_elementor_element_cache' );
+		}
+	}
+
+	/**
+	 * True when this document has an A/B element and the stored cache is rendered HTML.
+	 *
+	 * @param mixed  $elements       Element tree.
+	 * @param string $cached_content Cached HTML or shortcode string.
+	 * @return bool
+	 */
+	public static function element_cache_is_stale( $elements, $cached_content ) {
+		if ( ! self::tree_has_ab_role( $elements ) ) {
+			return false;
+		}
+		if ( ! is_string( $cached_content ) || '' === $cached_content ) {
+			return false;
+		}
+		return false === strpos( $cached_content, '[elementor-element' );
 	}
 
 	/**
@@ -539,6 +604,9 @@ final class RWGC_Elementor_AB {
 			return;
 		}
 		$synced = self::sync_tree( $elements, $post_id );
+		if ( self::tree_has_ab_role( $synced['elements'] ) && function_exists( 'delete_post_meta' ) ) {
+			delete_post_meta( $post_id, '_elementor_element_cache' );
+		}
 		if ( empty( $synced['changed'] ) || ! function_exists( 'update_post_meta' ) ) {
 			return;
 		}
@@ -588,14 +656,16 @@ final class RWGC_Elementor_AB {
 		if ( ! in_array( $surface, array( 'frontend', 'editor', 'preview' ), true ) ) {
 			$surface = 'frontend';
 		}
-		$nested  = ! empty( $context['nested'] );
-		$builder = ( 'editor' === $surface || 'preview' === $surface );
-		$result  = array(
-			'action'  => 'passthrough',
-			'arm'     => $role,
-			'test_id' => $test_id,
-			'mode'    => 'raw',
-			'warning' => $notice,
+		$nested   = ! empty( $context['nested'] );
+		$builder  = ( 'editor' === $surface || 'preview' === $surface );
+		$assigned = ( isset( $context['assigned'] ) && 'b' === $context['assigned'] ) ? 'b' : 'a';
+		$result   = array(
+			'action'   => 'passthrough',
+			'arm'      => $role,
+			'test_id'  => $test_id,
+			'mode'     => 'raw',
+			'warning'  => $notice,
+			'assigned' => $assigned,
 		);
 		if ( '' === $role ) {
 			return $result;
@@ -1178,7 +1248,7 @@ final class RWGC_Elementor_AB {
 			'running'  => $running,
 			'ended'    => $ended && ! $running,
 			'kept'     => $kept,
-			'assigned' => ( $running && 'server' === $mode ) ? self::assigned_arm( $test_id ) : 'a',
+			'assigned' => $running ? self::assigned_arm( $test_id ) : 'a',
 			'mode'     => $mode,
 		);
 	}
@@ -1217,7 +1287,12 @@ final class RWGC_Elementor_AB {
 		if ( $test_id > 0 && function_exists( 'rwgc_ab_mark_rendered' ) ) {
 			rwgc_ab_mark_rendered( $test_id );
 		}
-		$wrapper = '<div class="rwgc-ab" data-rwgc-ab="' . esc_attr( (string) $test_id ) . '" data-rwgc-ab-mode="' . esc_attr( $mode ) . '" data-rwgc-arm="' . esc_attr( $arm ) . '">' . $html . '</div>';
+		$chosen = $arm;
+		if ( isset( $decision['assigned'] ) && ( 'a' === $decision['assigned'] || 'b' === $decision['assigned'] ) ) {
+			$chosen = $decision['assigned'];
+		}
+		self::send_request_nocache();
+		$wrapper = '<div class="rwgc-ab" data-rwgc-ab="' . esc_attr( (string) $test_id ) . '" data-rwgc-ab-mode="' . esc_attr( $mode ) . '" data-rwgc-arm="' . esc_attr( $arm ) . '" data-rwgc-ab-decision="' . esc_attr( $chosen ) . '">' . $html . '</div>';
 		if ( function_exists( 'do_action' ) ) {
 			do_action( 'rwgc_ab_rendered_test', $test_id, $arm, $mode );
 		}
@@ -1360,6 +1435,136 @@ final class RWGC_Elementor_AB {
 			}
 			return '';
 		}
+	}
+
+	/**
+	 * @param mixed $node Element, or a list of elements.
+	 * @return bool
+	 */
+	private static function tree_has_ab_role( $node ) {
+		if ( ! is_array( $node ) ) {
+			return false;
+		}
+		if ( self::node_has_ab_role( $node ) ) {
+			return true;
+		}
+		$is_list = function_exists( 'array_is_list' ) ? array_is_list( $node ) : ( array() !== $node && array_keys( $node ) === range( 0, count( $node ) - 1 ) );
+		if ( ! $is_list ) {
+			return false;
+		}
+		foreach ( $node as $child ) {
+			if ( self::node_has_ab_role( $child ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @param mixed $node Element raw data.
+	 * @return bool
+	 */
+	private static function node_has_ab_role( $node ) {
+		if ( ! is_array( $node ) || array() === $node ) {
+			return false;
+		}
+		$settings = isset( $node['settings'] ) && is_array( $node['settings'] ) ? $node['settings'] : $node;
+		if ( '' !== self::normalize_role( self::scalar_setting( $settings, self::SETTING_ROLE ) ) ) {
+			return true;
+		}
+		if ( isset( $node['elements'] ) && is_array( $node['elements'] ) ) {
+			foreach ( $node['elements'] as $child ) {
+				if ( self::node_has_ab_role( $child ) ) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @param mixed $cache Stored `_elementor_element_cache` value.
+	 * @return string
+	 */
+	private static function element_cache_content( $cache ) {
+		if ( is_string( $cache ) && '' !== $cache ) {
+			$decoded = json_decode( $cache, true );
+			if ( is_array( $decoded ) ) {
+				$cache = $decoded;
+			} else {
+				return $cache;
+			}
+		}
+		if ( ! is_array( $cache ) ) {
+			return '';
+		}
+		if ( isset( $cache['value']['content'] ) && is_string( $cache['value']['content'] ) ) {
+			return $cache['value']['content'];
+		}
+		if ( isset( $cache['content'] ) && is_string( $cache['content'] ) ) {
+			return $cache['content'];
+		}
+		return '';
+	}
+
+	/**
+	 * @param mixed $document Document or post ID.
+	 * @return int
+	 */
+	private static function document_post_id( $document ) {
+		if ( is_numeric( $document ) ) {
+			return absint( $document );
+		}
+		if ( is_object( $document ) && method_exists( $document, 'get_main_id' ) ) {
+			return absint( $document->get_main_id() );
+		}
+		if ( is_object( $document ) && isset( $document->post ) && is_object( $document->post ) && isset( $document->post->ID ) ) {
+			return absint( $document->post->ID );
+		}
+		return 0;
+	}
+
+	/**
+	 * Private, no-store on every Elementor A/B render.
+	 *
+	 * Fragment mode otherwise allows a shared cache after the cookie is set.
+	 * The decision attribute makes this HTML specific to the request.
+	 *
+	 * @return void
+	 */
+	private static function send_request_nocache() {
+		$emit = apply_filters( 'rwgc_ab_emit_http_headers', true );
+		if ( ! $emit ) {
+			return;
+		}
+		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+			define( 'DONOTCACHEPAGE', true );
+		}
+		if ( function_exists( 'headers_sent' ) && headers_sent() ) {
+			return;
+		}
+		if ( function_exists( 'header' ) ) {
+			header( 'Cache-Control: private, no-store' );
+			header( 'Pragma: no-cache' );
+		}
+	}
+
+	/**
+	 * @param mixed                $element  Element.
+	 * @param array<string, mixed> $decision Decision.
+	 * @return void
+	 */
+	private static function tag_live_decision( $element, array $decision ) {
+		if ( ! is_object( $element ) || ! method_exists( $element, 'add_render_attribute' ) ) {
+			return;
+		}
+		$chosen = ( isset( $decision['assigned'] ) && 'b' === $decision['assigned'] ) ? 'b' : 'a';
+		$element->add_render_attribute(
+			'_wrapper',
+			array(
+				'data-rwgc-ab-decision' => $chosen,
+			)
+		);
 	}
 
 	/**

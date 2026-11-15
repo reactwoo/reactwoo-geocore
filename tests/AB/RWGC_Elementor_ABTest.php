@@ -28,6 +28,21 @@ if ( ! function_exists( 'wp_salt' ) ) {
 	}
 }
 
+if ( ! function_exists( 'delete_post_meta' ) ) {
+	/**
+	 * @param int    $post_id Post ID.
+	 * @param string $key     Meta key.
+	 * @return bool
+	 */
+	function delete_post_meta( $post_id, $key ) {
+		$post_id = (int) $post_id;
+		if ( isset( $GLOBALS['rwgc_ab_test_meta'][ $post_id ] ) && is_array( $GLOBALS['rwgc_ab_test_meta'][ $post_id ] ) ) {
+			unset( $GLOBALS['rwgc_ab_test_meta'][ $post_id ][ $key ] );
+		}
+		return true;
+	}
+}
+
 /**
  * Element stand-in. Records wrapper attributes and exposes settings.
  */
@@ -509,6 +524,7 @@ final class RWGC_Elementor_ABTest extends TestCase {
 		$this->assertStringNotContainsString( 'ARM-A', $html );
 		$this->assertStringContainsString( 'data-rwgc-ab-mode="server"', $html );
 		$this->assertStringContainsString( 'data-rwgc-arm="b"', $html );
+		$this->assertStringContainsString( 'data-rwgc-ab-decision="b"', $html );
 	}
 
 	public function test_frontend_fragment_mode_prints_only_variant_a(): void {
@@ -801,6 +817,92 @@ final class RWGC_Elementor_ABTest extends TestCase {
 		} else {
 			$GLOBALS['rwgc_test_options'] = $previous;
 		}
+	}
+
+	public function test_ab_elements_and_their_parents_are_dynamic_content(): void {
+		$this->assertFalse( RWGC_Elementor_AB::filter_is_dynamic_content( false, array( 'settings' => array( 'title' => 'Hello' ) ) ) );
+		$this->assertTrue( RWGC_Elementor_AB::filter_is_dynamic_content( true, array( 'settings' => array() ) ) );
+		$this->assertTrue(
+			RWGC_Elementor_AB::filter_is_dynamic_content(
+				false,
+				array(
+					'settings' => array(
+						'rwgc_ab_role' => 'a',
+					),
+				)
+			)
+		);
+		$this->assertTrue(
+			RWGC_Elementor_AB::filter_is_dynamic_content(
+				false,
+				array(
+					'settings' => array(),
+					'elements' => array(
+						array(
+							'settings' => array(
+								'rwgc_ab_role' => array(
+									'$$type' => 'string',
+									'value'  => 'b',
+								),
+							),
+						),
+					),
+				)
+			)
+		);
+		$this->assertFalse(
+			RWGC_Elementor_AB::filter_is_dynamic_content(
+				false,
+				array(
+					'settings' => array(
+						'rwgc_ab_role' => 'off',
+					),
+				)
+			)
+		);
+	}
+
+	public function test_a_frozen_element_cache_is_dropped_and_a_shortcode_cache_is_kept(): void {
+		$elements = $this->pair( 'secA', 'secB', '9', '9' );
+		$this->assertTrue( RWGC_Elementor_AB::element_cache_is_stale( $elements, '<div class="rwgc-ab" data-rwgc-arm="a">frozen</div>' ) );
+		$this->assertFalse( RWGC_Elementor_AB::element_cache_is_stale( $elements, '[elementor-element k="1" data="abc"]' ) );
+		$this->assertFalse( RWGC_Elementor_AB::element_cache_is_stale( array( array( 'settings' => array() ) ), '<div>plain</div>' ) );
+
+		$post_id = 77;
+		$GLOBALS['rwgc_ab_test_meta'][ $post_id ] = array(
+			'_elementor_data'          => wp_json_encode( $elements ),
+			'_elementor_element_cache' => wp_json_encode(
+				array(
+					'timeout' => time() + 3600,
+					'value'   => array(
+						'content' => '<section class="rwgc-ab">frozen</section>',
+					),
+				)
+			),
+		);
+		RWGC_Elementor_AB::prepare_element_cache( $post_id );
+		$this->assertArrayNotHasKey( '_elementor_element_cache', $GLOBALS['rwgc_ab_test_meta'][ $post_id ] );
+	}
+
+	public function test_each_frontend_render_reports_that_requests_arm(): void {
+		$id    = $this->running_pair_id();
+		$calls = 0;
+		$GLOBALS['rwgc_test_filters']['rwgc_ab_emit_http_headers'] = static function () use ( &$calls ) {
+			$calls++;
+			return false;
+		};
+		$this->seed_arm( $id, 'a' );
+		$first = $this->capture_pair( $id );
+		$this->seed_arm( $id, 'b' );
+		RWGC_Elementor_AB::reset_for_tests();
+		$second = $this->capture_pair( $id );
+		$this->assertStringContainsString( 'data-rwgc-ab-decision="a"', $first );
+		$this->assertStringContainsString( 'ARM-A', $first );
+		$this->assertStringNotContainsString( 'ARM-B', $first );
+		$this->assertStringContainsString( 'data-rwgc-ab-decision="b"', $second );
+		$this->assertStringContainsString( 'ARM-B', $second );
+		$this->assertStringNotContainsString( 'ARM-A', $second );
+		$this->assertGreaterThanOrEqual( 2, $calls );
 	}
 
 	/**
