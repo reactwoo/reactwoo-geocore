@@ -15,10 +15,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * The cookie is written only when a response renders a test (`variant()` from
  * `rwgc_ab_render_test()`, or `variant_for_fragment()` on the render route).
  * A page with no test does not send Set-Cookie and can stay in a shared cache.
- * Bots, logged-in editor previews, other REST requests, and AJAX never receive
- * a Set-Cookie. The fragment render route is the REST exception: a cached page
- * does not run PHP, so that one GET may assign. A consent check can veto the
- * same way and the visitor is then shown variant A.
+ * Bots, logged-in editor previews, other REST or JSON requests, and AJAX never
+ * receive a Set-Cookie. The fragment render route is the exception. It is a
+ * REST request, and the script sends `Accept: application/json`, which
+ * `wp_is_json_request()` treats as JSON. A cached page does not run PHP, so
+ * that one GET may assign. Any other REST or JSON request still must not assign.
+ * A consent check can veto the same way and the visitor is then shown variant A.
  */
 class RWGC_AB_Assignment {
 
@@ -112,8 +114,9 @@ class RWGC_AB_Assignment {
 	/**
 	 * Assign during the fragment render request.
 	 *
-	 * Other REST requests still only read a valid cookie. This route may write
-	 * because a cached fragment page never reaches `send_headers`.
+	 * Other REST and JSON requests still only read a valid cookie. This route may
+	 * write because a cached fragment page never reaches `send_headers`. The
+	 * script sends `Accept: application/json`; that does not block this route.
 	 *
 	 * @param int|string $test_id Test post ID.
 	 * @return string
@@ -329,6 +332,13 @@ class RWGC_AB_Assignment {
 	}
 
 	/**
+	 * Public page views that render a test may write.
+	 *
+	 * The fragment render route may also write. It is a REST request, and
+	 * `wp_is_json_request()` is true when the script sends
+	 * `Accept: application/json`. Both flags are cleared for that route only.
+	 * Any other REST or JSON request still must not write.
+	 *
 	 * @return bool
 	 */
 	private static function can_write_cookie() {
@@ -338,6 +348,7 @@ class RWGC_AB_Assignment {
 		$flags = self::current_request_flags();
 		if ( self::$fragment_write || self::is_fragment_render_request() ) {
 			$flags['rest'] = false;
+			$flags['json'] = false;
 		}
 		return ! self::request_skips_assignment( $flags );
 	}
