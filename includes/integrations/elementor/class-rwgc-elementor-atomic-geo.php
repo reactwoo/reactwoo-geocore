@@ -129,6 +129,10 @@ class RWGC_Elementor_Atomic_Geo {
 			$schema['rwgc_applied_visibility_rule_id'] = $string::make()->default( '' );
 		}
 
+		if ( class_exists( 'RWGC_Elementor_AB', false ) ) {
+			$schema = RWGC_Elementor_AB::filter_atomic_props_schema( $schema );
+		}
+
 		return $schema;
 	}
 
@@ -150,29 +154,29 @@ class RWGC_Elementor_Atomic_Geo {
 			$controls = array();
 		}
 
-		if ( self::controls_already_injected( $controls ) ) {
-			return $controls;
-		}
+		if ( ! self::controls_already_injected( $controls ) ) {
+			$items = self::build_geo_visibility_items();
+			if ( ! empty( $items ) ) {
+				$section_class = '\Elementor\Modules\AtomicWidgets\Controls\Section';
+				$settings      = self::find_settings_section( $controls );
 
-		$items = self::build_geo_visibility_items();
-		if ( empty( $items ) ) {
-			return $controls;
-		}
-
-		$section_class = '\Elementor\Modules\AtomicWidgets\Controls\Section';
-		$settings      = self::find_settings_section( $controls );
-
-		if ( $settings instanceof $section_class ) {
-			foreach ( $items as $item ) {
-				$settings->add_item( $item );
+				if ( $settings instanceof $section_class ) {
+					foreach ( $items as $item ) {
+						$settings->add_item( $item );
+					}
+				} else {
+					$controls[] = $section_class::make()
+						->set_label( __( 'Geo Visibility', 'reactwoo-geocore' ) )
+						->set_id( 'rwgc_geo_visibility' )
+						->set_items( $items );
+				}
 			}
-			return $controls;
 		}
 
-		$controls[] = $section_class::make()
-			->set_label( __( 'Geo Visibility', 'reactwoo-geocore' ) )
-			->set_id( 'rwgc_geo_visibility' )
-			->set_items( $items );
+		// A/B is its own section, beside Geo Visibility, including when Geo is already present.
+		if ( class_exists( 'RWGC_Elementor_AB', false ) ) {
+			$controls = RWGC_Elementor_AB::filter_atomic_controls( $controls );
+		}
 
 		return $controls;
 	}

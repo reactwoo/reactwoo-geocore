@@ -42,7 +42,7 @@ class RWGC_Settings {
 	public static function ensure_defaults() {
 		$current = get_option( self::OPTION_KEY, array() );
 		if ( ! is_array( $current ) || empty( $current ) ) {
-			update_option( self::OPTION_KEY, self::get_defaults() );
+			update_option( self::OPTION_KEY, self::stored_defaults() );
 		}
 	}
 
@@ -62,7 +62,7 @@ class RWGC_Settings {
 			array(
 				'type'              => 'array',
 				'sanitize_callback' => array( __CLASS__, 'sanitize_settings' ),
-				'default'           => self::get_defaults(),
+				'default'           => self::stored_defaults(),
 				'capability'        => $cap,
 			)
 		);
@@ -200,11 +200,15 @@ class RWGC_Settings {
 		$currency_opts              = class_exists( 'RWGC_Countries', false ) ? RWGC_Countries::get_currency_options() : array();
 		$out['fallback_currency']     = isset( $currency_opts[ $fcur ] ) ? $fcur : $defaults['fallback_currency'];
 		$out['rest_enabled']        = ! empty( $settings['rest_enabled'] ) ? 1 : 0;
-		$ab_mode                    = 'server';
-		if ( isset( $settings['ab_cache_mode'] ) && is_scalar( $settings['ab_cache_mode'] ) ) {
+		if ( array_key_exists( 'ab_cache_mode', $settings ) && is_scalar( $settings['ab_cache_mode'] ) ) {
 			$ab_mode = strtolower( trim( (string) $settings['ab_cache_mode'] ) );
+			$out['ab_cache_mode'] = ( 'fragment' === $ab_mode ) ? 'fragment' : 'server';
+		} elseif ( is_array( $stored ) && array_key_exists( 'ab_cache_mode', $stored ) && is_scalar( $stored['ab_cache_mode'] ) ) {
+			$ab_mode = strtolower( trim( (string) $stored['ab_cache_mode'] ) );
+			$out['ab_cache_mode'] = ( 'fragment' === $ab_mode ) ? 'fragment' : 'server';
+		} else {
+			unset( $out['ab_cache_mode'] );
 		}
-		$out['ab_cache_mode']       = ( 'fragment' === $ab_mode ) ? 'fragment' : 'server';
 		$out['debug_mode']          = ! empty( $settings['debug_mode'] ) ? 1 : 0;
 		$out['db_last_updated']     = isset( $settings['db_last_updated'] ) ? sanitize_text_field( $settings['db_last_updated'] ) : '';
 		$out['db_last_success_at']  = isset( $settings['db_last_success_at'] ) ? sanitize_text_field( $settings['db_last_success_at'] ) : '';
@@ -359,6 +363,17 @@ class RWGC_Settings {
 			__( 'Until a database is added, every visitor is treated as %s.', 'reactwoo-geocore' ),
 			self::fallback_country_label()
 		);
+	}
+
+	/**
+	 * Defaults written on install. The A/B cache mode is read as "server" when absent.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function stored_defaults() {
+		$defaults = self::get_defaults();
+		unset( $defaults['ab_cache_mode'] );
+		return $defaults;
 	}
 
 	/**

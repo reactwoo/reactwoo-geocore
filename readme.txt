@@ -167,6 +167,8 @@ Off by default. An administrator must enable “Share anonymous experience event
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
 = Unreleased =
+* On the public site, an Elementor A/B pair shows one variant. The A and B labels stay in the editor. Installing the plugin does not save the A/B cache choice; Server is used until that choice is saved.
+* An Elementor container, section, column, or widget can be Variant A or Variant B of an A/B test. Two siblings that share a test are the pair. The editor shows both. Visitors see one. An unpaired element still renders, and the editor explains that. Atomic V4 has the same section.
 * A/B tests can render without one visitor's arm being cached for another. Server mode tells caches that cannot vary not to store a page that renders an active test. LiteSpeed keeps a separate copy per arm. Fragment mode (Settings → Detection) shows variant A without JavaScript and loads the assigned arm from this site. That request is not stored.
 * The A/B cookie is set only on a response that renders a test. A page with no test does not send that cookie and can stay cached.
 * The render address expects a positive integer test id. Anything else is rejected. With a persistent object cache the per-minute limit is an atomic counter. Without one, a transient is used and two requests at the same moment can both be counted, so a short burst can go over the limit.
