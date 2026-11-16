@@ -321,7 +321,7 @@ class RWGC_AB_Cache {
 			'rwgc-ab',
 			RWGC_URL . 'assets/js/rwgc-ab.js',
 			array(),
-			defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.9.26',
+			defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.9.27',
 			true
 		);
 	}

@@ -286,7 +286,7 @@ final class RWGC_AB_CacheTest extends TestCase {
 			define( 'RWGC_URL', 'https://example.test/wp-content/plugins/reactwoo-geocore/' );
 		}
 		if ( ! defined( 'RWGC_VERSION' ) ) {
-			define( 'RWGC_VERSION', '1.9.26' );
+			define( 'RWGC_VERSION', '1.9.27' );
 		}
 		require_once dirname( __DIR__, 2 ) . '/includes/functions-rwgc.php';
 		require_once dirname( __DIR__, 2 ) . '/includes/integrations/class-rwgc-cache-compat.php';

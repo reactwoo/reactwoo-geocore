@@ -3,6 +3,27 @@
 ## Status
 done
 
+Geo Core 1.9.27 is prepared as a pull request. Not merged and not tagged. It ships everything merged after v1.9.26: #108 (reproducible publish zip) and free A/B testing #109, #111–#117.
+
+## Files changed
+- Plugin header, `RWGC_VERSION`, readme Stable tag, block asset versions (`ab-test`, `ab-variant`, `experience-slot`, `geo-content`), the `RWGC_VERSION` fallbacks in the A/B admin, cache, and Elementor classes, the test bootstraps that define `RWGC_VERSION`, the MaxMind onboarding stable-tag check, and the WordPress.org build guard — 1.9.27.
+- `CHANGELOG.md` and `readme.txt` — the Unreleased A/B notes are the 1.9.27 entry. Added the missing notes for the Gutenberg A/B block (#113), the signed `rwgc_ab` cookie (#111), and the Experiences → A/B tests list (#109); `CHANGELOG.md` also notes the reproducible zip (#108). New 1.9.27 upgrade notice. `Tested up to` unchanged (7.1).
+
+## Not changed
+- A/B behaviour, `vendor/`, workflows. `package.json` has no version field.
+
+## Commands
+- `php -l` on the changed PHP files — no syntax errors.
+- `php tests/test-rwgc-wporg-build.php` — all WordPress.org build guards passed at 1.9.27.
+- `python3 tests/test-rwgc-zip-js-order.py`, `python3 tests/test-rwgc-zip-reproducible.py` — passed.
+- PHPUnit runs in the pull request's Geo Core tests workflow.
+
+## Remaining errors
+- None from these checks.
+
+## Status
+done
+
 QA fix on free A/B step 7 (PR #117). Not tagged. Version stays 1.9.26. Not merged.
 
 ## Root cause

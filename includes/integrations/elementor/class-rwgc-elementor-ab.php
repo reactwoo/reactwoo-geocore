@@ -746,7 +746,7 @@ final class RWGC_Elementor_AB {
 			return;
 		}
 		if ( ! function_exists( 'wp_style_is' ) || ! wp_style_is( 'rwgc-elementor-ab-editor', 'enqueued' ) ) {
-			wp_register_style( 'rwgc-elementor-ab-editor', false, array(), defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.9.26' );
+			wp_register_style( 'rwgc-elementor-ab-editor', false, array(), defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.9.27' );
 			if ( function_exists( 'wp_enqueue_style' ) ) {
 				wp_enqueue_style( 'rwgc-elementor-ab-editor' );
 			}
