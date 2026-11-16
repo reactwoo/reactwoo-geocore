@@ -268,9 +268,11 @@ class RWGC_Cache {
 	 * Delete one batch of md5-keyed geo transients.
 	 *
 	 * Rows live in the options table as `_transient_rwgc_geo_v…` and
-	 * `_transient_timeout_rwgc_geo_v…`. A persistent object cache does not
-	 * keep those rows, so copies there expire with the transient TTL.
-	 * HMAC keys (`rwgc_geo_h`) are not selected.
+	 * `_transient_timeout_rwgc_geo_v…`. `delete_transient()` removes an
+	 * external object-cache entry and, without one, the options rows. With a
+	 * persistent object cache it leaves the options rows, so those two option
+	 * names are deleted directly as well. HMAC keys (`rwgc_geo_h`) are not
+	 * selected.
 	 *
 	 * @param int|null $limit Rows to read this pass. Capped at 200.
 	 * @return bool True when no matching rows remain.
@@ -321,10 +323,13 @@ class RWGC_Cache {
 				$keys[ $transient ] = true;
 			}
 		}
-		if ( function_exists( 'delete_transient' ) ) {
-			foreach ( array_keys( $keys ) as $key ) {
+		foreach ( array_keys( $keys ) as $key ) {
+			if ( function_exists( 'delete_transient' ) ) {
 				delete_transient( $key );
 			}
+			// External object caches skip the options table inside delete_transient().
+			self::delete_legacy_option( '_transient_' . $key );
+			self::delete_legacy_option( '_transient_timeout_' . $key );
 		}
 		if ( function_exists( 'update_option' ) && $last_id > $after ) {
 			update_option( self::PURGE_CURSOR, $last_id );
@@ -380,6 +385,18 @@ class RWGC_Cache {
 			return substr( $option_name, strlen( $value ) );
 		}
 		return '';
+	}
+
+	/**
+	 * Remove one options-table row left by an old geo transient.
+	 *
+	 * @param string $option_name `_transient_…` or `_transient_timeout_…`.
+	 * @return void
+	 */
+	private static function delete_legacy_option( $option_name ) {
+		if ( function_exists( 'delete_option' ) ) {
+			delete_option( $option_name );
+		}
 	}
 
 	/**

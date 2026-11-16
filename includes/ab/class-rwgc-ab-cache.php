@@ -435,13 +435,17 @@ class RWGC_AB_Cache {
 	 * Forty requests a minute per resolved visitor IP.
 	 *
 	 * A persistent object cache uses `wp_cache_incr`, which is atomic on Redis
-	 * and Memcached. The key includes the clock minute. The first hit in that
-	 * minute sets a two-minute TTL; a backend that drops TTL on increment can
-	 * keep the old key, and the next minute still starts a new one.
+	 * and Memcached. The key is an HMAC of the address and the clock minute.
+	 * The first hit in that minute sets a two-minute TTL; a backend that drops
+	 * TTL on increment can keep the old key, and the next minute still starts
+	 * a new one.
 	 *
-	 * Without a persistent object cache the count is a transient. That update
-	 * is read-modify-write, so two requests at the same moment can both read
-	 * the same count and a short burst can pass 40. The limit slows one client.
+	 * Without a persistent object cache the count is a transient named with an
+	 * HMAC of the address. The value is a counter and a start time, not the
+	 * address. That update is read-modify-write, so two requests at the same
+	 * moment can both read the same count and a short burst can pass 40. Older
+	 * md5 names expire with the 60-second transient or the two-minute object
+	 * cache TTL. The limit slows one client.
 	 * It does not stop many addresses, and visitors who share an address share
 	 * one allowance. It is not a nonce and it does not authenticate the caller.
 	 *
@@ -487,7 +491,7 @@ class RWGC_AB_Cache {
 	 */
 	private static function consume_object_cache_limit( $ip, $limit, $now ) {
 		$window = (int) floor( $now / 60 );
-		$key    = md5( self::normal_ip( $ip ) . '|' . $window );
+		$key    = self::rate_limit_digest( $ip, $window );
 		$group  = 'rwgc_ab_rl';
 		$count  = wp_cache_incr( $key, 1, $group );
 		if ( false === $count ) {
@@ -521,7 +525,7 @@ class RWGC_AB_Cache {
 	 * @return array{allowed:bool,limit:int,remaining:int,retry_after:int}
 	 */
 	private static function consume_transient_limit( $ip, $limit, $now ) {
-		$key    = 'rwgc_ab_rl_' . md5( self::normal_ip( $ip ) );
+		$key    = 'rwgc_ab_rl_' . self::rate_limit_digest( $ip );
 		$bucket = function_exists( 'get_transient' ) ? get_transient( $key ) : false;
 		if ( ! is_array( $bucket ) || ! isset( $bucket['start'], $bucket['count'] ) || ( $now - (int) $bucket['start'] ) >= 60 ) {
 			$bucket = array(
@@ -835,6 +839,29 @@ class RWGC_AB_Cache {
 	private static function normal_ip( $ip ) {
 		$ip = trim( (string) $ip );
 		return filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : '0.0.0.0';
+	}
+
+	/**
+	 * HMAC name for one visitor. The address is not part of the stored key.
+	 *
+	 * The transient omits the minute because the stored bucket has a start
+	 * time. The object-cache counter has no bucket, so its message includes
+	 * the minute and the next minute is a new key.
+	 *
+	 * @param string   $ip     Visitor address.
+	 * @param int|null $window Clock minute, or null for the transient key.
+	 * @return string 32 hex characters.
+	 */
+	private static function rate_limit_digest( $ip, $window = null ) {
+		$message = 'abrl|' . self::normal_ip( $ip );
+		if ( null !== $window ) {
+			$message .= '|' . (int) $window;
+		}
+		$salt = function_exists( 'wp_salt' ) ? (string) wp_salt( 'auth' ) : '';
+		if ( '' === $salt ) {
+			$salt = 'rwgc-ab-event';
+		}
+		return substr( hash_hmac( 'sha256', $message, $salt ), 0, 32 );
 	}
 }
 

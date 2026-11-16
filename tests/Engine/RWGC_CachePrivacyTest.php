@@ -82,8 +82,28 @@ if ( ! function_exists( 'delete_transient' ) ) {
 	 */
 	function delete_transient( $key ) {
 		unset( $GLOBALS['rwgc_test_transients'][ $key ] );
+		$GLOBALS['rwgc_test_deleted_transients'][] = $key;
+		// WordPress leaves options rows alone while an external object cache is on.
+		if ( ! empty( $GLOBALS['rwgc_test_ext_object_cache'] ) ) {
+			return true;
+		}
 		if ( isset( $GLOBALS['wpdb'] ) && is_object( $GLOBALS['wpdb'] ) && method_exists( $GLOBALS['wpdb'], 'forget_transient' ) ) {
 			$GLOBALS['wpdb']->forget_transient( $key );
+		}
+		return true;
+	}
+}
+
+if ( ! function_exists( 'delete_option' ) ) {
+	/**
+	 * @param string $key Option name.
+	 * @return bool
+	 */
+	function delete_option( $key ) {
+		unset( $GLOBALS['rwgc_test_options'][ $key ] );
+		$GLOBALS['rwgc_test_deleted_options'][] = $key;
+		if ( isset( $GLOBALS['wpdb'] ) && is_object( $GLOBALS['wpdb'] ) && method_exists( $GLOBALS['wpdb'], 'forget_option' ) ) {
+			$GLOBALS['wpdb']->forget_option( (string) $key );
 		}
 		return true;
 	}
@@ -209,13 +229,20 @@ class RWGC_Cache_Legacy_Wpdb {
 	 * @return void
 	 */
 	public function forget_transient( $key ) {
-		$value   = '_transient_' . $key;
-		$timeout = '_transient_timeout_' . $key;
+		$this->forget_option( '_transient_' . $key );
+		$this->forget_option( '_transient_timeout_' . $key );
+	}
+
+	/**
+	 * @param string $option_name option_name column.
+	 * @return void
+	 */
+	public function forget_option( $option_name ) {
 		$this->rows = array_values(
 			array_filter(
 				$this->rows,
-				static function ( $row ) use ( $value, $timeout ) {
-					return $row->option_name !== $value && $row->option_name !== $timeout;
+				static function ( $row ) use ( $option_name ) {
+					return $row->option_name !== $option_name;
 				}
 			)
 		);
@@ -312,6 +339,7 @@ final class RWGC_CachePrivacyTest extends TestCase {
 		if ( isset( $GLOBALS['rwgc_test_cron'][ RWGC_Cache::PURGE_HOOK ] ) ) {
 			unset( $GLOBALS['rwgc_test_cron'][ RWGC_Cache::PURGE_HOOK ] );
 		}
+		unset( $GLOBALS['rwgc_test_ext_object_cache'], $GLOBALS['rwgc_test_deleted_transients'], $GLOBALS['rwgc_test_deleted_options'] );
 		parent::tearDown();
 	}
 
@@ -534,8 +562,32 @@ final class RWGC_CachePrivacyTest extends TestCase {
 	}
 
 	/**
+	 * An external object cache makes delete_transient() skip wp_options.
+	 *
 	 * @return void
 	 */
+	public function test_object_cache_purge_deletes_the_options_rows(): void {
+		$name           = 'rwgc_geo_v1_' . md5( '203.0.113.10' );
+		$wpdb           = new RWGC_Cache_Legacy_Wpdb();
+		$wpdb->rows     = array(
+			$this->option_row( 1, '_transient_' . $name ),
+			$this->option_row( 2, '_transient_timeout_' . $name ),
+			$this->option_row( 3, '_transient_rwgc_geo_h1_' . str_repeat( 'ab', 16 ) ),
+		);
+		$GLOBALS['wpdb']                         = $wpdb;
+		$GLOBALS['rwgc_test_ext_object_cache']   = true;
+		$GLOBALS['rwgc_test_deleted_transients'] = array();
+		$GLOBALS['rwgc_test_deleted_options']    = array();
+
+		RWGC_Cache::purge_one_legacy_batch();
+
+		$this->assertSame( array( '_transient_rwgc_geo_h1_' . str_repeat( 'ab', 16 ) ), $wpdb->names() );
+		$this->assertContains( $name, $GLOBALS['rwgc_test_deleted_transients'] );
+		$this->assertContains( '_transient_' . $name, $GLOBALS['rwgc_test_deleted_options'] );
+		$this->assertContains( '_transient_timeout_' . $name, $GLOBALS['rwgc_test_deleted_options'] );
+		$this->assertSame( 1, (int) $GLOBALS['rwgc_test_options'][ RWGC_Cache::PURGE_OPTION ] );
+	}
+
 	public function test_schedule_stops_after_the_purge_flag_is_set(): void {
 		RWGC_Cache::schedule_legacy_purge();
 		$this->assertNotFalse( wp_next_scheduled( RWGC_Cache::PURGE_HOOK ) );
