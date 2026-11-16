@@ -294,13 +294,15 @@ class RWGC_Cache {
 		$after        = function_exists( 'get_option' ) ? (int) get_option( self::PURGE_CURSOR, 0 ) : 0;
 		$like_value   = $wpdb->esc_like( '_transient_' . self::LEGACY_PREFIX ) . '%';
 		$like_timeout = $wpdb->esc_like( '_transient_timeout_' . self::LEGACY_PREFIX ) . '%';
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- One-off batched read of this plugin's legacy transient rows. {$wpdb->options} is the current site options table. $limit is a capped integer.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off batched read of this plugin's legacy transient rows.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT option_id, option_name FROM {$wpdb->options} WHERE option_id > %d AND ( option_name LIKE %s OR option_name LIKE %s ) ORDER BY option_id ASC LIMIT {$limit}",
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- {$wpdb->options} is the current site options table and cannot be a placeholder.
+				"SELECT option_id, option_name FROM {$wpdb->options} WHERE option_id > %d AND ( option_name LIKE %s OR option_name LIKE %s ) ORDER BY option_id ASC LIMIT %d",
 				$after,
 				$like_value,
-				$like_timeout
+				$like_timeout,
+				(int) $limit
 			)
 		);
 		if ( ! is_array( $rows ) ) {

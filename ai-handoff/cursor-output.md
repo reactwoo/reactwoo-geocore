@@ -39,7 +39,7 @@ Geo Core 1.9.28 readiness fixes, including the sticky-arm buffer from #118 and t
 
 ## Remaining errors
 - Plugin Check 2.2.0 (`wp plugin check`) was not run here. This environment has no WordPress, wp-cli, or database.
-- CI on the pull request is the remaining check.
+- The follow-up warning on `LIMIT {$limit}` in `purge_legacy_batch()` is fixed by passing `(int) $limit` as `%d`. `{$wpdb->options}` still has an ignore on the SQL line, because a table name cannot be a placeholder.
 
 ## Status
 done
