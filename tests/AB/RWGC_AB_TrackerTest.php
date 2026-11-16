@@ -7,6 +7,247 @@
 
 use PHPUnit\Framework\TestCase;
 
+if ( ! class_exists( 'WP_Error', false ) ) {
+	/**
+	 * Enough of WP_Error for REST parameter errors. Accepts the data argument core passes.
+	 */
+	class WP_Error {
+
+		/** @var string */
+		public $code;
+
+		/** @var string */
+		public $message;
+
+		/** @var mixed */
+		public $data;
+
+		/**
+		 * @param string $code    Code.
+		 * @param string $message Message.
+		 * @param mixed  $data    Data.
+		 */
+		public function __construct( $code = '', $message = '', $data = array() ) {
+			$this->code    = (string) $code;
+			$this->message = (string) $message;
+			$this->data    = $data;
+		}
+
+		/**
+		 * @return string
+		 */
+		public function get_error_code() {
+			return $this->code;
+		}
+
+		/**
+		 * @return string
+		 */
+		public function get_error_message() {
+			return $this->message;
+		}
+
+		/**
+		 * @return string[]
+		 */
+		public function get_error_messages() {
+			return array( $this->message );
+		}
+
+		/**
+		 * @return mixed
+		 */
+		public function get_error_data() {
+			return $this->data;
+		}
+	}
+}
+
+if ( ! function_exists( 'is_wp_error' ) ) {
+	/**
+	 * @param mixed $thing Value.
+	 * @return bool
+	 */
+	function is_wp_error( $thing ) {
+		return $thing instanceof WP_Error;
+	}
+}
+
+if ( ! function_exists( 'add_filter' ) ) {
+	/**
+	 * Record a filter so the REST dispatcher can run it.
+	 *
+	 * @param string   $hook          Hook.
+	 * @param callable $callback      Callback.
+	 * @param int      $priority      Priority.
+	 * @param int      $accepted_args Accepted args.
+	 * @return true
+	 */
+	function add_filter( $hook, $callback, $priority = 10, $accepted_args = 1 ) {
+		unset( $priority, $accepted_args );
+		if ( ! isset( $GLOBALS['rwgc_test_hook_callbacks'][ $hook ] ) || ! is_array( $GLOBALS['rwgc_test_hook_callbacks'][ $hook ] ) ) {
+			$GLOBALS['rwgc_test_hook_callbacks'][ $hook ] = array();
+		}
+		$GLOBALS['rwgc_test_hook_callbacks'][ $hook ][] = $callback;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'add_action' ) ) {
+	/**
+	 * @param string   $hook          Hook.
+	 * @param callable $callback      Callback.
+	 * @param int      $priority      Priority.
+	 * @param int      $accepted_args Accepted args.
+	 * @return true
+	 */
+	function add_action( $hook, $callback, $priority = 10, $accepted_args = 1 ) {
+		return add_filter( $hook, $callback, $priority, $accepted_args );
+	}
+}
+
+if ( ! function_exists( 'rest_is_integer' ) ) {
+	/**
+	 * Same rule as WordPress rest_is_integer().
+	 *
+	 * @param mixed $maybe_integer Value.
+	 * @return bool
+	 */
+	function rest_is_integer( $maybe_integer ) {
+		return is_numeric( $maybe_integer ) && round( (float) $maybe_integer ) === (float) $maybe_integer;
+	}
+}
+
+if ( ! function_exists( 'rest_get_best_type_for_value' ) ) {
+	/**
+	 * Same order as WordPress: the first listed type that matches wins.
+	 *
+	 * @param mixed    $value Value.
+	 * @param string[] $types Types.
+	 * @return string
+	 */
+	function rest_get_best_type_for_value( $value, $types ) {
+		$checks = array(
+			'integer' => 'rest_is_integer',
+			'number'  => 'is_numeric',
+			'string'  => 'is_string',
+			'boolean' => 'is_bool',
+			'null'    => 'is_null',
+		);
+		foreach ( $types as $type ) {
+			if ( isset( $checks[ $type ] ) && $checks[ $type ]( $value ) ) {
+				return $type;
+			}
+		}
+		return '';
+	}
+}
+
+if ( ! function_exists( 'rest_validate_value_from_schema' ) ) {
+	/**
+	 * The string/integer part of WordPress rest_validate_value_from_schema().
+	 *
+	 * A JSON number fails type string. type integer|string accepts both.
+	 *
+	 * @param mixed                $value Value.
+	 * @param array<string, mixed> $args  Schema.
+	 * @param string               $param Parameter.
+	 * @return true|WP_Error
+	 */
+	function rest_validate_value_from_schema( $value, $args, $param = '' ) {
+		$type = isset( $args['type'] ) ? $args['type'] : '';
+		if ( is_array( $type ) ) {
+			$best = rest_get_best_type_for_value( $value, $type );
+			if ( '' === $best ) {
+				return new WP_Error( 'rest_invalid_type', sprintf( '%1$s is not of type %2$s.', $param, implode( ',', $type ) ), array( 'status' => 400 ) );
+			}
+			$type = $best;
+		}
+		if ( 'string' === $type && ! is_string( $value ) ) {
+			return new WP_Error( 'rest_invalid_type', sprintf( '%1$s is not of type %2$s.', $param, 'string' ), array( 'status' => 400, 'param' => $param ) );
+		}
+		if ( 'integer' === $type && ! rest_is_integer( $value ) ) {
+			return new WP_Error( 'rest_invalid_type', sprintf( '%1$s is not of type %2$s.', $param, 'integer' ), array( 'status' => 400, 'param' => $param ) );
+		}
+		return true;
+	}
+}
+
+if ( ! function_exists( 'rest_sanitize_value_from_schema' ) ) {
+	/**
+	 * @param mixed                $value Value.
+	 * @param array<string, mixed> $args  Schema.
+	 * @param string               $param Parameter.
+	 * @return mixed
+	 */
+	function rest_sanitize_value_from_schema( $value, $args, $param = '' ) {
+		unset( $param );
+		$type = isset( $args['type'] ) ? $args['type'] : '';
+		if ( is_array( $type ) ) {
+			$type = rest_get_best_type_for_value( $value, $type );
+		}
+		if ( 'integer' === $type ) {
+			return (int) $value;
+		}
+		if ( 'string' === $type ) {
+			return (string) $value;
+		}
+		return $value;
+	}
+}
+
+if ( ! function_exists( 'rest_validate_request_arg' ) ) {
+	/**
+	 * @param mixed           $value   Value.
+	 * @param WP_REST_Request $request Request.
+	 * @param string          $param   Parameter.
+	 * @return true|WP_Error
+	 */
+	function rest_validate_request_arg( $value, $request, $param ) {
+		$attributes = $request->get_attributes();
+		if ( ! isset( $attributes['args'][ $param ] ) || ! is_array( $attributes['args'][ $param ] ) ) {
+			return true;
+		}
+		return rest_validate_value_from_schema( $value, $attributes['args'][ $param ], $param );
+	}
+}
+
+if ( ! function_exists( 'rest_sanitize_request_arg' ) ) {
+	/**
+	 * @param mixed           $value   Value.
+	 * @param WP_REST_Request $request Request.
+	 * @param string          $param   Parameter.
+	 * @return mixed
+	 */
+	function rest_sanitize_request_arg( $value, $request, $param ) {
+		$attributes = $request->get_attributes();
+		if ( ! isset( $attributes['args'][ $param ] ) || ! is_array( $attributes['args'][ $param ] ) ) {
+			return $value;
+		}
+		return rest_sanitize_value_from_schema( $value, $attributes['args'][ $param ], $param );
+	}
+}
+
+if ( ! function_exists( 'rest_parse_request_arg' ) ) {
+	/**
+	 * WordPress default when an arg has a type and no sanitize_callback.
+	 *
+	 * This is the check that rejects a JSON number for type string.
+	 *
+	 * @param mixed           $value   Value.
+	 * @param WP_REST_Request $request Request.
+	 * @param string          $param   Parameter.
+	 * @return mixed|WP_Error
+	 */
+	function rest_parse_request_arg( $value, $request, $param ) {
+		$is_valid = rest_validate_request_arg( $value, $request, $param );
+		if ( is_wp_error( $is_valid ) ) {
+			return $is_valid;
+		}
+		return rest_sanitize_request_arg( $value, $request, $param );
+	}
+}
+
 /**
  * In-memory daily aggregate.
  */
@@ -94,6 +335,299 @@ class RWGC_AB_Tracker_Wpdb {
 	 */
 	public function get_charset_collate() {
 		return 'DEFAULT CHARSET=utf8mb4';
+	}
+}
+
+if ( ! class_exists( 'WP_REST_Request', false ) ) {
+	/**
+	 * Request used by rest_do_request(). Parameter checks follow WP_REST_Request.
+	 */
+	class WP_REST_Request {
+
+		/** @var string */
+		private $method;
+
+		/** @var string */
+		private $route;
+
+		/** @var array<string, string> */
+		private $headers = array();
+
+		/** @var string */
+		private $body = '';
+
+		/** @var array<string, array<string, mixed>> */
+		private $params = array();
+
+		/** @var array<string, mixed> */
+		private $attributes = array();
+
+		/** @var bool */
+		private $json_parsed = false;
+
+		/**
+		 * @param string $method Method.
+		 * @param string $route  Route.
+		 */
+		public function __construct( $method = 'GET', $route = '' ) {
+			$this->method = strtoupper( (string) $method );
+			$this->route  = (string) $route;
+		}
+
+		/**
+		 * @param string $name  Header.
+		 * @param string $value Value.
+		 * @return void
+		 */
+		public function set_header( $name, $value ) {
+			$this->headers[ strtolower( (string) $name ) ] = (string) $value;
+		}
+
+		/**
+		 * @param string $body Raw body.
+		 * @return void
+		 */
+		public function set_body( $body ) {
+			$this->body        = (string) $body;
+			$this->json_parsed = false;
+			unset( $this->params['JSON'] );
+		}
+
+		/**
+		 * @return string
+		 */
+		public function get_method() {
+			return $this->method;
+		}
+
+		/**
+		 * @return string
+		 */
+		public function get_route() {
+			return $this->route;
+		}
+
+		/**
+		 * @return array<string, mixed>
+		 */
+		public function get_attributes() {
+			return $this->attributes;
+		}
+
+		/**
+		 * @param array<string, mixed> $attributes Handler.
+		 * @return void
+		 */
+		public function set_attributes( array $attributes ) {
+			$this->attributes = $attributes;
+		}
+
+		/**
+		 * @return array<string, mixed>
+		 */
+		public function get_json_params() {
+			$this->parse_json_params();
+			return isset( $this->params['JSON'] ) && is_array( $this->params['JSON'] ) ? $this->params['JSON'] : array();
+		}
+
+		/**
+		 * @param string $key Parameter.
+		 * @return mixed
+		 */
+		public function get_param( $key ) {
+			$this->parse_json_params();
+			foreach ( array( 'JSON', 'POST', 'GET' ) as $source ) {
+				if ( isset( $this->params[ $source ] ) && is_array( $this->params[ $source ] ) && array_key_exists( $key, $this->params[ $source ] ) ) {
+					return $this->params[ $source ][ $key ];
+				}
+			}
+			return null;
+		}
+
+		/**
+		 * @return true|WP_Error
+		 */
+		public function has_valid_params() {
+			$this->parse_json_params();
+			$args = isset( $this->attributes['args'] ) && is_array( $this->attributes['args'] ) ? $this->attributes['args'] : array();
+			$missing = array();
+			foreach ( $args as $key => $arg ) {
+				if ( is_array( $arg ) && ! empty( $arg['required'] ) && null === $this->get_param( $key ) ) {
+					$missing[] = $key;
+				}
+			}
+			if ( $missing ) {
+				return new WP_Error( 'rest_missing_callback_param', 'Missing parameter(s): ' . implode( ', ', $missing ), array( 'status' => 400 ) );
+			}
+			foreach ( $args as $key => $arg ) {
+				if ( ! is_array( $arg ) || empty( $arg['validate_callback'] ) || ! is_callable( $arg['validate_callback'] ) ) {
+					continue;
+				}
+				$param = $this->get_param( $key );
+				if ( null === $param ) {
+					continue;
+				}
+				$valid = call_user_func( $arg['validate_callback'], $param, $this, $key );
+				if ( false === $valid || is_wp_error( $valid ) ) {
+					return new WP_Error( 'rest_invalid_param', 'Invalid parameter(s): ' . $key, array( 'status' => 400 ) );
+				}
+			}
+			return true;
+		}
+
+		/**
+		 * Default a typed arg with no sanitize_callback to rest_parse_request_arg.
+		 *
+		 * @return true|WP_Error
+		 */
+		public function sanitize_params() {
+			$this->parse_json_params();
+			$args = isset( $this->attributes['args'] ) && is_array( $this->attributes['args'] ) ? $this->attributes['args'] : array();
+			foreach ( array( 'JSON', 'POST', 'GET' ) as $source ) {
+				if ( empty( $this->params[ $source ] ) || ! is_array( $this->params[ $source ] ) ) {
+					continue;
+				}
+				foreach ( $this->params[ $source ] as $key => $value ) {
+					if ( ! isset( $args[ $key ] ) || ! is_array( $args[ $key ] ) ) {
+						continue;
+					}
+					$param_args = $args[ $key ];
+					if ( ! array_key_exists( 'sanitize_callback', $param_args ) && ! empty( $param_args['type'] ) ) {
+						$param_args['sanitize_callback'] = 'rest_parse_request_arg';
+					}
+					if ( empty( $param_args['sanitize_callback'] ) || ! is_callable( $param_args['sanitize_callback'] ) ) {
+						continue;
+					}
+					$sanitized = call_user_func( $param_args['sanitize_callback'], $value, $this, $key );
+					if ( is_wp_error( $sanitized ) ) {
+						return new WP_Error( 'rest_invalid_param', 'Invalid parameter(s): ' . $key, array( 'status' => 400 ) );
+					}
+					$this->params[ $source ][ $key ] = $sanitized;
+				}
+			}
+			return true;
+		}
+
+		/**
+		 * @return void
+		 */
+		private function parse_json_params() {
+			if ( $this->json_parsed ) {
+				return;
+			}
+			$this->json_parsed = true;
+			$type = isset( $this->headers['content-type'] ) ? $this->headers['content-type'] : '';
+			if ( false === stripos( $type, 'application/json' ) || '' === $this->body ) {
+				return;
+			}
+			$decoded = json_decode( $this->body, true );
+			if ( is_array( $decoded ) ) {
+				$this->params['JSON'] = $decoded;
+			}
+		}
+	}
+}
+
+if ( ! function_exists( 'rest_do_request' ) ) {
+	/**
+	 * Dispatch one route the way WP_REST_Server::dispatch() does.
+	 *
+	 * Parameter errors are returned before the callback. rest_request_after_callbacks
+	 * still runs, which is where /ab/event marks the response no-store.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return array<string, mixed>|WP_REST_Response
+	 */
+	function rest_do_request( $request ) {
+		$route   = rtrim( (string) $request->get_route(), '/' );
+		$handler = null;
+		$routes  = isset( $GLOBALS['rwgc_test_routes'] ) && is_array( $GLOBALS['rwgc_test_routes'] ) ? $GLOBALS['rwgc_test_routes'] : array();
+		foreach ( $routes as $candidate ) {
+			if ( ! is_array( $candidate ) || ! isset( $candidate['namespace'], $candidate['route'], $candidate['args'] ) ) {
+				continue;
+			}
+			$full = '/' . trim( (string) $candidate['namespace'], '/' ) . '/' . ltrim( (string) $candidate['route'], '/' );
+			$full = rtrim( $full, '/' );
+			if ( $full !== $route || ! is_array( $candidate['args'] ) ) {
+				continue;
+			}
+			$methods = isset( $candidate['args']['methods'] ) ? $candidate['args']['methods'] : 'GET';
+			$matches = false;
+			if ( is_string( $methods ) ) {
+				$matches = strtoupper( $methods ) === $request->get_method();
+			} elseif ( is_array( $methods ) ) {
+				$matches = ! empty( $methods[ $request->get_method() ] ) || in_array( $request->get_method(), $methods, true );
+			}
+			if ( $matches ) {
+				$handler = $candidate['args'];
+				break;
+			}
+		}
+		if ( null === $handler ) {
+			return array(
+				'status'  => 404,
+				'headers' => array(),
+				'body'    => array(
+					'code'    => 'rest_no_route',
+					'message' => 'No route was found matching the URL and request method.',
+				),
+			);
+		}
+
+		$request->set_attributes( $handler );
+		$response = null;
+		$valid    = $request->has_valid_params();
+		if ( is_wp_error( $valid ) ) {
+			$response = $valid;
+		} else {
+			$sanitized = $request->sanitize_params();
+			if ( is_wp_error( $sanitized ) ) {
+				$response = $sanitized;
+			}
+		}
+
+		$response = rwgc_test_apply_hook( 'rest_request_before_callbacks', $response, $handler, $request );
+		if ( ! is_wp_error( $response ) && ! empty( $handler['permission_callback'] ) && is_callable( $handler['permission_callback'] ) ) {
+			$permission = call_user_func( $handler['permission_callback'], $request );
+			if ( is_wp_error( $permission ) || false === $permission || null === $permission ) {
+				$response = is_wp_error( $permission ) ? $permission : new WP_Error( 'rest_forbidden', 'Sorry, you are not allowed to do that.', array( 'status' => 401 ) );
+			}
+		}
+		if ( ! is_wp_error( $response ) && ! empty( $handler['callback'] ) && is_callable( $handler['callback'] ) ) {
+			$response = call_user_func( $handler['callback'], $request );
+		}
+		$response = rwgc_test_apply_hook( 'rest_request_after_callbacks', $response, $handler, $request );
+		if ( is_wp_error( $response ) ) {
+			return array(
+				'status'  => 400,
+				'headers' => array(),
+				'body'    => array(
+					'code'    => (string) $response->get_error_code(),
+					'message' => (string) $response->get_error_message(),
+				),
+			);
+		}
+		return $response;
+	}
+}
+
+if ( ! function_exists( 'rwgc_test_apply_hook' ) ) {
+	/**
+	 * @param string $hook  Hook.
+	 * @param mixed  $value First argument.
+	 * @param mixed  ...$args Further arguments.
+	 * @return mixed
+	 */
+	function rwgc_test_apply_hook( $hook, $value, ...$args ) {
+		$callbacks = isset( $GLOBALS['rwgc_test_hook_callbacks'][ $hook ] ) && is_array( $GLOBALS['rwgc_test_hook_callbacks'][ $hook ] )
+			? $GLOBALS['rwgc_test_hook_callbacks'][ $hook ]
+			: array();
+		foreach ( $callbacks as $callback ) {
+			if ( is_callable( $callback ) ) {
+				$value = call_user_func( $callback, $value, ...$args );
+			}
+		}
+		return $value;
 	}
 }
 
@@ -502,6 +1036,76 @@ final class RWGC_AB_TrackerTest extends TestCase {
 		$this->assertStringContainsString( 'rwgc_ab_daily', (string) file_get_contents( $root . '/uninstall.php' ) );
 	}
 
+	public function test_rest_server_accepts_the_json_number_the_script_sends_and_a_numeric_string(): void {
+		$id = $this->test_id(
+			array(
+				'type'     => 'click',
+				'selector' => '.buy',
+			)
+		);
+		$this->boot_event_route();
+		$args = $this->event_route_args();
+		$this->assertContains( 'integer', (array) $args['test']['type'] );
+		$this->assertContains( 'string', (array) $args['test']['type'] );
+
+		$js = (string) file_get_contents( dirname( __DIR__, 2 ) . '/assets/js/rwgc-ab.js' );
+		$this->assertStringContainsString( 'test: Number(testId)', $js );
+		$this->assertStringContainsString( 'type: String(type)', $js );
+
+		$this->assign_visitor( $id, 'b', '0123456789abcdef0123456789abcdef' );
+		$number = $this->dispatch_event_body(
+			wp_json_encode(
+				array(
+					'test' => $id,
+					'type' => 'view',
+				)
+			)
+		);
+		$this->assertSame( 200, $number['status'] );
+		$this->assertTrue( $number['body']['counted'] );
+		$this->assertIsInt( $number['body']['test'] );
+		$this->assertStringContainsString( 'no-store', $number['headers']['Cache-Control'] );
+		$this->assertSame( 1, $this->totals( $id, 'b' )['views'] );
+
+		$this->assign_visitor( $id, 'b', 'abcdefabcdefabcdefabcdefabcdefab' );
+		$string = $this->dispatch_event_body( '{"test":"' . $id . '","type":"view"}' );
+		$this->assertSame( 200, $string['status'] );
+		$this->assertTrue( $string['body']['counted'] );
+		$this->assertIsInt( $string['body']['test'] );
+		$this->assertSame( $id, $string['body']['test'] );
+		$this->assertSame( 2, $this->totals( $id, 'b' )['views'] );
+	}
+
+	public function test_core_validation_errors_on_the_event_route_are_no_store(): void {
+		$id = $this->test_id(
+			array(
+				'type'     => 'click',
+				'selector' => '.buy',
+			)
+		);
+		$this->boot_event_route();
+		$this->assign( $id, 'a' );
+		$rejected = $this->dispatch_event_body(
+			wp_json_encode(
+				array(
+					'test' => $id,
+					'type' => 1,
+				)
+			)
+		);
+		$this->assertSame( 400, $rejected['status'] );
+		$this->assertSame( 'rest_invalid_param', $rejected['body']['code'] );
+		$this->assertStringContainsString( 'no-store', $rejected['headers']['Cache-Control'] );
+		$this->assertSame( 0, $this->totals( $id, 'a' )['views'] );
+		$this->assertSame( 0, $this->totals( $id, 'a' )['conversions'] );
+
+		$bad_test = $this->dispatch_event_body( '{"test":"nope","type":"view"}' );
+		$this->assertSame( 400, $bad_test['status'] );
+		$this->assertSame( 'rest_invalid_param', $bad_test['body']['code'] );
+		$this->assertStringContainsString( 'no-store', $bad_test['headers']['Cache-Control'] );
+		$this->assertSame( 0, $this->totals( $id, 'a' )['views'] );
+	}
+
 	public function test_nothing_persists_the_address_or_an_account_id(): void {
 		$id = $this->test_id(
 			array(
@@ -597,6 +1201,64 @@ final class RWGC_AB_TrackerTest extends TestCase {
 		$this->assertStringContainsString( "postEvent(testId, 'conversion')", $js );
 		$this->assertStringContainsString( 'data-rwgc-ab-goal', $js );
 		$this->assertStringNotContainsString( 'X-WP-Nonce', $js );
+	}
+
+	/**
+	 * @param array<string, string> $goal   Goal config.
+	 * @param string                $status Post status.
+	 * @return int
+	 */
+	/**
+	 * @return void
+	 */
+	private function boot_event_route() {
+		$GLOBALS['rwgc_test_hook_callbacks'] = array();
+		$GLOBALS['rwgc_test_routes']         = array();
+		RWGC_REST::init();
+		RWGC_REST::register_ab_routes();
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function event_route_args() {
+		foreach ( $GLOBALS['rwgc_test_routes'] as $route ) {
+			if ( is_array( $route ) && isset( $route['route'] ) && '/ab/event' === $route['route'] ) {
+				return isset( $route['args']['args'] ) && is_array( $route['args']['args'] ) ? $route['args']['args'] : array();
+			}
+		}
+		return array();
+	}
+
+	/**
+	 * @param string $json JSON body, the bytes the browser posts.
+	 * @return array<string, mixed>
+	 */
+	private function dispatch_event_body( $json ) {
+		RWGC_AB_Assignment::reset_request_state();
+		$request = new WP_REST_Request( 'POST', '/reactwoo-geocore/v1/ab/event' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body( $json );
+		$result = rest_do_request( $request );
+		if ( is_array( $result ) ) {
+			return $result;
+		}
+		$body = method_exists( $result, 'get_data' ) ? $result->get_data() : array();
+		$headers = array();
+		if ( method_exists( $result, 'get_headers' ) ) {
+			$headers = $result->get_headers();
+		}
+		$cache = '';
+		if ( isset( $headers['Cache-Control'] ) ) {
+			$cache = is_array( $headers['Cache-Control'] ) ? implode( ', ', $headers['Cache-Control'] ) : (string) $headers['Cache-Control'];
+		}
+		return array(
+			'status'  => method_exists( $result, 'get_status' ) ? (int) $result->get_status() : 0,
+			'headers' => array(
+				'Cache-Control' => $cache,
+			),
+			'body'    => is_array( $body ) ? $body : array(),
+		);
 	}
 
 	/**

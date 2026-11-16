@@ -16,6 +16,14 @@ class RWGC_REST {
 	 */
 	public static function init() {
 		add_action( 'rest_api_init', array( __CLASS__, 'register_routes' ) );
+		if ( function_exists( 'add_filter' ) ) {
+			// Validation errors return before the route callback, so the callback
+			// cannot set Cache-Control. Both hooks see that result: dispatch
+			// applies rest_request_after_callbacks, and the HTTP server applies
+			// rest_post_dispatch. The request is the third argument of each.
+			add_filter( 'rest_request_after_callbacks', array( __CLASS__, 'nocache_ab_event_result' ), 10, 3 );
+			add_filter( 'rest_post_dispatch', array( __CLASS__, 'nocache_ab_event_result' ), 10, 3 );
+		}
 	}
 
 	/**
@@ -290,13 +298,15 @@ class RWGC_REST {
 				'permission_callback' => array( __CLASS__, 'permissions_ab_event' ),
 				'args'                => array(
 					'test' => array(
-						'description' => __( 'A/B test id. A positive integer.', 'reactwoo-geocore' ),
-						'required'    => false,
-						'type'        => 'string',
+						'description'       => __( 'A/B test id. A positive integer.', 'reactwoo-geocore' ),
+						'required'          => true,
+						'type'              => array( 'integer', 'string' ),
+						'validate_callback' => array( 'RWGC_AB_Tracker', 'rest_validate_test_param' ),
+						'sanitize_callback' => array( 'RWGC_AB_Tracker', 'rest_sanitize_test_param' ),
 					),
 					'type' => array(
 						'description' => __( 'view or conversion.', 'reactwoo-geocore' ),
-						'required'    => false,
+						'required'    => true,
 						'type'        => 'string',
 					),
 				),
@@ -368,6 +378,98 @@ class RWGC_REST {
 	public static function permissions_ab_event( $request ) {
 		unset( $request );
 		return true;
+	}
+
+	/**
+	 * Every /ab/event result is no-store, including core parameter errors.
+	 *
+	 * `rest_request_after_callbacks` passes `( $result, $handler, $request )`.
+	 * `rest_post_dispatch` passes `( $result, $server, $request )`.
+	 *
+	 * @param mixed $result  Route result or WP_Error.
+	 * @param mixed $unused  Handler or server. Unused.
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
+	public static function nocache_ab_event_result( $result, $unused, $request ) {
+		unset( $unused );
+		if ( ! self::is_ab_event_request( $request ) ) {
+			return $result;
+		}
+		return self::with_event_no_store( $result );
+	}
+
+	/**
+	 * @param mixed $request Request.
+	 * @return bool
+	 */
+	private static function is_ab_event_request( $request ) {
+		if ( ! is_object( $request ) || ! method_exists( $request, 'get_route' ) ) {
+			return false;
+		}
+		$route = rtrim( (string) $request->get_route(), '/' );
+		return '/reactwoo-geocore/v1/ab/event' === $route;
+	}
+
+	/**
+	 * @param mixed $result Route result or WP_Error.
+	 * @return mixed
+	 */
+	private static function with_event_no_store( $result ) {
+		if ( function_exists( 'is_wp_error' ) && is_wp_error( $result ) ) {
+			$result = self::error_to_event_response( $result );
+		}
+		$headers = class_exists( 'RWGC_AB_Tracker', false )
+			? RWGC_AB_Tracker::event_no_store_headers()
+			: array(
+				'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0, private',
+			);
+		if ( is_object( $result ) && method_exists( $result, 'header' ) ) {
+			foreach ( $headers as $name => $value ) {
+				$result->header( $name, $value );
+			}
+			return $result;
+		}
+		if ( is_array( $result ) ) {
+			if ( ! isset( $result['headers'] ) || ! is_array( $result['headers'] ) ) {
+				$result['headers'] = array();
+			}
+			foreach ( $headers as $name => $value ) {
+				$result['headers'][ $name ] = $value;
+			}
+		}
+		return $result;
+	}
+
+	/**
+	 * @param mixed $error WP_Error from core parameter checks.
+	 * @return WP_REST_Response|array<string, mixed>
+	 */
+	private static function error_to_event_response( $error ) {
+		$status = 400;
+		$data   = array( 'status' => 400 );
+		if ( is_object( $error ) && method_exists( $error, 'get_error_data' ) ) {
+			$stored = $error->get_error_data();
+			if ( is_array( $stored ) ) {
+				$data = $stored;
+				if ( isset( $stored['status'] ) ) {
+					$status = (int) $stored['status'];
+				}
+			}
+		}
+		$body = array(
+			'code'    => is_object( $error ) && method_exists( $error, 'get_error_code' ) ? (string) $error->get_error_code() : 'rest_invalid_param',
+			'message' => is_object( $error ) && method_exists( $error, 'get_error_message' ) ? (string) $error->get_error_message() : '',
+			'data'    => $data,
+		);
+		if ( class_exists( 'WP_REST_Response' ) ) {
+			return new WP_REST_Response( $body, $status );
+		}
+		return array(
+			'status'  => $status,
+			'headers' => array(),
+			'body'    => $body,
+		);
 	}
 
 	/**

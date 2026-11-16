@@ -84,9 +84,10 @@
 				Accept: 'application/json',
 				'Content-Type': 'application/json'
 			},
+			// test is always a JSON number. type is always a string.
 			body: JSON.stringify({
-				test: testId,
-				type: type
+				test: Number(testId),
+				type: String(type)
 			})
 		}).catch(function () {});
 	}

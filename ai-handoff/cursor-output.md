@@ -3,6 +3,31 @@
 ## Status
 done
 
+QA fix on free A/B step 7 (PR #117). Not tagged. Version stays 1.9.26. Not merged.
+
+## Root cause
+`/ab/event` registered `test` as type `string`. `assets/js/rwgc-ab.js` sends that field as a JSON number. WordPress `rest_parse_request_arg()` rejects the number with `400 rest_invalid_param` before the callback, so no view is stored. A URL goal also stays at zero because it requires `.v` from that view. Core's own 400 did not send `Cache-Control: no-store`, because those headers were set only inside the callback.
+
+## Files changed
+- `includes/class-rwgc-rest.php` — `test` is type `integer|string`, with validate and sanitize callbacks that keep a positive int. `type` stays a string. `rest_request_after_callbacks` and `rest_post_dispatch` mark every `/ab/event` result no-store, including a `WP_Error` from core.
+- `includes/ab/class-rwgc-ab-tracker.php` — `rest_validate_test_param()` and `rest_sanitize_test_param()`. Shared no-store header list.
+- `assets/js/rwgc-ab.js` — the body is always `{ test: Number(testId), type: String(type) }`.
+- `tests/AB/RWGC_AB_TrackerTest.php` — `rest_do_request()` runs the same parameter check as `WP_REST_Request::sanitize_params()`. A JSON number and a numeric string both return 200 and increment the view. A core `rest_invalid_param` response is no-store and does not increment.
+- `CHANGELOG.md` — Unreleased fix.
+
+## Not changed
+- Plugin version (1.9.26). No tag. No merge.
+- Daily table schema. Option `rwgc_ab_db_version` stays `1`.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 297 tests, 22380 assertions, OK.
+
+## Remaining errors
+None from PHPUnit. CI is the remaining check.
+
+## Status
+done
+
 Free A/B step 7: view and goal counting. Not tagged. Version stays 1.9.26. Not merged.
 
 ## Files changed

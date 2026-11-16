@@ -72,6 +72,68 @@ class RWGC_AB_Tracker {
 	}
 
 	/**
+	 * Headers for every /ab/event response, including a rejected parameter.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function event_no_store_headers() {
+		return array(
+			'Cache-Control'             => 'no-store, no-cache, must-revalidate, max-age=0, private',
+			'Pragma'                    => 'no-cache',
+			'Expires'                   => 'Wed, 11 Jan 1984 05:00:00 GMT',
+			'X-LiteSpeed-Cache-Control' => 'no-cache',
+			'X-Robots-Tag'              => 'noindex',
+		);
+	}
+
+	/**
+	 * Accept a JSON number or a numeric string. Anything else is rejected.
+	 *
+	 * @param mixed           $value   Raw test id.
+	 * @param WP_REST_Request $request Request.
+	 * @param string          $param   Parameter name.
+	 * @return true|WP_Error
+	 */
+	public static function rest_validate_test_param( $value, $request = null, $param = '' ) {
+		unset( $request, $param );
+		if ( self::positive_test_id( $value ) > 0 ) {
+			return true;
+		}
+		if ( class_exists( 'WP_Error' ) ) {
+			return new WP_Error(
+				'rwgc_ab_invalid_test',
+				__( 'The test id must be a positive integer.', 'reactwoo-geocore' ),
+				array( 'status' => 400 )
+			);
+		}
+		return false;
+	}
+
+	/**
+	 * Cast a JSON number or a numeric string to a positive int.
+	 *
+	 * @param mixed           $value   Raw test id.
+	 * @param WP_REST_Request $request Request.
+	 * @param string          $param   Parameter name.
+	 * @return int|WP_Error
+	 */
+	public static function rest_sanitize_test_param( $value, $request = null, $param = '' ) {
+		unset( $request, $param );
+		$id = self::positive_test_id( $value );
+		if ( $id > 0 ) {
+			return $id;
+		}
+		if ( class_exists( 'WP_Error' ) ) {
+			return new WP_Error(
+				'rwgc_ab_invalid_test',
+				__( 'The test id must be a positive integer.', 'reactwoo-geocore' ),
+				array( 'status' => 400 )
+			);
+		}
+		return 0;
+	}
+
+	/**
 	 * Click-goal selector attribute for an arm wrapper. Empty when the goal is a URL.
 	 *
 	 * @param int|string $test_id Test id.
@@ -530,13 +592,7 @@ class RWGC_AB_Tracker {
 	 * @return array<string, string>
 	 */
 	private static function no_store_headers( array $limit ) {
-		$headers = array(
-			'Cache-Control'             => 'no-store, no-cache, must-revalidate, max-age=0, private',
-			'Pragma'                    => 'no-cache',
-			'Expires'                   => 'Wed, 11 Jan 1984 05:00:00 GMT',
-			'X-LiteSpeed-Cache-Control' => 'no-cache',
-			'X-Robots-Tag'              => 'noindex',
-		);
+		$headers = self::event_no_store_headers();
 		if ( empty( $limit['allowed'] ) ) {
 			$headers['Retry-After'] = (string) (int) $limit['retry_after'];
 		}
