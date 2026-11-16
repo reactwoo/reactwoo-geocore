@@ -256,6 +256,23 @@ class RWGC_AB_Tests {
 	}
 
 	/**
+	 * Arm an ended test shows to every visitor. Empty when the test is still running.
+	 *
+	 * An ended test with no stored arm shows A.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string a|b|empty
+	 */
+	public static function kept_variant( $post_id ) {
+		$row = self::get( $post_id );
+		if ( null === $row || self::STATUS_ENDED !== (string) $row['status'] ) {
+			return '';
+		}
+		$kept = isset( $row['config']['kept'] ) ? sanitize_key( (string) $row['config']['kept'] ) : '';
+		return ( 'b' === $kept ) ? 'b' : 'a';
+	}
+
+	/**
 	 * Stop a test. Optional $kept must be one of the stored variant ids.
 	 *
 	 * @param int    $post_id Post ID.

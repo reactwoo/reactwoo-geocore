@@ -3,6 +3,41 @@
 ## Status
 done
 
+Free A/B results and significance (PR 8). Not tagged. Version stays 1.9.27.
+
+## Files changed
+- `includes/ab/class-rwgc-ab-stats.php` — two-proportion z-test with the same maths as `RWGO_Winner_Policy`. All-time totals, uplift of B over A, p-value, verdict, and a 30-day series.
+- `includes/ab/class-rwgc-ab-db.php` — `rows_for_test()`.
+- `includes/ab/class-rwgc-ab-tests.php` — `kept_variant()` for an ended test.
+- `includes/ab/class-rwgc-ab-admin.php`, `admin/views/ab-test-results.php`, `admin/views/ab-tests-list.php` — results screen. End and keep A / B use a nonce bound to the arm, `manage_options`, and a confirm step. Keeping the other arm later switches what visitors see.
+- `includes/class-rwgc-rest.php` — `GET /reactwoo-geocore/v1/ab/results`, administrators only, no-store.
+- `includes/ab/class-rwgc-ab-cache.php`, shortcode, Gutenberg, `assets/js/rwgc-ab.js` — an ended test prints the kept arm in server mode and fragment mode, does not add a LiteSpeed vary, and the page script does not count it. `/ab/event` and URL goals already ignore a test that is not running.
+- `tests/AB/RWGC_AB_ResultsTest.php` — known z and p, the Optimise cross-check, REST permission and no-store, end/switch, counting stop, and both cache modes.
+- `CHANGELOG.md`, `readme.txt` — Unreleased notes.
+
+## Not changed
+- Plugin version (1.9.27). No tag. No release.
+- No licence check and no cap in `includes/ab`.
+
+## Commands
+- `php /tmp/phpunit.phar -c phpunit.xml.dist` — 304 tests, 22564 assertions, OK.
+- Geo Core CI scripts (rule evaluator, rules, library lookup, visibility status, GeoIP, Elementor preview, satellite updater, WordPress.org build, Elementor rule status, Geo Content block, A/B block, zip JS order, zip reproducible) — passed.
+
+## QA seed
+On a staging site, open Experiences → A/B tests → Results for a test id, or insert rows (replace the prefix and the id):
+
+```sql
+INSERT INTO wp_rwgc_ab_daily (test_id, variant, day, views, conversions) VALUES
+(123, 'a', CURDATE(), 120, 12),
+(123, 'b', CURDATE(), 120, 24)
+ON DUPLICATE KEY UPDATE views = VALUES(views), conversions = VALUES(conversions);
+```
+
+Under 100 views on either arm the verdict is "Not enough data (<100 per arm)". Use 1000 views and 100 vs 200 conversions to see "B is better (95%)".
+
+## Status
+done
+
 Geo Core 1.9.27 is prepared as a pull request. Not merged and not tagged. It ships everything merged after v1.9.26: #108 (reproducible publish zip) and free A/B testing #109, #111–#117.
 
 ## Files changed

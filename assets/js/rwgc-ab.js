@@ -168,6 +168,10 @@
 				if (!testId || testId < 1) {
 					return;
 				}
+				// An ended test already shows the kept arm. Do not swap it or count it.
+				if (mode === 'ended') {
+					return;
+				}
 				if (mode === 'server') {
 					watchView(node);
 					return;

@@ -110,6 +110,7 @@ $rwgc_ab_notice = isset( $rwgc_ab_notice ) ? sanitize_key( (string) $rwgc_ab_not
 							<?php endif; ?>
 						</td>
 						<td>
+							<a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-ab-tests&test_id=' . $rwgc_ab_id ) ); ?>"><?php esc_html_e( 'Results', 'reactwoo-geocore' ); ?></a>
 							<?php if ( class_exists( 'RWGC_AB_Tests', false ) && RWGC_AB_Tests::STATUS_ENDED !== $rwgc_ab_status ) : ?>
 								<a class="button button-secondary" href="<?php echo esc_url( $rwgc_ab_end ); ?>"><?php esc_html_e( 'End', 'reactwoo-geocore' ); ?></a>
 							<?php endif; ?>

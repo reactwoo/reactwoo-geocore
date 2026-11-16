@@ -23,6 +23,8 @@ class RWGC_REST {
 			// rest_post_dispatch. The request is the third argument of each.
 			add_filter( 'rest_request_after_callbacks', array( __CLASS__, 'nocache_ab_event_result' ), 10, 3 );
 			add_filter( 'rest_post_dispatch', array( __CLASS__, 'nocache_ab_event_result' ), 10, 3 );
+			add_filter( 'rest_request_after_callbacks', array( __CLASS__, 'nocache_ab_results_result' ), 10, 3 );
+			add_filter( 'rest_post_dispatch', array( __CLASS__, 'nocache_ab_results_result' ), 10, 3 );
 		}
 	}
 
@@ -291,6 +293,23 @@ class RWGC_REST {
 
 		register_rest_route(
 			'reactwoo-geocore/v1',
+			'/ab/results',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( __CLASS__, 'get_ab_results' ),
+				'permission_callback' => array( __CLASS__, 'permissions_ab_results' ),
+				'args'                => array(
+					'test' => array(
+						'description' => __( 'A/B test id. Omit it to list every test.', 'reactwoo-geocore' ),
+						'required'    => false,
+						'type'        => 'string',
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			'reactwoo-geocore/v1',
 			'/ab/event',
 			array(
 				'methods'             => 'POST',
@@ -378,6 +397,151 @@ class RWGC_REST {
 	public static function permissions_ab_event( $request ) {
 		unset( $request );
 		return true;
+	}
+
+	/**
+	 * Administrators only. The same capability as Experiences → A/B tests.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return bool
+	 */
+	public static function permissions_ab_results( $request ) {
+		unset( $request );
+		return class_exists( 'RWGC_AB_Admin', false ) && RWGC_AB_Admin::user_can_manage();
+	}
+
+	/**
+	 * GET /ab/results. Not stored. Optional `test` limits the payload to one test.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|array<string, mixed>
+	 */
+	public static function get_ab_results( $request ) {
+		$headers = self::ab_results_headers();
+		if ( ! self::permissions_ab_results( $request ) ) {
+			return self::ab_results_http(
+				array(
+					'status'  => 403,
+					'headers' => $headers,
+					'body'    => array(
+						'code'    => 'rest_forbidden',
+						'message' => __( 'Sorry, you are not allowed to do that.', 'reactwoo-geocore' ),
+					),
+				)
+			);
+		}
+
+		$test = null;
+		if ( is_object( $request ) && method_exists( $request, 'get_param' ) ) {
+			$test = $request->get_param( 'test' );
+		}
+		if ( null !== $test && '' !== $test && false !== $test ) {
+			$test_id = class_exists( 'RWGC_AB_Cache', false ) ? RWGC_AB_Cache::positive_test_id( $test ) : 0;
+			if ( $test_id <= 0 ) {
+				return self::ab_results_http(
+					array(
+						'status'  => 400,
+						'headers' => $headers,
+						'body'    => array(
+							'code'    => 'rwgc_ab_invalid_test',
+							'message' => __( 'The test id must be a positive integer.', 'reactwoo-geocore' ),
+						),
+					)
+				);
+			}
+			$one = class_exists( 'RWGC_AB_Stats', false ) ? RWGC_AB_Stats::for_test( $test_id ) : null;
+			if ( null === $one ) {
+				return self::ab_results_http(
+					array(
+						'status'  => 404,
+						'headers' => $headers,
+						'body'    => array(
+							'code'    => 'rwgc_ab_not_found',
+							'message' => __( 'That A/B test was not found.', 'reactwoo-geocore' ),
+						),
+					)
+				);
+			}
+			return self::ab_results_http(
+				array(
+					'status'  => 200,
+					'headers' => $headers,
+					'body'    => $one,
+				)
+			);
+		}
+
+		$tests = class_exists( 'RWGC_AB_Stats', false ) ? RWGC_AB_Stats::collection() : array();
+		return self::ab_results_http(
+			array(
+				'status'  => 200,
+				'headers' => $headers,
+				'body'    => array(
+					'tests' => $tests,
+				),
+			)
+		);
+	}
+
+	/**
+	 * Results are not stored, including a rejected permission or a missing test.
+	 *
+	 * @param mixed $result  Route result or WP_Error.
+	 * @param mixed $unused  Handler or server. Unused.
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
+	public static function nocache_ab_results_result( $result, $unused, $request ) {
+		unset( $unused );
+		if ( ! self::is_ab_results_request( $request ) ) {
+			return $result;
+		}
+		return self::with_event_no_store( $result );
+	}
+
+	/**
+	 * @param mixed $request Request.
+	 * @return bool
+	 */
+	private static function is_ab_results_request( $request ) {
+		if ( ! is_object( $request ) || ! method_exists( $request, 'get_route' ) ) {
+			return false;
+		}
+		$route = rtrim( (string) $request->get_route(), '/' );
+		return '/reactwoo-geocore/v1/ab/results' === $route;
+	}
+
+	/**
+	 * @return array<string, string>
+	 */
+	private static function ab_results_headers() {
+		if ( class_exists( 'RWGC_AB_Tracker', false ) ) {
+			return RWGC_AB_Tracker::event_no_store_headers();
+		}
+		return array(
+			'Cache-Control'             => 'no-store, no-cache, must-revalidate, max-age=0, private',
+			'Pragma'                    => 'no-cache',
+			'Expires'                   => 'Wed, 11 Jan 1984 05:00:00 GMT',
+			'X-LiteSpeed-Cache-Control' => 'no-cache',
+			'X-Robots-Tag'              => 'noindex',
+		);
+	}
+
+	/**
+	 * @param array{status:int,headers:array<string,string>,body:array<string,mixed>} $built Result.
+	 * @return \WP_REST_Response|array<string, mixed>
+	 */
+	private static function ab_results_http( array $built ) {
+		if ( class_exists( 'WP_REST_Response' ) ) {
+			$response = new \WP_REST_Response( $built['body'], (int) $built['status'] );
+			if ( method_exists( $response, 'header' ) && isset( $built['headers'] ) && is_array( $built['headers'] ) ) {
+				foreach ( $built['headers'] as $name => $value ) {
+					$response->header( $name, $value );
+				}
+			}
+			return $response;
+		}
+		return $built;
 	}
 
 	/**

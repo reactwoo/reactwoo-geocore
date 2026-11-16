@@ -16,6 +16,10 @@
  * assets/js/rwgc-ab.js loads the assigned arm from the no-store render route
  * and swaps it in only when the arm is B, so an A visitor never sees B.
  *
+ * An ended test prints the kept arm for every visitor, in server mode and in
+ * fragment mode. That response is not marked private, and it is not added to
+ * the LiteSpeed vary map, so a previous per-arm entry is not reused.
+ *
  * Renderers in later releases call rwgc_ab_render_test() and print the result.
  *
  * @package ReactWoo_Geo_Core
@@ -181,7 +185,14 @@ class RWGC_AB_Cache {
 	public static function render( $test_id, array $arms ) {
 		$test_id = absint( $test_id );
 		$arms    = self::arm_html_map( $arms );
-		if ( $test_id <= 0 || ! self::test_is_running( $test_id ) ) {
+		if ( $test_id <= 0 ) {
+			return isset( $arms['a'] ) ? $arms['a'] : '';
+		}
+		if ( ! self::test_is_running( $test_id ) ) {
+			$kept = self::kept_arm( $test_id );
+			if ( '' !== $kept ) {
+				return self::render_kept( $test_id, $arms, $kept );
+			}
 			return isset( $arms['a'] ) ? $arms['a'] : '';
 		}
 
@@ -360,12 +371,28 @@ class RWGC_AB_Cache {
 		}
 		$test_id = $parsed;
 		if ( ! self::test_is_running( $test_id ) ) {
+			$kept = self::kept_arm( $test_id );
+			if ( '' === $kept ) {
+				return array(
+					'status'  => 404,
+					'headers' => $headers,
+					'body'    => array(
+						'code'    => 'rwgc_ab_not_running',
+						'message' => __( 'That A/B test is not running.', 'reactwoo-geocore' ),
+					),
+				);
+			}
+			$html = apply_filters( 'rwgc_ab_variant_html', '', $test_id, $kept );
+			if ( ! is_string( $html ) ) {
+				$html = '';
+			}
 			return array(
-				'status'  => 404,
+				'status'  => 200,
 				'headers' => $headers,
 				'body'    => array(
-					'code'    => 'rwgc_ab_not_running',
-					'message' => __( 'That A/B test is not running.', 'reactwoo-geocore' ),
+					'test' => $test_id,
+					'arm'  => $kept,
+					'html' => self::escape_variant_html( $html ),
 				),
 			);
 		}
@@ -619,6 +646,46 @@ class RWGC_AB_Cache {
 	 */
 	private static function emit_http_headers() {
 		return (bool) apply_filters( 'rwgc_ab_emit_http_headers', true );
+	}
+
+	/**
+	 * Kept arm of an ended test. Empty when the test is still running or missing.
+	 *
+	 * @param int $test_id Test id.
+	 * @return string a|b|empty
+	 */
+	private static function kept_arm( $test_id ) {
+		if ( ! class_exists( 'RWGC_AB_Tests', false ) ) {
+			return '';
+		}
+		$kept = RWGC_AB_Tests::kept_variant( $test_id );
+		return ( 'a' === $kept || 'b' === $kept ) ? $kept : '';
+	}
+
+	/**
+	 * The same arm for every visitor. No cookie, no beacon, and no per-arm vary.
+	 *
+	 * Fragment mode does not print the variant A placeholder. A cached page from
+	 * before the test ended can still ask the render route, which returns this arm.
+	 *
+	 * @param int                  $test_id Test id.
+	 * @param array<string,string> $arms    Escaped arms.
+	 * @param string               $kept    a|b.
+	 * @return string
+	 */
+	private static function render_kept( $test_id, array $arms, $kept ) {
+		$arm = ( 'b' === $kept && isset( $arms['b'] ) ) ? 'b' : 'a';
+		self::$last_directives = array(
+			'cache_control'  => '',
+			'donotcachepage' => false,
+			'vary'           => false,
+		);
+		$html = '<div class="rwgc-ab" data-rwgc-ab="' . esc_attr( (string) $test_id ) . '" data-rwgc-ab-mode="ended" data-rwgc-arm="' . esc_attr( $arm ) . '">' . ( isset( $arms[ $arm ] ) ? $arms[ $arm ] : '' ) . '</div>';
+		if ( function_exists( 'do_action' ) ) {
+			do_action( 'rwgc_ab_rendered_test', $test_id, $arm, 'ended' );
+		}
+		$filtered = apply_filters( 'rwgc_ab_render_html', $html, $test_id, $arm, 'ended' );
+		return is_string( $filtered ) ? $filtered : $html;
 	}
 
 	/**

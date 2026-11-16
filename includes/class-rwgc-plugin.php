@@ -157,6 +157,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/class-rwgc-admin-visibility-rules.php';
 		require_once RWGC_PATH . 'includes/ab/class-rwgc-ab-db.php';
 		require_once RWGC_PATH . 'includes/ab/class-rwgc-ab-tests.php';
+		require_once RWGC_PATH . 'includes/ab/class-rwgc-ab-stats.php';
 		require_once RWGC_PATH . 'includes/ab/class-rwgc-ab-admin.php';
 		require_once RWGC_PATH . 'includes/ab/class-rwgc-ab-assignment.php';
 		require_once RWGC_PATH . 'includes/ab/class-rwgc-ab-cache.php';

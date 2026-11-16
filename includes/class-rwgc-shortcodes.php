@@ -295,8 +295,9 @@ class RWGC_Shortcodes {
 	 * [rwgc_ab id="123"][rwgc_ab_variant]A[/rwgc_ab_variant][rwgc_ab_variant]B[/rwgc_ab_variant][/rwgc_ab]
 	 *
 	 * A running test is printed by rwgc_ab_render_test(), so the wrapper, the
-	 * cookie, and the cache headers match the Gutenberg block. An unknown or
-	 * inactive id prints the first variant and does not call that helper.
+	 * cookie, and the cache headers match the Gutenberg block. An ended test
+	 * uses the same helper and shows the kept arm to everyone. An unknown id
+	 * or a draft prints the first variant and does not call that helper.
 	 * Fragment mode reads each arm back through rwgc_ab_variant_html.
 	 *
 	 * @param array<string, mixed>|string $atts    Attributes.
@@ -322,7 +323,7 @@ class RWGC_Shortcodes {
 			self::remember_rendered_source( $test_id );
 		}
 
-		if ( self::test_is_running( $test_id ) && function_exists( 'rwgc_ab_render_test' ) ) {
+		if ( ( self::test_is_running( $test_id ) || self::test_is_ended( $test_id ) ) && function_exists( 'rwgc_ab_render_test' ) ) {
 			$arms = array(
 				'a' => self::expand_shortcodes( $parsed['a'] ),
 				'b' => self::expand_shortcodes( $parsed['b'] ),
@@ -594,6 +595,18 @@ class RWGC_Shortcodes {
 		}
 		$row = RWGC_AB_Tests::get( $test_id );
 		return is_array( $row ) && 'publish' === (string) ( isset( $row['status'] ) ? $row['status'] : '' );
+	}
+
+	/**
+	 * @param int $test_id Test id.
+	 * @return bool
+	 */
+	private static function test_is_ended( $test_id ) {
+		$test_id = absint( $test_id );
+		if ( $test_id <= 0 || ! class_exists( 'RWGC_AB_Tests', false ) ) {
+			return false;
+		}
+		return '' !== RWGC_AB_Tests::kept_variant( $test_id );
 	}
 
 	/**
