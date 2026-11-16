@@ -27,6 +27,15 @@ if ( ! function_exists( 'is_admin' ) ) {
 	}
 }
 
+if ( ! function_exists( 'is_feed' ) ) {
+	/**
+	 * @return bool
+	 */
+	function is_feed() {
+		return ! empty( $GLOBALS['rwgc_test_is_feed'] );
+	}
+}
+
 if ( ! function_exists( 'is_user_logged_in' ) ) {
 	/**
 	 * @return bool
@@ -374,12 +383,121 @@ final class RWGC_AB_AssignmentTest extends TestCase {
 		$this->assertNull( RWGC_AB_Assignment::last_cookie_header() );
 	}
 
+	public function test_template_buffer_is_only_for_a_singular_front_end_with_a_running_test(): void {
+		$this->running( array( 42 ) );
+		$this->assertTrue( RWGC_AB_Assignment::should_buffer_template() );
+
+		$level = ob_get_level();
+		RWGC_AB_Assignment::buffer_template();
+		if ( headers_sent() ) {
+			$this->assertSame( $level, ob_get_level() );
+		} else {
+			$this->assertSame( $level + 1, ob_get_level() );
+			echo '<header>theme</header>';
+			$this->assertFalse( headers_sent() );
+			RWGC_AB_Assignment::end_template_buffer();
+			$this->assertSame( $level, ob_get_level() );
+		}
+
+		$this->running( array() );
+		$this->assertFalse( RWGC_AB_Assignment::should_buffer_template() );
+
+		$this->running( array( 42 ) );
+		$GLOBALS['rwgc_test_filters']['rwgc_ab_buffer_template'] = static function () {
+			return false;
+		};
+		$this->assertFalse( RWGC_AB_Assignment::should_buffer_template() );
+		unset( $GLOBALS['rwgc_test_filters']['rwgc_ab_buffer_template'] );
+
+		$GLOBALS['rwgc_test_is_singular'] = false;
+		$this->assertFalse( RWGC_AB_Assignment::should_buffer_template() );
+		unset( $GLOBALS['rwgc_test_is_singular'] );
+
+		$_GET['download_file'] = '1';
+		$this->assertFalse( RWGC_AB_Assignment::should_buffer_template() );
+		unset( $_GET['download_file'] );
+
+		$GLOBALS['rwgc_test_is_admin'] = true;
+		RWGC_AB_Assignment::reset_request_state();
+		$this->assertFalse( RWGC_AB_Assignment::should_buffer_template() );
+		$GLOBALS['rwgc_test_is_admin'] = false;
+		RWGC_AB_Assignment::reset_request_state();
+
+		$_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
+		$this->assertFalse( RWGC_AB_Assignment::should_buffer_template() );
+
+		$_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 Chrome/120.0.0.0';
+		$_SERVER['REQUEST_METHOD']  = 'POST';
+		$this->assertFalse( RWGC_AB_Assignment::should_buffer_template() );
+
+		$_SERVER['REQUEST_METHOD']   = 'GET';
+		$GLOBALS['rwgc_test_is_feed'] = true;
+		$this->assertFalse( RWGC_AB_Assignment::should_buffer_template() );
+		unset( $GLOBALS['rwgc_test_is_feed'] );
+		$this->assertSame( '<header>theme</header>', RWGC_AB_Assignment::passthrough_buffer( '<header>theme</header>' ) );
+	}
+
+	/**
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_template_buffer_skips_rest_ajax_cron_and_feeds(): void {
+		$this->boot_isolated_request();
+		$this->running( array( 42 ) );
+		define( 'REST_REQUEST', true );
+		$this->assertFalse( RWGC_AB_Assignment::should_buffer_template() );
+	}
+
+	/**
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_template_buffer_skips_ajax(): void {
+		$this->boot_isolated_request();
+		$this->running( array( 42 ) );
+		define( 'DOING_AJAX', true );
+		$this->assertFalse( RWGC_AB_Assignment::should_buffer_template() );
+	}
+
+	/**
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_template_buffer_skips_cron(): void {
+		$this->boot_isolated_request();
+		$this->running( array( 42 ) );
+		define( 'DOING_CRON', true );
+		$this->assertFalse( RWGC_AB_Assignment::should_buffer_template() );
+	}
+
+	public function test_unbuffered_classic_theme_keeps_the_arm_after_the_header(): void {
+		$php    = PHP_BINARY;
+		$script = dirname( __DIR__ ) . '/AB/rwgc-ab-unbuffered-cookie.php';
+		foreach ( array( 'leak', 'buffer' ) as $mode ) {
+			$command = escapeshellarg( $php ) . ' -d output_buffering=0 -d implicit_flush=0 ' . escapeshellarg( $script ) . ' ' . $mode;
+			$output  = array();
+			$status  = 1;
+			exec( $command . ' 2>&1', $output, $status );
+			$text = implode( "\n", $output );
+			$this->assertSame( 0, $status, $mode . "\n" . $text );
+			if ( 'buffer' === $mode ) {
+				$this->assertStringContainsString( '<header>theme</header>', $text );
+				$this->assertMatchesRegularExpression( '/OK arm=[ab]/', $text );
+			}
+			if ( 'leak' === $mode ) {
+				$this->assertStringContainsString( 'LEAK headers=1 cookie_sent=0', $text );
+			}
+		}
+	}
+
 	public function test_plugin_assigns_when_a_test_is_rendered_not_on_send_headers(): void {
 		$root = dirname( __DIR__, 2 );
 		$src  = (string) file_get_contents( $root . '/includes/ab/class-rwgc-ab-assignment.php' );
 		$plugin = (string) file_get_contents( $root . '/includes/class-rwgc-plugin.php' );
 
 		$this->assertStringNotContainsString( "add_action( 'send_headers', array( __CLASS__, 'maybe_set_cookie' )", $src );
+		$this->assertStringContainsString( "add_action( 'template_redirect', array( __CLASS__, 'buffer_template' ), 0 );", $src );
+		$this->assertStringContainsString( "apply_filters( 'rwgc_ab_buffer_template'", $src );
 		$this->assertStringContainsString( 'RWGC_Decision_Experiment_Assigner::bucket(', $src );
 		$this->assertStringContainsString( "apply_filters( 'rwgc_ab_can_track'", $src );
 		$this->assertStringContainsString( 'includes/ab/class-rwgc-ab-assignment.php', $plugin );

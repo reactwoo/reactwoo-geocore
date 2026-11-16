@@ -3,6 +3,73 @@
 ## Status
 done
 
+Geo Core 1.9.28 readiness fixes, including the sticky-arm buffer from #118 and the RG-85 HMAC geo-cache from #120. Not merged and not tagged.
+
+## Files changed
+- `includes/ab/class-rwgc-ab-cache.php` — `GET /ab/render` returns the existing 404 (`rwgc_ab_not_running`, `no-store`, `X-LiteSpeed-Cache-Control: no-cache`) when a stored source post fails `is_post_publicly_viewable()` or has a password. Version fallback is 1.9.28.
+- `includes/class-rwgc-shortcodes.php`, `includes/integrations/gutenberg/class-rwgc-gutenberg-ab.php`, `includes/integrations/elementor/class-rwgc-elementor-ab.php` — the three HTML providers use the same public-source check. Gutenberg drops the `mt_rand` and `strip_tags` fallbacks. `excerpt_length` and `DONOTCACHEPAGE` have phpcs ignores.
+- `includes/ab/class-rwgc-ab-assignment.php` — singular front-end template buffer so `setcookie()` still runs after the theme header. Skips REST, AJAX, cron, feeds, admin, bots, and file or download responses. `rwgc_ab_buffer_template` disables it. Shutdown flushes the buffer and does not discard it.
+- `includes/ab/class-rwgc-ab-tests.php` — translators comment on `_n_noop()`, and `suppress_filters` removed.
+- `includes/ab/class-rwgc-ab-tracker.php` — `wp_parse_url()` only, and a `DONOTCACHEPAGE` ignore.
+- `includes/ab/class-rwgc-ab-db.php` — phpcs ignore on the interpolated daily-table name.
+- `admin/views/visibility-rules-edit.php`, `includes/class-rwgc-visibility-rule-editor-presenter.php`, `includes/class-rwgc-shortcodes.php` — phpcs ignores for the country-chip and `[rwgc_if]` `exclude` keys.
+- `includes/cloud/class-rwgc-cloud-telemetry.php` — privacy-policy text names `rwgc_ab`.
+- `readme.txt`, `CHANGELOG.md`, `reactwoo-geocore.php`, block asset versions, `RWGC_VERSION` fallbacks, and the version checks in tests — 1.9.28. Readme Description, Usage, FAQ, and External services cover free A/B testing and the cookie.
+- `composer.lock`, `vendor/composer/ca-bundle/src/CaBundle.php`, `vendor/composer/installed.json`, `vendor/composer/installed.php` — `composer/ca-bundle` 1.6.1.
+- `tests/AB/RWGC_AB_CacheTest.php` — draft, private, pending, future, password, trash, non-viewable type, and a published page.
+- `tests/AB/RWGC_AB_AssignmentTest.php`, `tests/AB/rwgc-ab-unbuffered-cookie.php` — buffer scope, and a PHP process with `output_buffering=0` where the header makes `headers_sent()` true unless the buffer is already open.
+- `tests/AB/RWGC_Elementor_ABTest.php` — the Elementor source page is a published post so the new check can see it.
+- `tests/bootstrap.php` — `post_password` on the post stub, and an `is_post_publicly_viewable()` stub.
+
+## Not changed
+- Pull request #121. This branch does not push to #118 or #120.
+- No merge and no tag.
+- `Tested up to` stays 7.1. Plugin URI and Author URI are unchanged.
+- Cache policy (`private, no-store`, `DONOTCACHEPAGE`, LiteSpeed vary) is unchanged. The buffer only holds the template so those headers can still be sent.
+
+## How #118 was incorporated
+#118 (`fc6cb85` on `cursor/critical-bug-resolution-34ff`) was two commits behind `4b8a080` and its CI failed. The changes were re-applied on current main instead of pushing that branch. `test_template_buffer_lets_a_classic_theme_set_the_cookie_after_the_header` expected a new output buffer, but in the full suite PHPUnit has already written to stdout, so `headers_sent()` is true, `buffer_template()` returns, and the level stays 1 against an expected 2. The replacement runs `php -d output_buffering=0` outside PHPUnit. Without the buffer, the theme header makes `headers_sent()` true and `setcookie()` does not run. With the buffer opened first, the cookie is sent and the next request keeps the same arm. #118 can be closed as superseded by this pull request.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 316 tests, 22552 assertions, OK, after folding #120. The render-source 404 tests and the HMAC rate-limit tests both passed.
+- `php tests/test-rwgc-wporg-build.php` — all WordPress.org build guards passed at 1.9.28 after the fold.
+- `python3 tests/test-rwgc-zip-js-order.py` — passed.
+- `python3 tests/test-rwgc-zip-reproducible.py` — passed. That test packages `HEAD` (still v1.9.27 until this commit), which is what the script is written to do.
+- `php -d output_buffering=0 tests/AB/rwgc-ab-unbuffered-cookie.php leak` and `buffer` — both exited 0. Leak reports `headers=1 cookie_sent=0`. Buffer prints the header and `OK arm=b`.
+
+## Remaining errors
+- Plugin Check 2.2.0 (`wp plugin check`) was not run here. This environment has no WordPress, wp-cli, or database.
+- The follow-up warning on `LIMIT {$limit}` in `purge_legacy_batch()` is fixed by passing `(int) $limit` as `%d`. `{$wpdb->options}` still has an ignore on the SQL line, because a table name cannot be a placeholder.
+
+## Status
+done
+
+RG-85 folded into 1.9.28 (was #120). Not tagged. Version stays 1.9.28.
+
+## Files changed
+- `includes/class-rwgc-cache.php` — transient name is HMAC-SHA256 of `geo|{ip}` with `wp_salt( 'auth' )` (same secret and empty-salt fallback as `RWGC_AB_Tracker::rate_transient_key()`), truncated to the 172-character transient limit. Stored payload drops `ip` and any copy of that address. `get()` puts the looked-up address back on the returned array. One-off batched delete of `_transient_rwgc_geo_v…` / `_transient_timeout_rwgc_geo_v…` rows (`rwgc_geo_v{version}_{32 hex}` only) via `admin_init` and `rwgc_purge_legacy_geo_cache`.
+- `includes/class-rwgc-plugin.php` — `RWGC_Cache::init()`.
+- `uninstall.php` — deletes the purge flag and cursor.
+- `tests/Engine/RWGC_CachePrivacyTest.php` — key is not md5(ip), changes with the site secret, stored values for IPv4 and IPv6 do not contain the address, legacy rows are deleted in batches and HMAC rows are kept.
+- `CHANGELOG.md`, `readme.txt` — the privacy note is under 1.9.28, not Unreleased.
+- `includes/ab/class-rwgc-ab-cache.php` — the render rate-limit key is an HMAC of the address, not `md5(ip)`. The public-source 404 gate is unchanged.
+
+## Not changed
+- Plugin version stays 1.9.28. No tag and no merge.
+- `rwgc_get_visitor_data()`, `rwgc_geo_data`, `rwgc_cache_ttl`, and `RWGC_Cache::get()` / `set()` / `delete()` / `clear_all()` signatures. Callers that read `ip` from visitor data (REST for administrators, Elementor preview, popup debug) still receive the current request address. It is not read from the transient.
+- A/B event rate-limit keys. The render limiter is the key that changed.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist --filter RWGC_CachePrivacyTest` — 10 tests, 85 assertions, OK.
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 307 tests, 22465 assertions, OK.
+- CI composer scripts (rule evaluator, rules, library lookup, visibility status, GeoIP, Elementor preview, Elementor rule status, Geo Content block, A/B block, zip JS order, zip reproducible, satellite updater) — passed.
+
+## Remaining errors
+- None from the RG-85 checks. The combined suite is re-run on this branch.
+
+## Status
+done
+
 Geo Core 1.9.27 is prepared as a pull request. Not merged and not tagged. It ships everything merged after v1.9.26: #108 (reproducible publish zip) and free A/B testing #109, #111–#117.
 
 ## Files changed

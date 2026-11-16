@@ -99,7 +99,7 @@ class RWGC_AB_Admin {
 				$handle,
 				RWGC_URL . 'assets/js/rwgc-ab-admin.js',
 				array(),
-				defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.9.27',
+				defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.9.28',
 				true
 			);
 		}

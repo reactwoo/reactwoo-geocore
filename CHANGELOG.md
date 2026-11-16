@@ -5,6 +5,20 @@ All notable changes to **reactwoo-geocore** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.28] - 2026-11-16
+
+### Security
+- `GET /reactwoo-geocore/v1/ab/render` does not return variant HTML when the source page is not publicly viewable. The source must pass `is_post_publicly_viewable()` and have an empty `post_password`. Draft, private, pending, future, trashed, and password-protected sources, and a non-public post type, get the same 404 as a test that is not running. The response is `no-store` and sends `X-LiteSpeed-Cache-Control: no-cache`. The block, shortcode, and Elementor providers use the same check.
+- Country lookup cache names are an HMAC-SHA256 of the visitor IP using the site auth salt (`wp_salt( 'auth' )`), the same secret as the A/B event rate limit, shortened to fit a WordPress transient name. The cached country payload no longer includes the IP. `RWGC_Cache::get()` still returns the address that was looked up, and `rwgc_get_visitor_data()` / `rwgc_geo_data` are unchanged. Older unsalted `md5` rows are deleted in small batches from the options table after update, including when a persistent object cache is active. A copy held only in that object cache expires with its existing TTL. The public A/B render limit uses an HMAC of the address as well, and does not store `md5(ip)`.
+
+### Fixed
+- Server mode keeps the same A/B arm across page views on classic themes. The `rwgc_ab` cookie is set while the test renders, which is after `header.php` on Elementor, Divi, Bricks, and the classic editor. With PHP output buffering off, that header sends the response headers and `setcookie()` does nothing, so each reload could show the other arm. The template is buffered on a singular front-end request that has a running test. REST, AJAX, cron, feeds, admin, and file or download responses are not buffered. `rwgc_ab_buffer_template` turns the buffer off. The buffer is flushed on shutdown and does not drop the HTML, including LiteSpeed ESI markers. `DONOTCACHEPAGE` and the no-store headers are unchanged. Supersedes #118.
+
+### Changed
+- The readme External services list and `wp_add_privacy_policy_content()` name the `rwgc_ab` cookie: first-party, about 90 days, set only when a response renders an A/B test, holding a random visitor id, the assigned arm, and view and conversion flags, and not uploaded. Search bots and editor previews do not receive it.
+- The readme Description, Usage, and FAQ describe free A/B testing. One view and one conversion are counted per visitor, stored on the site as a daily total per arm. IP addresses are not stored. Tests are free and uncapped.
+- Bundled `composer/ca-bundle` is 1.6.1.
+
 ## [1.9.27] - 2026-11-16
 
 ### Added

@@ -209,7 +209,7 @@ final class RWGC_Elementor_ABTest extends TestCase {
 			define( 'RWGC_URL', 'https://example.test/wp-content/plugins/reactwoo-geocore/' );
 		}
 		if ( ! defined( 'RWGC_VERSION' ) ) {
-			define( 'RWGC_VERSION', '1.9.27' );
+			define( 'RWGC_VERSION', '1.9.28' );
 		}
 		require_once dirname( __DIR__, 2 ) . '/includes/ab/class-rwgc-ab-tests.php';
 		require_once dirname( __DIR__, 2 ) . '/includes/integrations/class-rwgc-cache-compat.php';
@@ -604,6 +604,13 @@ final class RWGC_Elementor_ABTest extends TestCase {
 	public function test_variant_html_hook_returns_the_elementor_arm_only(): void {
 		$synced = RWGC_Elementor_AB::sync_tree( $this->pair( 'elA', 'elB', 'new', 'new' ), 110 );
 		$id     = (int) $synced['elements'][0]['settings']['rwgc_ab_test'];
+		$source = new WP_Post();
+		$source->ID            = 110;
+		$source->post_type     = 'page';
+		$source->post_status   = 'publish';
+		$source->post_password = '';
+		$source->post_title    = 'Elementor';
+		$GLOBALS['rwgc_ab_test_posts'][110] = $source;
 		$GLOBALS['rwgc_ab_test_meta'][110]['_elementor_data'] = wp_json_encode( $synced['elements'] );
 		$GLOBALS['rwgc_test_filters']['rwgc_ab_elementor_render_node'] = static function ( $html, $node ) {
 			unset( $html );

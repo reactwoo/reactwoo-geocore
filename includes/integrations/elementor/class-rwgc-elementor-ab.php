@@ -746,7 +746,7 @@ final class RWGC_Elementor_AB {
 			return;
 		}
 		if ( ! function_exists( 'wp_style_is' ) || ! wp_style_is( 'rwgc-elementor-ab-editor', 'enqueued' ) ) {
-			wp_register_style( 'rwgc-elementor-ab-editor', false, array(), defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.9.27' );
+			wp_register_style( 'rwgc-elementor-ab-editor', false, array(), defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.9.28' );
 			if ( function_exists( 'wp_enqueue_style' ) ) {
 				wp_enqueue_style( 'rwgc-elementor-ab-editor' );
 			}
@@ -1351,6 +1351,12 @@ final class RWGC_Elementor_AB {
 		if ( $post_id <= 0 || '' === $element_id ) {
 			return '';
 		}
+		if ( function_exists( 'get_post' ) && class_exists( 'RWGC_AB_Cache', false ) ) {
+			$source = get_post( $post_id );
+			if ( ! RWGC_AB_Cache::source_post_is_publicly_viewable( $source ) ) {
+				return '';
+			}
+		}
 		$node = self::find_element( self::document_elements( $post_id ), $element_id );
 		if ( ! is_array( $node ) ) {
 			return '';
@@ -1542,7 +1548,7 @@ final class RWGC_Elementor_AB {
 			return;
 		}
 		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
-			define( 'DONOTCACHEPAGE', true );
+			define( 'DONOTCACHEPAGE', true ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- DONOTCACHEPAGE is the shared WordPress cache-plugin no-store flag.
 		}
 		if ( function_exists( 'headers_sent' ) && headers_sent() ) {
 			return;

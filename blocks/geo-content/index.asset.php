@@ -16,5 +16,5 @@ return array(
 		'wp-i18n',
 	),
 	'handle'       => 'rwgc-geo-content-editor',
-	'version'      => '1.9.27',
+	'version'      => '1.9.28',
 );

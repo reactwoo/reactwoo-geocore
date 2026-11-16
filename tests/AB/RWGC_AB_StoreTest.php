@@ -79,6 +79,7 @@ if ( ! function_exists( 'wp_insert_post' ) ) {
 		$post->post_status             = isset( $postarr['post_status'] ) ? (string) $postarr['post_status'] : 'draft';
 		$post->post_title              = isset( $postarr['post_title'] ) ? (string) $postarr['post_title'] : '';
 		$post->post_content            = isset( $postarr['post_content'] ) ? (string) $postarr['post_content'] : '';
+		$post->post_password           = isset( $postarr['post_password'] ) ? (string) $postarr['post_password'] : '';
 		$GLOBALS['rwgc_ab_test_posts'][ $id ] = $post;
 		return $id;
 	}

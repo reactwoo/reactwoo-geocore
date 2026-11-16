@@ -321,7 +321,7 @@ class RWGC_AB_Cache {
 			'rwgc-ab',
 			RWGC_URL . 'assets/js/rwgc-ab.js',
 			array(),
-			defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.9.27',
+			defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.9.28',
 			true
 		);
 	}
@@ -359,7 +359,7 @@ class RWGC_AB_Cache {
 			);
 		}
 		$test_id = $parsed;
-		if ( ! self::test_is_running( $test_id ) ) {
+		if ( ! self::test_is_running( $test_id ) || ! self::render_sources_are_public( $test_id ) ) {
 			return array(
 				'status'  => 404,
 				'headers' => $headers,
@@ -384,6 +384,106 @@ class RWGC_AB_Cache {
 				'html' => self::escape_variant_html( $html ),
 			),
 		);
+	}
+
+	/**
+	 * A source post may supply variant HTML only when visitors can already read it.
+	 *
+	 * `is_post_publicly_viewable()` allows a published password-protected post,
+	 * so an empty `post_password` is required as well. Draft, private, pending,
+	 * future, and trashed posts are not viewable. A missing post is not viewable.
+	 *
+	 * @param mixed $post Post object.
+	 * @return bool
+	 */
+	public static function source_post_is_publicly_viewable( $post ) {
+		if ( ! $post instanceof WP_Post ) {
+			return false;
+		}
+		if ( isset( $post->post_password ) && '' !== (string) $post->post_password ) {
+			return false;
+		}
+		if ( function_exists( 'is_post_publicly_viewable' ) ) {
+			return (bool) is_post_publicly_viewable( $post );
+		}
+		if ( 'publish' !== (string) $post->post_status ) {
+			return false;
+		}
+		$type = (string) $post->post_type;
+		if ( function_exists( 'is_post_type_viewable' ) ) {
+			return (bool) is_post_type_viewable( $type );
+		}
+		$hidden = array(
+			'rwgc_ab_test',
+			'revision',
+			'nav_menu_item',
+			'custom_css',
+			'customize_changeset',
+			'oembed_cache',
+			'user_request',
+			'wp_block',
+			'wp_template',
+			'wp_template_part',
+			'wp_global_styles',
+			'wp_navigation',
+		);
+		return '' !== $type && ! in_array( $type, $hidden, true );
+	}
+
+	/**
+	 * Source posts whose HTML this render may return.
+	 *
+	 * An empty list means the test has no stored source. The route then does
+	 * not invent HTML. A stored source that is not publicly viewable fails closed.
+	 *
+	 * @param int $test_id Test id.
+	 * @return bool
+	 */
+	private static function render_sources_are_public( $test_id ) {
+		foreach ( self::source_post_ids( $test_id ) as $post_id ) {
+			$post = function_exists( 'get_post' ) ? get_post( $post_id ) : null;
+			if ( ! self::source_post_is_publicly_viewable( $post ) ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * @param int $test_id Test id.
+	 * @return int[]
+	 */
+	private static function source_post_ids( $test_id ) {
+		$ids     = array();
+		$test_id = absint( $test_id );
+		if ( class_exists( 'RWGC_AB_Tests', false ) ) {
+			$row = RWGC_AB_Tests::get( $test_id );
+			if ( is_array( $row ) && isset( $row['config']['source_post_id'] ) ) {
+				$ids[] = absint( $row['config']['source_post_id'] );
+			}
+		}
+		if ( function_exists( 'get_post_meta' ) ) {
+			$key   = class_exists( 'RWGC_Shortcodes', false ) ? RWGC_Shortcodes::AB_SOURCE_META : '_rwgc_ab_shortcode_post';
+			$ids[] = absint( get_post_meta( $test_id, $key, true ) );
+		}
+		/**
+		 * Source post IDs the public render route may read.
+		 *
+		 * @param int[] $ids     Source post IDs.
+		 * @param int   $test_id Test id.
+		 */
+		$filtered = apply_filters( 'rwgc_ab_render_source_post_ids', $ids, $test_id );
+		if ( ! is_array( $filtered ) ) {
+			$filtered = $ids;
+		}
+		$out = array();
+		foreach ( $filtered as $id ) {
+			$id = absint( $id );
+			if ( $id > 0 ) {
+				$out[ $id ] = $id;
+			}
+		}
+		return array_values( $out );
 	}
 
 	/**
@@ -435,13 +535,17 @@ class RWGC_AB_Cache {
 	 * Forty requests a minute per resolved visitor IP.
 	 *
 	 * A persistent object cache uses `wp_cache_incr`, which is atomic on Redis
-	 * and Memcached. The key includes the clock minute. The first hit in that
-	 * minute sets a two-minute TTL; a backend that drops TTL on increment can
-	 * keep the old key, and the next minute still starts a new one.
+	 * and Memcached. The key is an HMAC of the address and the clock minute.
+	 * The first hit in that minute sets a two-minute TTL; a backend that drops
+	 * TTL on increment can keep the old key, and the next minute still starts
+	 * a new one.
 	 *
-	 * Without a persistent object cache the count is a transient. That update
-	 * is read-modify-write, so two requests at the same moment can both read
-	 * the same count and a short burst can pass 40. The limit slows one client.
+	 * Without a persistent object cache the count is a transient named with an
+	 * HMAC of the address. The value is a counter and a start time, not the
+	 * address. That update is read-modify-write, so two requests at the same
+	 * moment can both read the same count and a short burst can pass 40. Older
+	 * md5 names expire with the 60-second transient or the two-minute object
+	 * cache TTL. The limit slows one client.
 	 * It does not stop many addresses, and visitors who share an address share
 	 * one allowance. It is not a nonce and it does not authenticate the caller.
 	 *
@@ -487,7 +591,7 @@ class RWGC_AB_Cache {
 	 */
 	private static function consume_object_cache_limit( $ip, $limit, $now ) {
 		$window = (int) floor( $now / 60 );
-		$key    = md5( self::normal_ip( $ip ) . '|' . $window );
+		$key    = self::rate_limit_digest( $ip, $window );
 		$group  = 'rwgc_ab_rl';
 		$count  = wp_cache_incr( $key, 1, $group );
 		if ( false === $count ) {
@@ -521,7 +625,7 @@ class RWGC_AB_Cache {
 	 * @return array{allowed:bool,limit:int,remaining:int,retry_after:int}
 	 */
 	private static function consume_transient_limit( $ip, $limit, $now ) {
-		$key    = 'rwgc_ab_rl_' . md5( self::normal_ip( $ip ) );
+		$key    = 'rwgc_ab_rl_' . self::rate_limit_digest( $ip );
 		$bucket = function_exists( 'get_transient' ) ? get_transient( $key ) : false;
 		if ( ! is_array( $bucket ) || ! isset( $bucket['start'], $bucket['count'] ) || ( $now - (int) $bucket['start'] ) >= 60 ) {
 			$bucket = array(
@@ -599,7 +703,7 @@ class RWGC_AB_Cache {
 			return;
 		}
 		if ( ! empty( $directives['donotcachepage'] ) && ! defined( 'DONOTCACHEPAGE' ) ) {
-			define( 'DONOTCACHEPAGE', true );
+			define( 'DONOTCACHEPAGE', true ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- DONOTCACHEPAGE is the shared WordPress cache-plugin no-store flag.
 		}
 		if ( ! empty( $directives['donotcachepage'] ) && self::litespeed_active() && function_exists( 'do_action' ) ) {
 			do_action( 'litespeed_control_set_nocache', 'reactwoo-geocore A/B test' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- LiteSpeed Cache public nocache API.
@@ -835,6 +939,29 @@ class RWGC_AB_Cache {
 	private static function normal_ip( $ip ) {
 		$ip = trim( (string) $ip );
 		return filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : '0.0.0.0';
+	}
+
+	/**
+	 * HMAC name for one visitor. The address is not part of the stored key.
+	 *
+	 * The transient omits the minute because the stored bucket has a start
+	 * time. The object-cache counter has no bucket, so its message includes
+	 * the minute and the next minute is a new key.
+	 *
+	 * @param string   $ip     Visitor address.
+	 * @param int|null $window Clock minute, or null for the transient key.
+	 * @return string 32 hex characters.
+	 */
+	private static function rate_limit_digest( $ip, $window = null ) {
+		$message = 'abrl|' . self::normal_ip( $ip );
+		if ( null !== $window ) {
+			$message .= '|' . (int) $window;
+		}
+		$salt = function_exists( 'wp_salt' ) ? (string) wp_salt( 'auth' ) : '';
+		if ( '' === $salt ) {
+			$salt = 'rwgc-ab-event';
+		}
+		return substr( hash_hmac( 'sha256', $message, $salt ), 0, 32 );
 	}
 }
 

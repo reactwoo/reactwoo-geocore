@@ -15,6 +15,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * The cookie is written only when a response renders a test (`variant()` from
  * `rwgc_ab_render_test()`, or `variant_for_fragment()` on the render route).
  * A page with no test does not send Set-Cookie and can stay in a shared cache.
+ * Classic themes, Elementor, Divi, and Bricks print the header before that
+ * render. On a front-end singular request that has a running test,
+ * `template_redirect` buffers the template so `setcookie()` still runs.
+ * REST, AJAX, cron, feeds, admin, and file or download responses are not
+ * buffered. `rwgc_ab_buffer_template` can turn the buffer off. The buffer does
+ * not change cache headers: `Cache-Control`, `DONOTCACHEPAGE`, and the
+ * LiteSpeed vary hook are still applied by the renderer, and the buffer
+ * returns the HTML unchanged, including ESI markers.
  * Bots, logged-in editor previews, other REST or JSON requests, and AJAX never
  * receive a Set-Cookie. The fragment render route is the exception. It is a
  * REST request, and the script sends `Accept: application/json`, which
@@ -71,12 +79,159 @@ class RWGC_AB_Assignment {
 	private static $event_write = false;
 
 	/**
+	 * True after this request has opened the template buffer.
+	 *
+	 * @var bool
+	 */
+	private static $buffer_started = false;
+
+	/**
+	 * Output-buffer level opened by {@see buffer_template()}.
+	 *
+	 * @var int
+	 */
+	private static $buffer_level = 0;
+
+	/**
+	 * True when shutdown has been asked to flush the template buffer.
+	 *
+	 * @var bool
+	 */
+	private static $buffer_shutdown = false;
+
+	/**
+	 * True when setcookie() accepted `rwgc_ab` on this request.
+	 *
+	 * @var bool
+	 */
+	private static $cookie_sent = false;
+
+	/**
 	 * @return void
 	 */
 	public static function init() {
 		// Do not assign on send_headers. That hook runs for every public page,
 		// before this request knows whether it will render a test, and the
 		// Set-Cookie would be stored by a cache that does not vary.
+		// Buffering starts before the template prints. The cookie is still
+		// written later, and only if a test is actually rendered.
+		if ( function_exists( 'add_action' ) ) {
+			add_action( 'template_redirect', array( __CLASS__, 'buffer_template' ), 0 );
+		}
+	}
+
+	/**
+	 * Whether this request may buffer the template so a later render can set the cookie.
+	 *
+	 * Front-end singular views only, and only when a test is running (a block,
+	 * an Elementor pair, or `[rwgc_ab]` may render). REST, AJAX, cron, feeds,
+	 * admin, bots, and file or download responses are skipped.
+	 *
+	 * @return bool
+	 */
+	public static function should_buffer_template() {
+		if ( ! self::can_write_cookie() ) {
+			return false;
+		}
+		if ( self::is_file_or_download_request() ) {
+			return false;
+		}
+		if ( ! self::is_front_singular_request() ) {
+			return false;
+		}
+		if ( array() === self::running_test_ids() ) {
+			return false;
+		}
+		/**
+		 * Whether to buffer the template so the A/B cookie can be set during render.
+		 *
+		 * Return false for a streaming response that must not be held. The
+		 * buffer is not started for REST, AJAX, cron, feeds, admin, or downloads.
+		 *
+		 * @param bool $buffer True when a running test exists on a singular front-end request.
+		 */
+		return (bool) apply_filters( 'rwgc_ab_buffer_template', true );
+	}
+
+	/**
+	 * Keep the template in a buffer so a test rendered in the body can set the cookie.
+	 *
+	 * A classic theme echoes `header.php` before `the_content()`, and Elementor,
+	 * Divi, and Bricks do the same. With PHP output buffering off, that echo
+	 * sends the headers and `setcookie()` is ignored, so the next view is a new
+	 * arm. The buffer opens only for {@see should_buffer_template()} and only
+	 * while headers are still open. It is flushed on shutdown and never discarded.
+	 *
+	 * @return void
+	 */
+	public static function buffer_template() {
+		if ( self::$buffer_started || ! self::should_buffer_template() ) {
+			return;
+		}
+		if ( function_exists( 'headers_sent' ) && headers_sent() ) {
+			return;
+		}
+		if ( ! ob_start( array( __CLASS__, 'passthrough_buffer' ) ) ) {
+			return;
+		}
+		self::$buffer_started = true;
+		self::$buffer_level   = ob_get_level();
+		if ( self::$buffer_shutdown ) {
+			return;
+		}
+		self::$buffer_shutdown = true;
+		if ( function_exists( 'add_action' ) ) {
+			add_action( 'shutdown', array( __CLASS__, 'end_template_buffer' ), 0 );
+		}
+		register_shutdown_function( array( __CLASS__, 'end_template_buffer' ) );
+	}
+
+	/**
+	 * Return the buffered template unchanged.
+	 *
+	 * LiteSpeed ESI markers and the rest of the HTML are passed through.
+	 * The callback never drops the buffer.
+	 *
+	 * @param string $buffer Buffered template.
+	 * @return string
+	 */
+	public static function passthrough_buffer( $buffer ) {
+		return is_string( $buffer ) ? $buffer : '';
+	}
+
+	/**
+	 * Flush the template buffer if this request still holds it.
+	 *
+	 * Nested buffers above ours are flushed, not cleaned, so an early exit
+	 * does not drop output that another layer already captured.
+	 *
+	 * @return void
+	 */
+	public static function end_template_buffer() {
+		if ( ! self::$buffer_started ) {
+			return;
+		}
+		$target               = self::$buffer_level;
+		self::$buffer_started = false;
+		self::$buffer_level   = 0;
+		if ( $target < 1 ) {
+			return;
+		}
+		while ( ob_get_level() > $target ) {
+			ob_end_flush();
+		}
+		if ( ob_get_level() === $target ) {
+			ob_end_flush();
+		}
+	}
+
+	/**
+	 * True when setcookie() accepted the A/B cookie on this request.
+	 *
+	 * @return bool
+	 */
+	public static function cookie_was_sent() {
+		return self::$cookie_sent;
 	}
 
 	/**
@@ -427,6 +582,7 @@ class RWGC_AB_Assignment {
 		self::$last_emit      = null;
 		self::$fragment_write = false;
 		self::$event_write    = false;
+		self::$cookie_sent    = false;
 	}
 
 	/**
@@ -577,6 +733,51 @@ class RWGC_AB_Assignment {
 	}
 
 	/**
+	 * Attachment and download responses must stream. They are not buffered.
+	 *
+	 * @return bool
+	 */
+	private static function is_file_or_download_request() {
+		if ( function_exists( 'is_attachment' ) && is_attachment() ) {
+			return true;
+		}
+		if ( self::query_present( 'download_file' ) ) {
+			return true;
+		}
+		if ( ! function_exists( 'headers_list' ) ) {
+			return false;
+		}
+		foreach ( headers_list() as $header ) {
+			if ( is_string( $header ) && preg_match( '/^content-disposition:\s*attachment\b/i', $header ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * A singular front-end view, which is where a block, Elementor pair, or shortcode renders.
+	 *
+	 * When WordPress conditionals are not loaded, the request is treated as singular
+	 * so a direct render can still set the cookie. Attachments are excluded.
+	 *
+	 * @return bool
+	 */
+	private static function is_front_singular_request() {
+		if ( function_exists( 'is_singular' ) ) {
+			if ( ! is_singular() ) {
+				return false;
+			}
+		} elseif ( array_key_exists( 'rwgc_test_is_singular', $GLOBALS ) && ! $GLOBALS['rwgc_test_is_singular'] ) {
+			return false;
+		}
+		if ( function_exists( 'is_attachment' ) && is_attachment() ) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
 	 * @return string
 	 */
 	private static function user_agent() {
@@ -714,10 +915,11 @@ class RWGC_AB_Assignment {
 		);
 		$_COOKIE[ self::COOKIE ] = $value;
 		self::$dirty             = false;
+		self::$cookie_sent       = false;
 		if ( headers_sent() ) {
 			return;
 		}
-		setcookie(
+		self::$cookie_sent = setcookie(
 			self::COOKIE,
 			$value,
 			array(

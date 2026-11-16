@@ -286,7 +286,7 @@ final class RWGC_AB_CacheTest extends TestCase {
 			define( 'RWGC_URL', 'https://example.test/wp-content/plugins/reactwoo-geocore/' );
 		}
 		if ( ! defined( 'RWGC_VERSION' ) ) {
-			define( 'RWGC_VERSION', '1.9.27' );
+			define( 'RWGC_VERSION', '1.9.28' );
 		}
 		require_once dirname( __DIR__, 2 ) . '/includes/functions-rwgc.php';
 		require_once dirname( __DIR__, 2 ) . '/includes/integrations/class-rwgc-cache-compat.php';
@@ -605,6 +605,51 @@ final class RWGC_AB_CacheTest extends TestCase {
 		$this->assertStringContainsString( 'no-store', $missing['headers']['Cache-Control'] );
 	}
 
+	public function test_render_route_hides_html_from_a_source_that_is_not_public(): void {
+		$secret = 'SECRET-VARIANT-HTML';
+		$GLOBALS['rwgc_test_filters']['rwgc_ab_variant_html'] = static function () use ( $secret ) {
+			return '<p>' . $secret . '</p>';
+		};
+		$cases = array(
+			'draft'     => array( 'post_status' => 'draft', 'post_password' => '', 'post_type' => 'page' ),
+			'private'   => array( 'post_status' => 'private', 'post_password' => '', 'post_type' => 'page' ),
+			'pending'   => array( 'post_status' => 'pending', 'post_password' => '', 'post_type' => 'page' ),
+			'future'    => array( 'post_status' => 'future', 'post_password' => '', 'post_type' => 'page' ),
+			'password'  => array( 'post_status' => 'publish', 'post_password' => 's3cret', 'post_type' => 'page' ),
+			'trash'     => array( 'post_status' => 'trash', 'post_password' => '', 'post_type' => 'page' ),
+			'post_type' => array( 'post_status' => 'publish', 'post_password' => '', 'post_type' => 'rwgc_ab_test' ),
+		);
+		$ip = 70;
+		foreach ( $cases as $name => $fields ) {
+			$this->install_source_post( 500, $fields );
+			$GLOBALS['rwgc_ab_test_meta'][42]['_rwgc_ab_shortcode_post'] = 500;
+			$built = RWGC_AB_Cache::build_render_response( 42, '203.0.113.' . $ip );
+			++$ip;
+			$this->assertSame( 404, $built['status'], $name );
+			$this->assertSame( 'rwgc_ab_not_running', $built['body']['code'], $name );
+			$this->assertArrayNotHasKey( 'html', $built['body'], $name );
+			$this->assertStringContainsString( 'no-store', $built['headers']['Cache-Control'], $name );
+			$this->assertSame( 'no-cache', $built['headers']['X-LiteSpeed-Cache-Control'], $name );
+			$this->assertStringNotContainsString( $secret, (string) wp_json_encode( $built ), $name );
+		}
+
+		$this->install_source_post(
+			500,
+			array(
+				'post_status'   => 'publish',
+				'post_password' => '',
+				'post_type'     => 'page',
+			)
+		);
+		$published = RWGC_AB_Cache::build_render_response( 42, '203.0.113.90' );
+		$this->assertSame( 200, $published['status'] );
+		$this->assertStringContainsString( $secret, $published['body']['html'] );
+		$this->assertSame( 'no-cache', $published['headers']['X-LiteSpeed-Cache-Control'] );
+		$this->assertStringContainsString( 'no-store', $published['headers']['Cache-Control'] );
+
+		unset( $GLOBALS['rwgc_ab_test_posts'][500], $GLOBALS['rwgc_ab_test_meta'][42] );
+	}
+
 	public function test_a_page_that_does_not_render_a_test_sends_no_cookie_and_stays_cacheable(): void {
 		$GLOBALS['rwgc_test_filters']['rwgc_ab_running_test_ids'] = static function () {
 			return array( 42, 43 );
@@ -718,6 +763,47 @@ final class RWGC_AB_CacheTest extends TestCase {
 		RWGC_AB_Cache::consume_rate_limit( 'not-an-ip' );
 		$second = RWGC_AB_Cache::consume_rate_limit( 'also-bad' );
 		$this->assertSame( 38, $second['remaining'] );
+	}
+
+	/**
+	 * @return void
+	 */
+	public function test_transient_rate_limit_key_is_an_hmac_not_md5(): void {
+		foreach ( array( '203.0.113.10', '2001:db8::10' ) as $ip ) {
+			$GLOBALS['rwgc_test_transients'] = array();
+			RWGC_AB_Cache::consume_rate_limit( $ip );
+			$keys = array_keys( $GLOBALS['rwgc_test_transients'] );
+			$this->assertCount( 1, $keys );
+			$secret   = (string) wp_salt( 'auth' );
+			$expected = 'rwgc_ab_rl_' . substr( hash_hmac( 'sha256', 'abrl|' . $ip, '' !== $secret ? $secret : 'rwgc-ab-event' ), 0, 32 );
+			$this->assertSame( $expected, $keys[0] );
+			$this->assertNotSame( 'rwgc_ab_rl_' . md5( $ip ), $keys[0] );
+			$this->assertStringNotContainsString( md5( $ip ), (string) $keys[0] );
+			$this->assertStringNotContainsString( $ip, (string) wp_json_encode( $GLOBALS['rwgc_test_transients'] ) );
+		}
+	}
+
+	/**
+	 * @return void
+	 */
+	public function test_object_cache_rate_limit_key_is_an_hmac_not_md5(): void {
+		$now = 1700000000;
+		$GLOBALS['rwgc_test_object_cache'] = array();
+		$GLOBALS['rwgc_test_filters']['rwgc_ab_rate_limit_use_object_cache'] = static function () {
+			return true;
+		};
+		$GLOBALS['rwgc_test_filters']['rwgc_ab_render_rate_now'] = static function () use ( $now ) {
+			return $now;
+		};
+		$ip = '203.0.113.40';
+		$this->assertTrue( RWGC_AB_Cache::consume_rate_limit( $ip )['allowed'] );
+		$window   = (int) floor( $now / 60 );
+		$secret   = (string) wp_salt( 'auth' );
+		$expected = substr( hash_hmac( 'sha256', 'abrl|' . $ip . '|' . $window, '' !== $secret ? $secret : 'rwgc-ab-event' ), 0, 32 );
+		$this->assertArrayHasKey( $expected, $GLOBALS['rwgc_test_object_cache']['rwgc_ab_rl'] );
+		$this->assertArrayNotHasKey( md5( $ip . '|' . $window ), $GLOBALS['rwgc_test_object_cache']['rwgc_ab_rl'] );
+		$this->assertStringNotContainsString( $ip, $expected );
+		$this->assertStringNotContainsString( $ip, (string) wp_json_encode( $GLOBALS['rwgc_test_object_cache'] ) );
 	}
 
 	public function test_default_mode_is_server_and_fragment_is_the_only_other_mode(): void {
@@ -912,6 +998,22 @@ final class RWGC_AB_CacheTest extends TestCase {
 	 * @param string $arm     Arm.
 	 * @return void
 	 */
+	/**
+	 * @param int                  $id     Post ID.
+	 * @param array<string,string> $fields Status, password, and type.
+	 * @return void
+	 */
+	private function install_source_post( $id, array $fields ) {
+		$post                  = new WP_Post();
+		$post->ID              = $id;
+		$post->post_status     = $fields['post_status'];
+		$post->post_password   = $fields['post_password'];
+		$post->post_type       = $fields['post_type'];
+		$post->post_content    = 'SECRET-VARIANT-HTML';
+		$post->post_title      = 'Source';
+		$GLOBALS['rwgc_ab_test_posts'][ $id ] = $post;
+	}
+
 	private function seed( $test_id, $arm ): void {
 		$_COOKIE[ RWGC_AB_Assignment::COOKIE ] = RWGC_AB_Assignment::encode_cookie(
 			str_repeat( 'ab', 16 ),

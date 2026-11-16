@@ -63,6 +63,7 @@ class RWGC_AB_Tests {
 				'exclude_from_search'       => true,
 				'show_in_admin_all_list'    => false,
 				'show_in_admin_status_list' => false,
+				/* translators: %s: number of ended tests. */
 				'label_count'               => _n_noop(
 					'Ended <span class="count">(%s)</span>',
 					'Ended <span class="count">(%s)</span>',
@@ -233,10 +234,9 @@ class RWGC_AB_Tests {
 			array(
 				'post_type'        => self::POST_TYPE,
 				'post_status'      => array( 'draft', 'publish', self::STATUS_ENDED ),
-				'posts_per_page'   => -1,
-				'orderby'          => 'ID',
-				'order'            => 'DESC',
-				'suppress_filters' => true,
+				'posts_per_page' => -1,
+				'orderby'        => 'ID',
+				'order'          => 'DESC',
 			)
 		);
 		if ( ! is_array( $posts ) ) {

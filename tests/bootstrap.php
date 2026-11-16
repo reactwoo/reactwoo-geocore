@@ -179,6 +179,49 @@ if ( ! class_exists( 'WP_Post', false ) ) {
 
 		/** @var string */
 		public $post_content = '';
+
+		/** @var string */
+		public $post_password = '';
+	}
+}
+
+if ( ! function_exists( 'is_post_publicly_viewable' ) ) {
+	/**
+	 * Same status and post-type gate as WordPress, without the password check.
+	 *
+	 * Password-protected posts stay viewable here. Callers also require an empty
+	 * post_password.
+	 *
+	 * @param mixed $post Post object or ID.
+	 * @return bool
+	 */
+	function is_post_publicly_viewable( $post ) {
+		if ( is_numeric( $post ) && function_exists( 'get_post' ) ) {
+			$post = get_post( (int) $post );
+		}
+		if ( ! is_object( $post ) ) {
+			return false;
+		}
+		$status = isset( $post->post_status ) ? (string) $post->post_status : '';
+		$type   = isset( $post->post_type ) ? (string) $post->post_type : '';
+		if ( 'publish' !== $status ) {
+			return false;
+		}
+		$hidden = array(
+			'rwgc_ab_test',
+			'revision',
+			'nav_menu_item',
+			'custom_css',
+			'customize_changeset',
+			'oembed_cache',
+			'user_request',
+			'wp_block',
+			'wp_template',
+			'wp_template_part',
+			'wp_global_styles',
+			'wp_navigation',
+		);
+		return '' !== $type && ! in_array( $type, $hidden, true );
 	}
 }
 

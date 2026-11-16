@@ -141,8 +141,9 @@ class RWGC_AB_DB {
 		$day         = self::today();
 		$views       = ( 'views' === $metric ) ? 1 : 0;
 		$conversions = ( 'conversions' === $metric ) ? 1 : 0;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Fixed Core daily table, checked above.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Fixed Core daily table, checked above.
 		$sql = $wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- {$table} is this plugin's rwgc_ab_daily table, validated above, and cannot be a placeholder.
 			"INSERT INTO `{$table}` (test_id, variant, day, views, conversions) VALUES (%d, %s, %s, %d, %d) ON DUPLICATE KEY UPDATE views = views + %d, conversions = conversions + %d",
 			$test_id,
 			$variant,

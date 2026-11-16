@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         'composer/ca-bundle' => array(
-            'pretty_version' => '1.6.0',
-            'version' => '1.6.0.0',
-            'reference' => '2c99cf2e92516985dea4914812b93d9daf01cdd6',
+            'pretty_version' => '1.6.1',
+            'version' => '1.6.1.0',
+            'reference' => '0c64479fae6952ba4cf021a72c0ac530394c91d4',
             'type' => 'library',
             'install_path' => __DIR__ . '/./ca-bundle',
             'aliases' => array(),
