@@ -173,6 +173,7 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * A server-mode A/B test keeps the same arm when the theme prints the header before the test. Elementor, Divi, Bricks, and the classic editor do that. The `rwgc_ab` cookie is stored with that response. The buffer is only used on a singular front-end page that has a running test. REST, AJAX, cron, feeds, admin, and file or download responses are not buffered.
 * The readme and the suggested privacy policy name the `rwgc_ab` cookie. It is set only on a page that renders an A/B test, lasts about 90 days, and is not uploaded.
 * Bundled composer/ca-bundle is 1.6.1.
+* Country lookups are cached without storing the visitor IP address. The cache name is a salted hash tied to this site, and older cache rows are removed in small batches after the update. The public A/B render limit uses the same kind of name and does not store the address.
 
 = 1.9.27 =
 * An A/B test counts the first time a visitor sees an arm, and one conversion after that. A view is sent when the arm comes on screen. A click goal is sent from that arm. A goal address is counted when a visitor who already saw the test opens that page. Reloads do not count again. The totals do not store the visitor's address or account. The event address is public, has no nonce, and is not stored.

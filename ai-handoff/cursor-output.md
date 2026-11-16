@@ -3,7 +3,7 @@
 ## Status
 done
 
-Geo Core 1.9.28 readiness fixes, including the sticky-arm buffer from #118. Not merged and not tagged.
+Geo Core 1.9.28 readiness fixes, including the sticky-arm buffer from #118 and the RG-85 HMAC geo-cache from #120. Not merged and not tagged.
 
 ## Files changed
 - `includes/ab/class-rwgc-ab-cache.php` — `GET /ab/render` returns the existing 404 (`rwgc_ab_not_running`, `no-store`, `X-LiteSpeed-Cache-Control: no-cache`) when a stored source post fails `is_post_publicly_viewable()` or has a password. Version fallback is 1.9.28.
@@ -22,7 +22,7 @@ Geo Core 1.9.28 readiness fixes, including the sticky-arm buffer from #118. Not 
 - `tests/bootstrap.php` — `post_password` on the post stub, and an `is_post_publicly_viewable()` stub.
 
 ## Not changed
-- Pull requests #120 and #121. This branch does not push to #118.
+- Pull request #121. This branch does not push to #118 or #120.
 - No merge and no tag.
 - `Tested up to` stays 7.1. Plugin URI and Author URI are unchanged.
 - Cache policy (`private, no-store`, `DONOTCACHEPAGE`, LiteSpeed vary) is unchanged. The buffer only holds the template so those headers can still be sent.
@@ -40,6 +40,32 @@ Geo Core 1.9.28 readiness fixes, including the sticky-arm buffer from #118. Not 
 ## Remaining errors
 - Plugin Check 2.2.0 (`wp plugin check`) was not run here. This environment has no WordPress, wp-cli, or database.
 - CI on the pull request is the remaining check.
+
+## Status
+done
+
+RG-85 folded into 1.9.28 (was #120). Not tagged. Version stays 1.9.28.
+
+## Files changed
+- `includes/class-rwgc-cache.php` — transient name is HMAC-SHA256 of `geo|{ip}` with `wp_salt( 'auth' )` (same secret and empty-salt fallback as `RWGC_AB_Tracker::rate_transient_key()`), truncated to the 172-character transient limit. Stored payload drops `ip` and any copy of that address. `get()` puts the looked-up address back on the returned array. One-off batched delete of `_transient_rwgc_geo_v…` / `_transient_timeout_rwgc_geo_v…` rows (`rwgc_geo_v{version}_{32 hex}` only) via `admin_init` and `rwgc_purge_legacy_geo_cache`.
+- `includes/class-rwgc-plugin.php` — `RWGC_Cache::init()`.
+- `uninstall.php` — deletes the purge flag and cursor.
+- `tests/Engine/RWGC_CachePrivacyTest.php` — key is not md5(ip), changes with the site secret, stored values for IPv4 and IPv6 do not contain the address, legacy rows are deleted in batches and HMAC rows are kept.
+- `CHANGELOG.md`, `readme.txt` — the privacy note is under 1.9.28, not Unreleased.
+- `includes/ab/class-rwgc-ab-cache.php` — the render rate-limit key is an HMAC of the address, not `md5(ip)`. The public-source 404 gate is unchanged.
+
+## Not changed
+- Plugin version stays 1.9.28. No tag and no merge.
+- `rwgc_get_visitor_data()`, `rwgc_geo_data`, `rwgc_cache_ttl`, and `RWGC_Cache::get()` / `set()` / `delete()` / `clear_all()` signatures. Callers that read `ip` from visitor data (REST for administrators, Elementor preview, popup debug) still receive the current request address. It is not read from the transient.
+- A/B event rate-limit keys. The render limiter is the key that changed.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist --filter RWGC_CachePrivacyTest` — 10 tests, 85 assertions, OK.
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 307 tests, 22465 assertions, OK.
+- CI composer scripts (rule evaluator, rules, library lookup, visibility status, GeoIP, Elementor preview, Elementor rule status, Geo Content block, A/B block, zip JS order, zip reproducible, satellite updater) — passed.
+
+## Remaining errors
+- None from the RG-85 checks. The combined suite is re-run on this branch.
 
 ## Status
 done
