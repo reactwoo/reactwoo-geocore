@@ -15,6 +15,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * The cookie is written only when a response renders a test (`variant()` from
  * `rwgc_ab_render_test()`, or `variant_for_fragment()` on the render route).
  * A page with no test does not send Set-Cookie and can stay in a shared cache.
+ * Classic themes, Elementor, Divi, and Bricks print the header before that
+ * render. `template_redirect` buffers those responses when a test is running,
+ * so `setcookie()` still runs. Without the buffer the browser never stores
+ * `rwgc_ab` and the next view is a new 50/50 arm.
  * Bots, logged-in editor previews, other REST or JSON requests, and AJAX never
  * receive a Set-Cookie. The fragment render route is the exception. It is a
  * REST request, and the script sends `Accept: application/json`, which
@@ -61,12 +65,64 @@ class RWGC_AB_Assignment {
 	private static $fragment_write = false;
 
 	/**
+	 * True after this request has opened the template buffer.
+	 *
+	 * @var bool
+	 */
+	private static $buffer_started = false;
+
+	/**
 	 * @return void
 	 */
 	public static function init() {
 		// Do not assign on send_headers. That hook runs for every public page,
 		// before this request knows whether it will render a test, and the
 		// Set-Cookie would be stored by a cache that does not vary.
+		// Buffering starts before the template prints. The cookie is still
+		// written later, and only if a test is actually rendered.
+		if ( function_exists( 'add_action' ) ) {
+			add_action( 'template_redirect', array( __CLASS__, 'buffer_template' ), 0 );
+		}
+	}
+
+	/**
+	 * Keep the template in a buffer so a test rendered in the body can set the cookie.
+	 *
+	 * A classic theme echoes `header.php` before `the_content()`, and Elementor,
+	 * Divi, and Bricks do the same. `setcookie()` is ignored once that output
+	 * has left PHP, so the visitor would be assigned again on the next view.
+	 * The buffer opens only for a public GET that is allowed to assign and
+	 * only when a test is running. A site with no running test is unchanged.
+	 * The cookie itself is still written by `variant()` for a test this
+	 * response renders, not for every buffered page.
+	 *
+	 * @return void
+	 */
+	public static function buffer_template() {
+		if ( self::$buffer_started ) {
+			return;
+		}
+		if ( function_exists( 'headers_sent' ) && headers_sent() ) {
+			return;
+		}
+		if ( ! self::can_write_cookie() ) {
+			return;
+		}
+		if ( array() === self::running_test_ids() ) {
+			return;
+		}
+		/**
+		 * Whether to buffer the template so the A/B cookie can be set during render.
+		 *
+		 * @param bool $buffer True when a running test exists on a request that may assign.
+		 */
+		$buffer = apply_filters( 'rwgc_ab_buffer_template', true );
+		if ( ! $buffer ) {
+			return;
+		}
+		if ( ob_start() ) {
+			self::$buffer_started = true;
+		}
 	}
 
 	/**
@@ -329,6 +385,7 @@ class RWGC_AB_Assignment {
 		self::$can_track      = null;
 		self::$last_emit      = null;
 		self::$fragment_write = false;
+		self::$buffer_started = false;
 	}
 
 	/**

@@ -3,6 +3,27 @@
 ## Status
 done
 
+Server-mode A/B assignment stays sticky after the theme header has started. Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `includes/ab/class-rwgc-ab-assignment.php` — `template_redirect` buffers a public page when a test is running, so `setcookie()` still runs from `variant()` during the body. No running test, bots, admin, and other skipped requests are not buffered. The cookie is still written only when a test is rendered.
+- `tests/AB/RWGC_AB_AssignmentTest.php` — buffer holds header output and then records `rwgc_ab`; no buffer without a running test; bots and admin skip it.
+- `CHANGELOG.md`, `readme.txt` — unreleased note.
+
+## Not changed
+- Plugin version (1.9.26). No tag.
+- Assignment still does not run on `send_headers`.
+- Fragment render route is unchanged.
+
+## Commands
+- `php /tmp/phpunit.phar --bootstrap tests/bootstrap.php --stderr tests/AB/RWGC_AB_AssignmentTest.php` — 17 tests, 20100 assertions, OK.
+- `php /tmp/phpunit.phar --bootstrap tests/bootstrap.php --stderr tests/AB/RWGC_AB_CacheTest.php` — 27 tests, 274 assertions, OK.
+- `php -l includes/ab/class-rwgc-ab-assignment.php` — no syntax errors.
+- `tests/AB/` together — 99 tests, 5 errors, all `get_option()` missing when that directory is run without the suite stub. Not introduced by this change. Shortcode tests pass in that directory run and fail alone for the same missing stubs (`esc_attr`, `wp_insert_post`).
+
+## Status
+done
+
 Free A/B step 6: `[rwgc_ab]` shortcode. Not tagged. Version stays 1.9.26.
 
 ## Files changed

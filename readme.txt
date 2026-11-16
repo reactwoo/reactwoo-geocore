@@ -167,6 +167,7 @@ Off by default. An administrator must enable “Share anonymous experience event
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
 = Unreleased =
+* A server-mode A/B test keeps the same arm when the theme prints the header before the test. Elementor, Divi, Bricks, and the classic editor do that. The assignment cookie is stored with that response. A site with no running test is not buffered.
 * Divi, Bricks, and the classic editor can run an A/B test with the `[rwgc_ab]` shortcode. The A/B tests screen can copy that shortcode. It follows the same server and fragment rules as the block. An unknown or inactive test shows the first variant.
 * On the public site, an Elementor A/B pair shows one variant. The A and B labels stay in the editor. Installing the plugin does not save the A/B cache choice; Server is used until that choice is saved.
 * An Elementor container, section, column, or widget can be Variant A or Variant B of an A/B test. Two siblings that share a test are the pair. The editor shows both. Visitors see one. An unpaired element still renders, and the editor explains that. Atomic V4 has the same section.

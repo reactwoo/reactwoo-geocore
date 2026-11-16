@@ -374,12 +374,59 @@ final class RWGC_AB_AssignmentTest extends TestCase {
 		$this->assertNull( RWGC_AB_Assignment::last_cookie_header() );
 	}
 
+	public function test_template_buffer_lets_a_classic_theme_set_the_cookie_after_the_header(): void {
+		$this->running( array( 42 ) );
+		$level = ob_get_level();
+		RWGC_AB_Assignment::buffer_template();
+		try {
+			$this->assertSame( $level + 1, ob_get_level() );
+			echo '<header>theme</header>';
+			$this->assertSame( '<header>theme</header>', ob_get_contents() );
+			RWGC_AB_Assignment::buffer_template();
+			$this->assertSame( $level + 1, ob_get_level() );
+
+			RWGC_AB_Assignment::variant( 42 );
+
+			$this->assertNotNull( RWGC_AB_Assignment::last_cookie_header() );
+			$this->assertArrayHasKey( RWGC_AB_Assignment::COOKIE, $_COOKIE );
+			$this->assertSame( '<header>theme</header>', ob_get_contents() );
+		} finally {
+			while ( ob_get_level() > $level ) {
+				ob_end_clean();
+			}
+		}
+	}
+
+	public function test_template_buffer_skips_a_site_with_no_running_test(): void {
+		$this->running( array() );
+		$level = ob_get_level();
+		RWGC_AB_Assignment::buffer_template();
+		$this->assertSame( $level, ob_get_level() );
+	}
+
+	public function test_template_buffer_skips_bots_and_admin(): void {
+		$this->running( array( 42 ) );
+		$level = ob_get_level();
+
+		$_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
+		RWGC_AB_Assignment::reset_request_state();
+		RWGC_AB_Assignment::buffer_template();
+		$this->assertSame( $level, ob_get_level() );
+
+		$_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 Chrome/120.0.0.0';
+		$GLOBALS['rwgc_test_is_admin'] = true;
+		RWGC_AB_Assignment::reset_request_state();
+		RWGC_AB_Assignment::buffer_template();
+		$this->assertSame( $level, ob_get_level() );
+	}
+
 	public function test_plugin_assigns_when_a_test_is_rendered_not_on_send_headers(): void {
 		$root = dirname( __DIR__, 2 );
 		$src  = (string) file_get_contents( $root . '/includes/ab/class-rwgc-ab-assignment.php' );
 		$plugin = (string) file_get_contents( $root . '/includes/class-rwgc-plugin.php' );
 
 		$this->assertStringNotContainsString( "add_action( 'send_headers', array( __CLASS__, 'maybe_set_cookie' )", $src );
+		$this->assertStringContainsString( "add_action( 'template_redirect', array( __CLASS__, 'buffer_template' ), 0 );", $src );
 		$this->assertStringContainsString( 'RWGC_Decision_Experiment_Assigner::bucket(', $src );
 		$this->assertStringContainsString( "apply_filters( 'rwgc_ab_can_track'", $src );
 		$this->assertStringContainsString( 'includes/ab/class-rwgc-ab-assignment.php', $plugin );
