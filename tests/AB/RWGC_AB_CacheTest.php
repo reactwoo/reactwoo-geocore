@@ -573,7 +573,13 @@ final class RWGC_AB_CacheTest extends TestCase {
 		$GLOBALS['rwgc_test_routes'] = array();
 		RWGC_REST::register_ab_routes();
 		$this->assertNotEmpty( $GLOBALS['rwgc_test_routes'] );
-		$route = $GLOBALS['rwgc_test_routes'][ count( $GLOBALS['rwgc_test_routes'] ) - 1 ];
+		$route = null;
+		foreach ( $GLOBALS['rwgc_test_routes'] as $candidate ) {
+			if ( is_array( $candidate ) && isset( $candidate['route'] ) && '/ab/render' === $candidate['route'] ) {
+				$route = $candidate;
+			}
+		}
+		$this->assertIsArray( $route );
 		$this->assertSame( 'reactwoo-geocore/v1', $route['namespace'] );
 		$this->assertSame( '/ab/render', $route['route'] );
 		$this->assertSame( 'GET', $route['args']['methods'] );

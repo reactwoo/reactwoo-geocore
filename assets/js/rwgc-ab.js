@@ -1,9 +1,18 @@
 (function () {
 	'use strict';
 
+	var clicksBound = false;
+
 	function endpoint() {
 		if (window.rwgcAb && window.rwgcAb.endpoint) {
 			return String(window.rwgcAb.endpoint);
+		}
+		return '';
+	}
+
+	function eventEndpoint() {
+		if (window.rwgcAb && window.rwgcAb.eventEndpoint) {
+			return String(window.rwgcAb.eventEndpoint);
 		}
 		return '';
 	}
@@ -30,6 +39,7 @@
 					return null;
 				}
 				if (!response.ok) {
+					done(null);
 					return null;
 				}
 				return response.json();
@@ -37,7 +47,9 @@
 				if (body) {
 					done(body);
 				}
-			}).catch(function () {});
+			}).catch(function () {
+				done(null);
+			});
 		}
 		send();
 	}
@@ -54,23 +66,128 @@
 		node.setAttribute('data-rwgc-arm', 'b');
 	}
 
-	function run() {
-		var root = endpoint();
-		if (!root || !window.fetch) {
+	/*
+	 * Best-effort beacon. A content blocker can drop it. The server still
+	 * counts a goal URL, and it ignores a second view from the same browser.
+	 */
+	function postEvent(testId, type) {
+		var url = eventEndpoint();
+		if (!url || !window.fetch || !testId) {
 			return;
 		}
-		var nodes = document.querySelectorAll('[data-rwgc-ab-mode="fragment"]');
+		window.fetch(url, {
+			method: 'POST',
+			credentials: 'same-origin',
+			cache: 'no-store',
+			keepalive: true,
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json'
+			},
+			// test is always a JSON number. type is always a string.
+			body: JSON.stringify({
+				test: Number(testId),
+				type: String(type)
+			})
+		}).catch(function () {});
+	}
+
+	function watchView(node) {
+		if (!node || node.getAttribute('data-rwgc-ab-view') === '1') {
+			return;
+		}
+		node.setAttribute('data-rwgc-ab-view', '1');
+		var testId = parseInt(node.getAttribute('data-rwgc-ab') || '0', 10);
+		if (!testId || testId < 1) {
+			return;
+		}
+		function send() {
+			postEvent(testId, 'view');
+		}
+		if (!window.IntersectionObserver) {
+			send();
+			return;
+		}
+		var observer = new window.IntersectionObserver(function (entries) {
+			var i;
+			for (i = 0; i < entries.length; i++) {
+				if (entries[i].isIntersecting) {
+					observer.disconnect();
+					send();
+					return;
+				}
+			}
+		});
+		observer.observe(node);
+	}
+
+	function bindClicks() {
+		if (clicksBound || !document.addEventListener) {
+			return;
+		}
+		clicksBound = true;
+		document.addEventListener('click', function (event) {
+			var target = event.target;
+			if (!target || !target.closest) {
+				return;
+			}
+			var wrapper = target.closest('[data-rwgc-ab]');
+			if (!wrapper) {
+				return;
+			}
+			var selector = wrapper.getAttribute('data-rwgc-ab-goal') || '';
+			if (!selector) {
+				return;
+			}
+			var goal = null;
+			try {
+				goal = target.closest(selector);
+			} catch (error) {
+				goal = null;
+			}
+			if (!goal || !wrapper.contains(goal)) {
+				return;
+			}
+			var testId = parseInt(wrapper.getAttribute('data-rwgc-ab') || '0', 10);
+			if (!testId || testId < 1) {
+				return;
+			}
+			postEvent(testId, 'conversion');
+		});
+	}
+
+	function run() {
+		bindClicks();
+		var root = endpoint();
+		var nodes = document.querySelectorAll('[data-rwgc-ab-mode]');
 		var i;
 		for (i = 0; i < nodes.length; i++) {
 			(function (node) {
+				var mode = node.getAttribute('data-rwgc-ab-mode');
 				var testId = parseInt(node.getAttribute('data-rwgc-ab') || '0', 10);
 				if (!testId || testId < 1) {
 					return;
 				}
+				if (mode === 'server') {
+					watchView(node);
+					return;
+				}
+				if (mode !== 'fragment' || !root || !window.fetch) {
+					return;
+				}
 				var joiner = root.indexOf('?') === -1 ? '?' : '&';
-				request(root + joiner + 'test=' + encodeURIComponent(String(testId)), function (body) {
-					apply(node, body);
-				});
+				var settled = false;
+				function finish(body) {
+					if (settled) {
+						return;
+					}
+					settled = true;
+					if (body) {
+						apply(node, body);
+					}
+					watchView(node);
+				}
+				request(root + joiner + 'test=' + encodeURIComponent(String(testId)), finish);
 			})(nodes[i]);
 		}
 	}

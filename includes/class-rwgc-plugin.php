@@ -160,6 +160,7 @@ class RWGC_Plugin {
 		require_once RWGC_PATH . 'includes/ab/class-rwgc-ab-admin.php';
 		require_once RWGC_PATH . 'includes/ab/class-rwgc-ab-assignment.php';
 		require_once RWGC_PATH . 'includes/ab/class-rwgc-ab-cache.php';
+		require_once RWGC_PATH . 'includes/ab/class-rwgc-ab-tracker.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-builder-request.php';
 		require_once RWGC_PATH . 'includes/class-rwgc-elementor.php';
 		require_once RWGC_PATH . 'includes/integrations/class-rwgc-integrations-loader.php';
@@ -234,6 +235,7 @@ class RWGC_Plugin {
 		RWGC_AB_Tests::init();
 		RWGC_AB_Assignment::init();
 		RWGC_AB_Cache::init();
+		RWGC_AB_Tracker::init();
 		RWGC_Variant_Rule_Applications::init();
 		RWGC_Visibility_Rule_Editor_Status::init();
 

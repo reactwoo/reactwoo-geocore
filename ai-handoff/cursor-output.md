@@ -3,6 +3,65 @@
 ## Status
 done
 
+QA fix on free A/B step 7 (PR #117). Not tagged. Version stays 1.9.26. Not merged.
+
+## Root cause
+`/ab/event` registered `test` as type `string`. `assets/js/rwgc-ab.js` sends that field as a JSON number. WordPress `rest_parse_request_arg()` rejects the number with `400 rest_invalid_param` before the callback, so no view is stored. A URL goal also stays at zero because it requires `.v` from that view. Core's own 400 did not send `Cache-Control: no-store`, because those headers were set only inside the callback.
+
+## Files changed
+- `includes/class-rwgc-rest.php` — `test` is type `integer|string`, with validate and sanitize callbacks that keep a positive int. `type` stays a string. `rest_request_after_callbacks` and `rest_post_dispatch` mark every `/ab/event` result no-store, including a `WP_Error` from core.
+- `includes/ab/class-rwgc-ab-tracker.php` — `rest_validate_test_param()` and `rest_sanitize_test_param()`. Shared no-store header list.
+- `assets/js/rwgc-ab.js` — the body is always `{ test: Number(testId), type: String(type) }`.
+- `tests/AB/RWGC_AB_TrackerTest.php` — `rest_do_request()` runs the same parameter check as `WP_REST_Request::sanitize_params()`. A JSON number and a numeric string both return 200 and increment the view. A core `rest_invalid_param` response is no-store and does not increment.
+- `CHANGELOG.md` — Unreleased fix.
+
+## Not changed
+- Plugin version (1.9.26). No tag. No merge.
+- Daily table schema. Option `rwgc_ab_db_version` stays `1`.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 297 tests, 22380 assertions, OK.
+
+## Remaining errors
+None from PHPUnit. CI is the remaining check.
+
+## Status
+done
+
+Free A/B step 7: view and goal counting. Not tagged. Version stays 1.9.26. Not merged.
+
+## Files changed
+- `includes/ab/class-rwgc-ab-tracker.php` — one view and one conversion per visitor per test. The signed `rwgc_ab` cookie flags `.v` and `.c` are the dedupe. A conversion without `.v` is ignored. Click goals arrive on `POST /reactwoo-geocore/v1/ab/event`. URL goals are counted on `template_redirect` when the path matches the stored goal. `RWGC_Events::emit()` fires `ab_exposure` and `ab_conversion`. The rate-limit transient key is a hash. The address is not stored.
+- `includes/ab/class-rwgc-ab-db.php` — `increment()` upserts `{prefix}rwgc_ab_daily`. `maybe_upgrade()` still creates the table with dbDelta when option `rwgc_ab_db_version` is missing. Schema version stays `1`. No new columns.
+- `includes/ab/class-rwgc-ab-assignment.php` — `mark_counted()` rewrites `.v` and `.c`. The event route may update the cookie. Other REST requests still do not.
+- `includes/ab/class-rwgc-ab-cache.php` — server mode also loads `assets/js/rwgc-ab.js`. The script data includes `eventEndpoint`. Wrappers gain `data-rwgc-ab-goal` for a click goal. Cache directives are unchanged.
+- `includes/class-rwgc-rest.php` — public `POST /ab/event`, no nonce, response `no-store`.
+- `assets/js/rwgc-ab.js` — viewport view beacon, delegated click beacon, in server mode, fragment mode, and the shortcode wrapper.
+- `includes/integrations/elementor/class-rwgc-elementor-ab.php`, `includes/class-rwgc-shortcodes.php`, `includes/integrations/gutenberg/class-rwgc-gutenberg-ab.php` — the click-goal attribute is kept on the arm wrapper.
+- `includes/events/class-rwgc-event.php` — `ab_exposure` and `ab_conversion` are known event types.
+- `includes/class-rwgc-plugin.php` — load and init the tracker.
+- `tests/AB/RWGC_AB_TrackerTest.php` — upsert, dedupe, conversion without a view, one conversion, rate limit, URL goal, and the no-address guarantee.
+- `CHANGELOG.md`, `readme.txt` — Unreleased notes.
+
+## Not changed
+- Plugin version (1.9.26). No tag. No merge.
+- Daily table shape. Uninstall already drops `{prefix}rwgc_ab_daily` and deletes `rwgc_ab_db_version`.
+- Server-mode `private, no-store` / `DONOTCACHEPAGE` / LiteSpeed nocache, the fragment route `no-store` policy, and the per-arm LiteSpeed vary.
+- Goal fields already stored on the test (`goal.type`, `goal.selector`, `goal.url`) from the block and Elementor controls. No second goal editor.
+
+## Schema
+`{prefix}rwgc_ab_daily` is unchanged: `test_id`, `variant`, `day`, `views`, `conversions`, primary key `(test_id, variant, day)`. Option `rwgc_ab_db_version` stays `1`. A missing option or a missing table runs dbDelta again. Rows hold counts only.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 295 tests, 22357 assertions, OK.
+- `composer test:all` — passed. PHPUnit, rule and library scripts, GeoIP, Elementor and block scripts, zip order, zip reproducibility, and the satellite updater all passed.
+
+## Remaining errors
+None.
+
+## Status
+done
+
 Free A/B step 6: `[rwgc_ab]` shortcode. Not tagged. Version stays 1.9.26.
 
 ## Files changed
