@@ -464,7 +464,7 @@ class RWGC_AB_Tracker {
 		$goal_host = '';
 		$goal_path = $goal_url;
 		if ( false !== strpos( $goal_url, '://' ) ) {
-			$parts = function_exists( 'wp_parse_url' ) ? wp_parse_url( $goal_url ) : parse_url( $goal_url );
+			$parts = wp_parse_url( $goal_url );
 			if ( ! is_array( $parts ) ) {
 				return false;
 			}
@@ -495,7 +495,7 @@ class RWGC_AB_Tracker {
 		if ( ! is_string( $uri ) ) {
 			$uri = '';
 		}
-		$path = function_exists( 'wp_parse_url' ) ? wp_parse_url( $uri, PHP_URL_PATH ) : parse_url( $uri, PHP_URL_PATH );
+		$path = wp_parse_url( $uri, PHP_URL_PATH );
 		if ( ! is_string( $path ) || '' === $path ) {
 			$path = $uri;
 		}
@@ -572,7 +572,7 @@ class RWGC_AB_Tracker {
 			return;
 		}
 		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
-			define( 'DONOTCACHEPAGE', true );
+			define( 'DONOTCACHEPAGE', true ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- DONOTCACHEPAGE is the shared WordPress cache-plugin no-store flag.
 		}
 		if ( function_exists( 'do_action' ) ) {
 			do_action( 'litespeed_control_set_nocache', 'reactwoo-geocore A/B goal' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- LiteSpeed Cache public nocache API.

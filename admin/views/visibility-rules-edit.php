@@ -190,7 +190,10 @@ $rwgc_page_title            = $rwgc_is_new ? __( 'Add visibility rule', 'reactwo
 								<span class="rwgc-summary-chip"><?php echo esc_html( $rwgc_target_label ); ?></span>
 							</div>
 						<?php endif; ?>
-						<?php foreach ( array( 'include' => __( 'Include', 'reactwoo-geocore' ), 'exclude' => __( 'Exclude', 'reactwoo-geocore' ), 'device' => __( 'Device', 'reactwoo-geocore' ), 'page' => __( 'Page', 'reactwoo-geocore' ), 'traffic' => __( 'Traffic', 'reactwoo-geocore' ) ) as $rwgc_chip_key => $rwgc_chip_label ) : ?>
+						<?php
+						// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_exclude -- Country-chip label key, not a WP_Query exclusion.
+						foreach ( array( 'include' => __( 'Include', 'reactwoo-geocore' ), 'exclude' => __( 'Exclude', 'reactwoo-geocore' ), 'device' => __( 'Device', 'reactwoo-geocore' ), 'page' => __( 'Page', 'reactwoo-geocore' ), 'traffic' => __( 'Traffic', 'reactwoo-geocore' ) ) as $rwgc_chip_key => $rwgc_chip_label ) :
+							?>
 							<?php if ( ! empty( $rwgc_summary_chips[ $rwgc_chip_key ] ) ) : ?>
 								<div class="rwgc-summary-card__section">
 									<strong><?php echo esc_html( $rwgc_chip_label ); ?></strong>

@@ -104,7 +104,7 @@ class RWGC_Shortcodes {
 		$atts = shortcode_atts(
 			array(
 				'country'          => '',
-				'exclude'          => '',
+				'exclude'          => '', // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_exclude -- [rwgc_if] attribute, not a WP_Query exclusion.
 				'groups'           => '',
 				'groups_exclude'   => '',
 				'country_on'       => '',
@@ -552,6 +552,9 @@ class RWGC_Shortcodes {
 		}
 		$post = get_post( $post_id );
 		if ( ! $post instanceof WP_Post ) {
+			return null;
+		}
+		if ( class_exists( 'RWGC_AB_Cache', false ) && ! RWGC_AB_Cache::source_post_is_publicly_viewable( $post ) ) {
 			return null;
 		}
 		$inner = self::inner_content_for_test( (string) $post->post_content, $test_id );

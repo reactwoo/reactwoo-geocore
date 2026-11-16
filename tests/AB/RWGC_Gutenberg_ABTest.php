@@ -254,7 +254,7 @@ final class RWGC_Gutenberg_ABTest extends TestCase {
 			define( 'RWGC_URL', 'https://example.test/wp-content/plugins/reactwoo-geocore/' );
 		}
 		if ( ! defined( 'RWGC_VERSION' ) ) {
-			define( 'RWGC_VERSION', '1.9.27' );
+			define( 'RWGC_VERSION', '1.9.28' );
 		}
 		require_once dirname( __DIR__, 2 ) . '/includes/functions-rwgc.php';
 		require_once dirname( __DIR__, 2 ) . '/includes/ab/class-rwgc-ab-tests.php';

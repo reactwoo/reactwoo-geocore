@@ -88,7 +88,7 @@ class RWGC_Visibility_Rule_Editor_Presenter {
 	private static function summary_chips( $set ) {
 		$out = array(
 			'include'  => array(),
-			'exclude'  => array(),
+			'exclude'  => array(), // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_exclude -- Country-chip bucket, not a WP_Query exclusion.
 			'device'   => array(),
 			'page'     => array(),
 			'traffic'  => array(),
@@ -106,7 +106,7 @@ class RWGC_Visibility_Rule_Editor_Presenter {
 			if ( 'country' === $type && in_array( $op, array( 'in', 'is' ), true ) ) {
 				$out['include'] = array_merge( $out['include'], self::country_chip_labels( $val ) );
 			} elseif ( 'country' === $type && in_array( $op, array( 'not_in', 'is_not' ), true ) ) {
-				$out['exclude'] = array_merge( $out['exclude'], self::country_chip_labels( $val ) );
+				$out['exclude'] = array_merge( $out['exclude'], self::country_chip_labels( $val ) ); // phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_exclude -- Country-chip bucket, not a WP_Query exclusion.
 			} elseif ( in_array( $type, array( 'device', 'device_type' ), true ) ) {
 				$out['device'] = array_merge( $out['device'], self::string_list( $val ) );
 			} elseif ( 'page_type' === $type ) {

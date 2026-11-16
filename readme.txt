@@ -4,15 +4,15 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.27
+Stable tag: 1.9.28
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Country-targeted content for your website. Detect a visitor's country, then show it with shortcodes, a block, and rules.
+Country-targeted content and free A/B tests. Detect a visitor's country, then show it with shortcodes, blocks, and rules.
 
 == Description ==
 
-ReactWoo Geo Core provides country-targeted content for your website. It detects a visitor’s country on your server and lets you use that result in content and rules. Country lookup uses a GeoLite2 Country database that you download with your own MaxMind account. No ReactWoo account is required for the features below.
+ReactWoo Geo Core provides country-targeted content and free A/B tests for your website. It detects a visitor’s country on your server and lets you use that result in content and rules. Country lookup uses a GeoLite2 Country database that you download with your own MaxMind account. No ReactWoo account is required for the features below. A/B tests are included, with no limit on how many you run.
 
 Included:
 
@@ -22,6 +22,7 @@ Included:
 * A conditional shortcode for showing content to selected countries
 * A REST location endpoint for front-end code, and a capabilities endpoint for discovery
 * The Geo Content block for the block editor
+* Free A/B tests, with no test limit: a Gutenberg A/B Test block, an Elementor variant control, and the [rwgc_ab] shortcode. One view and one conversion are counted per visitor. Those totals are stored on your site as a daily count per arm. The visitor's IP address is not stored
 * Visibility rules for country and country groups, in Elementor, the block editor, and reusable rules
 * PHP helpers for themes and other plugins
 
@@ -45,8 +46,9 @@ After setup, you can use Geo Core in multiple ways:
 * **Conditional shortcode**: `[rwgc_if country="US,CA"]Special content[/rwgc_if]`
 * **PHP helpers**: `rwgc_get_visitor_country()`, `rwgc_get_visitor_currency()`, `rwgc_get_visitor_data()`
 * **REST endpoints** (when enabled in settings): `/wp-json/reactwoo-geocore/v1/location` (visitor geo; not cached; the IP address is shown only to admins), `/wp-json/reactwoo-geocore/v1/capabilities` (plugin discovery: event types and hooks; no visitor PII)
-* **Gutenberg**: Use the **Geo Content** block to show/hide content by country
-* **Elementor (free baseline)**: Use Page/Popup document settings for basic show/hide by country. Classic widgets/sections use **Advanced → Geo Visibility**; Elementor Atomic (V4) widgets use a sibling **Geo Visibility** Settings section (ISO country codes and saved visibility rules).
+* **Gutenberg**: Use the **Geo Content** block to show/hide content by country. Use the **A/B Test** block for a free two-variant test with a click or page goal
+* **Elementor (free baseline)**: Use Page/Popup document settings for basic show/hide by country. Classic widgets/sections use **Advanced → Geo Visibility**; Elementor Atomic (V4) widgets use a sibling **Geo Visibility** Settings section (ISO country codes and saved visibility rules). The same elements can be Variant A or Variant B of a free A/B test
+* **A/B shortcode**: `[rwgc_ab id="123"]` with two `[rwgc_ab_variant]` blocks, for the classic editor, Divi, and Bricks. Experiences → A/B tests can copy that shortcode. The test is free and uncapped. A view is the first time a visitor sees an arm. A conversion is counted once after that. The totals stay on your site and do not include IP addresses
 
 For an in-dashboard guide, open **Geo Core → Usage** in wp-admin.
 
@@ -68,7 +70,7 @@ No. You must provide your own MaxMind license key and accept their terms of use.
 
 = What is included without another plugin? =
 
-Country detection, the shortcodes, the Geo Content block, the REST location endpoint, and country and country-group visibility rules. UTM, click-ID, device, language, and time rules come with Geo Core Pro. You do not need a ReactWoo account for the country features.
+Country detection, the shortcodes, the Geo Content block, free A/B tests, the REST location endpoint, and country and country-group visibility rules. A/B tests are included in Geo Core, not in a paid add-on. There is no limit on how many tests you run. One view and one conversion are counted per visitor, stored on your site as a daily total per arm, and the visitor's IP address is not stored. UTM, click-ID, device, language, and time rules come with Geo Core Pro. You do not need a ReactWoo account for the country features or for A/B tests.
 
 = Do I need an add-on? =
 
@@ -151,7 +153,7 @@ Off by default. An administrator must enable “Share anonymous experience event
 * When it is on, and only while the site is paired, Geo Core sets a first-party cookie named `rwgc_vid` (a random id, about one year). It stores the event type, experience, variant, audience, and goal ids, and an optional order total. Email addresses are removed before anything is queued.
 * Those events are sent to Decision Cloud on a later administrator or scheduled flush. They are not sent while visitor HTML is generated.
 * Turning the setting off stops collection and clears `rwgc_vid`.
-* Other cookies (`rwgc_returning`, `rwgc_rv`, `rwgc_ft`, `rwgc_st`, `rwgc_cc`, `rwgc_pv`) stay on this site for detection, returning visitors, and full-page cache variation. Telemetry does not upload them.
+* Other cookies stay on this site and are not uploaded. `rwgc_returning`, `rwgc_rv`, `rwgc_ft`, `rwgc_st`, `rwgc_cc`, and `rwgc_pv` are used for detection, returning visitors, and full-page cache variation. `rwgc_ab` is set only on a response that renders an A/B test (or on the fragment and event routes for that test). It is a signed first-party cookie, lasts about 90 days, and holds a random visitor id, the assigned arm, and view and conversion flags. Search bots and editor previews do not receive it. Telemetry does not upload any of these cookies.
 
 == Screenshots ==
 
@@ -165,6 +167,12 @@ Off by default. An administrator must enable “Share anonymous experience event
 == Changelog ==
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
+
+= 1.9.28 =
+* The public A/B render address no longer returns variant HTML from a page that visitors cannot already read. A draft, private, pending, scheduled, trashed, or password-protected source, and a source of a non-public type, gets the same not-found response as a test that is not running. That response is not stored.
+* A server-mode A/B test keeps the same arm when the theme prints the header before the test. Elementor, Divi, Bricks, and the classic editor do that. The `rwgc_ab` cookie is stored with that response. The buffer is only used on a singular front-end page that has a running test. REST, AJAX, cron, feeds, admin, and file or download responses are not buffered.
+* The readme and the suggested privacy policy name the `rwgc_ab` cookie. It is set only on a page that renders an A/B test, lasts about 90 days, and is not uploaded.
+* Bundled composer/ca-bundle is 1.6.1.
 
 = 1.9.27 =
 * An A/B test counts the first time a visitor sees an arm, and one conversion after that. A view is sent when the arm comes on screen. A click goal is sent from that arm. A goal address is counted when a visitor who already saw the test opens that page. Reloads do not count again. The totals do not store the visitor's address or account. The event address is public, has no nonce, and is not stored.
@@ -348,6 +356,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.28 =
+The public A/B render address no longer returns HTML from a draft, private, or password-protected page. A running test keeps the same variant when the theme prints the header first. The rwgc_ab cookie is described in the privacy policy suggestion.
 
 = 1.9.27 =
 Adds free A/B testing: a Gutenberg block, an Elementor control, and an [rwgc_ab] shortcode, with view and goal counts. Server mode keeps pages with a running test out of shared caches, and LiteSpeed keeps one copy per variant.

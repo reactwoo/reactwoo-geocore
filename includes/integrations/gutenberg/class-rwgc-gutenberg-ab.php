@@ -367,7 +367,7 @@ final class RWGC_Gutenberg_AB {
 	 * @return string
 	 */
 	public static function generate_instance_id() {
-		$seed = function_exists( 'wp_rand' ) ? (string) wp_rand() : (string) mt_rand( 0, PHP_INT_MAX );
+		$seed = (string) wp_rand();
 		return 'g_' . substr( md5( uniqid( $seed, true ) ), 0, 12 );
 	}
 
@@ -566,6 +566,9 @@ final class RWGC_Gutenberg_AB {
 		if ( ! $post instanceof WP_Post ) {
 			return '';
 		}
+		if ( class_exists( 'RWGC_AB_Cache', false ) && ! RWGC_AB_Cache::source_post_is_publicly_viewable( $post ) ) {
+			return '';
+		}
 		$blocks = parse_blocks( (string) $post->post_content );
 		if ( ! is_array( $blocks ) ) {
 			return '';
@@ -734,7 +737,7 @@ final class RWGC_Gutenberg_AB {
 	 * @return string
 	 */
 	private static function plain_line( $html ) {
-		$html = function_exists( 'wp_strip_all_tags' ) ? wp_strip_all_tags( (string) $html ) : strip_tags( (string) $html );
+		$html = wp_strip_all_tags( (string) $html );
 		return trim( (string) preg_replace( '/\s+/', ' ', $html ) );
 	}
 
@@ -749,7 +752,7 @@ final class RWGC_Gutenberg_AB {
 		}
 		$length = 55;
 		if ( function_exists( 'apply_filters' ) ) {
-			$filtered = apply_filters( 'excerpt_length', 55 );
+			$filtered = apply_filters( 'excerpt_length', 55 ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core excerpt_length.
 			if ( is_numeric( $filtered ) && (int) $filtered > 0 ) {
 				$length = (int) $filtered;
 			}

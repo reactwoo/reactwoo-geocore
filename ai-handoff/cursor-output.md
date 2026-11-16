@@ -3,6 +3,47 @@
 ## Status
 done
 
+Geo Core 1.9.28 readiness fixes, including the sticky-arm buffer from #118. Not merged and not tagged.
+
+## Files changed
+- `includes/ab/class-rwgc-ab-cache.php` — `GET /ab/render` returns the existing 404 (`rwgc_ab_not_running`, `no-store`, `X-LiteSpeed-Cache-Control: no-cache`) when a stored source post fails `is_post_publicly_viewable()` or has a password. Version fallback is 1.9.28.
+- `includes/class-rwgc-shortcodes.php`, `includes/integrations/gutenberg/class-rwgc-gutenberg-ab.php`, `includes/integrations/elementor/class-rwgc-elementor-ab.php` — the three HTML providers use the same public-source check. Gutenberg drops the `mt_rand` and `strip_tags` fallbacks. `excerpt_length` and `DONOTCACHEPAGE` have phpcs ignores.
+- `includes/ab/class-rwgc-ab-assignment.php` — singular front-end template buffer so `setcookie()` still runs after the theme header. Skips REST, AJAX, cron, feeds, admin, bots, and file or download responses. `rwgc_ab_buffer_template` disables it. Shutdown flushes the buffer and does not discard it.
+- `includes/ab/class-rwgc-ab-tests.php` — translators comment on `_n_noop()`, and `suppress_filters` removed.
+- `includes/ab/class-rwgc-ab-tracker.php` — `wp_parse_url()` only, and a `DONOTCACHEPAGE` ignore.
+- `includes/ab/class-rwgc-ab-db.php` — phpcs ignore on the interpolated daily-table name.
+- `admin/views/visibility-rules-edit.php`, `includes/class-rwgc-visibility-rule-editor-presenter.php`, `includes/class-rwgc-shortcodes.php` — phpcs ignores for the country-chip and `[rwgc_if]` `exclude` keys.
+- `includes/cloud/class-rwgc-cloud-telemetry.php` — privacy-policy text names `rwgc_ab`.
+- `readme.txt`, `CHANGELOG.md`, `reactwoo-geocore.php`, block asset versions, `RWGC_VERSION` fallbacks, and the version checks in tests — 1.9.28. Readme Description, Usage, FAQ, and External services cover free A/B testing and the cookie.
+- `composer.lock`, `vendor/composer/ca-bundle/src/CaBundle.php`, `vendor/composer/installed.json`, `vendor/composer/installed.php` — `composer/ca-bundle` 1.6.1.
+- `tests/AB/RWGC_AB_CacheTest.php` — draft, private, pending, future, password, trash, non-viewable type, and a published page.
+- `tests/AB/RWGC_AB_AssignmentTest.php`, `tests/AB/rwgc-ab-unbuffered-cookie.php` — buffer scope, and a PHP process with `output_buffering=0` where the header makes `headers_sent()` true unless the buffer is already open.
+- `tests/AB/RWGC_Elementor_ABTest.php` — the Elementor source page is a published post so the new check can see it.
+- `tests/bootstrap.php` — `post_password` on the post stub, and an `is_post_publicly_viewable()` stub.
+
+## Not changed
+- Pull requests #120 and #121. This branch does not push to #118.
+- No merge and no tag.
+- `Tested up to` stays 7.1. Plugin URI and Author URI are unchanged.
+- Cache policy (`private, no-store`, `DONOTCACHEPAGE`, LiteSpeed vary) is unchanged. The buffer only holds the template so those headers can still be sent.
+
+## How #118 was incorporated
+#118 (`fc6cb85` on `cursor/critical-bug-resolution-34ff`) was two commits behind `4b8a080` and its CI failed. The changes were re-applied on current main instead of pushing that branch. `test_template_buffer_lets_a_classic_theme_set_the_cookie_after_the_header` expected a new output buffer, but in the full suite PHPUnit has already written to stdout, so `headers_sent()` is true, `buffer_template()` returns, and the level stays 1 against an expected 2. The replacement runs `php -d output_buffering=0` outside PHPUnit. Without the buffer, the theme header makes `headers_sent()` true and `setcookie()` does not run. With the buffer opened first, the cookie is sent and the next request keeps the same arm. #118 can be closed as superseded by this pull request.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 303 tests, 22447 assertions, OK.
+- `php tests/test-rwgc-wporg-build.php` — all WordPress.org build guards passed at 1.9.28.
+- `python3 tests/test-rwgc-zip-js-order.py` — passed.
+- `python3 tests/test-rwgc-zip-reproducible.py` — passed. That test packages `HEAD` (still v1.9.27 until this commit), which is what the script is written to do.
+- `php -d output_buffering=0 tests/AB/rwgc-ab-unbuffered-cookie.php leak` and `buffer` — both exited 0. Leak reports `headers=1 cookie_sent=0`. Buffer prints the header and `OK arm=b`.
+
+## Remaining errors
+- Plugin Check 2.2.0 (`wp plugin check`) was not run here. This environment has no WordPress, wp-cli, or database.
+- CI on the pull request is the remaining check.
+
+## Status
+done
+
 Geo Core 1.9.27 is prepared as a pull request. Not merged and not tagged. It ships everything merged after v1.9.26: #108 (reproducible publish zip) and free A/B testing #109, #111–#117.
 
 ## Files changed
