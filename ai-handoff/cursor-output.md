@@ -31,8 +31,8 @@ Geo Core 1.9.28 readiness fixes, including the sticky-arm buffer from #118 and t
 #118 (`fc6cb85` on `cursor/critical-bug-resolution-34ff`) was two commits behind `4b8a080` and its CI failed. The changes were re-applied on current main instead of pushing that branch. `test_template_buffer_lets_a_classic_theme_set_the_cookie_after_the_header` expected a new output buffer, but in the full suite PHPUnit has already written to stdout, so `headers_sent()` is true, `buffer_template()` returns, and the level stays 1 against an expected 2. The replacement runs `php -d output_buffering=0` outside PHPUnit. Without the buffer, the theme header makes `headers_sent()` true and `setcookie()` does not run. With the buffer opened first, the cookie is sent and the next request keeps the same arm. #118 can be closed as superseded by this pull request.
 
 ## Commands
-- `vendor/bin/phpunit -c phpunit.xml.dist` — 303 tests, 22447 assertions, OK.
-- `php tests/test-rwgc-wporg-build.php` — all WordPress.org build guards passed at 1.9.28.
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 316 tests, 22552 assertions, OK, after folding #120. The render-source 404 tests and the HMAC rate-limit tests both passed.
+- `php tests/test-rwgc-wporg-build.php` — all WordPress.org build guards passed at 1.9.28 after the fold.
 - `python3 tests/test-rwgc-zip-js-order.py` — passed.
 - `python3 tests/test-rwgc-zip-reproducible.py` — passed. That test packages `HEAD` (still v1.9.27 until this commit), which is what the script is written to do.
 - `php -d output_buffering=0 tests/AB/rwgc-ab-unbuffered-cookie.php leak` and `buffer` — both exited 0. Leak reports `headers=1 cookie_sent=0`. Buffer prints the header and `OK arm=b`.
