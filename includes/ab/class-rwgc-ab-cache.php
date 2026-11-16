@@ -16,6 +16,10 @@
  * assets/js/rwgc-ab.js loads the assigned arm from the no-store render route
  * and swaps it in only when the arm is B, so an A visitor never sees B.
  *
+ * An ended test prints the kept arm for every visitor, in server mode and in
+ * fragment mode. That response is not marked private, and it is not added to
+ * the LiteSpeed vary map, so a previous per-arm entry is not reused.
+ *
  * Renderers in later releases call rwgc_ab_render_test() and print the result.
  *
  * @package ReactWoo_Geo_Core
@@ -71,11 +75,26 @@ class RWGC_AB_Cache {
 	private static $fragment_script_queued = false;
 
 	/**
+	 * Purge hooks fired on this request.
+	 *
+	 * @var array<int, array{hook:string,post_id:int}>
+	 */
+	private static $purge_log = array();
+
+	/**
+	 * Test id, kept arm, and post ids already purged on this request.
+	 *
+	 * @var array<string, bool>
+	 */
+	private static $purge_done = array();
+
+	/**
 	 * @return void
 	 */
 	public static function init() {
 		if ( function_exists( 'add_action' ) ) {
 			add_action( 'wp_enqueue_scripts', array( __CLASS__, 'register_assets' ) );
+			add_action( 'rwgc_ab_test_ended', array( __CLASS__, 'purge_on_end' ), 10, 3 );
 		}
 	}
 
@@ -181,7 +200,14 @@ class RWGC_AB_Cache {
 	public static function render( $test_id, array $arms ) {
 		$test_id = absint( $test_id );
 		$arms    = self::arm_html_map( $arms );
-		if ( $test_id <= 0 || ! self::test_is_running( $test_id ) ) {
+		if ( $test_id <= 0 ) {
+			return isset( $arms['a'] ) ? $arms['a'] : '';
+		}
+		if ( ! self::test_is_running( $test_id ) ) {
+			$kept = self::kept_arm( $test_id );
+			if ( '' !== $kept ) {
+				return self::render_kept( $test_id, $arms, $kept );
+			}
 			return isset( $arms['a'] ) ? $arms['a'] : '';
 		}
 
@@ -360,12 +386,28 @@ class RWGC_AB_Cache {
 		}
 		$test_id = $parsed;
 		if ( ! self::test_is_running( $test_id ) ) {
+			$kept = self::kept_arm( $test_id );
+			if ( '' === $kept ) {
+				return array(
+					'status'  => 404,
+					'headers' => $headers,
+					'body'    => array(
+						'code'    => 'rwgc_ab_not_running',
+						'message' => __( 'That A/B test is not running.', 'reactwoo-geocore' ),
+					),
+				);
+			}
+			$html = apply_filters( 'rwgc_ab_variant_html', '', $test_id, $kept );
+			if ( ! is_string( $html ) ) {
+				$html = '';
+			}
 			return array(
-				'status'  => 404,
+				'status'  => 200,
 				'headers' => $headers,
 				'body'    => array(
-					'code'    => 'rwgc_ab_not_running',
-					'message' => __( 'That A/B test is not running.', 'reactwoo-geocore' ),
+					'test' => $test_id,
+					'arm'  => $kept,
+					'html' => self::escape_variant_html( $html ),
 				),
 			);
 		}
@@ -549,11 +591,59 @@ class RWGC_AB_Cache {
 		self::$rendered               = array();
 		self::$vary_added             = array();
 		self::$fragment_script_queued = false;
+		self::$purge_log              = array();
+		self::$purge_done             = array();
 		self::$last_directives        = array(
 			'cache_control'  => '',
 			'donotcachepage' => false,
 			'vary'           => false,
 		);
+	}
+
+	/**
+	 * Purge hooks fired for ended tests on this request.
+	 *
+	 * @return array<int, array{hook:string,post_id:int}>
+	 */
+	public static function purge_log() {
+		return self::$purge_log;
+	}
+
+	/**
+	 * Drop cached copies of the posts that render an ended test.
+	 *
+	 * Hooked to `rwgc_ab_test_ended`. `RWGC_AB_Tests::end()` also calls this
+	 * so a test double that does not run actions still purges. A second call
+	 * for the same test and arm in one request does nothing.
+	 *
+	 * LiteSpeed is purged by post, which drops every vary copy of that URL.
+	 * This plugin does not set a LiteSpeed cache tag for an arm.
+	 *
+	 * @param int          $test_id  Test id. Unused except to pair the call.
+	 * @param string       $kept     Kept arm.
+	 * @param array<mixed> $post_ids Public post IDs.
+	 * @return void
+	 */
+	public static function purge_on_end( $test_id, $kept, $post_ids ) {
+		$test_id = absint( $test_id );
+		$kept    = sanitize_key( (string) $kept );
+		$ids     = array();
+		if ( is_array( $post_ids ) ) {
+			foreach ( $post_ids as $post_id ) {
+				$post_id = absint( $post_id );
+				if ( $post_id > 0 ) {
+					$ids[ $post_id ] = $post_id;
+				}
+			}
+		}
+		$token = $test_id . '|' . $kept . '|' . implode( ',', $ids );
+		if ( isset( self::$purge_done[ $token ] ) ) {
+			return;
+		}
+		self::$purge_done[ $token ] = true;
+		foreach ( $ids as $post_id ) {
+			self::purge_post( $post_id );
+		}
 	}
 
 	/**
@@ -619,6 +709,93 @@ class RWGC_AB_Cache {
 	 */
 	private static function emit_http_headers() {
 		return (bool) apply_filters( 'rwgc_ab_emit_http_headers', true );
+	}
+
+	/**
+	 * Ask each cache to drop one post. Missing plugins are skipped.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return void
+	 */
+	private static function purge_post( $post_id ) {
+		$post_id = absint( $post_id );
+		if ( $post_id <= 0 ) {
+			return;
+		}
+		self::record_purge( 'clean_post_cache', $post_id );
+		if ( function_exists( 'clean_post_cache' ) ) {
+			clean_post_cache( $post_id );
+		} elseif ( function_exists( 'do_action' ) ) {
+			do_action( 'clean_post_cache', $post_id );
+		}
+		self::record_purge( 'litespeed_purge_post', $post_id );
+		if ( function_exists( 'do_action' ) ) {
+			do_action( 'litespeed_purge_post', $post_id ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- LiteSpeed Cache public purge API.
+		}
+		if ( function_exists( 'rocket_clean_post' ) ) {
+			self::record_purge( 'rocket_clean_post', $post_id );
+			rocket_clean_post( $post_id );
+		}
+		if ( function_exists( 'w3tc_flush_post' ) ) {
+			self::record_purge( 'w3tc_flush_post', $post_id );
+			w3tc_flush_post( $post_id );
+		}
+		if ( function_exists( 'wp_cache_post_change' ) ) {
+			self::record_purge( 'wp_cache_post_change', $post_id );
+			wp_cache_post_change( $post_id );
+		}
+	}
+
+	/**
+	 * @param string $hook    Hook or function name.
+	 * @param int    $post_id Post ID.
+	 * @return void
+	 */
+	private static function record_purge( $hook, $post_id ) {
+		self::$purge_log[] = array(
+			'hook'    => (string) $hook,
+			'post_id' => absint( $post_id ),
+		);
+	}
+
+	/**
+	 * Kept arm of an ended test. Empty when the test is still running or missing.
+	 *
+	 * @param int $test_id Test id.
+	 * @return string a|b|empty
+	 */
+	private static function kept_arm( $test_id ) {
+		if ( ! class_exists( 'RWGC_AB_Tests', false ) ) {
+			return '';
+		}
+		$kept = RWGC_AB_Tests::kept_variant( $test_id );
+		return ( 'a' === $kept || 'b' === $kept ) ? $kept : '';
+	}
+
+	/**
+	 * The same arm for every visitor. No cookie, no beacon, and no per-arm vary.
+	 *
+	 * Fragment mode does not print the variant A placeholder. A cached page from
+	 * before the test ended can still ask the render route, which returns this arm.
+	 *
+	 * @param int                  $test_id Test id.
+	 * @param array<string,string> $arms    Escaped arms.
+	 * @param string               $kept    a|b.
+	 * @return string
+	 */
+	private static function render_kept( $test_id, array $arms, $kept ) {
+		$arm = ( 'b' === $kept && isset( $arms['b'] ) ) ? 'b' : 'a';
+		self::$last_directives = array(
+			'cache_control'  => '',
+			'donotcachepage' => false,
+			'vary'           => false,
+		);
+		$html = '<div class="rwgc-ab" data-rwgc-ab="' . esc_attr( (string) $test_id ) . '" data-rwgc-ab-mode="ended" data-rwgc-arm="' . esc_attr( $arm ) . '">' . ( isset( $arms[ $arm ] ) ? $arms[ $arm ] : '' ) . '</div>';
+		if ( function_exists( 'do_action' ) ) {
+			do_action( 'rwgc_ab_rendered_test', $test_id, $arm, 'ended' );
+		}
+		$filtered = apply_filters( 'rwgc_ab_render_html', $html, $test_id, $arm, 'ended' );
+		return is_string( $filtered ) ? $filtered : $html;
 	}
 
 	/**

@@ -105,7 +105,14 @@ class RWGC_AB_Assignment {
 	 */
 	public static function variant( $test_id ) {
 		$test_id = absint( $test_id );
-		if ( $test_id <= 0 || self::serves_control_only() ) {
+		if ( $test_id <= 0 ) {
+			return self::CONTROL;
+		}
+		$kept = self::ended_kept_arm( $test_id );
+		if ( '' !== $kept ) {
+			return $kept;
+		}
+		if ( self::serves_control_only() ) {
 			return self::CONTROL;
 		}
 		if ( self::can_write_cookie() ) {
@@ -585,6 +592,23 @@ class RWGC_AB_Assignment {
 		}
 		$ua = wp_unslash( $_SERVER['HTTP_USER_AGENT'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		return is_string( $ua ) ? $ua : '';
+	}
+
+	/**
+	 * Kept arm of an ended test. Empty when the test is still running.
+	 *
+	 * An ended test is the same for every visitor, so this does not read or
+	 * refresh the assignment cookie.
+	 *
+	 * @param int $test_id Test id.
+	 * @return string a|b|empty
+	 */
+	private static function ended_kept_arm( $test_id ) {
+		if ( ! class_exists( 'RWGC_AB_Tests', false ) ) {
+			return '';
+		}
+		$kept = RWGC_AB_Tests::kept_variant( $test_id );
+		return ( 'a' === $kept || 'b' === $kept ) ? $kept : '';
 	}
 
 	/**

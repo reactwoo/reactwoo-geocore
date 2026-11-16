@@ -158,6 +158,55 @@ class RWGC_AB_DB {
 	}
 
 	/**
+	 * Daily rows for one test. Other tests are not included.
+	 *
+	 * @param int $test_id Test post ID.
+	 * @return array<int, array{test_id:int,variant:string,day:string,views:int,conversions:int}>
+	 */
+	public static function rows_for_test( $test_id ) {
+		global $wpdb;
+
+		$test_id = absint( $test_id );
+		if ( $test_id <= 0 || ! is_object( $wpdb ) || ! method_exists( $wpdb, 'get_results' ) || ! method_exists( $wpdb, 'prepare' ) ) {
+			return array();
+		}
+		$table = self::table_name();
+		if ( ! preg_match( '/^[A-Za-z0-9_]+$/', $table ) ) {
+			return array();
+		}
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Fixed Core daily table, checked above.
+		$sql  = $wpdb->prepare( "SELECT test_id, variant, day, views, conversions FROM `{$table}` WHERE test_id = %d ORDER BY day ASC", $test_id );
+		$rows = $wpdb->get_results( $sql, 'ARRAY_A' );
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+		$out = array();
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$variant = sanitize_key( isset( $row['variant'] ) ? (string) $row['variant'] : '' );
+			if ( strlen( $variant ) > 16 ) {
+				$variant = substr( $variant, 0, 16 );
+			}
+			$day = isset( $row['day'] ) ? (string) $row['day'] : '';
+			if ( preg_match( '/^(\d{4}-\d{2}-\d{2})/', $day, $match ) ) {
+				$day = $match[1];
+			} else {
+				$day = '';
+			}
+			$out[] = array(
+				'test_id'     => absint( isset( $row['test_id'] ) ? $row['test_id'] : 0 ),
+				'variant'     => $variant,
+				'day'         => $day,
+				'views'       => absint( isset( $row['views'] ) ? $row['views'] : 0 ),
+				'conversions' => absint( isset( $row['conversions'] ) ? $row['conversions'] : 0 ),
+			);
+		}
+		return $out;
+	}
+
+	/**
 	 * Remove aggregate rows for one test. Other tests are left in place.
 	 *
 	 * @param int $test_id Test post ID.

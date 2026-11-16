@@ -336,6 +336,27 @@ class RWGC_AB_Tracker_Wpdb {
 	public function get_charset_collate() {
 		return 'DEFAULT CHARSET=utf8mb4';
 	}
+
+	/**
+	 * @param string $sql    SQL.
+	 * @param string $output Output format. Unused. Rows are associative arrays.
+	 * @return array<int, array{test_id:int,variant:string,day:string,views:int,conversions:int}>
+	 */
+	public function get_results( $sql, $output = 'ARRAY_A' ) {
+		unset( $output );
+		$this->queries[] = (string) $sql;
+		if ( ! preg_match( '/WHERE test_id = (\d+)/', (string) $sql, $match ) ) {
+			return array();
+		}
+		$id  = (int) $match[1];
+		$out = array();
+		foreach ( $this->rows as $row ) {
+			if ( (int) $row['test_id'] === $id ) {
+				$out[] = $row;
+			}
+		}
+		return $out;
+	}
 }
 
 if ( ! class_exists( 'WP_REST_Request', false ) ) {

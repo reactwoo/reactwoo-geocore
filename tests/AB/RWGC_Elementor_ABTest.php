@@ -512,6 +512,14 @@ final class RWGC_Elementor_ABTest extends TestCase {
 		$this->assertSame( 'raw', RWGC_Elementor_AB::render_decision( $settings_a, $ended )['mode'] );
 		$this->assertSame( 'suppress', RWGC_Elementor_AB::render_decision( $settings_b, $ended )['action'] );
 
+		$ended_fragment         = $ended;
+		$ended_fragment['mode'] = 'fragment';
+		$ended_fragment['kept'] = 'b';
+		$ended_fragment['assigned'] = 'a';
+		$this->assertSame( 'suppress', RWGC_Elementor_AB::render_decision( $settings_a, $ended_fragment )['action'] );
+		$this->assertSame( 'emit', RWGC_Elementor_AB::render_decision( $settings_b, $ended_fragment )['action'] );
+		$this->assertSame( 'raw', RWGC_Elementor_AB::render_decision( $settings_b, $ended_fragment )['mode'] );
+
 		$off = array( 'rwgc_ab_role' => 'off' );
 		$this->assertSame( 'passthrough', RWGC_Elementor_AB::render_decision( $off, $server )['action'] );
 	}

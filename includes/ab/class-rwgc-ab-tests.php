@@ -256,6 +256,23 @@ class RWGC_AB_Tests {
 	}
 
 	/**
+	 * Arm an ended test shows to every visitor. Empty when the test is still running.
+	 *
+	 * An ended test with no stored arm shows A.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string a|b|empty
+	 */
+	public static function kept_variant( $post_id ) {
+		$row = self::get( $post_id );
+		if ( null === $row || self::STATUS_ENDED !== (string) $row['status'] ) {
+			return '';
+		}
+		$kept = isset( $row['config']['kept'] ) ? sanitize_key( (string) $row['config']['kept'] ) : '';
+		return ( 'b' === $kept ) ? 'b' : 'a';
+	}
+
+	/**
 	 * Stop a test. Optional $kept must be one of the stored variant ids.
 	 *
 	 * @param int    $post_id Post ID.
@@ -284,13 +301,61 @@ class RWGC_AB_Tests {
 		if ( '' !== $kept ) {
 			$config['kept'] = $kept;
 		}
-		return self::update(
+		$updated = self::update(
 			(int) $row['id'],
 			array(
 				'status' => self::STATUS_ENDED,
 				'config' => $config,
 			)
 		) > 0;
+		if ( ! $updated ) {
+			return false;
+		}
+		$test_id  = (int) $row['id'];
+		$kept_now = self::kept_variant( $test_id );
+		$post_ids = self::affected_post_ids( $test_id );
+		if ( function_exists( 'do_action' ) ) {
+			/**
+			 * Fires after a free A/B test ends or its kept arm changes.
+			 *
+			 * Core purges cached copies of the posts that render the test.
+			 * Add-ons can purge more from this action.
+			 *
+			 * @param int    $test_id  Test post ID.
+			 * @param string $kept     a|b. Ended tests with no stored arm report a.
+			 * @param int[]  $post_ids Public posts that render the test.
+			 */
+			do_action( 'rwgc_ab_test_ended', $test_id, $kept_now, $post_ids );
+		}
+		if ( class_exists( 'RWGC_AB_Cache', false ) ) {
+			RWGC_AB_Cache::purge_on_end( $test_id, $kept_now, $post_ids );
+		}
+		return true;
+	}
+
+	/**
+	 * Public posts that render this test. The test post itself is not included.
+	 *
+	 * @param int $test_id Test post ID.
+	 * @return int[]
+	 */
+	public static function affected_post_ids( $test_id ) {
+		$test_id = absint( $test_id );
+		$ids     = array();
+		$row     = self::get( $test_id );
+		if ( is_array( $row ) && isset( $row['config']['source_post_id'] ) ) {
+			$ids[] = absint( $row['config']['source_post_id'] );
+		}
+		if ( $test_id > 0 && function_exists( 'get_post_meta' ) && class_exists( 'RWGC_Shortcodes', false ) ) {
+			$ids[] = absint( get_post_meta( $test_id, RWGC_Shortcodes::AB_SOURCE_META, true ) );
+		}
+		$out = array();
+		foreach ( $ids as $id ) {
+			if ( $id > 0 ) {
+				$out[ $id ] = $id;
+			}
+		}
+		return array_values( $out );
 	}
 
 	/**

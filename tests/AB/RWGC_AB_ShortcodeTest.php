@@ -227,12 +227,33 @@ final class RWGC_AB_ShortcodeTest extends TestCase {
 		$this->assertFalse( RWGC_AB_Cache::last_directives()['donotcachepage'] );
 		$this->assertNull( RWGC_AB_Assignment::last_cookie_header() );
 
+	}
+
+	public function test_an_ended_shortcode_serves_the_kept_arm_in_both_cache_modes(): void {
 		$ended = $this->running_test();
 		$this->assertTrue( RWGC_AB_Tests::end( $ended, 'b' ) );
+		$this->seed( $ended, 'a' );
 		$ended_html = $this->render( $ended, '<p>ARM-A-ONLY</p>', '<p>ARM-B-ONLY</p>' );
-		$this->assertStringContainsString( 'ARM-A-ONLY', $ended_html );
-		$this->assertStringNotContainsString( 'ARM-B-ONLY', $ended_html );
+		$this->assertStringContainsString( 'ARM-B-ONLY', $ended_html );
+		$this->assertStringNotContainsString( 'ARM-A-ONLY', $ended_html );
+		$this->assertStringContainsString( 'data-rwgc-ab-mode="ended"', $ended_html );
+		$this->assertStringContainsString( 'data-rwgc-arm="b"', $ended_html );
 		$this->assertFalse( RWGC_AB_Cache::last_directives()['donotcachepage'] );
+		$this->assertFalse( RWGC_AB_Cache::last_directives()['vary'] );
+		$this->assertSame( '', RWGC_AB_Cache::last_directives()['cache_control'] );
+		$this->assertFalse( RWGC_AB_Cache::fragment_script_queued() );
+
+		RWGC_AB_Cache::reset_request_state();
+		$GLOBALS['rwgc_test_filters']['rwgc_ab_cache_mode'] = static function () {
+			return 'fragment';
+		};
+		$fragment = $this->render( $ended, '<p>ARM-A-ONLY</p>', '<p>ARM-B-ONLY</p>' );
+		$this->assertStringContainsString( 'ARM-B-ONLY', $fragment );
+		$this->assertStringNotContainsString( 'ARM-A-ONLY', $fragment );
+		$this->assertStringContainsString( 'data-rwgc-ab-mode="ended"', $fragment );
+		$this->assertStringNotContainsString( 'data-rwgc-ab-mode="fragment"', $fragment );
+		$this->assertFalse( RWGC_AB_Cache::fragment_script_queued() );
+		$this->assertFalse( RWGC_AB_Cache::last_directives()['vary'] );
 		$this->assertSame( '', RWGC_AB_Cache::last_directives()['cache_control'] );
 	}
 

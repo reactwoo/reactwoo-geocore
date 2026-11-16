@@ -67,8 +67,9 @@ final class RWGC_Gutenberg_AB {
 	/**
 	 * Replace the saved pair with one arm.
 	 *
-	 * The saved markup contains both variants. This returns only the arm from
-	 * rwgc_ab_render_test(), or A / the kept arm when the test is not running.
+	 * The saved markup contains both variants. A running test returns the arm from
+	 * rwgc_ab_render_test(). An ended test returns the kept arm from that helper.
+	 * Anything else returns variant A.
 	 *
 	 * @param string               $block_content Rendered HTML of both arms.
 	 * @param array<string, mixed> $block         Parsed block.
@@ -150,7 +151,7 @@ final class RWGC_Gutenberg_AB {
 		$test_id = isset( $attrs['testId'] ) ? absint( $attrs['testId'] ) : 0;
 		$row     = self::stored_test( $test_id );
 
-		if ( self::row_is_running( $row ) && function_exists( 'rwgc_ab_render_test' ) ) {
+		if ( ( self::row_is_running( $row ) || self::row_is_ended( $row ) ) && function_exists( 'rwgc_ab_render_test' ) ) {
 			$html = rwgc_ab_render_test( $test_id, $arms );
 			if ( is_string( $html ) && false !== strpos( $html, 'data-rwgc-ab=' ) ) {
 				return self::escape_block_html( $html );

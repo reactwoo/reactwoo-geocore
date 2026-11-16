@@ -5,6 +5,11 @@ All notable changes to **reactwoo-geocore** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Experiences → A/B tests opens a results screen for each test. It shows views, conversions, conversion rate, the uplift of B over A, the two-proportion z and p-value, and a verdict: not enough data (under 100 views on an arm), no clear winner yet, or B is better or worse at 95%. The chart is the last 30 days. The totals include every stored day. End and keep A, or end and keep B, asks for confirmation and can be switched later. Everyone then sees that variant, in server mode and in fragment mode, and the page is not varied by arm. Counting stops. Ending a test purges the cached copy of the page that renders it, including each LiteSpeed vary entry for that post, and does not refresh the assignment cookie. Add-ons can hook `rwgc_ab_test_ended`. `GET /reactwoo-geocore/v1/ab/results` is limited to administrators and is not stored. End, End and keep A, and End and keep B are POST requests with a nonce bound to the arm.
+
 ## [1.9.27] - 2026-11-16
 
 ### Added

@@ -604,9 +604,11 @@ final class RWGC_AB_StoreTest extends TestCase {
 		$this->assertStringContainsString( "check_admin_referer( 'rwgc_ab_end_test_' . \$test_id )", $admin );
 		$this->assertStringContainsString( "check_admin_referer( 'rwgc_ab_delete_test_' . \$test_id )", $admin );
 		$this->assertStringContainsString( "'capability' => 'manage_options'", $admin );
+		$this->assertStringContainsString( 'method="post"', $admin );
+		$this->assertStringContainsString( 'rwgc_ab_end_test_', $admin );
 
 		$view = (string) file_get_contents( dirname( __DIR__, 2 ) . '/admin/views/ab-tests-list.php' );
-		$this->assertStringContainsString( 'rwgc_ab_end_test_', $view );
+		$this->assertStringContainsString( 'render_end_button', $view );
 		$this->assertStringContainsString( 'rwgc_ab_delete_test_', $view );
 		$this->assertStringContainsString( 'source_link', $view );
 	}
