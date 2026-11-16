@@ -188,6 +188,29 @@ if ( ! function_exists( 'wp_cache_add' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_is_json_request' ) ) {
+	/**
+	 * Same check as WordPress `wp_is_json_request()` for these tests.
+	 *
+	 * `Accept: application/json` is JSON. A wildcard Accept value is not.
+	 * Content-Type is checked the same way core checks it.
+	 *
+	 * @return bool
+	 */
+	function wp_is_json_request() {
+		foreach ( array( 'HTTP_ACCEPT', 'CONTENT_TYPE' ) as $key ) {
+			if ( ! isset( $_SERVER[ $key ] ) || ! is_string( $_SERVER[ $key ] ) ) {
+				continue;
+			}
+			$media = $_SERVER[ $key ];
+			if ( preg_match( '/(^|\s|,)application\/([\w!#$&^_.+-]*\+)?json(\+oembed)?($|\s|;|,)/i', $media ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+}
+
 if ( ! function_exists( 'register_rest_route' ) ) {
 	/**
 	 * @param string               $namespace Namespace.
@@ -737,6 +760,145 @@ final class RWGC_AB_CacheTest extends TestCase {
 		RWGC_AB_Assignment::reset_request_state();
 		$again = RWGC_AB_Cache::build_render_response( 42, '203.0.113.21' );
 		$this->assertSame( $built['body']['arm'], $again['body']['arm'] );
+	}
+
+	/**
+	 * The script sends Accept: application/json.
+	 *
+	 * A visitor with no cookie is assigned and the rwgc_ab Set-Cookie is issued.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_fragment_render_assigns_for_application_json_accept(): void {
+		$built = $this->render_fragment( 'application/json' );
+		$this->assertTrue( wp_is_json_request() );
+		$this->assert_assigned_private_fragment( $built );
+	}
+
+	/**
+	 * Accept any-type still assigns. That header is not a JSON request.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_fragment_render_assigns_for_wildcard_accept(): void {
+		$built = $this->render_fragment( '*/*' );
+		$this->assertFalse( wp_is_json_request() );
+		$this->assert_assigned_private_fragment( $built );
+	}
+
+	/**
+	 * JSON outside the fragment route does not write rwgc_ab.
+	 *
+	 * A public JSON GET is the case where the JSON flag is the only skip.
+	 * A non-fragment REST request that also asks for JSON still does not write.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function test_non_fragment_json_request_does_not_write_the_cookie(): void {
+		$this->set_accept_request( '/sample-page/', '*/*' );
+		$this->assertFalse( wp_is_json_request() );
+		$arm = RWGC_AB_Assignment::variant( 42 );
+		$this->assertContains( $arm, array( 'a', 'b' ) );
+		$this->assert_rwgc_set_cookie( 42, $arm );
+
+		$this->forget_assignment();
+		$this->set_accept_request( '/wp-json/wp/v2/posts', 'application/json' );
+		$this->assertTrue( wp_is_json_request() );
+		$this->assertSame( 'a', RWGC_AB_Assignment::variant( 42 ) );
+		RWGC_AB_Assignment::maybe_set_cookie();
+		$this->assert_no_rwgc_cookie();
+
+		if ( ! defined( 'REST_REQUEST' ) ) {
+			define( 'REST_REQUEST', true );
+		}
+		$this->forget_assignment();
+		$this->set_accept_request( '/wp-json/reactwoo-geocore/v1/geo', 'application/json' );
+		$this->assertTrue( wp_is_json_request() );
+		$this->assertSame( 'a', RWGC_AB_Assignment::variant( 42 ) );
+		RWGC_AB_Assignment::maybe_set_cookie();
+		$this->assert_no_rwgc_cookie();
+	}
+
+	/**
+	 * @param string $accept Accept header.
+	 * @return array{status:int,headers:array<string,string>,body:array<string,mixed>}
+	 */
+	private function render_fragment( $accept ): array {
+		if ( ! defined( 'REST_REQUEST' ) ) {
+			define( 'REST_REQUEST', true );
+		}
+		$this->forget_assignment();
+		$this->set_accept_request( '/wp-json/reactwoo-geocore/v1/ab/render?test=42', $accept );
+		$_SERVER['REMOTE_ADDR'] = '203.0.113.77';
+		$built                  = RWGC_REST::get_ab_render( new RWGC_AB_Cache_Request( array( 'test' => 42 ) ) );
+		$this->assertIsArray( $built );
+		return $built;
+	}
+
+	/**
+	 * @param string $uri    Request URI.
+	 * @param string $accept Accept header.
+	 * @return void
+	 */
+	private function set_accept_request( $uri, $accept ): void {
+		$_SERVER['REQUEST_METHOD']  = 'GET';
+		$_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 Chrome/120.0.0.0';
+		$_SERVER['REQUEST_URI']     = $uri;
+		$_SERVER['HTTP_ACCEPT']     = $accept;
+		unset( $_SERVER['CONTENT_TYPE'], $_GET['rest_route'] );
+	}
+
+	/**
+	 * @return void
+	 */
+	private function forget_assignment(): void {
+		unset( $_COOKIE[ RWGC_AB_Assignment::COOKIE ] );
+		RWGC_AB_Assignment::reset_request_state();
+	}
+
+	/**
+	 * @param array{status:int,headers:array<string,string>,body:array<string,mixed>} $built Response.
+	 * @return void
+	 */
+	private function assert_assigned_private_fragment( array $built ): void {
+		$this->assertSame( 200, $built['status'] );
+		$this->assertSame( 'no-store, no-cache, must-revalidate, max-age=0, private', $built['headers']['Cache-Control'] );
+		$this->assertContains( $built['body']['arm'], array( 'a', 'b' ) );
+		$this->assertFalse( headers_sent() );
+		$this->assert_rwgc_set_cookie( 42, $built['body']['arm'] );
+	}
+
+	/**
+	 * last_cookie_header() is the Set-Cookie passed to setcookie().
+	 *
+	 * The CLI SAPI does not keep that header in headers_list().
+	 *
+	 * @param int    $test_id Test id.
+	 * @param string $arm     Assigned arm.
+	 * @return void
+	 */
+	private function assert_rwgc_set_cookie( $test_id, $arm ): void {
+		$this->assertArrayHasKey( RWGC_AB_Assignment::COOKIE, $_COOKIE );
+		$header = RWGC_AB_Assignment::last_cookie_header();
+		$this->assertIsArray( $header );
+		$this->assertSame( 'rwgc_ab', $header['name'] );
+		$this->assertNotSame( '', $header['value'] );
+		$this->assertSame( $_COOKIE[ RWGC_AB_Assignment::COOKIE ], $header['value'] );
+		$decoded = RWGC_AB_Assignment::decode_cookie( $header['value'] );
+		$this->assertIsArray( $decoded );
+		$this->assertArrayHasKey( $test_id, $decoded['assignments'] );
+		$this->assertSame( $arm, $decoded['assignments'][ $test_id ]['variant'] );
+	}
+
+	/**
+	 * @return void
+	 */
+	private function assert_no_rwgc_cookie(): void {
+		$this->assertArrayNotHasKey( RWGC_AB_Assignment::COOKIE, $_COOKIE );
+		$this->assertNull( RWGC_AB_Assignment::last_cookie_header() );
 	}
 
 	/**

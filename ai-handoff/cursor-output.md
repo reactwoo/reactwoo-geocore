@@ -3,6 +3,30 @@
 ## Status
 done
 
+Fragment render assigns an arm and sets `rwgc_ab` when `Accept` is `application/json`. Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `includes/ab/class-rwgc-ab-assignment.php` — `can_write_cookie()` clears the JSON-request flag for the fragment render route only. Other REST and JSON requests still do not write the cookie.
+- `tests/AB/RWGC_AB_CacheTest.php` — JSON Accept assigns and issues `rwgc_ab`; wildcard Accept still does; a non-fragment JSON/REST request does not; the response stays private and no-store.
+- `CHANGELOG.md` — unreleased note for the same fix.
+
+## Not changed
+- Plugin version (1.9.26). No tag.
+- `assets/js/rwgc-ab.js` still sends `Accept: application/json`.
+- Render-route `Cache-Control` is still `no-store, no-cache, must-revalidate, max-age=0, private`.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 257 tests, 21948 assertions, OK.
+- `composer test:all` — passed.
+- Without the JSON-flag clear, `test_fragment_render_assigns_for_application_json_accept` fails (no `rwgc_ab` cookie). Wildcard Accept and the non-fragment request still pass.
+- After merging `origin/main` (`f86994c`): `vendor/bin/phpunit -c phpunit.xml.dist` — 283 tests, 22115 assertions, OK. `composer test:all` passed.
+
+## Remaining errors
+None.
+
+## Status
+done
+
 Elementor element-cache fix for classic A/B pairs. Not tagged. Version stays 1.9.26.
 
 ## Root cause
