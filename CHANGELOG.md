@@ -5,13 +5,16 @@ All notable changes to **reactwoo-geocore** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.9.27] - 2026-11-16
 
 ### Added
 - A free A/B test counts the first time a visitor sees an arm, and one conversion after that. The page script sends a view when the arm enters the screen, and a conversion when the visitor clicks the goal inside the arm. A goal URL is counted on that page for a visitor who already saw the test. Reloads do not count again. Totals are stored per arm per day. The request address and the account are not stored. `POST /reactwoo-geocore/v1/ab/event` is public, has no nonce, is not stored, and is limited per address.
 - Divi, Bricks, and the classic editor can run a free A/B test with `[rwgc_ab id="123"]` and two `[rwgc_ab_variant]` blocks. The A/B tests list has a Copy shortcode action. The shortcode uses the same server and fragment rendering as the block. An unknown or inactive id shows the first variant.
 - Elementor elements (containers, sections, columns, and widgets, including Atomic V4) can be an A/B pair. Set one sibling to Variant A and another to Variant B, and choose the same test or a new one. The editor and preview show both, labelled. Visitors see the assigned element. An element without its pair renders normally and shows a warning in the editor. Fragment mode still loads the arm from the render route.
 - Free A/B tests can render without one visitor's arm being stored for another. Server mode (Settings → Detection, the default) sends `Cache-Control: private, no-store` and defines `DONOTCACHEPAGE` when a page renders an active test and the response is not safe to share. LiteSpeed gets a server-derived `rwgc_ab` vary group for a visitor who already has an assignment, so A and B are separate cache entries. A response that sets the `rwgc_ab` cookie stays private. Fragment mode leaves variant A in the page and loads the assigned arm from `GET /reactwoo-geocore/v1/ab/render`, which is not stored and is limited to 40 requests a minute per IP. Without JavaScript the page stays on A. Renderers call `rwgc_ab_render_test()`.
+- The Gutenberg **A/B Test** block holds two locked variants, A and B, with a click or page goal in the sidebar. Saving a page creates one test per block. Duplicating the page or the block creates a new test. Auto excerpts are built from variant A, so the description does not depend on the visitor's arm.
+- Free A/B visitors are split 50/50 and keep their arm through a signed first-party `rwgc_ab` cookie (90 days, `HttpOnly`, `SameSite=Lax`). A cookie that fails its signature is replaced. Bots, logged-in editor previews, and visitors vetoed by the `rwgc_ab_can_track` filter see A and get no cookie.
+- **Experiences → A/B tests** lists free A/B tests with name, status, source link, End, and Delete. Tests are stored as a non-public `rwgc_ab_test` post type, and daily per-arm totals go in `{prefix}rwgc_ab_daily`. Uninstall drops only that table, its option, and those posts.
 
 ### Fixed
 - `POST /reactwoo-geocore/v1/ab/event` accepts the test id as a JSON number, which is what the page script sends, and as a numeric string. A parameter WordPress rejects is `no-store` as well, so that error cannot be stored in place of a later count.
@@ -21,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `rwgc_ab` cookie is set only when a response renders a test (`rwgc_ab_render_test()` or the fragment render route). A public page with no test does not send `Set-Cookie` and is not marked uncacheable.
 - `GET /ab/render?test=` returns 400 `rwgc_ab_invalid_test` unless `test` is a positive integer. A positive id that is not a running test is still 404.
 - The render rate limit uses `wp_cache_incr` when a persistent object cache is active, and a transient otherwise. The transient update is not atomic, so a short burst can exceed 40 requests a minute. `Cache-Control` is sent only while headers are still open. `DONOTCACHEPAGE` and LiteSpeed's nocache action still apply after output has started.
+
+### Changed
+- The ReactWoo and WordPress.org zips are built from the committed tree with `scripts/package_zip.py`, and the publish job checks that a second build has the same SHA-256.
 
 ## [1.9.26] - 2026-11-04
 

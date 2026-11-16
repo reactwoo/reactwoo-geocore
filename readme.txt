@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.26
+Stable tag: 1.9.27
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -166,7 +166,7 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
-= Unreleased =
+= 1.9.27 =
 * An A/B test counts the first time a visitor sees an arm, and one conversion after that. A view is sent when the arm comes on screen. A click goal is sent from that arm. A goal address is counted when a visitor who already saw the test opens that page. Reloads do not count again. The totals do not store the visitor's address or account. The event address is public, has no nonce, and is not stored.
 * Divi, Bricks, and the classic editor can run an A/B test with the `[rwgc_ab]` shortcode. The A/B tests screen can copy that shortcode. It follows the same server and fragment rules as the block. An unknown or inactive test shows the first variant.
 * On the public site, an Elementor A/B pair shows one variant. The A and B labels stay in the editor. Installing the plugin does not save the A/B cache choice; Server is used until that choice is saved.
@@ -175,6 +175,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * The A/B cookie is set only on a response that renders a test. A page with no test does not send that cookie and can stay cached.
 * The render address expects a positive integer test id. Anything else is rejected. With a persistent object cache the per-minute limit is an atomic counter. Without one, a transient is used and two requests at the same moment can both be counted, so a short burst can go over the limit.
 * Cache-Control is sent only when the response headers are still open. DONOTCACHEPAGE, and LiteSpeed's no-cache flag, still apply after the page has started sending output.
+* The Gutenberg A/B Test block has two locked variants and a click or page goal. Each block on a saved page is its own test. Duplicating the page or the block starts a new test.
+* Visitors are split 50/50 and keep their variant through a signed cookie. A cookie that has been changed is replaced. Search bots and editor previews see variant A and get no cookie.
+* Experiences → A/B tests lists each test with its status and source page, and can end or delete it.
 
 = 1.9.26 =
 * The WordPress Dashboard shows the MaxMind setup notice, and the Dashboard widgets render.
@@ -345,6 +348,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.27 =
+Adds free A/B testing: a Gutenberg block, an Elementor control, and an [rwgc_ab] shortcode, with view and goal counts. Server mode keeps pages with a running test out of shared caches, and LiteSpeed keeps one copy per variant.
 
 = 1.9.26 =
 The MaxMind screen explains how to create a free GeoLite2 account and when the country database downloads. Until that database is added, one dismissible notice on the WordPress Dashboard says every visitor is treated as the fallback country.
