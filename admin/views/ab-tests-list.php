@@ -73,6 +73,9 @@ $rwgc_ab_notice = isset( $rwgc_ab_notice ) ? sanitize_key( (string) $rwgc_ab_not
 						admin_url( 'admin-post.php?action=rwgc_ab_delete_test&test_id=' . $rwgc_ab_id ),
 						'rwgc_ab_delete_test_' . $rwgc_ab_id
 					);
+					$rwgc_ab_shortcode = class_exists( 'RWGC_Shortcodes', false )
+						? RWGC_Shortcodes::shortcode_snippet( $rwgc_ab_id )
+						: '[rwgc_ab id="' . $rwgc_ab_id . '"][rwgc_ab_variant][/rwgc_ab_variant][rwgc_ab_variant][/rwgc_ab_variant][/rwgc_ab]';
 					?>
 					<tr>
 						<td>
@@ -110,6 +113,7 @@ $rwgc_ab_notice = isset( $rwgc_ab_notice ) ? sanitize_key( (string) $rwgc_ab_not
 							<?php if ( class_exists( 'RWGC_AB_Tests', false ) && RWGC_AB_Tests::STATUS_ENDED !== $rwgc_ab_status ) : ?>
 								<a class="button button-secondary" href="<?php echo esc_url( $rwgc_ab_end ); ?>"><?php esc_html_e( 'End', 'reactwoo-geocore' ); ?></a>
 							<?php endif; ?>
+							<button type="button" class="button button-secondary rwgc-ab-copy-shortcode" style="margin-left:8px;" data-rwgc-ab-shortcode="<?php echo esc_attr( $rwgc_ab_shortcode ); ?>"><?php esc_html_e( 'Copy shortcode', 'reactwoo-geocore' ); ?></button>
 							<a class="button-link-delete" style="margin-left:8px;" href="<?php echo esc_url( $rwgc_ab_delete ); ?>" onclick="return confirm( <?php echo esc_attr( wp_json_encode( __( 'Delete this A/B test?', 'reactwoo-geocore' ) ) ); ?> );"><?php esc_html_e( 'Delete', 'reactwoo-geocore' ); ?></a>
 						</td>
 					</tr>

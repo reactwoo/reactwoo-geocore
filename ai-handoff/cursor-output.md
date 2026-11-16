@@ -3,6 +3,26 @@
 ## Status
 done
 
+Free A/B step 6: `[rwgc_ab]` shortcode. Not tagged. Version stays 1.9.26.
+
+## Files changed
+- `includes/class-rwgc-shortcodes.php` — `[rwgc_ab]` / `[rwgc_ab_variant]`. A running test calls `rwgc_ab_render_test()`. An unknown or inactive id prints the first variant. `rwgc_ab_variant_html` reads the arm from the post that contains the shortcode and does not call `rwgc_ab_render_test()`. Nested shortcodes run through `do_shortcode`. Output is escaped with the same Geo Content allowlist as the block.
+- `admin/views/ab-tests-list.php` — Copy shortcode row action.
+- `includes/ab/class-rwgc-ab-admin.php` — enqueues `assets/js/rwgc-ab-admin.js`.
+- `assets/js/rwgc-ab-admin.js` — copies the snippet.
+- `tests/AB/RWGC_AB_ShortcodeTest.php` — parsing, assignment, unknown and inactive ids, fragment mode, copy action.
+- `CHANGELOG.md`, `readme.txt` — Unreleased notes.
+
+## Not changed
+- Plugin version (1.9.26). No tag. Assignment and cache policy stay in `rwgc_ab_render_test()`.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 286 tests, 22160 assertions, OK.
+- CI composer scripts (rule evaluator, rules, library lookup, visibility status, GeoIP, Elementor preview, Elementor rule status, Geo Content block, A/B block, zip JS order, zip reproducible, satellite updater) — passed.
+
+## Status
+done
+
 Fragment render assigns an arm and sets `rwgc_ab` when `Accept` is `application/json`. Not tagged. Version stays 1.9.26.
 
 ## Files changed

@@ -80,7 +80,30 @@ class RWGC_AB_Admin {
 
 		$rwgc_ab_rows   = class_exists( 'RWGC_AB_Tests', false ) ? RWGC_AB_Tests::query() : array();
 		$rwgc_ab_notice = $notice;
+		self::enqueue_copy_script();
 		include RWGC_PATH . 'admin/views/ab-tests-list.php';
+	}
+
+	/**
+	 * Copy the [rwgc_ab] snippet from the list.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_copy_script() {
+		if ( ! function_exists( 'wp_enqueue_script' ) || ! defined( 'RWGC_URL' ) ) {
+			return;
+		}
+		$handle = 'rwgc-ab-admin';
+		if ( function_exists( 'wp_register_script' ) ) {
+			wp_register_script(
+				$handle,
+				RWGC_URL . 'assets/js/rwgc-ab-admin.js',
+				array(),
+				defined( 'RWGC_VERSION' ) ? RWGC_VERSION : '1.9.26',
+				true
+			);
+		}
+		wp_enqueue_script( $handle );
 	}
 
 	/**
