@@ -14,6 +14,10 @@ delete_option( 'rwgc_settings' );
 delete_option( 'rwgc_cache_version' );
 delete_option( 'rwgc_maxmind_schedule_version' );
 
+require_once __DIR__ . '/includes/class-rwgc-cache.php';
+delete_option( RWGC_Cache::PURGE_OPTION );
+delete_option( RWGC_Cache::PURGE_CURSOR );
+
 /**
  * Remove Geo Core A/B tests on this site, or on every site in a network.
  *

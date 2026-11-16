@@ -3,6 +3,31 @@
 ## Status
 done
 
+RG-85: geo lookup cache no longer stores a reversible hash of the visitor IP. Not tagged. Version stays 1.9.27.
+
+## Files changed
+- `includes/class-rwgc-cache.php` — transient name is HMAC-SHA256 of `geo|{ip}` with `wp_salt( 'auth' )` (same secret and empty-salt fallback as `RWGC_AB_Tracker::rate_transient_key()`), truncated to the 172-character transient limit. Stored payload drops `ip` and any copy of that address. `get()` puts the looked-up address back on the returned array. One-off batched delete of `_transient_rwgc_geo_v…` / `_transient_timeout_rwgc_geo_v…` rows (`rwgc_geo_v{version}_{32 hex}` only) via `admin_init` and `rwgc_purge_legacy_geo_cache`.
+- `includes/class-rwgc-plugin.php` — `RWGC_Cache::init()`.
+- `uninstall.php` — deletes the purge flag and cursor.
+- `tests/Engine/RWGC_CachePrivacyTest.php` — key is not md5(ip), changes with the site secret, stored values for IPv4 and IPv6 do not contain the address, legacy rows are deleted in batches and HMAC rows are kept.
+- `CHANGELOG.md`, `readme.txt` — Unreleased privacy note.
+
+## Not changed
+- Plugin version, stable tag, and release workflows. No tag and no merge.
+- `rwgc_get_visitor_data()`, `rwgc_geo_data`, `rwgc_cache_ttl`, and `RWGC_Cache::get()` / `set()` / `delete()` / `clear_all()` signatures. Callers that read `ip` from visitor data (REST for administrators, Elementor preview, popup debug) still receive the current request address. It is not read from the transient.
+- A/B event rate-limit keys.
+
+## Commands
+- `vendor/bin/phpunit -c phpunit.xml.dist --filter RWGC_CachePrivacyTest` — 10 tests, 85 assertions, OK.
+- `vendor/bin/phpunit -c phpunit.xml.dist` — 307 tests, 22465 assertions, OK.
+- CI composer scripts (rule evaluator, rules, library lookup, visibility status, GeoIP, Elementor preview, Elementor rule status, Geo Content block, A/B block, zip JS order, zip reproducible, satellite updater) — passed.
+
+## Remaining errors
+- None.
+
+## Status
+done
+
 Geo Core 1.9.27 is prepared as a pull request. Not merged and not tagged. It ships everything merged after v1.9.26: #108 (reproducible publish zip) and free A/B testing #109, #111–#117.
 
 ## Files changed

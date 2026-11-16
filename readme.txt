@@ -166,6 +166,9 @@ Off by default. An administrator must enable “Share anonymous experience event
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
 
+= Unreleased =
+* Country lookups are cached without storing the visitor IP address. The cache name is a salted hash tied to this site, and older cache rows are removed in small batches after the update.
+
 = 1.9.27 =
 * An A/B test counts the first time a visitor sees an arm, and one conversion after that. A view is sent when the arm comes on screen. A click goal is sent from that arm. A goal address is counted when a visitor who already saw the test opens that page. Reloads do not count again. The totals do not store the visitor's address or account. The event address is public, has no nonce, and is not stored.
 * Divi, Bricks, and the classic editor can run an A/B test with the `[rwgc_ab]` shortcode. The A/B tests screen can copy that shortcode. It follows the same server and fragment rules as the block. An unknown or inactive test shows the first variant.

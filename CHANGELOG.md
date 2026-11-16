@@ -5,6 +5,11 @@ All notable changes to **reactwoo-geocore** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+- Country lookup cache names are an HMAC-SHA256 of the visitor IP using the site auth salt (`wp_salt( 'auth' )`), the same secret as the A/B event rate limit, shortened to fit a WordPress transient name. The cached country payload no longer includes the IP. `RWGC_Cache::get()` still returns the address that was looked up, and `rwgc_get_visitor_data()` / `rwgc_geo_data` are unchanged. Older unsalted `md5` rows are deleted in small batches from the options table after update; any copy held only by a persistent object cache expires with its existing TTL.
+
 ## [1.9.27] - 2026-11-16
 
 ### Added
