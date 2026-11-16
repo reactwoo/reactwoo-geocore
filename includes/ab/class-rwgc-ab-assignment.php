@@ -61,6 +61,16 @@ class RWGC_AB_Assignment {
 	private static $fragment_write = false;
 
 	/**
+	 * True while the public event route is rewriting the signed flags.
+	 *
+	 * That route is POST and REST. A cached page cannot send a nonce, so this
+	 * request is allowed to update `.v` and `.c` on the cookie it already verified.
+	 *
+	 * @var bool
+	 */
+	private static $event_write = false;
+
+	/**
 	 * @return void
 	 */
 	public static function init() {
@@ -319,6 +329,93 @@ class RWGC_AB_Assignment {
 	}
 
 	/**
+	 * Assignments from a signed cookie. An unsigned cookie yields an empty list.
+	 *
+	 * The visitor id is not returned.
+	 *
+	 * @return array<int, array{variant:string, viewed:bool, converted:bool}>
+	 */
+	public static function verified_assignments() {
+		self::load_state( false );
+		if ( null === self::$memo || '' === self::$memo['visitor_id'] || ! is_array( self::$memo['assignments'] ) ) {
+			return array();
+		}
+		return self::$memo['assignments'];
+	}
+
+	/**
+	 * One signed assignment, or null when this visitor has none for the test.
+	 *
+	 * @param int|string $test_id Test id.
+	 * @return array{variant:string, viewed:bool, converted:bool}|null
+	 */
+	public static function verified_assignment( $test_id ) {
+		$test_id = absint( $test_id );
+		$rows    = self::verified_assignments();
+		if ( $test_id <= 0 || ! isset( $rows[ $test_id ] ) || ! is_array( $rows[ $test_id ] ) ) {
+			return null;
+		}
+		return $rows[ $test_id ];
+	}
+
+	/**
+	 * Set `.v` or `.c` once and rewrite the signed cookie.
+	 *
+	 * Does not mint a visitor. A conversion before `.v` is left unchanged.
+	 * `counted` means the flag was stored. `duplicate` and `no_view` mean the
+	 * aggregate must not change.
+	 *
+	 * @param int|string $test_id    Test id.
+	 * @param string     $flag       viewed|converted.
+	 * @param bool       $from_event True on the public event route, which is POST.
+	 * @return string counted|duplicate|missing|no_view
+	 */
+	public static function mark_counted( $test_id, $flag, $from_event = false ) {
+		$test_id = absint( $test_id );
+		$flag    = ( 'converted' === $flag ) ? 'converted' : 'viewed';
+		if ( $test_id <= 0 ) {
+			return 'missing';
+		}
+		$previous          = self::$event_write;
+		self::$event_write = $previous || (bool) $from_event;
+		try {
+			self::load_state( false );
+			$row = self::stored_row( $test_id );
+			if ( null === $row ) {
+				return 'missing';
+			}
+			if ( 'viewed' === $flag ) {
+				if ( ! empty( $row['viewed'] ) ) {
+					return 'duplicate';
+				}
+				self::$memo['assignments'][ $test_id ]['viewed'] = true;
+			} else {
+				if ( empty( $row['viewed'] ) ) {
+					return 'no_view';
+				}
+				if ( ! empty( $row['converted'] ) ) {
+					return 'duplicate';
+				}
+				self::$memo['assignments'][ $test_id ]['converted'] = true;
+			}
+			self::$dirty = true;
+			self::flush_cookie();
+			if ( self::$dirty ) {
+				if ( 'viewed' === $flag ) {
+					self::$memo['assignments'][ $test_id ]['viewed'] = false;
+				} else {
+					self::$memo['assignments'][ $test_id ]['converted'] = false;
+				}
+				self::$dirty = false;
+				return 'missing';
+			}
+			return 'counted';
+		} finally {
+			self::$event_write = $previous;
+		}
+	}
+
+	/**
 	 * Drop the in-request memo so the next call reads the cookie again.
 	 *
 	 * @return void
@@ -329,6 +426,7 @@ class RWGC_AB_Assignment {
 		self::$can_track      = null;
 		self::$last_emit      = null;
 		self::$fragment_write = false;
+		self::$event_write    = false;
 	}
 
 	/**
@@ -349,6 +447,12 @@ class RWGC_AB_Assignment {
 		if ( self::$fragment_write || self::is_fragment_render_request() ) {
 			$flags['rest'] = false;
 			$flags['json'] = false;
+		}
+		if ( self::$event_write ) {
+			$flags['rest']   = false;
+			$flags['json']   = false;
+			$flags['ajax']   = false;
+			$flags['method'] = 'GET';
 		}
 		return ! self::request_skips_assignment( $flags );
 	}

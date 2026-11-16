@@ -17,6 +17,8 @@ class RWGC_Event {
 	const TYPE_PURCHASE   = 'purchase';
 	const TYPE_ASSIGNMENT = 'assignment';
 	const TYPE_ROUTE_REDIRECT = 'route_redirect';
+	const TYPE_AB_EXPOSURE = 'ab_exposure';
+	const TYPE_AB_CONVERSION = 'ab_conversion';
 
 	/**
 	 * One of self::TYPE_* or a custom sanitized key.
@@ -150,6 +152,8 @@ class RWGC_Event {
 			self::TYPE_PURCHASE,
 			self::TYPE_ASSIGNMENT,
 			self::TYPE_ROUTE_REDIRECT,
+			self::TYPE_AB_EXPOSURE,
+			self::TYPE_AB_CONVERSION,
 		);
 		/**
 		 * Filter known geo event type strings (REST `/capabilities`, integrations).

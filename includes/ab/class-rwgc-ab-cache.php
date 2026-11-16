@@ -198,6 +198,7 @@ class RWGC_AB_Cache {
 			$html = self::placeholder( $test_id, isset( $arms['a'] ) ? $arms['a'] : '' );
 			$shown = 'a';
 		} else {
+			self::enqueue_tracker_script();
 			$html  = self::server_wrapper( $test_id, $arm, isset( $arms[ $arm ] ) ? $arms[ $arm ] : '' );
 			$shown = $arm;
 		}
@@ -228,6 +229,8 @@ class RWGC_AB_Cache {
 		self::apply_cache_policy( $test_id, $arm, $has, $cookie );
 		if ( self::is_fragment() ) {
 			self::enqueue_fragment_script();
+		} else {
+			self::enqueue_tracker_script();
 		}
 		return true;
 	}
@@ -700,7 +703,7 @@ class RWGC_AB_Cache {
 	 * @return string
 	 */
 	private static function server_wrapper( $test_id, $arm, $html ) {
-		return '<div class="rwgc-ab" data-rwgc-ab="' . esc_attr( (string) $test_id ) . '" data-rwgc-ab-mode="server" data-rwgc-arm="' . esc_attr( $arm ) . '">' . $html . '</div>';
+		return '<div class="rwgc-ab" data-rwgc-ab="' . esc_attr( (string) $test_id ) . '"' . self::goal_attribute( $test_id ) . ' data-rwgc-ab-mode="server" data-rwgc-arm="' . esc_attr( $arm ) . '">' . $html . '</div>';
 	}
 
 	/**
@@ -711,7 +714,19 @@ class RWGC_AB_Cache {
 	 * @return string
 	 */
 	private static function placeholder( $test_id, $control ) {
-		return '<div class="rwgc-ab" data-rwgc-ab="' . esc_attr( (string) $test_id ) . '" data-rwgc-ab-mode="fragment" data-rwgc-arm="a">' . $control . '</div>';
+		return '<div class="rwgc-ab" data-rwgc-ab="' . esc_attr( (string) $test_id ) . '"' . self::goal_attribute( $test_id ) . ' data-rwgc-ab-mode="fragment" data-rwgc-arm="a">' . $control . '</div>';
+	}
+
+	/**
+	 * @param int $test_id Test id.
+	 * @return string
+	 */
+	private static function goal_attribute( $test_id ) {
+		if ( ! class_exists( 'RWGC_AB_Tracker', false ) ) {
+			return '';
+		}
+		$attribute = RWGC_AB_Tracker::goal_attribute( $test_id );
+		return is_string( $attribute ) ? $attribute : '';
 	}
 
 	/**
@@ -719,6 +734,15 @@ class RWGC_AB_Cache {
 	 */
 	private static function enqueue_fragment_script() {
 		self::$fragment_script_queued = true;
+		self::enqueue_tracker_script();
+	}
+
+	/**
+	 * View and click beacons. Fragment mode also uses this handle to swap arm B.
+	 *
+	 * @return void
+	 */
+	private static function enqueue_tracker_script() {
 		self::register_assets();
 		if ( ! function_exists( 'wp_enqueue_script' ) ) {
 			return;
@@ -733,11 +757,20 @@ class RWGC_AB_Cache {
 			if ( function_exists( 'esc_url_raw' ) ) {
 				$url = esc_url_raw( $url );
 			}
+			$event = function_exists( 'rest_url' ) ? rest_url( self::REST_NAMESPACE . '/ab/event' ) : '';
+			$event = apply_filters( 'rwgc_ab_event_endpoint', $event );
+			if ( ! is_string( $event ) ) {
+				$event = '';
+			}
+			if ( function_exists( 'esc_url_raw' ) ) {
+				$event = esc_url_raw( $event );
+			}
 			wp_localize_script(
 				'rwgc-ab',
 				'rwgcAb',
 				array(
-					'endpoint' => $url,
+					'endpoint'      => $url,
+					'eventEndpoint' => $event,
 				)
 			);
 		}

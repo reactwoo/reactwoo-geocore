@@ -768,9 +768,10 @@ class RWGC_Shortcodes {
 			$allowed['div'] = array();
 		}
 		$allowed['div']['class']             = true;
-		$allowed['div']['data-rwgc-ab']      = true;
-		$allowed['div']['data-rwgc-arm']     = true;
-		$allowed['div']['data-rwgc-ab-mode'] = true;
+		$allowed['div']['data-rwgc-ab']       = true;
+		$allowed['div']['data-rwgc-arm']      = true;
+		$allowed['div']['data-rwgc-ab-mode']  = true;
+		$allowed['div']['data-rwgc-ab-goal']  = true;
 		return rwgc_kses_geo_content_html( $html, $allowed );
 	}
 }

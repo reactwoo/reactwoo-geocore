@@ -1292,7 +1292,11 @@ final class RWGC_Elementor_AB {
 			$chosen = $decision['assigned'];
 		}
 		self::send_request_nocache();
-		$wrapper = '<div class="rwgc-ab" data-rwgc-ab="' . esc_attr( (string) $test_id ) . '" data-rwgc-ab-mode="' . esc_attr( $mode ) . '" data-rwgc-arm="' . esc_attr( $arm ) . '" data-rwgc-ab-decision="' . esc_attr( $chosen ) . '">' . $html . '</div>';
+		$goal_attr = class_exists( 'RWGC_AB_Tracker', false ) ? RWGC_AB_Tracker::goal_attribute( $test_id ) : '';
+		if ( ! is_string( $goal_attr ) ) {
+			$goal_attr = '';
+		}
+		$wrapper = '<div class="rwgc-ab" data-rwgc-ab="' . esc_attr( (string) $test_id ) . '"' . $goal_attr . ' data-rwgc-ab-mode="' . esc_attr( $mode ) . '" data-rwgc-arm="' . esc_attr( $arm ) . '" data-rwgc-ab-decision="' . esc_attr( $chosen ) . '">' . $html . '</div>';
 		if ( function_exists( 'do_action' ) ) {
 			do_action( 'rwgc_ab_rendered_test', $test_id, $arm, $mode );
 		}
