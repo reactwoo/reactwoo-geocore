@@ -20,10 +20,8 @@ $rwgc_ab_uplift = array_key_exists( 'uplift', $rwgc_ab_result ) ? $rwgc_ab_resul
 $rwgc_ab_sig    = isset( $rwgc_ab_result['significance'] ) && is_array( $rwgc_ab_result['significance'] ) ? $rwgc_ab_result['significance'] : null;
 $rwgc_ab_arms   = isset( $rwgc_ab_result['arms'] ) && is_array( $rwgc_ab_result['arms'] ) ? $rwgc_ab_result['arms'] : array();
 $rwgc_ab_daily  = isset( $rwgc_ab_result['daily'] ) && is_array( $rwgc_ab_result['daily'] ) ? $rwgc_ab_result['daily'] : array();
-$rwgc_ab_back   = admin_url( 'admin.php?page=rwgc-ab-tests' );
-$rwgc_ab_keep_a = class_exists( 'RWGC_AB_Admin', false ) ? RWGC_AB_Admin::keep_url( $rwgc_ab_id, 'a' ) : '';
-$rwgc_ab_keep_b = class_exists( 'RWGC_AB_Admin', false ) ? RWGC_AB_Admin::keep_url( $rwgc_ab_id, 'b' ) : '';
-$rwgc_ab_ended  = class_exists( 'RWGC_AB_Tests', false ) && RWGC_AB_Tests::STATUS_ENDED === $rwgc_ab_status;
+$rwgc_ab_back  = admin_url( 'admin.php?page=rwgc-ab-tests' );
+$rwgc_ab_ended = class_exists( 'RWGC_AB_Tests', false ) && RWGC_AB_Tests::STATUS_ENDED === $rwgc_ab_status;
 
 $rwgc_ab_confirm_a = __( 'Show variant A to everyone? Counting stops, and you can switch the variant later from this screen.', 'reactwoo-geocore' );
 $rwgc_ab_confirm_b = __( 'Show variant B to everyone? Counting stops, and you can switch the variant later from this screen.', 'reactwoo-geocore' );
@@ -210,11 +208,11 @@ foreach ( $rwgc_ab_daily as $rwgc_ab_point ) {
 	</table>
 
 	<p>
-		<?php if ( '' !== $rwgc_ab_keep_a ) : ?>
-			<a class="button button-secondary" href="<?php echo esc_url( $rwgc_ab_keep_a ); ?>" onclick="return confirm( <?php echo esc_attr( wp_json_encode( $rwgc_ab_confirm_a ) ); ?> );"><?php esc_html_e( 'End and keep A', 'reactwoo-geocore' ); ?></a>
-		<?php endif; ?>
-		<?php if ( '' !== $rwgc_ab_keep_b ) : ?>
-			<a class="button button-primary" href="<?php echo esc_url( $rwgc_ab_keep_b ); ?>" onclick="return confirm( <?php echo esc_attr( wp_json_encode( $rwgc_ab_confirm_b ) ); ?> );"><?php esc_html_e( 'End and keep B', 'reactwoo-geocore' ); ?></a>
+		<?php if ( class_exists( 'RWGC_AB_Admin', false ) ) : ?>
+			<?php
+			RWGC_AB_Admin::render_end_button( $rwgc_ab_id, 'a', __( 'End and keep A', 'reactwoo-geocore' ), 'button button-secondary', $rwgc_ab_confirm_a );
+			RWGC_AB_Admin::render_end_button( $rwgc_ab_id, 'b', __( 'End and keep B', 'reactwoo-geocore' ), 'button button-primary', $rwgc_ab_confirm_b );
+			?>
 		<?php endif; ?>
 	</p>
 </div>

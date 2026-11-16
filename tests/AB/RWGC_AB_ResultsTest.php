@@ -86,6 +86,264 @@ if ( ! function_exists( 'wp_verify_nonce' ) ) {
 	}
 }
 
+if ( ! function_exists( 'register_rest_route' ) ) {
+	/**
+	 * @param string               $namespace Namespace.
+	 * @param string               $route     Route.
+	 * @param array<string, mixed> $args      Args.
+	 * @return void
+	 */
+	function register_rest_route( $namespace, $route, $args ) {
+		if ( ! isset( $GLOBALS['rwgc_test_routes'] ) || ! is_array( $GLOBALS['rwgc_test_routes'] ) ) {
+			$GLOBALS['rwgc_test_routes'] = array();
+		}
+		$GLOBALS['rwgc_test_routes'][] = array(
+			'namespace' => $namespace,
+			'route'     => $route,
+			'args'      => $args,
+		);
+	}
+}
+
+if ( ! function_exists( 'wp_nonce_field' ) ) {
+	/**
+	 * @param string $action  Action.
+	 * @param string $name    Field name.
+	 * @param bool   $referer Include the referer field.
+	 * @param bool   $display Echo the fields.
+	 * @return string
+	 */
+	function wp_nonce_field( $action = '', $name = '_wpnonce', $referer = true, $display = true ) {
+		$html = '<input type="hidden" id="' . esc_attr( $name ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( wp_create_nonce( $action ) ) . '" />';
+		if ( $referer ) {
+			$html .= '<input type="hidden" name="_wp_http_referer" value="/" />';
+		}
+		if ( $display ) {
+			echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built from escaped attributes.
+		}
+		return $html;
+	}
+}
+
+if ( ! function_exists( 'get_option' ) ) {
+	/**
+	 * @param string $key     Key.
+	 * @param mixed  $default Default.
+	 * @return mixed
+	 */
+	function get_option( $key, $default = false ) {
+		if ( isset( $GLOBALS['rwgc_test_get_option'] ) && is_callable( $GLOBALS['rwgc_test_get_option'] ) ) {
+			return $GLOBALS['rwgc_test_get_option']( $key, $default );
+		}
+		if ( isset( $GLOBALS['rwgc_test_options'] ) && is_array( $GLOBALS['rwgc_test_options'] ) && array_key_exists( $key, $GLOBALS['rwgc_test_options'] ) ) {
+			return $GLOBALS['rwgc_test_options'][ $key ];
+		}
+		return $default;
+	}
+}
+
+if ( ! function_exists( 'update_option' ) ) {
+	/**
+	 * @param string $key   Key.
+	 * @param mixed  $value Value.
+	 * @return bool
+	 */
+	function update_option( $key, $value ) {
+		if ( ! isset( $GLOBALS['rwgc_test_options'] ) || ! is_array( $GLOBALS['rwgc_test_options'] ) ) {
+			$GLOBALS['rwgc_test_options'] = array();
+		}
+		$GLOBALS['rwgc_test_options'][ $key ] = $value;
+		return true;
+	}
+}
+
+if ( ! function_exists( 'esc_url_raw' ) ) {
+	/**
+	 * @param mixed $url URL.
+	 * @return string
+	 */
+	function esc_url_raw( $url ) {
+		$url = trim( (string) $url );
+		if ( preg_match( '#^\s*(?:javascript|data):#i', $url ) ) {
+			return '';
+		}
+		return $url;
+	}
+}
+
+if ( ! function_exists( 'wp_insert_post' ) ) {
+	/**
+	 * @param array<string, mixed> $postarr Post fields.
+	 * @param bool                 $wp_error Return an error.
+	 * @param bool                 $fire_after_hooks Fire hooks.
+	 * @return int
+	 */
+	function wp_insert_post( $postarr, $wp_error = false, $fire_after_hooks = true ) {
+		unset( $wp_error, $fire_after_hooks );
+		$id                          = isset( $GLOBALS['rwgc_ab_test_seq'] ) ? (int) $GLOBALS['rwgc_ab_test_seq'] : 0;
+		$id                          = $id + 1;
+		$GLOBALS['rwgc_ab_test_seq'] = $id;
+		$post                        = new WP_Post();
+		$post->ID                    = $id;
+		$post->post_type             = isset( $postarr['post_type'] ) ? (string) $postarr['post_type'] : '';
+		$post->post_status           = isset( $postarr['post_status'] ) ? (string) $postarr['post_status'] : 'draft';
+		$post->post_title            = isset( $postarr['post_title'] ) ? (string) $postarr['post_title'] : '';
+		$post->post_content          = isset( $postarr['post_content'] ) ? (string) $postarr['post_content'] : '';
+		$GLOBALS['rwgc_ab_test_posts'][ $id ] = $post;
+		return $id;
+	}
+}
+
+if ( ! function_exists( 'wp_update_post' ) ) {
+	/**
+	 * @param array<string, mixed> $postarr Post fields.
+	 * @param bool                 $wp_error Return an error.
+	 * @param bool                 $fire_after_hooks Fire hooks.
+	 * @return int
+	 */
+	function wp_update_post( $postarr, $wp_error = false, $fire_after_hooks = true ) {
+		unset( $wp_error, $fire_after_hooks );
+		$id = isset( $postarr['ID'] ) ? (int) $postarr['ID'] : 0;
+		if ( $id <= 0 || ! isset( $GLOBALS['rwgc_ab_test_posts'][ $id ] ) || ! $GLOBALS['rwgc_ab_test_posts'][ $id ] instanceof WP_Post ) {
+			return 0;
+		}
+		$post = $GLOBALS['rwgc_ab_test_posts'][ $id ];
+		if ( isset( $postarr['post_title'] ) ) {
+			$post->post_title = (string) $postarr['post_title'];
+		}
+		if ( isset( $postarr['post_status'] ) ) {
+			$post->post_status = (string) $postarr['post_status'];
+		}
+		if ( isset( $postarr['post_content'] ) ) {
+			$post->post_content = (string) $postarr['post_content'];
+		}
+		return $id;
+	}
+}
+
+if ( ! function_exists( 'get_post' ) ) {
+	/**
+	 * @param mixed $post Post ID.
+	 * @return WP_Post|null
+	 */
+	function get_post( $post = null ) {
+		$id = is_object( $post ) && isset( $post->ID ) ? (int) $post->ID : (int) $post;
+		if ( isset( $GLOBALS['rwgc_ab_test_posts'][ $id ] ) && $GLOBALS['rwgc_ab_test_posts'][ $id ] instanceof WP_Post ) {
+			return $GLOBALS['rwgc_ab_test_posts'][ $id ];
+		}
+		return null;
+	}
+}
+
+if ( ! function_exists( 'get_posts' ) ) {
+	/**
+	 * @param array<string, mixed>|null $args Query.
+	 * @return array<int, WP_Post>
+	 */
+	function get_posts( $args = null ) {
+		$args     = is_array( $args ) ? $args : array();
+		$type     = isset( $args['post_type'] ) ? (string) $args['post_type'] : '';
+		$statuses = isset( $args['post_status'] ) ? (array) $args['post_status'] : array( 'publish' );
+		$posts    = array();
+		$all      = isset( $GLOBALS['rwgc_ab_test_posts'] ) && is_array( $GLOBALS['rwgc_ab_test_posts'] ) ? $GLOBALS['rwgc_ab_test_posts'] : array();
+		foreach ( $all as $post ) {
+			if ( ! $post instanceof WP_Post ) {
+				continue;
+			}
+			if ( '' !== $type && $post->post_type !== $type ) {
+				continue;
+			}
+			if ( ! in_array( (string) $post->post_status, $statuses, true ) ) {
+				continue;
+			}
+			$posts[] = $post;
+		}
+		usort(
+			$posts,
+			static function ( $a, $b ) {
+				return (int) $b->ID <=> (int) $a->ID;
+			}
+		);
+		return $posts;
+	}
+}
+
+if ( ! function_exists( 'get_post_meta' ) ) {
+	/**
+	 * @param int    $post_id Post ID.
+	 * @param string $key     Meta key.
+	 * @param bool   $single  Single value.
+	 * @return mixed
+	 */
+	function get_post_meta( $post_id, $key = '', $single = false ) {
+		$post_id = (int) $post_id;
+		$bag     = isset( $GLOBALS['rwgc_ab_test_meta'][ $post_id ] ) && is_array( $GLOBALS['rwgc_ab_test_meta'][ $post_id ] )
+			? $GLOBALS['rwgc_ab_test_meta'][ $post_id ]
+			: array();
+		if ( '' === (string) $key ) {
+			return $bag;
+		}
+		if ( ! array_key_exists( $key, $bag ) ) {
+			return $single ? '' : array();
+		}
+		return $single ? $bag[ $key ] : array( $bag[ $key ] );
+	}
+}
+
+if ( ! function_exists( 'rwgc_ab_test_record_purge' ) ) {
+	/**
+	 * @param string $hook    Hook.
+	 * @param int    $post_id Post ID.
+	 * @return void
+	 */
+	function rwgc_ab_test_record_purge( $hook, $post_id ) {
+		if ( ! isset( $GLOBALS['rwgc_ab_purge_calls'] ) || ! is_array( $GLOBALS['rwgc_ab_purge_calls'] ) ) {
+			$GLOBALS['rwgc_ab_purge_calls'] = array();
+		}
+		$GLOBALS['rwgc_ab_purge_calls'][] = array( (string) $hook, (int) $post_id );
+	}
+}
+
+if ( ! function_exists( 'clean_post_cache' ) ) {
+	/**
+	 * @param int $post_id Post ID.
+	 * @return void
+	 */
+	function clean_post_cache( $post_id ) {
+		rwgc_ab_test_record_purge( 'clean_post_cache', $post_id );
+	}
+}
+
+if ( ! function_exists( 'rocket_clean_post' ) ) {
+	/**
+	 * @param int $post_id Post ID.
+	 * @return void
+	 */
+	function rocket_clean_post( $post_id ) {
+		rwgc_ab_test_record_purge( 'rocket_clean_post', $post_id );
+	}
+}
+
+if ( ! function_exists( 'w3tc_flush_post' ) ) {
+	/**
+	 * @param int $post_id Post ID.
+	 * @return void
+	 */
+	function w3tc_flush_post( $post_id ) {
+		rwgc_ab_test_record_purge( 'w3tc_flush_post', $post_id );
+	}
+}
+
+if ( ! function_exists( 'wp_cache_post_change' ) ) {
+	/**
+	 * @param int $post_id Post ID.
+	 * @return void
+	 */
+	function wp_cache_post_change( $post_id ) {
+		rwgc_ab_test_record_purge( 'wp_cache_post_change', $post_id );
+	}
+}
+
 if ( ! function_exists( 'wp_nonce_url' ) ) {
 	/**
 	 * @param string $actionurl URL.
@@ -467,6 +725,8 @@ final class RWGC_AB_ResultsTest extends TestCase {
 		$GLOBALS['rwgc_ab_test_meta']    = array();
 		$GLOBALS['rwgc_ab_test_seq']     = 0;
 		$GLOBALS['rwgc_test_caps']       = array();
+		$GLOBALS['rwgc_test_is_admin']   = false;
+		$GLOBALS['rwgc_ab_purge_calls']  = array();
 		$GLOBALS['rwgc_test_transients'] = array();
 		$GLOBALS['wpdb']                 = new RWGC_AB_Results_Wpdb();
 		$GLOBALS['rwgc_test_filters']    = array(
@@ -761,9 +1021,7 @@ final class RWGC_AB_ResultsTest extends TestCase {
 
 	public function test_end_and_keep_requires_a_nonce_and_can_switch_the_arm(): void {
 		$id = $this->seed_test();
-		$_GET['test_id'] = (string) $id;
-		$_GET['kept']    = 'b';
-		$_REQUEST        = $_GET;
+		$this->post_end( $id, 'b' );
 
 		try {
 			RWGC_AB_Admin::end_from_request();
@@ -774,7 +1032,11 @@ final class RWGC_AB_ResultsTest extends TestCase {
 		$this->assertSame( 'publish', RWGC_AB_Tests::get( $id )['status'] );
 
 		$GLOBALS['rwgc_test_caps']['manage_options'] = true;
-		$_REQUEST['_wpnonce'] = wp_create_nonce( 'rwgc_ab_end_test_' . $id . '_a' );
+		$_SERVER['REQUEST_METHOD'] = 'GET';
+		$this->assertSame( 'notfound', RWGC_AB_Admin::end_from_request() );
+		$this->assertSame( 'publish', RWGC_AB_Tests::get( $id )['status'] );
+
+		$this->post_end( $id, 'b', 'rwgc_ab_end_test_' . $id . '_a' );
 		try {
 			RWGC_AB_Admin::end_from_request();
 			$this->fail( 'A nonce for arm A must not keep arm B.' );
@@ -783,16 +1045,14 @@ final class RWGC_AB_ResultsTest extends TestCase {
 		}
 		$this->assertSame( 'publish', RWGC_AB_Tests::get( $id )['status'] );
 
-		$_REQUEST['_wpnonce'] = wp_create_nonce( 'rwgc_ab_end_test_' . $id . '_b' );
+		$this->post_end( $id, 'b' );
 		$this->assertSame( 'kept-b', RWGC_AB_Admin::end_from_request() );
 		$ended = RWGC_AB_Tests::get( $id );
 		$this->assertSame( RWGC_AB_Tests::STATUS_ENDED, $ended['status'] );
 		$this->assertSame( 'b', $ended['config']['kept'] );
 		$ended_at = $ended['config']['ended_at'];
 
-		$_GET['kept']         = 'a';
-		$_REQUEST             = $_GET;
-		$_REQUEST['_wpnonce'] = wp_create_nonce( 'rwgc_ab_end_test_' . $id . '_a' );
+		$this->post_end( $id, 'a' );
 		$this->assertSame( 'kept-a', RWGC_AB_Admin::end_from_request() );
 		$switched = RWGC_AB_Tests::get( $id );
 		$this->assertSame( RWGC_AB_Tests::STATUS_ENDED, $switched['status'] );
@@ -804,11 +1064,8 @@ final class RWGC_AB_ResultsTest extends TestCase {
 		$this->assertStringContainsString( "check_admin_referer( 'rwgc_ab_end_test_' . \$test_id . '_' . \$kept )", $admin );
 		$this->assertStringContainsString( "current_user_can( 'manage_options' )", $admin );
 
-		$url = RWGC_AB_Admin::keep_url( $id, 'b' );
-		$this->assertStringContainsString( 'action=rwgc_ab_end_test', $url );
-		$this->assertStringContainsString( 'test_id=' . $id, $url );
-		$this->assertStringContainsString( 'kept=b', $url );
-		$this->assertStringContainsString( 'nonce-rwgc_ab_end_test_' . $id . '_b', $url );
+		$this->assertStringContainsString( 'method="post"', $admin );
+		$this->assertStringContainsString( 'admin-post.php', $admin );
 	}
 
 	public function test_results_screen_escapes_output_and_confirms_the_keep_buttons(): void {
@@ -832,8 +1089,11 @@ final class RWGC_AB_ResultsTest extends TestCase {
 		$this->assertStringContainsString( 'End and keep A', $html );
 		$this->assertStringContainsString( 'End and keep B', $html );
 		$this->assertStringContainsString( 'confirm(', $html );
-		$this->assertStringContainsString( 'kept=a', $html );
-		$this->assertStringContainsString( 'kept=b', $html );
+		$this->assertStringContainsString( 'method="post"', $html );
+		$this->assertStringContainsString( 'admin-post.php', $html );
+		$this->assertStringContainsString( 'name="kept" value="a"', $html );
+		$this->assertStringContainsString( 'name="kept" value="b"', $html );
+		$this->assertStringContainsString( 'name="_wpnonce"', $html );
 		$this->assertStringContainsString( '2026-10-11', $html );
 		$this->assertStringContainsString( '2026-11-09', $html );
 		$this->assertSame( 30, substr_count( $html, '<th scope="row">2026-' ) );
@@ -844,6 +1104,89 @@ final class RWGC_AB_ResultsTest extends TestCase {
 		$this->assertStringContainsString( 'esc_url(', $view );
 		$js = (string) file_get_contents( dirname( __DIR__, 2 ) . '/assets/js/rwgc-ab.js' );
 		$this->assertStringContainsString( "mode === 'ended'", $js );
+	}
+
+	public function test_ending_purges_cached_posts_and_does_not_refresh_the_cookie(): void {
+		$id = RWGC_AB_Tests::create(
+			array(
+				'title'  => 'Cached',
+				'status' => 'publish',
+				'config' => array(
+					'adapter'        => 'gutenberg',
+					'source_post_id' => 55,
+					'goal'           => array(
+						'type'     => 'click',
+						'selector' => '.buy',
+					),
+				),
+			)
+		);
+		update_post_meta( $id, RWGC_Shortcodes::AB_SOURCE_META, 77 );
+		$this->assertSame( array( 55, 77 ), RWGC_AB_Tests::affected_post_ids( $id ) );
+
+		$GLOBALS['rwgc_test_caps']['manage_options'] = true;
+		RWGC_AB_Cache::reset_request_state();
+		$GLOBALS['rwgc_ab_purge_calls'] = array();
+		$this->post_end( $id, 'b' );
+		$this->assertSame( 'kept-b', RWGC_AB_Admin::end_from_request() );
+
+		$log = RWGC_AB_Cache::purge_log();
+		foreach ( array( 55, 77 ) as $post_id ) {
+			$this->assertContains(
+				array(
+					'hook'    => 'clean_post_cache',
+					'post_id' => $post_id,
+				),
+				$log
+			);
+			$this->assertContains(
+				array(
+					'hook'    => 'litespeed_purge_post',
+					'post_id' => $post_id,
+				),
+				$log
+			);
+			$this->assertContains( array( 'rocket_clean_post', $post_id ), $GLOBALS['rwgc_ab_purge_calls'] );
+			$this->assertContains( array( 'w3tc_flush_post', $post_id ), $GLOBALS['rwgc_ab_purge_calls'] );
+			$this->assertContains( array( 'wp_cache_post_change', $post_id ), $GLOBALS['rwgc_ab_purge_calls'] );
+			$this->assertContains( array( 'clean_post_cache', $post_id ), $GLOBALS['rwgc_ab_purge_calls'] );
+		}
+		$before = count( $log );
+		RWGC_AB_Cache::purge_on_end( $id, 'b', array( 55, 77 ) );
+		$this->assertCount( $before, RWGC_AB_Cache::purge_log() );
+
+		$tests = (string) file_get_contents( dirname( __DIR__, 2 ) . '/includes/ab/class-rwgc-ab-tests.php' );
+		$cache = (string) file_get_contents( dirname( __DIR__, 2 ) . '/includes/ab/class-rwgc-ab-cache.php' );
+		$this->assertStringContainsString( "do_action( 'rwgc_ab_test_ended'", $tests );
+		$this->assertStringContainsString( "add_action( 'rwgc_ab_test_ended'", $cache );
+
+		$_COOKIE[ RWGC_AB_Assignment::COOKIE ] = 'already-set';
+		RWGC_AB_Assignment::reset_request_state();
+		RWGC_AB_Cache::reset_request_state();
+		$this->assertSame( 'b', RWGC_AB_Assignment::variant( $id ) );
+		$this->assertSame( 'already-set', $_COOKIE[ RWGC_AB_Assignment::COOKIE ] );
+		$this->assertNull( RWGC_AB_Assignment::last_cookie_header() );
+		$this->assertSame( array(), RWGC_AB_Cache::rendered_vary_groups() );
+		$this->assertSame( array(), RWGC_AB_Cache::vary_groups_added() );
+
+		$GLOBALS['rwgc_test_filters']['rwgc_ab_litespeed_active']   = static function () {
+			return true;
+		};
+		$GLOBALS['rwgc_test_filters']['rwgc_ab_litespeed_can_vary'] = static function () {
+			return true;
+		};
+		$html = rwgc_ab_render_test(
+			$id,
+			array(
+				'a' => '<p>ARM-A-ONLY</p>',
+				'b' => '<p>ARM-B-ONLY</p>',
+			)
+		);
+		$this->assertStringContainsString( 'ARM-B-ONLY', $html );
+		$this->assertStringNotContainsString( 'ARM-A-ONLY', $html );
+		$this->assertFalse( RWGC_AB_Cache::last_directives()['vary'] );
+		$this->assertSame( array(), RWGC_AB_Cache::vary_groups_added() );
+		$this->assertArrayNotHasKey( 'rwgc_ab_' . $id, RWGC_Cache_Compat::filter_litespeed_ab( array( 'rwgc_cc_US' => 'US' ) ) );
 	}
 
 	public function test_ending_a_test_serves_the_kept_arm_and_stops_counting(): void {
@@ -966,6 +1309,30 @@ final class RWGC_AB_ResultsTest extends TestCase {
 	 * @param string $title Title.
 	 * @return int
 	 */
+	/**
+	 * @param int    $id     Test id.
+	 * @param string $kept   a|b or empty.
+	 * @param string $action Nonce action. Empty uses the action for $kept.
+	 * @return void
+	 */
+	private function post_end( $id, $kept, $action = '' ) {
+		$_SERVER['REQUEST_METHOD'] = 'POST';
+		$_POST                     = array(
+			'action'  => 'rwgc_ab_end_test',
+			'test_id' => (string) $id,
+		);
+		if ( '' !== (string) $kept ) {
+			$_POST['kept'] = (string) $kept;
+		}
+		if ( '' === $action ) {
+			$action = ( '' === (string) $kept )
+				? 'rwgc_ab_end_test_' . $id
+				: 'rwgc_ab_end_test_' . $id . '_' . $kept;
+		}
+		$_POST['_wpnonce'] = wp_create_nonce( $action );
+		$_REQUEST          = $_POST;
+	}
+
 	private function seed_test( $title = 'Hero' ) {
 		return (int) RWGC_AB_Tests::create(
 			array(

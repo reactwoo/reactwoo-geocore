@@ -65,10 +65,6 @@ $rwgc_ab_notice = isset( $rwgc_ab_notice ) ? sanitize_key( (string) $rwgc_ab_not
 						$rwgc_ab_tone = 'warning';
 					}
 					$rwgc_ab_label = class_exists( 'RWGC_AB_Tests', false ) ? RWGC_AB_Tests::status_label( $rwgc_ab_status ) : $rwgc_ab_status;
-					$rwgc_ab_end   = wp_nonce_url(
-						admin_url( 'admin-post.php?action=rwgc_ab_end_test&test_id=' . $rwgc_ab_id ),
-						'rwgc_ab_end_test_' . $rwgc_ab_id
-					);
 					$rwgc_ab_delete = wp_nonce_url(
 						admin_url( 'admin-post.php?action=rwgc_ab_delete_test&test_id=' . $rwgc_ab_id ),
 						'rwgc_ab_delete_test_' . $rwgc_ab_id
@@ -111,8 +107,16 @@ $rwgc_ab_notice = isset( $rwgc_ab_notice ) ? sanitize_key( (string) $rwgc_ab_not
 						</td>
 						<td>
 							<a class="button button-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=rwgc-ab-tests&test_id=' . $rwgc_ab_id ) ); ?>"><?php esc_html_e( 'Results', 'reactwoo-geocore' ); ?></a>
-							<?php if ( class_exists( 'RWGC_AB_Tests', false ) && RWGC_AB_Tests::STATUS_ENDED !== $rwgc_ab_status ) : ?>
-								<a class="button button-secondary" href="<?php echo esc_url( $rwgc_ab_end ); ?>"><?php esc_html_e( 'End', 'reactwoo-geocore' ); ?></a>
+							<?php if ( class_exists( 'RWGC_AB_Admin', false ) && class_exists( 'RWGC_AB_Tests', false ) && RWGC_AB_Tests::STATUS_ENDED !== $rwgc_ab_status ) : ?>
+								<?php
+								RWGC_AB_Admin::render_end_button(
+									$rwgc_ab_id,
+									'',
+									__( 'End', 'reactwoo-geocore' ),
+									'button button-secondary',
+									__( 'End this test? Counting stops. You can choose the variant visitors see from the results screen.', 'reactwoo-geocore' )
+								);
+								?>
 							<?php endif; ?>
 							<button type="button" class="button button-secondary rwgc-ab-copy-shortcode" style="margin-left:8px;" data-rwgc-ab-shortcode="<?php echo esc_attr( $rwgc_ab_shortcode ); ?>"><?php esc_html_e( 'Copy shortcode', 'reactwoo-geocore' ); ?></button>
 							<a class="button-link-delete" style="margin-left:8px;" href="<?php echo esc_url( $rwgc_ab_delete ); ?>" onclick="return confirm( <?php echo esc_attr( wp_json_encode( __( 'Delete this A/B test?', 'reactwoo-geocore' ) ) ); ?> );"><?php esc_html_e( 'Delete', 'reactwoo-geocore' ); ?></a>

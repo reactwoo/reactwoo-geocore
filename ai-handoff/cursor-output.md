@@ -3,6 +3,26 @@
 ## Status
 done
 
+Follow-ups on free A/B results (PR 8, #121). Not tagged. Version stays 1.9.27.
+
+## Files changed
+- `includes/ab/class-rwgc-ab-tests.php` — `rwgc_ab_test_ended` after a successful end, with the kept arm and the public post ids.
+- `includes/ab/class-rwgc-ab-cache.php` — purges those posts through `clean_post_cache`, `litespeed_purge_post`, and WP Rocket, W3 Total Cache, and WP Super Cache when those functions exist. An ended test still does not add a per-arm vary.
+- `includes/ab/class-rwgc-ab-assignment.php` — an ended test returns the kept arm and does not refresh `rwgc_ab`.
+- `includes/ab/class-rwgc-ab-admin.php`, `admin/views/ab-tests-list.php`, `admin/views/ab-test-results.php` — End, End and keep A, and End and keep B are POST forms. The nonce is still bound to the arm. The confirm prompts stay.
+- `tests/AB/RWGC_AB_ResultsTest.php` — purge, cookie, POST, and the stubs this file needs when PHPUnit runs it alone.
+- `CHANGELOG.md`, `readme.txt` — Unreleased notes.
+
+## Not changed
+- Plugin version (1.9.27). No tag. No release. Delete stays a GET link.
+
+## Commands
+- `php /tmp/phpunit.phar -c phpunit.xml.dist tests/AB/RWGC_AB_ResultsTest.php` — 7 tests, 197 assertions, OK on its own.
+- `php /tmp/phpunit.phar -c phpunit.xml.dist` — 305 tests, 22596 assertions, OK.
+
+## Status
+done
+
 Free A/B results and significance (PR 8). Not tagged. Version stays 1.9.27.
 
 ## Files changed

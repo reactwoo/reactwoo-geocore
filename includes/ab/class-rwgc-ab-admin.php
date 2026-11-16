@@ -123,7 +123,7 @@ class RWGC_AB_Admin {
 	 * @return void
 	 */
 	public static function handle_end() {
-		$test_id = isset( $_GET['test_id'] ) ? absint( wp_unslash( (string) $_GET['test_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce checked in end_from_request().
+		$test_id = self::posted_absint( 'test_id' );
 		self::redirect( self::end_from_request(), $test_id );
 	}
 
@@ -137,8 +137,11 @@ class RWGC_AB_Admin {
 	 */
 	public static function end_from_request() {
 		self::assert_manage_options();
-		$test_id = isset( $_GET['test_id'] ) ? absint( wp_unslash( (string) $_GET['test_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce checked next.
-		$kept    = isset( $_GET['kept'] ) ? sanitize_key( wp_unslash( (string) $_GET['kept'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce checked next.
+		if ( ! self::is_post() ) {
+			return 'notfound';
+		}
+		$test_id = self::posted_absint( 'test_id' );
+		$kept    = self::posted_key( 'kept' );
 		if ( 'a' === $kept || 'b' === $kept ) {
 			check_admin_referer( 'rwgc_ab_end_test_' . $test_id . '_' . $kept );
 		} else {
@@ -156,19 +159,39 @@ class RWGC_AB_Admin {
 	}
 
 	/**
-	 * Admin URL that ends a test and keeps one arm. The nonce is bound to that arm.
+	 * POST button that ends a test. The nonce is bound to the arm when one is chosen.
 	 *
 	 * @param int    $test_id Test id.
-	 * @param string $kept    a|b.
-	 * @return string
+	 * @param string $kept    a, b, or empty for End without a chosen arm.
+	 * @param string $label   Button label.
+	 * @param string $class   Button classes.
+	 * @param string $confirm Confirm prompt. Empty skips the prompt.
+	 * @return void
 	 */
-	public static function keep_url( $test_id, $kept ) {
+	public static function render_end_button( $test_id, $kept, $label, $class, $confirm ) {
 		$test_id = absint( $test_id );
-		$kept    = ( 'b' === sanitize_key( (string) $kept ) ) ? 'b' : 'a';
-		return wp_nonce_url(
-			admin_url( 'admin-post.php?action=rwgc_ab_end_test&test_id=' . $test_id . '&kept=' . $kept ),
-			'rwgc_ab_end_test_' . $test_id . '_' . $kept
-		);
+		$kept    = sanitize_key( (string) $kept );
+		if ( 'a' !== $kept && 'b' !== $kept ) {
+			$kept = '';
+		}
+		$action = ( '' === $kept )
+			? 'rwgc_ab_end_test_' . $test_id
+			: 'rwgc_ab_end_test_' . $test_id . '_' . $kept;
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="display:inline;margin-right:8px;">';
+		echo '<input type="hidden" name="action" value="rwgc_ab_end_test" />';
+		echo '<input type="hidden" name="test_id" value="' . esc_attr( (string) $test_id ) . '" />';
+		if ( '' !== $kept ) {
+			echo '<input type="hidden" name="kept" value="' . esc_attr( $kept ) . '" />';
+		}
+		if ( function_exists( 'wp_nonce_field' ) ) {
+			wp_nonce_field( $action );
+		}
+		$onclick = '';
+		if ( '' !== (string) $confirm ) {
+			$onclick = ' onclick="return confirm( ' . esc_attr( wp_json_encode( (string) $confirm ) ) . ' );"';
+		}
+		echo '<button type="submit" class="' . esc_attr( (string) $class ) . '"' . $onclick . '>' . esc_html( (string) $label ) . '</button>';
+		echo '</form>';
 	}
 
 	/**
@@ -226,6 +249,36 @@ class RWGC_AB_Admin {
 			'url'   => $url,
 			'label' => $label,
 		);
+	}
+
+	/**
+	 * @return bool
+	 */
+	private static function is_post() {
+		$method = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( (string) wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) : 'GET'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Compared to POST.
+		return 'POST' === $method;
+	}
+
+	/**
+	 * @param string $key Field name.
+	 * @return int
+	 */
+	private static function posted_absint( $key ) {
+		if ( ! isset( $_POST[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Caller checks the nonce.
+			return 0;
+		}
+		return absint( wp_unslash( $_POST[ $key ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+	}
+
+	/**
+	 * @param string $key Field name.
+	 * @return string
+	 */
+	private static function posted_key( $key ) {
+		if ( ! isset( $_POST[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Caller checks the nonce.
+			return '';
+		}
+		return sanitize_key( wp_unslash( $_POST[ $key ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 	}
 
 	/**
