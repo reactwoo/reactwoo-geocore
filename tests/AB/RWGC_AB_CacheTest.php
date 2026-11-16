@@ -765,6 +765,47 @@ final class RWGC_AB_CacheTest extends TestCase {
 		$this->assertSame( 38, $second['remaining'] );
 	}
 
+	/**
+	 * @return void
+	 */
+	public function test_transient_rate_limit_key_is_an_hmac_not_md5(): void {
+		foreach ( array( '203.0.113.10', '2001:db8::10' ) as $ip ) {
+			$GLOBALS['rwgc_test_transients'] = array();
+			RWGC_AB_Cache::consume_rate_limit( $ip );
+			$keys = array_keys( $GLOBALS['rwgc_test_transients'] );
+			$this->assertCount( 1, $keys );
+			$secret   = (string) wp_salt( 'auth' );
+			$expected = 'rwgc_ab_rl_' . substr( hash_hmac( 'sha256', 'abrl|' . $ip, '' !== $secret ? $secret : 'rwgc-ab-event' ), 0, 32 );
+			$this->assertSame( $expected, $keys[0] );
+			$this->assertNotSame( 'rwgc_ab_rl_' . md5( $ip ), $keys[0] );
+			$this->assertStringNotContainsString( md5( $ip ), (string) $keys[0] );
+			$this->assertStringNotContainsString( $ip, (string) wp_json_encode( $GLOBALS['rwgc_test_transients'] ) );
+		}
+	}
+
+	/**
+	 * @return void
+	 */
+	public function test_object_cache_rate_limit_key_is_an_hmac_not_md5(): void {
+		$now = 1700000000;
+		$GLOBALS['rwgc_test_object_cache'] = array();
+		$GLOBALS['rwgc_test_filters']['rwgc_ab_rate_limit_use_object_cache'] = static function () {
+			return true;
+		};
+		$GLOBALS['rwgc_test_filters']['rwgc_ab_render_rate_now'] = static function () use ( $now ) {
+			return $now;
+		};
+		$ip = '203.0.113.40';
+		$this->assertTrue( RWGC_AB_Cache::consume_rate_limit( $ip )['allowed'] );
+		$window   = (int) floor( $now / 60 );
+		$secret   = (string) wp_salt( 'auth' );
+		$expected = substr( hash_hmac( 'sha256', 'abrl|' . $ip . '|' . $window, '' !== $secret ? $secret : 'rwgc-ab-event' ), 0, 32 );
+		$this->assertArrayHasKey( $expected, $GLOBALS['rwgc_test_object_cache']['rwgc_ab_rl'] );
+		$this->assertArrayNotHasKey( md5( $ip . '|' . $window ), $GLOBALS['rwgc_test_object_cache']['rwgc_ab_rl'] );
+		$this->assertStringNotContainsString( $ip, $expected );
+		$this->assertStringNotContainsString( $ip, (string) wp_json_encode( $GLOBALS['rwgc_test_object_cache'] ) );
+	}
+
 	public function test_default_mode_is_server_and_fragment_is_the_only_other_mode(): void {
 		$this->assertSame( 'server', RWGC_AB_Cache::sanitize_mode( '' ) );
 		$this->assertSame( 'server', RWGC_AB_Cache::sanitize_mode( 'ajax' ) );
