@@ -1036,6 +1036,52 @@ final class RWGC_AB_TrackerTest extends TestCase {
 		$this->assertStringContainsString( 'rwgc_ab_daily', (string) file_get_contents( $root . '/uninstall.php' ) );
 	}
 
+	public function test_a_different_rest_route_keeps_the_cookie_nonce_error(): void {
+		$error  = new WP_Error( 'rest_cookie_invalid_nonce', 'Cookie check failed' );
+		$had_wp = array_key_exists( 'wp', $GLOBALS );
+		$wp     = $had_wp ? $GLOBALS['wp'] : null;
+		try {
+			unset( $GLOBALS['wp'] );
+
+			$_SERVER['REQUEST_URI'] = '/wp-json/wp/v2/users/1?unused=reactwoo-geocore/v1/ab/event';
+			$this->assertSame( $error, RWGC_AB_Tracker::allow_public_event_without_nonce( $error ) );
+
+			$_SERVER['REQUEST_URI'] = '/wp-json/reactwoo-geocore/v1/ab/event?unused=1';
+			$this->assertNull( RWGC_AB_Tracker::allow_public_event_without_nonce( $error ) );
+
+			$_SERVER['REQUEST_URI'] = '/blog/wp-json/reactwoo-geocore/v1/ab/event/';
+			$this->assertNull( RWGC_AB_Tracker::allow_public_event_without_nonce( $error ) );
+
+			$_SERVER['REQUEST_URI'] = '/?unused=reactwoo-geocore/v1/ab/event';
+			$_GET['rest_route']     = '/wp/v2/settings';
+			$this->assertSame( $error, RWGC_AB_Tracker::allow_public_event_without_nonce( $error ) );
+
+			$_GET['rest_route'] = '/reactwoo-geocore/v1/ab/event';
+			$this->assertNull( RWGC_AB_Tracker::allow_public_event_without_nonce( $error ) );
+
+			$_GET['rest_route'] = '/reactwoo-geocore/v1/ab/eventual';
+			$this->assertSame( $error, RWGC_AB_Tracker::allow_public_event_without_nonce( $error ) );
+
+			unset( $_GET['rest_route'] );
+			$GLOBALS['wp'] = (object) array(
+				'query_vars' => array(
+					'rest_route' => '/wp/v2/settings',
+				),
+			);
+			$_SERVER['REQUEST_URI'] = '/wp-json/wp/v2/settings?reactwoo-geocore/v1/ab/event';
+			$this->assertSame( $error, RWGC_AB_Tracker::allow_public_event_without_nonce( $error ) );
+
+			$GLOBALS['wp']->query_vars['rest_route'] = '/reactwoo-geocore/v1/ab/event';
+			$this->assertNull( RWGC_AB_Tracker::allow_public_event_without_nonce( $error ) );
+		} finally {
+			if ( $had_wp ) {
+				$GLOBALS['wp'] = $wp;
+			} else {
+				unset( $GLOBALS['wp'] );
+			}
+		}
+	}
+
 	public function test_rest_server_accepts_the_json_number_the_script_sends_and_a_numeric_string(): void {
 		$id = $this->test_id(
 			array(

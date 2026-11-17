@@ -3,6 +3,27 @@
 ## Status
 done
 
+REST cookie nonce bypass on routes other than `POST /reactwoo-geocore/v1/ab/event`. Not tagged.
+
+## Files changed
+- `includes/ab/class-rwgc-ab-tracker.php` — `allow_public_event_without_nonce()` follows the route WordPress dispatches (`$wp->query_vars['rest_route']`, else the path after the REST prefix, else plain `rest_route`). A query string that only contains the event path no longer clears `rest_cookie_invalid_nonce`.
+- `tests/AB/RWGC_AB_TrackerTest.php` — other REST routes, a prefix match (`ab/eventual`), subdirectory pretty URLs, plain permalinks, and the parsed query var.
+- `CHANGELOG.md` — Unreleased security note.
+
+## Not changed
+- The event route stays public and still accepts a logged-in browser with no REST nonce.
+- No version bump and no tag.
+- Fragment render route detection was not changed.
+
+## Commands
+- `php /tmp/phpunit-9.6.phar --bootstrap /tmp/rwgc-tracker-bootstrap.php --stderr tests/AB/RWGC_AB_TrackerTest.php --filter 'test_a_different_rest_route_keeps_the_cookie_nonce_error|test_event_route_is_public|test_rest_server_accepts'` — 3 tests, 92 assertions, OK. The bootstrap only supplied `get_option`, `update_option`, and the A/B store and cache stubs that the full suite already loads. `test_server_and_fragment_wrappers_expose_the_click_goal_and_the_beacon_script` still needs `shortcode_atts()` from the shortcode file and was not part of this check.
+
+## Remaining errors
+- None from the route check itself.
+
+## Status
+done
+
 Geo Core 1.9.28 readiness fixes, including the sticky-arm buffer from #118 and the RG-85 HMAC geo-cache from #120. Not merged and not tagged.
 
 ## Files changed
