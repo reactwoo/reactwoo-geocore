@@ -549,18 +549,106 @@ class RWGC_AB_Tracker {
 	}
 
 	/**
+	 * True only for the public event route WordPress is serving.
+	 *
+	 * Logged-in browsers must be able to POST a view without a REST nonce,
+	 * because a cached page cannot keep a fresh one. That exception has to
+	 * follow the route WordPress dispatches. A different route keeps the
+	 * cookie nonce check, including when this path is only in the query string.
+	 *
 	 * @return bool
 	 */
 	private static function is_event_request() {
-		$uri = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Searched for a fixed route.
-		if ( is_string( $uri ) && false !== strpos( $uri, 'reactwoo-geocore/v1/ab/event' ) ) {
-			return true;
-		}
-		if ( ! isset( $_GET['rest_route'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Route detection, not a form.
+		return self::route_is_ab_event( self::resolved_rest_route() );
+	}
+
+	/**
+	 * @param mixed $route Route from WordPress, the path, or rest_route.
+	 * @return bool
+	 */
+	private static function route_is_ab_event( $route ) {
+		if ( ! is_string( $route ) || '' === $route ) {
 			return false;
 		}
-		$route = wp_unslash( $_GET['rest_route'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		return is_string( $route ) && false !== strpos( $route, 'reactwoo-geocore/v1/ab/event' );
+		$route = '/' . ltrim( $route, '/' );
+		if ( '/' !== $route ) {
+			$route = rtrim( $route, '/' );
+		}
+		return '/reactwoo-geocore/v1/ab/event' === $route;
+	}
+
+	/**
+	 * Route WordPress will dispatch, without the query string.
+	 *
+	 * `$wp->query_vars['rest_route']` wins, because a public query var replaces
+	 * the permalink match. Pretty URLs are read from the path after the REST
+	 * prefix. Plain permalinks use `rest_route` only when the path is not REST.
+	 *
+	 * @return string
+	 */
+	private static function resolved_rest_route() {
+		$parsed = self::rest_route_from_wp();
+		if ( '' !== $parsed ) {
+			return $parsed;
+		}
+		$from_path = self::rest_route_from_path( self::request_path() );
+		if ( null !== $from_path ) {
+			return $from_path;
+		}
+		if ( ! isset( $_GET['rest_route'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Route detection, not a form.
+			return '';
+		}
+		$route = wp_unslash( $_GET['rest_route'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Compared to one fixed route.
+		return is_string( $route ) ? $route : '';
+	}
+
+	/**
+	 * @return string Empty when WordPress has not parsed a REST route.
+	 */
+	private static function rest_route_from_wp() {
+		if ( ! isset( $GLOBALS['wp'] ) || ! is_object( $GLOBALS['wp'] ) ) {
+			return '';
+		}
+		$vars = isset( $GLOBALS['wp']->query_vars ) ? $GLOBALS['wp']->query_vars : null;
+		if ( ! is_array( $vars ) || ! isset( $vars['rest_route'] ) || ! is_string( $vars['rest_route'] ) ) {
+			return '';
+		}
+		return $vars['rest_route'];
+	}
+
+	/**
+	 * Path after the REST prefix, or null when this is not a pretty REST URL.
+	 *
+	 * @param string $path Request path with no query string.
+	 * @return string|null
+	 */
+	private static function rest_route_from_path( $path ) {
+		$path   = (string) $path;
+		$prefix = self::rest_prefix();
+		$needle = '/' . $prefix . '/';
+		$pos    = strpos( $path, $needle );
+		if ( false === $pos ) {
+			if ( '/' . $prefix === rtrim( $path, '/' ) ) {
+				return '/';
+			}
+			return null;
+		}
+		$route = substr( $path, $pos + strlen( $needle ) - 1 );
+		return '' === $route ? '/' : $route;
+	}
+
+	/**
+	 * @return string
+	 */
+	private static function rest_prefix() {
+		$prefix = 'wp-json';
+		if ( function_exists( 'rest_get_url_prefix' ) ) {
+			$filtered = rest_get_url_prefix();
+			if ( is_string( $filtered ) && '' !== trim( $filtered, '/' ) ) {
+				$prefix = trim( $filtered, '/' );
+			}
+		}
+		return $prefix;
 	}
 
 	/**

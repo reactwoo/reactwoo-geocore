@@ -4,7 +4,7 @@ Tags: geo, geolocation, country, location, block
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 1.9.28
+Stable tag: 1.9.29
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -167,6 +167,9 @@ Off by default. An administrator must enable “Share anonymous experience event
 == Changelog ==
 
 Recent releases are listed here. Older notes: https://github.com/reactwoo/reactwoo-geocore/blob/main/CHANGELOG.md and the history of this file on GitHub.
+
+= 1.9.29 =
+* Security: hardened REST request validation for the A/B event endpoint.
 
 = 1.9.28 =
 * The public A/B render address no longer returns variant HTML from a page that visitors cannot already read. A draft, private, pending, scheduled, trashed, or password-protected source, and a source of a non-public type, gets the same not-found response as a test that is not running. That response is not stored.
@@ -357,6 +360,9 @@ Recent releases are listed here. Older notes: https://github.com/reactwoo/reactw
 * **Gate D:** Request-time Decision Runtime evaluates the cached Cloud manifest for Experience Slots. Portal `op`/`type` conditions alias to `operator`/`capability`. No Cloud HTTP on the visitor path.
 
 == Upgrade Notice ==
+
+= 1.9.29 =
+Security: hardened REST request validation for the A/B event endpoint.
 
 = 1.9.28 =
 The public A/B render address no longer returns HTML from a draft, private, or password-protected page. A running test keeps the same variant when the theme prints the header first. The rwgc_ab cookie is described in the privacy policy suggestion.

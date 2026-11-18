@@ -127,6 +127,6 @@ final class RWGC_MaxMindOnboardingTest extends TestCase {
 		$this->assertStringContainsString( 'https://www.maxmind.com/en/create-account', substr( (string) $faq, 0, 500 ) );
 		$this->assertStringContainsString( 'about one to seven hours', $readme );
 		$this->assertStringContainsString( 'Visitor page views do not contact MaxMind.', $readme );
-		$this->assertStringContainsString( 'Stable tag: 1.9.28', $readme );
+		$this->assertStringContainsString( 'Stable tag: 1.9.29', $readme );
 	}
 }

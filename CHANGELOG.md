@@ -5,6 +5,11 @@ All notable changes to **reactwoo-geocore** are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+- A missing REST cookie nonce is ignored only when WordPress is serving `POST /reactwoo-geocore/v1/ab/event`. Any other REST route keeps that check, including when the event path appears only in the query string. A logged-in browser can still record a view or conversion from a cached page.
+
 ## [1.9.28] - 2026-11-16
 
 ### Security
