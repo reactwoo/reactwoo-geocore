@@ -3,7 +3,7 @@
  * Plugin Name: ReactWoo Geo Core
  * Plugin URI: https://reactwoo.com/geo-core/
  * Description: Country-targeted content and free A/B tests. MaxMind country detection, shortcodes, Gutenberg blocks, REST, and country visibility rules. No ReactWoo product license is required.
- * Version: 1.9.28
+ * Version: 1.9.29
  * Requires at least: 6.2
  * Requires PHP: 8.1
  * Author: ReactWoo
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Core constants.
 if ( ! defined( 'RWGC_VERSION' ) ) {
-	define( 'RWGC_VERSION', '1.9.28' );
+	define( 'RWGC_VERSION', '1.9.29' );
 }
 if ( ! defined( 'RWGC_FILE' ) ) {
 	define( 'RWGC_FILE', __FILE__ );
