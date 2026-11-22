@@ -94,6 +94,11 @@ if ( ! function_exists( 'wp_update_post' ) ) {
 	 */
 	function wp_update_post( $postarr, $wp_error = false, $fire_after_hooks = true ) {
 		unset( $wp_error, $fire_after_hooks );
+		// Core unslashes array input. Callers must wp_slash() content that
+		// contains block serialization escapes such as \u0026.
+		if ( function_exists( 'wp_unslash' ) ) {
+			$postarr = wp_unslash( $postarr );
+		}
 		$id = isset( $postarr['ID'] ) ? (int) $postarr['ID'] : 0;
 		if ( $id <= 0 || ! isset( $GLOBALS['rwgc_ab_test_posts'][ $id ] ) || ! $GLOBALS['rwgc_ab_test_posts'][ $id ] instanceof WP_Post ) {
 			return 0;

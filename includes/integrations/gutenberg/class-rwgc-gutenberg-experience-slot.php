@@ -107,12 +107,17 @@ final class RWGC_Gutenberg_Experience_Slot {
 			return;
 		}
 
-		$serialized = serialize_blocks( $blocks );
+		$serialized     = serialize_blocks( $blocks );
 		self::$updating = true;
+		// wp_update_post() unslashes array input. serialize_blocks() writes
+		// \u0026, \u003c, \u003e, and \u002d for &, <, >, and --. Those
+		// backslashes have to be slashed again or the saved page loses them.
 		wp_update_post(
-			array(
-				'ID'           => (int) $post_id,
-				'post_content' => $serialized,
+			wp_slash(
+				array(
+					'ID'           => (int) $post_id,
+					'post_content' => $serialized,
+				)
 			)
 		);
 		self::$updating = false;

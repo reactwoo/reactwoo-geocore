@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - A missing REST cookie nonce is ignored only when WordPress is serving `POST /reactwoo-geocore/v1/ab/event`. Any other REST route keeps that check, including when the event path appears only in the query string. A logged-in browser can still record a view or conversion from a cached page.
 
+### Fixed
+- Saving a page that contains a Gutenberg A/B block, or a Gutenberg experience slot, no longer strips backslashes from the rest of the page. The sync writes the serialized blocks back with `wp_slash()`, because `wp_update_post()` unslashes array input. Block serialization uses those backslashes for `&`, `<`, `>`, and `--` in attributes, and for characters such as `\` in the block HTML.
+
 ## [1.9.28] - 2026-11-16
 
 ### Security
