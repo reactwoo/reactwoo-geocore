@@ -357,6 +357,44 @@ final class RWGC_Gutenberg_ABTest extends TestCase {
 		$this->assertSame( $test_id, (int) RWGC_AB_Tests::get( $test_id )['id'] );
 	}
 
+	public function test_saving_keeps_backslashes_in_the_page(): void {
+		$path    = '<p>C:\\Users\\ada</p>';
+		$post_id = $this->insert_page(
+			array(
+				array(
+					'blockName'    => 'core/button',
+					'attrs'        => array(
+						'url' => 'https://example.test/cart?add=1&coupon=SAVE',
+					),
+					'innerBlocks'  => array(),
+					'innerHTML'    => '',
+					'innerContent' => array(),
+				),
+				$this->ab_block(
+					array(
+						'testName' => 'Hero',
+						'goalType' => 'url',
+						'goalUrl'  => 'https://example.test/thanks?utm=1&ok=1',
+					)
+				),
+			)
+		);
+		$blocks = $this->blocks_of( $post_id );
+		$blocks[1]['innerBlocks'][0]['innerBlocks'][0]['innerHTML'] = $path;
+		$this->write_blocks( $post_id, $blocks );
+
+		RWGC_Gutenberg_AB::sync_on_save( $post_id );
+
+		$saved = $this->blocks_of( $post_id );
+		$this->assertNotSame( array(), $saved );
+		$this->assertSame( 'https://example.test/cart?add=1&coupon=SAVE', $saved[0]['attrs']['url'] );
+		$this->assertSame( $path, $saved[1]['innerBlocks'][0]['innerBlocks'][0]['innerHTML'] );
+		$this->assertSame( 'https://example.test/thanks?utm=1&ok=1', $saved[1]['attrs']['goalUrl'] );
+		$test_id = (int) $saved[1]['attrs']['testId'];
+		$this->assertGreaterThan( 0, $test_id );
+		$this->assertSame( 'https://example.test/thanks?utm=1&ok=1', RWGC_AB_Tests::get( $test_id )['config']['goal']['url'] );
+	}
+
 	public function test_a_nested_block_is_synced(): void {
 		$post_id = $this->insert_page(
 			array(

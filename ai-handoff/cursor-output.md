@@ -3,6 +3,29 @@
 ## Status
 done
 
+Gutenberg save no longer strips backslashes from a page that contains an A/B block or an experience slot. Not tagged.
+
+## Files changed
+- `includes/integrations/gutenberg/class-rwgc-gutenberg-ab.php` — `sync_on_save()` passes serialized blocks through `wp_slash()` before `wp_update_post()`.
+- `includes/integrations/gutenberg/class-rwgc-gutenberg-experience-slot.php` — same slash on the experience-slot sync write.
+- `tests/AB/RWGC_AB_StoreTest.php` — `wp_update_post()` stub unslashes, matching core.
+- `tests/AB/RWGC_Gutenberg_ABTest.php` — a page with `C:\Users\ada` and query-string URLs still round-trips after the first A/B save.
+- `CHANGELOG.md` — Unreleased fixed note.
+
+## Not changed
+- No version bump and no tag.
+- A/B test title updates, Elementor meta writes, and the REST nonce matcher were not changed.
+
+## Commands
+- `php /tmp/phpunit-9.6.phar --bootstrap tests/bootstrap.php --stderr --filter 'RWGC_Gutenberg_ABTest|RWGC_AB_StoreTest'` — 24 tests, 259 assertions, OK.
+- The same backslash test without `wp_slash()` failed: saved block JSON no longer decoded (`Undefined array key 0`).
+
+## Remaining errors
+- None from this check.
+
+## Status
+done
+
 REST cookie nonce bypass on routes other than `POST /reactwoo-geocore/v1/ab/event`. Not tagged.
 
 ## Files changed
